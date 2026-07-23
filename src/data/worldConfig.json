@@ -1,0 +1,88 @@
+{
+  "creator_notes": "Welcome to the Sunder World Generation Database! You can configure biome thresholds, climate occurrences, and hazard values (monsters, chests, traps, lake shapes) per biome to customize the overworld generation.",
+  
+  "biomeThresholds": {
+    "tundra": {
+      "temperatureMax": 0.35,
+      "description": "Cold and snowy environments"
+    },
+    "desert": {
+      "temperatureMin": 0.35,
+      "moistureMax": 0.35,
+      "description": "Warm and dry sandy environments"
+    },
+    "swamp": {
+      "temperatureMin": 0.60,
+      "moistureMin": 0.60,
+      "description": "Warm, murky, and highly wet environments"
+    },
+    "forest": {
+      "description": "Standard balanced lush environments"
+    }
+  },
+
+  "weatherFrequencies": {
+    "forest": {
+      "clear": 0.45,
+      "foggy": 0.20,
+      "rainy": 0.35
+    },
+    "desert": {
+      "clear": 1.00,
+      "foggy": 0.00,
+      "rainy": 0.00
+    },
+    "tundra": {
+      "clear": 0.40,
+      "snowy": 0.60
+    },
+    "swamp": {
+      "clear": 0.20,
+      "foggy": 0.30,
+      "rainy": 0.50
+    }
+  },
+
+  "environmentalHazards": {
+    "forest": {
+      "lakeCount": 2,
+      "baseLakeRadiusMin": 2,
+      "baseLakeRadiusMax": 4,
+      "trapCount": 0,
+      "trapType": "none",
+      "chestCount": 2,
+      "monsterCountMin": 2,
+      "monsterCountMax": 4
+    },
+    "desert": {
+      "lakeCount": 1,
+      "baseLakeRadiusMin": 5,
+      "baseLakeRadiusMax": 5,
+      "trapCount": 2,
+      "trapType": "fireVent",
+      "chestCount": 2,
+      "monsterCountMin": 3,
+      "monsterCountMax": 5
+    },
+    "tundra": {
+      "lakeCount": 2,
+      "baseLakeRadiusMin": 2,
+      "baseLakeRadiusMax": 4,
+      "trapCount": 2,
+      "trapType": "spikes",
+      "chestCount": 2,
+      "monsterCountMin": 3,
+      "monsterCountMax": 6
+    },
+    "swamp": {
+      "lakeCount": 3,
+      "baseLakeRadiusMin": 3,
+      "baseLakeRadiusMax": 5,
+      "trapCount": 3,
+      "trapType": "poisonGas",
+      "chestCount": 2,
+      "monsterCountMin": 4,
+      "monsterCountMax": 7
+    }
+  }
+}

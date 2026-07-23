@@ -1,0 +1,195 @@
+[
+  {
+    "id": "mat_iron",
+    "name": "Tempered Iron",
+    "description": "A solid, reliable metal. Provides standard physical enhancement.",
+    "category": "Tier1",
+    "color": "#9ca3af",
+    "baseDamageMod": 2,
+    "critMod": 0.05,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_mithril",
+    "name": "Stately Mithril",
+    "description": "Extremely lightweight and responsive metal that sharpens easily.",
+    "category": "Tier2",
+    "color": "#a5f3fc",
+    "baseDamageMod": 4,
+    "critMod": 0.12,
+    "speedMod": 1.2
+  },
+  {
+    "id": "mat_obsidian",
+    "name": "Brittle Obsidian",
+    "description": "A dark, glassy volcanic block. High critical rate, but unstable damage.",
+    "category": "Tier2",
+    "color": "#4b5563",
+    "baseDamageMod": 3,
+    "critMod": 0.22,
+    "speedMod": 0.9,
+    "extraProperty": "CRIT_HEAVY"
+  },
+  {
+    "id": "mat_dragonscale",
+    "name": "Primal Dragon Scale",
+    "description": "A glowing red scale containing ancient raw force.",
+    "category": "Tier3",
+    "color": "#f87171",
+    "baseDamageMod": 7,
+    "critMod": 0.15,
+    "speedMod": 1.1,
+    "extraProperty": "DRAGON_FORCE"
+  },
+  {
+    "id": "mat_feybone",
+    "name": "Withered Fey Bone",
+    "description": "Eerie material humming with vitality absorption.",
+    "category": "Tier3",
+    "color": "#e9d5ff",
+    "baseDamageMod": 5,
+    "critMod": 0.10,
+    "speedMod": 1.3,
+    "extraProperty": "VAMPIRISM"
+  },
+  {
+    "id": "mat_fishing_pole",
+    "name": "Ancient Fishing Pole",
+    "description": "A finely sanded pine-wood rod bound with nylon fiber thread. Allows angling next to quiet lakes, ponds, and riverbanks.",
+    "category": "Tier1",
+    "color": "#818cf8",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_raw_fish",
+    "name": "Glimmering River Fish (Raw)",
+    "description": "Freshly caught uncooked fish. Yields some standard nutrition, but is highly delectable if grilled.",
+    "category": "Tier1",
+    "color": "#38bdf8",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_cooked_fish",
+    "name": "Campfire Grilled Fish",
+    "description": "Cooked over hot natural burning wood embers. Restores high quantities of raw Health (+45 HP) and magical Focus (+30 MP).",
+    "category": "Tier1",
+    "color": "#fb923c",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_prime_meat",
+    "name": "Prime Wild Meat (Raw)",
+    "description": "Rich, high-quality game meat harvested from overworld wildlife. High nutritional value, best cooked at a cozy campfire.",
+    "category": "Tier1",
+    "color": "#f87171",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_cooked_prime_meat",
+    "name": "Prime Flame-Grilled Steak",
+    "description": "Roasted to medium-rare over crackling campfire logs. Restores massive Health (+60 HP) and boosts magical Focus (+15 MP).",
+    "category": "Tier2",
+    "color": "#ec4899",
+    "baseDamageMod": 1,
+    "critMod": 0.02,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_thick_hide",
+    "name": "Thick Wildlife Hide",
+    "description": "A dense leather hide. Highly sought after by leatherworkers and blacksmiths for reinforcing armor plates.",
+    "category": "Tier2",
+    "color": "#b45309",
+    "baseDamageMod": 1,
+    "critMod": 0.05,
+    "speedMod": 1.1
+  },
+  {
+    "id": "mat_lockpick",
+    "name": "Tension Lockpick",
+    "description": "A thin, tempered steel wire lockpick. Essential for cracking secure dungeon chests and outlaw camp caches without alerting guards.",
+    "category": "Tier1",
+    "color": "#94a3b8",
+    "baseDamageMod": 1,
+    "critMod": 0.05,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_skeleton_key",
+    "name": "Grim Skeleton Key",
+    "description": "A rare single-use skull-headed key forged from dark iron and soul essence. Instantly opens any locked chest.",
+    "category": "Tier3",
+    "color": "#c084fc",
+    "baseDamageMod": 1,
+    "critMod": 0.05,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_watchtower_key",
+    "name": "Faction Watchtower Key",
+    "description": "A heavy brass key bearing the insignia of the watchtower garrison commander. Opens the Faction Tribute Chest.",
+    "category": "Tier3",
+    "color": "#eab308",
+    "baseDamageMod": 1,
+    "critMod": 0.0,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_wood",
+    "name": "Oakhaven Timber",
+    "description": "Sturdy harvested forest pine or birch timber. Extremely valuable in the desert, rare in the tundra, and abundant in the forest.",
+    "category": "Tier1",
+    "color": "#b45309",
+    "baseDamageMod": 1,
+    "critMod": 0.02,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_pine_log",
+    "name": "Aromatic Pine Log",
+    "description": "Dense, aromatic softwood. Excellent for alchemical cooking and hot burning campfires.",
+    "category": "Tier1",
+    "color": "#15803d",
+    "baseDamageMod": 1,
+    "critMod": 0.03,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_birch_log",
+    "name": "Pale Birch Log",
+    "description": "Lightweight, clean-burning pale timber. Highly sought after for precise crafting.",
+    "category": "Tier1",
+    "color": "#e2e8f0",
+    "baseDamageMod": 1,
+    "critMod": 0.04,
+    "speedMod": 1.1
+  },
+  {
+    "id": "mat_copper_ore",
+    "name": "Raw Copper Ore",
+    "description": "Unrefined orange copper ore mined from overworld veins. Great for basic alchemical alloying.",
+    "category": "Tier1",
+    "color": "#f97316",
+    "baseDamageMod": 2,
+    "critMod": 0.04,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_iron_ore",
+    "name": "Raw Iron Ore",
+    "description": "Dense, heavy mineral ore mined from rich iron veins. Smelted to create steel or tempered alloys.",
+    "category": "Tier1",
+    "color": "#64748b",
+    "baseDamageMod": 3,
+    "critMod": 0.05,
+    "speedMod": 0.9
+  }
+]

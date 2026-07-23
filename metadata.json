@@ -1,0 +1,6 @@
+{
+  "name": "Dungeon Crafting Roguelike",
+  "description": "A classical, turn-based grid roguelike game featuring modular dungeons, extremely tough dungeon bosses, strategic escape items, diverse traps, lootable chests, a material-gathering system, and custom weapon crafting with dynamic scalable challenge.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

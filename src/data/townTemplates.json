@@ -1,0 +1,200 @@
+{
+  "townSquares": [
+    {
+      "id": "fountain",
+      "name": "Marble Grand Fountain",
+      "grid": [
+        ".....",
+        "..W..",
+        ".WTW.",
+        "..W..",
+        "....."
+      ],
+      "legend": {
+        "W": "Water",
+        "T": "Table",
+        ".": "Path"
+      }
+    },
+    {
+      "id": "market_kiosk",
+      "name": "Bustling Trade Square Kiosk",
+      "grid": [
+        ".....",
+        ".T.T.",
+        "..F..",
+        ".....",
+        "....."
+      ],
+      "legend": {
+        "T": "Table",
+        "F": "Campfire",
+        ".": "Path"
+      }
+    },
+    {
+      "id": "statue",
+      "name": "High Column Sentinel Pillar",
+      "grid": [
+        ".....",
+        "..#..",
+        ".#L#.",
+        "..#..",
+        "....."
+      ],
+      "legend": {
+        "#": "Wall",
+        "L": "Torch",
+        ".": "Path"
+      }
+    },
+    {
+      "id": "bonfire",
+      "name": "Gatherer's Blazing Bonfire",
+      "grid": [
+        ".....",
+        ".C.C.",
+        "..F..",
+        ".C.C.",
+        "....."
+      ],
+      "legend": {
+        "C": "Chair",
+        "F": "Campfire",
+        ".": "Path"
+      }
+    },
+    {
+      "id": "gardens",
+      "name": "Oasis Botanical Zen Garden",
+      "grid": [
+        ".....",
+        ".TTT.",
+        ".TWT.",
+        ".TTT.",
+        "....."
+      ],
+      "legend": {
+        "W": "Water",
+        "T": "Tree",
+        ".": "Path"
+      }
+    }
+  ],
+  "buildingInteriors": {
+    "blacksmith": [
+      { "tile": "Fireplace", "x": 1, "y": 1 },
+      { "tile": "Table", "x": 1, "y": 2 },
+      { "tile": "Table", "x": "w - 2", "y": 1, "minWidth": 7 },
+      { "tile": "Chair", "x": "w - 2", "y": 2, "minWidth": 7 },
+      { "tile": "Bed", "x": 2, "y": "h - 2" }
+    ],
+    "apothecary": [
+      { "tile": "Table", "x": 1, "y": 1 },
+      { "tile": "Chair", "x": 1, "y": 2 },
+      { "tile": "Fireplace", "x": "w - 2", "y": 1 },
+      { "tile": "Bed", "x": 2, "y": "h - 2" }
+    ],
+    "tavern": [
+      { "tile": "Fireplace", "x": 1, "y": 1 },
+      { "tile": "Fireplace", "x": "w - 2", "y": 1 },
+      { "tile": "Table", "x": 2, "y": "h - 3" },
+      { "tile": "Chair", "x": 3, "y": "h - 3" },
+      { "tile": "Table", "x": "w - 4", "y": "h - 3" },
+      { "tile": "Chair", "x": "w - 3", "y": "h - 3" },
+      { "tile": "Bed", "x": 2, "y": 1 },
+      { "tile": "Bed", "x": 5, "y": 1 },
+      { "tile": "Bed", "x": "w - 5", "y": 1 }
+    ],
+    "barracks": [
+      { "tile": "Fireplace", "x": 1, "y": 1 },
+      { "tile": "Bed", "x": 2, "y": 1 },
+      { "tile": "Bed", "x": 4, "y": 1 },
+      { "tile": "Bed", "x": 6, "y": 1 },
+      { "tile": "Bed", "x": "w - 4", "y": 1 },
+      { "tile": "Table", "x": "w - 2", "y": "h - 2" },
+      { "tile": "Chair", "x": "w - 3", "y": "h - 2" }
+    ],
+    "companion": [
+      { "tile": "Fireplace", "x": 1, "y": 1 },
+      { "tile": "Bed", "x": 2, "y": 1 },
+      { "tile": "Bed", "x": "w - 2", "y": 1, "minWidth": 7 },
+      { "tile": "Table", "x": "w / 2", "y": "h - 2" },
+      { "tile": "Chair", "x": "w / 2 + 1", "y": "h - 2" }
+    ],
+    "villager": [
+      { "tile": "Bed", "x": 1, "y": 1 },
+      { "tile": "Fireplace", "x": 2, "y": 1 },
+      { "tile": "Table", "x": "w - 2", "y": 1, "minWidth": 6 },
+      { "tile": "Chair", "x": "w - 2", "y": 2, "minWidth": 6 }
+    ],
+    "library": [
+      { "tile": "Table", "x": 1, "y": 1 },
+      { "tile": "Chair", "x": 1, "y": 2 },
+      { "tile": "Table", "x": "w - 2", "y": 1 },
+      { "tile": "Chair", "x": "w - 2", "y": 2 },
+      { "tile": "Fireplace", "x": "w / 2", "y": 1 },
+      { "tile": "Bed", "x": 2, "y": "h - 2" }
+    ],
+    "shrine": [
+      { "tile": "Fireplace", "x": "w / 2", "y": 1 },
+      { "tile": "Table", "x": "w / 2", "y": 2 },
+      { "tile": "Torch", "x": 1, "y": 1 },
+      { "tile": "Torch", "x": "w - 2", "y": 1 },
+      { "tile": "Chair", "x": "w / 2", "y": "h - 2" }
+    ],
+    "brewery": [
+      { "tile": "Fireplace", "x": 1, "y": 1 },
+      { "tile": "Fireplace", "x": "w - 2", "y": 1 },
+      { "tile": "Table", "x": "w / 2", "y": 2 },
+      { "tile": "Chair", "x": "w / 2", "y": 3 },
+      { "tile": "Bed", "x": 2, "y": "h - 2" }
+    ]
+  },
+  "townLayouts": [
+    {
+      "name": "Cozy Oakhaven Layout",
+      "buildings": [
+        { "id": "blacksmith", "name": "Blacksmith Shop", "x": "4", "y": "3", "w": 8, "h": 8 },
+        { "id": "apothecary", "name": "Apothecary Shop", "x": "width - 12", "y": "3", "w": 8, "h": 8 },
+        { "id": "tavern", "name": "Tavern & Inn", "x": "18", "y": "3", "w": 14, "h": 8 },
+        { "id": "villager1", "name": "Villager Cottage Left", "x": "4", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "villager2", "name": "Villager Cottage Right", "x": "width - 12", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "barracks", "name": "Guard Barracks", "x": "18", "y": "height - 11", "w": 14, "h": 7 }
+      ]
+    },
+    {
+      "name": "Industrial Port Layout",
+      "buildings": [
+        { "id": "blacksmith", "name": "Artisan Foundry", "x": "4", "y": "3", "w": 9, "h": 8 },
+        { "id": "brewery", "name": "Sunder Brewery & Stills", "x": "width - 13", "y": "3", "w": 9, "h": 8 },
+        { "id": "tavern", "name": "Harbor Wharf Tavern", "x": "17", "y": "3", "w": 15, "h": 9 },
+        { "id": "villager1", "name": "Dockworker Dorm", "x": "4", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "companion", "name": "Wilderness Trade HQ", "x": "width - 12", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "apothecary", "name": "Herbal Apothecary", "x": "18", "y": "height - 11", "w": 13, "h": 7 }
+      ]
+    },
+    {
+      "name": "Royal Citadel Layout",
+      "buildings": [
+        { "id": "blacksmith", "name": "Royal Armory Forge", "x": "4", "y": "3", "w": 9, "h": 9 },
+        { "id": "shrine", "name": "Saint Sunder Altar & Shrine", "x": "width - 12", "y": "3", "w": 8, "h": 8 },
+        { "id": "tavern", "name": "The High Citadel Inn", "x": "18", "y": "3", "w": 13, "h": 8 },
+        { "id": "villager1", "name": "Squire Quarters", "x": "4", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "villager2", "name": "Noble Townhouse", "x": "width - 12", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "barracks", "name": "Garrison Barracks", "x": "18", "y": "height - 11", "w": 14, "h": 8 }
+      ]
+    },
+    {
+      "name": "Artisan Hamlet Layout",
+      "buildings": [
+        { "id": "library", "name": "Grand Scribe Library", "x": "4", "y": "3", "w": 9, "h": 8 },
+        { "id": "apothecary", "name": "Sage Alchemical Lab", "x": "width - 12", "y": "3", "w": 8, "h": 8 },
+        { "id": "tavern", "name": "The Cozy Hearth Tavern", "x": "18", "y": "3", "w": 14, "h": 8 },
+        { "id": "villager1", "name": "Pioneer Log Cabin", "x": "4", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "villager2", "name": "Harvester Cottage", "x": "width - 12", "y": "height - 12", "w": 8, "h": 8 },
+        { "id": "companion", "name": "Explorer Lodge", "x": "18", "y": "height - 11", "w": 13, "h": 7 }
+      ]
+    }
+  ]
+}

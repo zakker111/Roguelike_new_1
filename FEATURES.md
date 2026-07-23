@@ -1,0 +1,854 @@
+# Sunder: Chronicles of the Forge
+
+Welcome to **Sunder: Chronicles of the Forge** (Abyss Rogue), an advanced procedurally generated full-screen tactical roguelike role-playing game. Below is an in-depth breakdown of the game's mechanics, aesthetics, and systems.
+
+---
+
+## 1. World Exploration & Procedural Generation
+
+### Infinite Overworld Chunks
+- **Jumbo Map Dimensions**: Each overworld chunk is dynamically scaled to an expanded **64x40 grid** of tiles, widening the walk space and adding pristine density to natural and structural assets.
+- **Dynamic Coordinate Boundaries**: The Overworld spans an infinitely scrolling tile grid. Crossing chunk borders dynamically prompts smooth procedural generation of new landscapes, saving the old chunks inside the game's state memory.
+- **Biome Multiplicity**: Chunks feature distinct eco-regions:
+  - 🌲 **Verdant Forests**: Soft plains filled with trees, wild grass pathways, spawning red berry bushes (`♣`), and small ponds.
+  - 🏜️ **Arid Deserts**: Barren golden sand dunes, cacti clusters, dry tumbleweeds (`*`), and dry stony patches.
+  - ❄️ **Tundra Glaciers**: Deep ice fields with frozen evergreens and snowdrifts. High-yield sweet berry bushes do not spawn under freezing weather circles. Any attempt to pluck barren winter shrubs generates frostbite warning reminders.
+  - 🐊 **Soggy Swamps**: Dense mud pits, mossy floor tiles, stagnant water bodies, and custom purple wild elderberries (`🫐`) instead of toxic radioactive markers.
+- **Castle Towns & Bastions**: Upgraded overworld villages with a 25% chance of spawning as a fortified Keep, Citadel, Bastion, or Stronghold.
+- **Absolute Cardinal Navigation**: Fixed overlay markers displaying NORTH, SOUTH, EAST, and WEST along the respective viewport margins for seamless coordinates tracking.
+- **High-Performance Chunk Minimap Component (`ChunkMinimap.tsx`)**: Refactored the inline coordinate-scanning mini-map into a decoupled React component. By employing `React.memo` and proper state isolation, the map avoids expensive parent re-renders during gameplay actions. It dynamically renders a 21x21 grid representing a 10-tile radius around the player, complete with custom color representations for walls, doors, stairs, water, trees, and special landmarks. Proper string-based `TileType[][]` enums are used to enforce type safety.
+
+### Interactive Overworld Points of Interest (POIs)
+The overworld is populated with unique, historical landmark coordinates. Approaching these POIs transitions passive exploration into **highly detailed, choice-driven narrative encounters** with varying alchemical, stat-modifying, or hazardous consequences:
+- **Ley-Well Shrine (⛲)**: Concentrated wells of primal ley magic.
+  - *Offer Silent Prayer*: Whispers a plea to heal **+35 HP & +25 MP**.
+  - *Siphon Core*: Greedy extraction expanding player capacity (**+5 Max MP**), carrying a **35% risk of psychic feedback** inflicting damage (-15 HP).
+  - *Tribute of Gold*: Sacrifices **15 Gold** in the basin to receive Pristine Favor (**+15 Town Reputation**, **+100 XP**), and a randomized elemental catalyst crystal shard.
+- **Flame Lord Crucible (🔥)**: Ancient active geothermal forges.
+  - *Stoke the Sacred Embers*: Intensely fans the forge crucible, salvaging a rare, high-value **Ember Core** for blacksmith weapon forging.
+  - *Meditate in the Crucible*: Absorbs the intense heat radiation to permanently strengthen constitution (**+8 Max HP & +1 Fire Catalyst**).
+  - *Quench the Fire*: Extinguishes the sacred embers to scavenge valuable fuel elements (**+3 Coal, +2 Iron Ore, +50 XP**).
+- **Ancient Runed Monolith (📜)**: Obsidian tablets etched with early glyphs of Sunder.
+  - *Decipher Ancient Runes*: Study early chronicles to gain ancient wisdom (**+80 XP**).
+  - *Commune with Spirits*: Rests your head on the stone to channel ancestral souls, permanently gaining **+3 Unspent Attribute Points**.
+  - *Carve Your Renowned Name*: Engrave your heroic sigil to spread rumors of your deeds (**+15 Town Reputation**), carrying a **10% risk of sudden kinetic feedback** (-10 HP).
+- **Sunken Keep Fortress (🏰)**: Crumbling battlements of historical legions.
+  - *Scavenge Fortress Scraps*: Salvage rusted military armories for raw minerals (**+3 Copper, +1 Military Steel**).
+  - *Delve Shaking Vaults*: Clamber into unstable subterranean cellars to plunder treasure, granting **+150 Gold & 1x Shadow Catalyst**, but carrying a **35% risk of cave-ins** (-20 HP).
+  - *Hoist Your Alliance Flag*: Erect a standard atop the high tower, declaring claim over the lands (**+20 Town Reputation, +120 XP**).
+- **Tectonic Beast Fossil (🦴)**: Calcified skeletal remains of primeval dragons.
+  - *Exhume Tectonic Marrow*: Chip away dense bone scales to permanently reinforce armor integrity (**+2 DEF**).
+  - *Channel Primeval Life Soul*: Absorb primeval energy to permanently expand vitality (**+12 Max HP**), draining current **-15 MP**.
+  - *Extract Magic Shards*: Dig into empty eye sockets to scavenge **2x randomized elemental catalyst shards** (Fire, Frost, Poison, Lightning, or Shadow).
+
+### Wandering Wilderness Merchants (Seppo)
+Exploration yields encounters with rare traveling entities roaming the wilderness chunks:
+- **Drunk Wandering Merchant Seppo (S)**:
+  - *Procedural Wilderness Spawn*: Spawns rarely on grass tiles in wilderness (non-town) chunks (4% chance upon chunk generation). He can spawn multiple times across different coordinates, rewarding the player's wanderlust.
+  - *Exclusive Shop Inventory*:
+    - **Finnish Sisu Hammer 🪵**: A heavy, iron-spiked birch log with a copper bottle opener welded onto the end. Smashes skulls with ultimate Sisu energy! (+15 DMG, +22% Critical Chance).
+    - **Ever-Burning Flask 🧪**: An ancient insulated brass flask filled with Seppo's self-replenishing fire-water. Blocks blows and keeps you toast-warm! (+5 DEF, Shield slot).
+    - **Seppo's Secret Hooch 🍶**: Distilled in a copper tub deep in the woods. Restores massive stats (**+75 HP & +40 MP**), triggering humorous, highly-immersive drunk narration effects in the game logs.
+  - *Interactive Dialogue & Audio Atmosphere*: Features custom drunk voiced lines, hiccuping responses, and clinking bottle narratives during purchases.
+
+### Wandering Factions & Lively Overworld (v2.5.0)
+The overworld is fully awake, containing faction encampments, moving trade routes, and dangerous localized climates:
+- **Hostile Bandit & Raider Campsites**:
+  - Small 5x5 fortified outlaw camps spawn procedurally on 25% of generated overworld chunks.
+  - Features camp sentries, roasting spit decoration, and a locked camp-exclusive treasure chest.
+  - Defeating the camp guards permanently lowers the regional danger level, rewards epic materials/catalysts from the chest, and awards **+15 Town Reputation** and **+150 XP**.
+- **Baron Tobias' Traveling Caravans**:
+  - Dynamically spawns trade wagon groups parked on overworld crossroads.
+  - Spotting and saving Baron Tobias' carriage from bandit ambushers rewards a heroic victory screen: granting **+250 Gold, +200 XP, +25 Town Reputation**, and an active **Rare Caravan Trade License**.
+- **Caravan Trade License Perks**:
+  - Automatically displays a gold-embossed credential certificate inside the player's sidebar stats.
+  - Grants a permanent **+30% Gold Sales Bonus** when selling equipment/materials back to shopkeepers and a permanent **-20% Purchase Discount** on all town stores.
+- **Dynamic Localized Climate Hazards**:
+  - *Swirling Sandstorms (Deserts)*: Restricts view radius to 2 tiles and reduces standard physical attack hit chances by 20% while drawing beautiful amber sand-wind canvas particle winds.
+  - *Arctic Frost Blizzards (Tundras)*: Restricts sight line to 3 tiles, slows movement speed by 1 tile, and inflicts constant cold bite unless standing adjacent to warm fire coordinates (campfires, town stoves, tavern hearths, or ley-shrines).
+
+---
+
+## 2. Advanced Persistent Dungeon Engine
+
+### Multi-Tiered Abyss (Floors 1–10)
+- **Staircase Navigation**: Players descend deeper into darker challenge levels containing escalating danger levels, elite monsters, and dangerous trap layouts.
+- **The Underworld Depths (Floors 6–10)**: Reaching Abyss Floor 6 transports the player to the scorching lava chambers of the Underworld. Styled with basalt floor cracks, molten obsidian stone walls, and volcanic elements on the game canvas.
+- **Molten Lava Hazards**: Underworld floors are riddled with active Lava Pools. Stepping on a lava tile inflicts **8 Fire Damage** directly, triggers screen damage shakes, and generates floating fire alerts.
+- **Climactic Overlord Boss Surtur (Floor 10)**: Reaching the 10th floor guarantees a final showdown with *Surtur the Magma Arch-demon* 👿, a colossal boss wielding his blazing obsidian blade with massive multipliers and dropping legendary artifacts (Surtur's Molten Greatsword).
+- **Terminal Victory Condition**: Conquering Floor 10 and descending past Surtur's chamber awards the ultimate victory, reclaiming the *Spark of the Cosmos* and restoring peace to Sunder.
+
+### Colossal Legendary Biome Bosses
+Guarding procedural overworld ruins and their valuable locked treasures are four massive biome-specific Legendary Bosses:
+- 🌲 **Verdant Forests**: *Sylvanus, the Verdant Behemoth* (🌳) — A colossal forest guardian with high defense and crushing wooden smash attacks.
+- 🏜️ **Arid Deserts**: *Sekhmet, the Searing Dune Sovereign* (🦂) — A giant scorpion king striking with razor-sharp tail stingers and high speed.
+- ❄️ **Tundra Glaciers**: *Ymir, the Frost-Weaver Titan* (⛄) — A heavy frost titan with long-range frozen slams and immense health.
+- 🐊 **Soggy Swamps**: *Charybdis, the Slime-Feaster* (🦠) — A giant toxic swamp monstrosity that absorbs physical blows with massive armor value.
+
+### State Persistence & Frozen Simulation
+- **No Respawn Policy**: Once the player clears room monsters, disarms spiked traps, or plunders heavy chests on a specific Floor, **re-entering that dungeon from the Overworld preserves that floor's state exactly as it was left**.
+- **Tactical Standby Freeze**: While the player is active on other levels or traveling the Overworld, monsters inside deep dungeon levels remain completely frozen in active state memory. They neither duplicate nor roam until the player steps back onto that floor.
+
+### Double-Edged Dungeon Shrines & Curses (v3.2.0)
+Exactly 2 unique double-edged shrines or altars procedurally spawn on each floor of the dungeon depths, presenting risky opportunities to the daring adventurer:
+- **Shrine of Forbidden Strength (⛧)**: Grants +4 Strength permanently, but siphons -15 HP and inflicts the *Curse of Vulnerability* (-5 Physical Defense for 40 turns).
+- **Shrine of the Blind Oracle (🔮)**: Fully reveals the current dungeon floor layout and grants +3 Intellect permanently, but inflicts *Cursed Sight* (-5 Atk and -15% Critical Chance for 45 turns).
+
+### Scouting, Trap Detection & Disarming (v3.6.6)
+Sunder's dungeons and wilderness environments feature a deep, integrated Trap Detection and Scouting system, turning passive movement into an engaging risk-reward exploration challenge:
+- **Procedural Camouflaged Hazards**: Traps (floor spikes `^`, boiling fire vents `▲`/`▵`, and toxic poison vents `░`) spawn in a fully camouflaged and hidden state. They do not render on the screen or minimap initially, demanding careful tactical movements.
+- **Turn-based Perception Sweeps**: At the beginning of each turn, an automated scanning sweep runs to spot hidden hazards within a 2-tile radius around the player. The success chance is computed from a robust RPG formula:
+  `Perception Chance = 20% + (Dexterity * 1%) + (Luck * 1%) + (Scouting Level * 10%)`
+  Spotting a hidden trap triggers an alert message and awards **+15 Scouting XP**.
+- **Tactical d20 Disarm Attempts**: If the player attempts to step on a detected trap tile, instead of suffering immediate damage, they initiate an active **Disarm Check**. A d20 is rolled and combined with modifiers:
+  `Disarm Roll = d20 + Dexterity + (Scouting Level * 4)`
+  This roll is contested against the trap's difficulty rating (DC 12 for Spikes, DC 14 for Poison Gas, and DC 18 for volcanic Fire Vents).
+  - *Success*: The trap is disarmed safely, play sound effect, grant **+25 Scouting XP**, and allow the player to step on the tile without taking damage.
+  - *Failure*: The trap snaps, inflicting normal damage, applying negative status conditions (like Poison), and carrying a risk of battlefield scars.
+- **Scouting Rank Progression**: Reaching `100 * Scouting Level` XP advances the player's Scouting rank. Leveling up increases the automatic perception chance, expands visual cues, and grants heavy bonuses to d20 disarm rolls.
+- **Immersive HUD Readout**: The active Scouting Level, current XP gauge progress bar, perception rate percentage, and active disarm roll modifier are displayed in real-time under a custom status container in the Character Sheet.
+- **Shrine of Blood Transfusion (🧪)**: Grants +12 Max Mana and fully restores all Mana, but drains -15 HP instantly in a blood sacrifice.
+- **Altar of the Covetous Greed (🏺)**: Grants +250 Gold instantly, but inflicts *Cursed Weight* (-2 Attack and -2 Defense for 30 turns).
+- **Shrine of the Reckless Berserker (⚔️)**: Permanently grants +15% Critical Strike Chance, but permanently consumes -20 Max HP.
+- **Altar of the Chrono-Shift (🌀)**: Grants +3 Dexterity permanently, but inflicts +30 physical exhaustion points immediately.
+
+Accepting a shrine's sacrifice immediately displays a high-impact, floating combat text, triggers spellcasting visual updates, and documents the transaction with detailed logs in the history chronicle. All active curses decay step-by-step alongside standard player actions.
+
+---
+
+## 3. Visceral Combat & Battlefield Remaining Elements
+
+### Kinetic Combat Effects & Damage Shakes (v2.9.9)
+- **CSS Sprite-Shake Feedback**: Built an absolute HTML/CSS animation system for damage visual feedback. When the player or any enemy takes damage, their corresponding token triggers an intensive, non-linear staggered `@keyframes sprite-shake` animation using a custom cubic-bezier timing curve, combined with drop-shadow glows and brightness boosts.
+- **Hammer Knockback Mechanics**: Striking monsters with high-impact heavy weapons like Hammers pushes hostile entities backward into adjacent empty tiles.
+- **Floaty Particle Damage Numbers**: Each strike triggers dynamic bouncing floaty numbers indicating standard orange hits, crimson critical strikes, green healing values, or magic numbers.
+- **Modular combat Flavor Text Generator**: Built an extensible `/src/data/combatFlavors.ts` file separating descriptive weapon stroke phrases. It replaces placeholders at runtime, rendering unique tactical statements dynamically.
+- **Targeted Morale and Fleeing**: Brave monsters (skeletons, orcs, trolls, bosses) stand, defending and trading blows to their bitter death. Only cowardly creatures (rats, scavenger goblins, trapsmiths) have a low (8%) chance to panic and run away once health drops to an absolute critical minimum (under 12% max HP).
+
+### Layered Biological Splatters with Turn-Based Decay
+- **Entity Blood Color Matching**: Critical and heavy impacts splash biological residue across ground floor tiles:
+  - 🔴 **Crimson Red**: Splattered by humanoids, animals, players, and companions.
+  - 🟢 **Toxic Green**: Splattered by swamp vermin like Giant Rats.
+  - 🔵 **Spectral Cyan**: Splattered by undead forces like Skeleton Mages.
+- **CSS-Animated Drip-Dropping Entrance**: Splatters spawn as beautifully styled vector droplets that execute a fluid, scaling `@keyframes blood-drip` animation on entry. They are rendered using absolute coordinate overlays, keeping rendering performance exceptionally high and eliminating canvas redrawing overhead.
+- **Organically Decaying Splatters**: Splatters maintain varying density tiers (3 to 1). On every player action, splatters have a small chance to gradually decay and eventually dissolve, leaving the floor clean over long periods.
+
+### Physical Corpses Left Behind
+- **Skeletal & Hunted Remains**: Defeated creatures spawn static, layered corpse debris under players or monsters:
+  - Humanoids and standard creatures leave bone clusters.
+  - Skeletons leave broken skull piles (`☠`).
+  - Forest animals leave avian/feather templates (`🪶`).
+  - Fallen tavern companions leave distinct blue-framed allied remains.
+
+---
+
+## 4. Atmospheric Dungeon Settings & Intelligent Logs
+
+### Animated Adventure Chronologue Log Scroller
+- **Slick custom Amber Scrollbars**: Offers beautifully styled Webkit custom scrolls matching Oakhaven's dark golden aesthetic.
+- **Smart Bottom Pin Selection**: On incoming turn messages, the log automatically scrolls to the absolute bottom feed if the player was already bottom-locked.
+- **Scroll Catching overlay**: Scrolled up to read historical turns? A clever bouncing indicator `↓ Scroll to Latest` appears; clicking it returns focus instantly, restoring lock.
+- **RPG Storyteller Nudges**: Features an offline storytelling AI module (`src/utils/gmNarrator.ts`) that periodically posts classical text descriptions about adjacent tiles. It senses the surrounding world environment (cozy villages, tall stone keeps, deep underground dungeons, ancient mossy ruins) to push flavor sentences (carrying fragrances, breezes, warnings, and distant sounds) matching specific cardinal directions.
+
+### Decorative Interiors & Modular Village Architecture
+- **Modular Village Interiors**: Generating overworld chunks places modular village shops and residences. Shop identifiers are processed dynamically by `buildHouse(...)` to spawn customized interior decorations (anvil/furnace sets for blacksmiths, cozy bar counters/booths for taverns, alchemical workbenches/herb containers for apothecary stores, etc.).
+- Generating a new Abyss floor spawns rich, ruined aesthetics sprinkled on empty tiles:
+  - ☠ **Piles of Bones**: Mortal remains of earlier plundering guilds.
+  - 🕸 **Cobwebs**: Dusty strands covering silent corners.
+  - ⌸ **Broken Barrels**: Old heavy oak reserves split open.
+  - π **Ancient Columns**: Cracked pillars supporting stone vaults.
+  - ⎖ **Iron Shackles**: Rusted dungeon cuffs bolted to dark bedrock.
+  - ⎗ **Stained Altars**: Dark monolithic slabs etched with crimson energy.
+
+---
+
+## 5. Party Recruitment & Tactical Commands
+
+### Mercenary Companions
+- **Tavern Hires & Active Spawning**: Players can visit towns to hire loyal allied companions at tavern bars for Gold. Upon purchase, companions do not vanish; instead, they immediately materialize as active physical combat actors on the map, follow the player across zones, and dynamically engage/attack any hostile monsters in the vicinity.
+- **Behavioral Stance Controls**: Group members follow you and automatically acquire nearby targets, with toggles for aggressive pursuit or defensive holding (Waiting).
+- **Companion Permadeath**: Allies take physical damage and can be slain permenantly, leaving behind personal blue-tinted corpse remains.
+
+### Legendary Feline Companions & Developer Memorial (v3.9.8)
+- **Four Legendary Overworld Cats**: Unique, non-standard companions that spawn deterministically on walkable overworld tiles:
+  - **Alli 🐈**: Mystical silver-gray feline who carries a royal lineage (+1 DEF; Personality: "Royal Silver Cat", Temperament: "Dignified & Regal").
+  - **Jekku 🐈**: An energetic, playful orange tabby with high combat enthusiasm (+3 ATK; Personality: "Trickster Orange Cat", Temperament: "Mischievous & Full of Energy").
+  - **Pulla 🐈**: Warm, chubby golden companion representing ultimate loyalty (+18 Max HP, +1 DEF; Personality: "Warm Golden Companion", Temperament: "Obedient, Round & Faithful").
+  - **Leevi 🐈**: Fierce, battle-hardened gray cat with a constant grumpy scowl (+5 ATK; Personality: "Eternally Angry Battle Cat", Temperament: "Fierce, Aggressive & Grumpy").
+- **Persona Inspections**: The Follower Inspect interface displays specialized "Personality" and "Temperament" descriptions under the "Retainer Persona Traits" panel, granting each feline follower (and hired mercenaries) a unique mechanical and narrative identity.
+- **"Cat Lover" Memorial Trait**: When the player encounters or hires all four legendary cats (Alli, Jekku, Pulla, Leevi) in a single run, they are awarded the permanent **"Cat Lover" Trait** (+10 Luck) in memory of real-life beloved feline friends.
+- **Visual Memorial Card**: Displays an elegant, pulsing emerald status badge with decorative borders within the unified character sheet showing active bonus modifiers and dedicated logging summaries.
+
+---
+
+## 10. Dynamic World Threat & Adaptive Scaling Engine
+
+### Stat allocation safeguards
+- **Permanent Attribute Allocation Protection**: Players are strictly prevented from decreasing attributes (Strength, Dexterity, Intellect, Charisma, Luck) under any conditions. Stat allocations are permanent and committed immediately. The subtracting `-` buttons have been completely removed from the Character Attributes sheet, leaving only a beautiful pulsing `+` button that animates when unspent attribute points are available. This prevents any negative stat exploits or refund glitches.
+
+### Adaptive Threat Level Multiplier
+- **Progression Scaling**: The game master increases world-wide monster HP and attack scaling coefficients automatically based on three indicators:
+  - **Player Level Multiplier**: +8% threat scaling per level above level 1.
+  - **Attributes Spent**: +1.5% threat scaling per allocated stat point.
+  - **Equipped Gear Rating**: +4% threat scaling per point of weapon damage or defense.
+- **Active Chaos Suppression (Player Pushback)**: Players can actively fight back to suppress the Abyssal Chaos Coefficient in real-time by executing key combat and exploration milestones:
+  - **Dungeon Bosses Slain**: Lowers the threat coefficient by **-0.35x** per boss defeated.
+  - **Wilderness Camps Liberated**: Lowers the threat coefficient by **-0.15x** per cleared camp.
+  - **Foes Defeated**: Lowers the threat coefficient by **-0.05x** for every 10 standard enemies defeated.
+  - *Challenge Floor*: Active mitigation can bring the coefficient down significantly, but maintains a stable floor of **0.70x** to preserve a satisfying engagement level.
+- **HUD Indicator & Mitigation Panel**: The character sheet and Chaos console display a highly stylized, responsive **ADAPTIVE THREAT LEVEL** indicator card alongside a dedicated **Active Chaos Suppression** panel showing exact stats of bosses slain, camps liberated, standard foes crushed, and their cumulative coefficient reductions.
+
+---
+
+## 6. Sovereign Creator Engine & Sandbox Modifiers
+
+### Dynamic Structure Constructor (JSON Configurator)
+- **Extensible Map Blueprints**: Players can write, customize, or paste JSON blueprints defining custom floor structures on the fly. Beautiful visual characters map cleanly to any available tile types (Doors, Walls, Chairs, Campfires, Torches).
+- **Dynamic Entity Spawns**: Blueprints support embedded enemy markers allowing tailored combat scenarios, such as creating training grounds containing specific species, customized bosses, and trap rooms complete with coordinated coordinates.
+
+### Sovereign Creator Laboratory (Creator Lab Tab)
+- **🩹 Battle Scars & Physical Trauma Ingress**: Manually pick and inject any of the 12 battle scars directly onto your character model to test specific attribute penalties and custom cosmetic emojis.
+- **👥 Custom Mercenary Retinue Recruiting**: Summons customized Elite Vanguard Sentinel defenders or Swift Shadow Thieves with bespoke name plates, upgraded weapon parameters, custom characters, and dedicated performance coefficients.
+- **🧪 Inventory Alloys & Catalyst Supplies Infusion**: Select from all 12 raw crafting components and 5 precious alchemical catalyst types (Pyrotactile Fire, Cryo-forged Ice, Venom-stung Gas, Super-charged Spark, Void-gazing Shadow) to add or subtract specific amounts live!
+- **⚔️ Bespoke Epic Weapon Crafter & Forge**: Customize weapon base archetypes (Sword, Bow, Dagger, Mace, Staff, Spear), configure base attack coefficients, critical hit percentages, active targeting scopes, mana cost parameters, and max wear durability. Forge and equip custom weapons onto active combat slots instantly.
+- **🛡️ Custom Epic Armor & Greatshields Crafter**: Configure defensive protection slots (Shields, Heavy Plate-mail, Visor Helms, Gauntlets, boots), defense values, and maximum wear durability, then materialize those assets straight into your physical backpack inventory repository.
+- **🌀 Environmental Hazard Materializer**: Instantly manifest interactive chess-board pieces on adjacent walkable coordinates around the player. Spawn warming campfires, rare loot-filled gold chests, active spikes, dangerous fire vents, or poison gas traps to test triggers or secure safe havens seamlessly in mid-fight.
+- **⛈️ Biome & Meteorological Climate Modulators**: Force regional terrain shifts (Forest, Desert, Tundra, Swamp) or trigger ambient weather patterns (Sunny/Clear, Rainy storm, Snowy blizzard, Dense fog) with single-touch override inputs.
+
+### Predefined Town Templates Pool Selector
+- **Interactive Preset Selector**: Instantly select from multiple hand-crafted settlement layout blueprints defined in `townTemplates.json`.
+- **Live Code Syncing**: Choosing a predefined template instantly compiles and translates coordinates, populating the Raw JSON coordinate box in the Housing developer tab. Rebuild Oakhaven town on-the-fly with a single click!
+
+### In-Browser Virtual Smoke Test Runner (QA Suite)
+- **Automated Sequential Playthrough**: Simulates a fully automated player walkthrough entirely client-side to test regression safety and state persistence at high execution speeds.
+- **Robust Multi-Step Diagnostics**:
+  1. *Spatial Navigation*: Moves player East across chunks, triggering boundary scrolling, terrain rebuilding, and field-of-view recalibration.
+  2. *Harvest check*: Striking nearby trees/ore nodes and validating inventory resource increments.
+  3. *Rest Purge*: Placing a campfire adjacent, applying high player exhaustion, and resting next to it to purge fatigue back to 0.
+  4. *Tavern Social & Wager*: Sitting in the tavern inn, wagering gold on coin flips, and buying Stout Ale to verify the critical hit status buff.
+  5. *Companion Expedition*: Recruiting Lyna Shadowsteel, dispatching her on autonomous expeditions, and checking XP/Gold rewards on her return.
+  6. *Combat Loop*: Spawns hostiles, triggers pathfinding pursuit chasing states, verifies mutual strikes, damage indicators, and biological blood decal generation.
+- **Scrollable Green Diagnostics Terminal**: Features a beautiful scrolling logger, displaying precise timestamps, status logs, failure catches, and colorful step counters.
+
+### Integrated Sandbox Controls
+- **Flexible Playthrough Modifiers**: Tweak incoming parameters to construct completely custom balance settings. Adjust player damage factors, enemy health ranges, drop multipliers, and XP ratios dynamically.
+- **Instant Death Aura & God Shield**: Engage ultimate sovereign controls to invoke defensive invincibility or enable constant death waves wiping surrounding hostiles off the map instantly on every action.
+
+---
+
+## 7. Inventory Carrying Weight Limit & Capacity System
+
+### Core Carrying Limit System
+- **Weight Calculation**: Carrying load is determined dynamically based on the items in the Backpack. Equipped items are "worn" and thus exempt from carrying weight capacity.
+- **Physical Item Weight Configs**: Item weights are proportioned realistically based on size and templates:
+  - 🛡️ **Heavy Armor & Shields**: 6.0 kg to 10.0 kg.
+  - ⚔️ **Standard Weapons (Swords, Hammers)**: 3.5 kg to 5.5 kg.
+  - 🗡️ **Light Daggers & Belts**: 1.5 kg.
+  - 🔩 **Raw Alloys & Ores**: 0.4 kg to 1.5 kg per unit.
+  - 🔴 **Elemental Catalyst Crystals**: 0.2 kg per unit.
+- **Overburdened Sluggish / Stagger Effect**: Exceeding maximum weight limits causes severe physical strain. On each action/movement, there is a **45% chance to stumble/stagger**, losing your active turn while adversaries take their actions.
+- **In-Game Item Disposal**: Complete with manual discard toggles `[DISCARD]` for stashed weapon pieces, armor vest plates, alloys, and catalysts to free carrying load on the go.
+- **Realistic Ground Litter**: Sweeping physical caches (Chests/LootPiles) checks capacity. Handled gracefully by taking any items that fit, and **dropping leftovers as physical ground loot piles** to prevent permanent loss.
+- **Sovereign God Panel Controls**: Includes sandbox toggles to **Bypass Weight Verification** or **Adjust Carrying Threshold Multipliers** (10 kg to 200 kg) on the fly for stressless testing!
+
+---
+
+## 8. Autonomous GM Storyteller & Cosmic Mutation Forge
+
+### 🌀 Cosmic Mutation Forge Workbench
+- **Selective Gear Re-alignment**: Load any item into the mutation column of the Crafting Arcanum workbench (including active weapons and unequipped equipment like plates, shields, and helmets).
+- **Core Infusion & Catalyst Blending**: Infuses target assets with standard alloy alloys and elemental catalysts to restructure underlying stats entirely. Stat multipliers range chaotic levels from **0.85x to 1.55x**.
+- **Majestic Title Suffixes & Prefixes**: Triggers magical prefixes ("Volcanic", "Glacial", "Tempest", "Sovereign") and legendary high-tier suffixes ("of Chaos Destiny", "of the Abyss Void", "of the Divine Light", "of the Seraphic") indicating superior property gains.
+- **100% Permanence**: Forge mutations consume precious resources and permanently seal the product's new identities and traits inside active state storage.
+
+### 🎭 Autonomous Game Master Storyteller (Dynamic Interactive GM)
+- **Memory & Passive Cognition**: Runs an active storytelling computer tracking total damage dealt/taken, monsters slain, coordinates, idle turn logs, chest counts, and player levels.
+- **Active Persona Monologue**: Constantly switches between Mischievous, Sadistic, Benevolent, Intrigued, and Apathetic personas based on coordinates and health. The GM logs internal monologues into an active, scrollable Thought Feed stream.
+- **Dynamic Programmatic Interventions**: Triggers five unique real-time game-world interventions based on state:
+  - 📜 **Seraphic Healing Breeze**: Injected when player HP falls dangerously low; restores HP.
+  - 🧟 **Sovereign Rift Ambush**: Triggers when player is idle or over-prepared, opening portals spawning custom adversaries.
+  - 💎 **Alchemical Alloy Drop**: Spawns rare ores and alloys adjacent to player coordinates when GM notices resource deficits.
+  - ⚡ **Lightning Bolt Smite**: Blasts hazardous obstacles or surrounding targets during high action.
+  - 🌨 **Meteorological Climax**: Releases heavy blizzards/dense storms while scaling enemy status values dynamically.
+- **GM Debug Console Oversight**: Access a detailed developer tab in the Game Master interface to manually toggle personas, adjust live parameters (Boredom & Tension), read ongoing thought lines, and force-trigger any intervention on desire.
+
+---
+
+## 9. Arcanum Blacksmithing Forge System
+
+### ⚙️ Pure Alloy & Catalyst Forging
+- **Alloy Exclusive Matrices**: The equipment workbench is explicitly restricted to pure base metal alloys (Iron, Mithril, Volcanic Obsidian, Astral Wyrmscale, and Ancient Feybone) fused with powerful elemental catalysts. No standard garbage junk can be fed.
+- **Weapons & Defense Plates Forging**: Players can select between offensive and defensive tabs. Forge classic weapons (Sword, Dagger, Bow, Mace, Staff, Spear) or heavy protection pieces (Greatshields, Plate Mail, Visor Helms, Gauntlets, and boots).
+- **Direct Backpack Deposit**: All completed blacksmith products are smoothly deposited straight into the player's Backpack Bag inventory. This protects active gear slots and allows convenient equipment management.
+
+---
+
+## 11. Guild Headquarters, Factions & Advanced Trade Economy (v2.7.0)
+
+### 🏺 Biome-Based Supply & Demand Economy
+- **Dynamic Trade Markets**: Commodities (wood, alloys, catalysts, potions) fluctuate in value based on the regional geography (current biome):
+  - 🪵 **Raw Wood**: Plentiful in Verdant Forests but spikes to extreme prices in Arid Deserts (▲ +70% demand).
+  - ❄️ **Freezing Blizzards**: Boosts value of warm Seppo's Hooch and restorative potions by 50% in Frozen Tundras.
+  - 🔵 **Elemental Catalysts**: Spikes in price inside toxic Swamps and icy Glaciers where elemental materials are heavily sought after.
+- **Fluctuation Badges**: Trade booths display active premium percentages and surplus discounts visually using clear color-coded indicators.
+
+### 🏰 Sunder Guild Headquarters
+- **Establishment**: Found a personal headquarters in Oakhaven Port Town for 500 Gold, unlocking specialized modular sub-systems and safehouse perks.
+- **Modular Lab Upgrades**:
+  - *Sunder Logistics Deals*: Increases material sell values by +20% per rank (Max Rank 3).
+  - *Expedition Map Room*: Accelerates companion autonomous scouts by +25% speed per rank (Max Rank 3).
+  - *Cooperative Bargaining*: Grants a passive -5% discount on vendor purchase transactions per rank (Max Rank 3).
+- **Sanctuary Decoration placing**: Purchase decorative artifacts and place them inside the sanctuary to active permanent multiplier buffs:
+  - ⛲ *Ambient Leystone Hearth*: Restores +10 HP and +5 MP upon completing any dungeon floor or overworld travel.
+  - 🔮 *Oracle Crystal Orb*: Amplifies XP gains by +15%.
+  - 🏆 *Champion Trophy Pedestal*: Increases critical strike chance by +5%.
+  - 🛡️ *Sunder Vanguard Banner*: Grants flat +3 Armor defense.
+
+### 🗄️ Secure safehouses & Storage Vaults
+- **Wilderness Depots**: Purchase hidden safehouse shelters on any wilderness chunk for 300 Gold to establish a permanent base of operations outside of castle towns.
+- **Universal Companion Guards**: Any companion follower present in your active party can be permanently stationed to guard the safehouse. Commissioning preserves their specific name, character icon (`char`), and custom visual color, complete with dynamic localized greeting dialogs.
+- **Cross-Overworld Stash**: Includes deep storage vaults to securely stash and retrieve raw alloys, alchemical catalysts, and weapon/armor equipment from any safehouse.
+
+### 🚍 Hardcore Caravan Escorts & Travel Challenges
+- **Hardcore Event Probabilities**: Caravan escort road journeys are scaled to be highly challenging. The threat encounter check rate is increased to **85%** per turn step.
+- **High-Stakes Stat Contests**: Every road event (e.g., Bandit Ambush, Rockslide, Beast Assault) features elevated d20 check difficulties (**DC 17-19**) and significantly higher item costs to resolve peacefully, including paying 500 Gold bribes, donating 15x sweet berries, spending 8x iron ore, or 18x wood planks. Check failures carry doubled penalties, inflicting up to -28 HP damage and up to +45% physical Exhaustion.
+- **Rich Rewards**: Safely navigating the cargo carriage through hazardous highways rewards players with massive gold yields, custom explorer experience points, and high regional renown.
+
+### 📱 Responsive Layout & Clickable Navigation Arrow Buttons
+- **Interactive Clickable Scroll Arrows**: Smaller display viewports and mobile screens can hide parts of the horizontally aligned action panel tabs. To address this, dual absolute-positioned, clickable left (◀) and right (▶) arrow buttons overlay the tab bar, enabling instantaneous smooth, hardware-accelerated scrolling for both desktop and mobile players.
+
+### ⚔️ Secret Factions (Moonshadow Syndicate & Dawn Vanguard)
+- **Standing & Reputation**: Support rival factions to unlock special forge blueprints. Joining the **Moonshadow Syndicate** or **Dawn Vanguard** grants access to elite signature recipes:
+  - 🗡️ *Moonshadow Assassin Dirk*: Fused with poison catalysts to inflict toxic venom strikes.
+  - 🥷 *Shadow Cowl*: Conceals the player, boosting crit rate by +12%.
+  - 🛡️ *Dawn Vanguard Aegis*: Heavy defensive iron shield.
+  - 🧥 *Vanguard Sunplate*: Gold-trimmed steel plates providing massive defense and health stats.
+
+### 🚀 Autonomous Companion Dispatch (Quest Board)
+- **Active Expeditions**: Select idle followers to embark on valuable solo operations (e.g. *Border Patrol*, *Apothecary Supply*, *Ruined Fort Excavation*).
+- **Turn-Based Progress**: Dispatched companions advance their exploration steps dynamically as the player moves on the overworld.
+- **Claim Rewards**: Safely collect high-tier materials, catalysts, gold, and companion XP once the companions complete their voyages.
+
+---
+
+## 12. Campfire Cooking & Alchemical Apothecary Brewing (v3.9.6 Unified)
+
+Breathed extensive mechanical and alchemical progression into Sunder by introducing dedicated gourmet cooking and potion brewing systems, now fully consolidated into the **Crafting Arcanum Workbench** (Forge) for streamlined gameplay.
+
+### 🏕️ Campfire Gourmet Cooking
+- **Integrated Workbench Culinary Sub-Tab**: Accessible directly inside the Forge panel, replacing the redundant top-level Life Skills tab.
+- **Campfire Proximity Check**: Cooking exquisite meals requires being standing adjacent to or near (within 2 tiles) a warm campfire (`Campfire` tile). Players can utilize existing fire coordinates across castle towns/dungeons, or pitch campfires in the wilderness to begin cooking.
+- **Exquisite Food Recipes**:
+  - ⚡ **Lightning Grilled Salmon**: Restores 40 HP and infuses the player with *Sparking Reflexes*, boosting critical strike chance by +15% and speed for 25 turns.
+  - 🔥 **Spicy Crimson Salmon**: Restores 50 HP and grants *Magma Aggression*, adding a robust +3 Attack bonus for 25 turns.
+  - ❄️ **Glacial Frost Ribs**: Restores 50 HP and imbues the player with *Everfrost Bulwark*, providing +3 Defense bonus for 25 turns.
+  - 🌙 **Shadow Smoked Jerky**: Prepared with twilight fumes. Restores 35 HP and completely purges player physical exhaustion back to 0%!
+
+### 🧪 Apothecary Alchemical Brewing & Lab Upgrades
+- **Integrated Apothecary Sub-Tab**: Conduct alchemical operations directly inside the central Workbench interface.
+- **Alchemical Lab Tier System**: Upgrade your alchemical workstation from Tier 1 to Tier 3 using Gold directly from the interface to unlock increasingly powerful, ancient alchemical recipes.
+- **Permanent Stat Elixirs**:
+  - 🌸 **Regenerative Dew of Oakhaven** (Tier 1): Distilled with birch tree essences. Restores 80 HP and permanently grants +1 Strength (STR).
+  - 🧪 **Hyper Focus Elixir** (Tier 1): Synthesized using pine sap crystals. Restores 30 MP and permanently grants +1 Intelligence (INT).
+  - 🛡️ **Ironheart Fortitude Draught** (Tier 2): Infused with powdered iron minerals. Restores 60 HP, cleanses 20 Exhaustion, and permanently grants +2 Defense (DEF).
+  - 🌌 **Shadow-Warp Void Elixir** (Tier 3): Deep void fermentation utilizing copper ore. Restores 50 HP and 50 MP, and permanently grants +1 Luck (LCK).
+
+### ⛏️ Overworld Mining & Logging Nodes
+- **Active Mineral Veins & Logging**: Overworld chunks generate harvestable Copper/Iron mineral veins and Pine/Birch logging trees.
+- **Resource Harvesting**: Striking resource nodes with your equipped weapon salvages valuable metal ores and lumber, smoothly depositing them into your crafting inventory.
+
+---
+
+## 13. Celestial Blood Moons, Alchemical Loot Goblins & Stamina Exhaustion (v2.8.0)
+
+Introduced high-stakes cosmic events, dynamic chase loot targets, and realistic physiological fatigue loops to enrich tactical decision-making and mechanical depth.
+
+### 🔴 Blood Moon Celestial Rift
+- **Celestial Cycle**: Every 300 to 550 turns, a dramatic Blood Moon rises, dyeing the overworld in a crimson light.
+- **Dynamic Threat & Rewards**: Under the Blood Moon, all hostiles gain +25% attack scaling and 50% damage lifesteal. However, defeating them yields double precious alchemical catalysts.
+- **Atmospheric Changes**: Immersive log notifications announce the emergence and end of the Blood Moon.
+
+### 🪙 Alchemical Loot Goblins
+- **Fleeing Sprites**: Rare, non-aggressive golden Loot Goblins spawn on overworld and dungeon floors.
+- **Loot Drop Mechanics**: When attacked, the Loot Goblin attempts to flee frantically. On every single strike they receive, they drop valuable metal alloys (copper, iron, mithril) and alchemical catalysts before ultimately vanishing in a burst of light.
+
+### 🔋 Stamina Exhaustion & Rest System
+- **Physiological Fatigue**: Engaging in melee swings, special combat maneuvers, or powerful magic spells accumulates player Exhaustion (ranging from 0% up to 100%).
+- **Fatigue Debuffs**: High exhaustion impairs combat performance, reducing your active Dodge and Critical Strike ratings by up to -15%.
+- **Purging Exhaustion**: Players can purge exhaustion and rest by:
+  - Resting adjacent to any warm campfire or town hearth.
+  - Renting a bed inside town inns (-10 Gold).
+  - Consuming specialized items such as Shadow Smoked Jerky.
+
+---
+
+## 14. Tavern Minigames, Drunk Patrons & AI Chase Fixes (v2.9.0)
+
+Added immersive social activities inside town taverns, heads-or-tails betting wagers, and successfully refactored enemy chasing AI paths to ensure hostile monsters actively hunt down the player.
+
+### 🥴 Tavern Drunk Patrons
+- **Interactive Characters**: Inn and tavern locations feature unique drunk patrons (`🥴` - Drunk Seppo, Uncle Pete, Tipsy Toby, etc.).
+- **Rumors & Gifts**: Buy them a draft of Ale for -10 Gold to listen to regional rumors, receive free forging alloys or alchemical ingredients, or gain the *Drunken Cheer* (+10% Critical Strike Chance for 25 turns) buff.
+- **Slap Patrons**: Feeling mischievous? Slap them awake to trigger unpredictable, humorous comedic reactions and dialogue outcomes.
+
+### 🪙 Sunder Coin Toss Betting Minigame
+- **Wager Stakes**: Challenge any tavern patron to a game of heads-or-tails coin toss wagers of 5 Gold.
+- **Win or Lose**: Correct guesses double your bet; incorrect guesses lose the gold. Track your streak and earnings straight from the log!
+
+### 🎯 Intelligent Enemy AI Senses & Chase Routing
+- **Active Sight Fields**: Overworld and dungeon enemies no longer remain frozen or passive. They calculate true Line-of-Sight up to 8 tiles sight range.
+- **Blind Proximity Sensing**: If a hostile monster is within 5 tiles of the player, they will detect the player's presence blindly (e.g., sound or vibration) and enter the *Chasing* state.
+- **Smart Pathfinding**: Chasing enemies navigate obstacles, walls, and corners using A* or intelligent step-towards routing. Passive wildlife and Loot Goblins maintain flee routing to escape the player.
+
+---
+
+## 15. Client-Side Virtual Smoke Test Runner (v2.9.6)
+- **Active In-Browser Diagnostics Terminal**: Fully operational step-by-step diagnostic test-suite accessible via the "Smoke Test" tab in the Sovereign God Panel Overlay.
+- **Deterministic Action Queues**: Overrides physical keyboard/controller inputs to feed structured commands directly into the core turn engine.
+- **Cross-Chunk Spatial Boundaries**: Verifies camera positioning, fog of war calculations, chunk caching, and biome shifts during rapid border crossings.
+- **Node-Striking & Camp Building**: Attacks resource nodes, confirms item accretion, buys campfires, places them, and tests the adjacent Exhaustion-purge rest cycle.
+- **Social Minigames & Tavern Loops**: Walks inside town inns, bets 5 gold on coin flips, buys ale, and confirms the active *Drunken Cheer* status.
+- **Companion Dispatch Integration**: Spawns companions via GOD Panel, sends them on dispatch expeditions via Guild Headquarters, ticks turns, and confirms loot retrieval.
+- **Combat & Senses Validation**: Spawns enemies, asserts that hostile entities transition from `Patrolling` to `Chasing` when inside the 8-tile sight cone (or 5-tile blind range), resolves fights, spawns blood decals, and renders floaty damage numbers.
+
+---
+
+## 16. Sunder Secure Lockpicking Mini-Game & Tension Wire Forging (v2.9.7)
+
+Introduced an immersive, tactical skill-based lockpicking mini-game for chests found in dungeon depth chambers and hostile outlaw camps, fully optimized for both desktop and mobile platforms.
+
+### 🔑 Interactive Rotating Cylinder & Tension Physics
+- **Dynamic Tumbler Search**: Finding the chest's sweet spot angle allows the screwdriver to successfully rotate. Players must coordinate pick placement and lock tension.
+- **Lockpick Stress & Snap Mechanics**: Attempting to turn the lock when misaligned causes high lockpick stress, initiating a physical warning vibration of the dial before snapping the tension wire and consuming a precious lockpick item.
+- **Perfect Performance Rewards**: Successfully unlocking chests with zero pick damage rewards players with +25 Gold pristine performance bonuses, a randomized elemental catalyst crystal shard, and +40 Lockpicking XP.
+
+### 📱 Full Mobile-Optimized Tactile Gestures & Usability
+- **Tactile Dial Touch Dragging**: Mobile players can drag their finger directly over the circular lock face itself, using precise Cartesian-to-angle mapping to rotate and position the pick smoothly.
+- **Enhanced Prevention Controls**: Applied strict event-prevention overrides (`e.preventDefault()` and `touch-none`) on mobile touch-points. This prevents scrolling, page pulling, or double-tap zoom triggers during intense chest-cracking attempts.
+- **Dual Platform UI Responsive Layouts**: Visual guidance messages, interactive sliders, and instruction cards adjust dynamically to fit all viewport bounds perfectly across mobile, tablet, and desktop screens.
+
+### ⚒️ Survival Forging Recipes & Economy
+- **Tension Wire Forging**: Players can use the survival crafting panel to smelt 1x Tempered Iron into 3x Tension Lockpicks to restock on the fly.
+- **Merchant Restocks**: General Town Merchants, Caravan Traders, and Tavern Masters now stock lockpicks in their daily rotating inventory pools.
+- **Smoke Test Step 10 Diagnostic Integration**: The automated smoke test sequentially triggers Step 10: simulating discovering, wire-crafting, tensioning, and opening locked chests flawlessly.
+
+---
+
+## 17. Wilderness Factions, Camps & Escapes (v2.9.8)
+
+Introduced a comprehensive faction-aligned wilderness camp system, unique interactive camp leaders, custom faction enemy alignments, detailed reputation standings, and an active Escape Alarm pursuit mechanic with boundary crossing evasions.
+
+### 🏕️ Procedural Faction Encampments
+- **Syndicate & Vanguard Camps**: Procedurally spawns Moonshadow Syndicate and Dawn Vanguard camps on overworld chunks using specialized tiles (e.g. customized walls, faction banners, campfires, and guards).
+- **Faction Locked Vault Chests**: Each camp holds a locked high-tier chest (with prefix `syndicate_chest_` or `vanguard_chest_`) containing rare alloys, precious catalysts, and large gold payouts.
+
+### 👑 Interactive Camp Leaders (Silas & Valerius)
+- **Silas (Moonshadow Syndicate)**: Spawns at Syndicate camps, offering branching interactive dialogue where players can declare allegiance, request poison daggers, or inquire about illicit smuggling routes.
+- **Captain Valerius (Dawn Vanguard)**: Spawns at Vanguard camps, allowing players to join the holy legion, request heavy plating, or discuss regional security.
+
+### ⚖️ Durable Reputation Standing & Fallout
+- **Neutral Faction Sentry AI**: Faction guards start as neutral and will remain in passive, non-hostile patrol states unless attacked or if the player triggers an alarm.
+- **Assault Standing Fallout**: Attacking a faction guard or leader reduces your reputation standing with that faction dynamically (-20 on assault, -50 total on kill). Detailed warnings are output in the chronologue.
+
+### 🚨 Trespassing Vault Alarms & Escapes
+- **Escape Pursuit Alarms**: Opening or stealing from a faction's chest without declaring alignment triggers an active **Escape Alarm** for that faction.
+- **Aggressive Hunt State**: The active alarm alerts all faction guards in the current chunk, shifting their AI state to aggressively pursue and chase the player across obstacles and fog-of-war lines.
+- **Boundary Cross Escape**: Successfully escaping the immediate pursuit is achieved by traversing the chunk borders. Crossing overworld chunk boundaries successfully clears the active Escape Alarm, resetting guard aggression and logging a descriptive narrative escape message.
+
+---
+
+## 18. Abyssal Horde: New Dungeon Denizens & Legendary Bosses (v3.0.0)
+
+Introduced a massive roster of newly designed dungeon creatures, responsive magical projectile abilities, specialized vampire siphoning mechanics, adaptive deep-dungeon weighted spawning pools, and six legendary boss encounters with custom descriptions, visual glyphs, and high-threat stats.
+
+### 💀 New Dungeon Denizens & Abilities
+- **Wraith of the Depths (Ghost)**: A weeping translucent specter (`👻`) with high evasion capabilities. Fires ghostly cyan-indigo phantasmal bolts from distance.
+- **Fledgling Vampire**: A lethal nocturnal crawler (`🧛`) that moves with swift velocity. Whenever they land a melee strike on the player, they siphon blood, restoring their own HP by a balanced 20% ratio of the dealt damage (capped at 4 HP per strike).
+- **Caustic Acid Slime**: A gelatinous emerald blob (`🧼`) that slows and corrodes.
+- **Sunder Webspinner (Spider)**: A multi-legged weaver (`🕷️`) that fires sticky web snare projectiles to trap prey.
+- **Acolyte Necromancer**: An initiate of death magic (`🧙`). Projects dark violet shadow orbs from afar.
+- **Dread Iron Warden (Dread Knight)**: A heavily armored juggernaut (`⛓️`) possessing massive physical defense.
+
+### ⚖️ Adaptive Deep-Dungeon Spawning Pools
+- **Weighted Tier Escalation**: Implemented a sophisticated spawning mechanism in the procedural engine. Shallow dungeons feature common pests like Rats and Goblins.
+- **Abyssal Escalation**: As the player descends past depth 2, rats and basic goblins are largely filtered out, replaced by high weights of Vampires, Dread Knights, Ghosts, and Necromancers, creating an immersive difficulty curve.
+
+### 👑 Six Legendary Bosses Added
+- **Lord Vladis Nocturna (Vampire)**: Sovereign of crypts (`🦇`). Blazes across the arena with dark speed, siphoning a controlled 20% of hit damage (capped at 4 HP) to maintain a fair, winnable boss battle.
+- **Viscous Goliath the Great Slime (Slime)**: A titanic pulsating ooze (`🦠`) that absorbs heavy blunt blows.
+- **Broodmother Arachnia (Spider)**: Colossal weaver (`🕷️`) spewing toxic, paralyzing webs.
+- **Archlich Kel'Thuzar (Necromancer)**: Master of frost rituals (`🔮`) who summons undead reinforcements.
+- **Sir Kaelen the Black Warden (Dread Knight)**: A fallen knight in impenetrable armor (`🛡️`) wielding a cursed heavy blade.
+- **The Echo of Sunder (Ghost)**: Translucent, floating specter (`👻`) that drifts through physical matter, dealing mental frost stress.
+
+---
+
+## 19. Dungeon Captives & Freedom Fighters (v3.1.0)
+
+Added procedural caged captives locked inside dungeon depths. Once broken free, they act as independent neutral fighters who help battle monsters, with scaled health, separate turns, and unique narrative dialogue lines.
+
+- **Caged / Locked States**: Captives generate inside randomized rooms as chained entities (`🔒`) with a padlock/cage glyph and are named after roles (e.g., Caged Cleric, Captive Miner, Trapped Wanderer).
+- **Bump-to-Free Mechanism**: Bump collision logic intercepts standard physical attack sequences. Bumping into a locked cage immediately shatters the cell, triggering celebratory level-up sounds, floating "🔓 FREED!" text popups, and printing a randomized narrative dialogue log of gratitude.
+- **Autonomous Hostile targeting**: Freed captives undergo dynamic state transition to Chasing. They do not follow the player or crowd your party but independently scan for nearby dungeon monsters to attack, moving step-by-step and dealing custom-scaled physical strikes.
+- **Monster Retaliation & Death Resolution**: Active chasers and monsters recognize freed captives as high-priority hostile combatants, engaging in active physical skirmishes. If a captive reaches 0 HP, they die permanently, logging a descriptive obituary message and spawning their physical corpse on the map.
+
+---
+
+## 20. Overworld Caravan Escort Travel Journeys (v3.2.3)
+
+Allows adventurers to travel across distant coordinates in the procedural overworld by signing up for Caravan Escort services. Rather than walking screen-by-screen, players can travel between discovered town coordinates on the world map securely, engaging in immersive road event resolution along the way.
+
+- **Immersive Travel Step Progress**: Journeys are structured into multiple turn-advancing steps. Each step has rich narrative descriptions of the caravan traveling through dense forests, swampy marshes, or deep tundra fields.
+- **Five Random Road Encounters**:
+  - **Bandit Ambush**: Ruthless outlaws barricade the road. Players can fight them off with d20 check mechanics, intimidate them using magic, or pay high-coin bribes.
+  - **Beast Attack**: Starved wild wolf packs lunge from the woods. Resolve by slaying them, intimidating them, or feeding them raw meats or berries.
+  - **Rockslide Obstacle**: Massive boulders block the pass. Leverage physical strength d20 checks or construct wooden lever fulcrums to slide it away.
+  - **Holy Pilgrim blessing**: A wandering priest grants divine chants that instantly replenish health (HP), mana (MP), and purge physical exhaustion.
+  - **Broken Axle**: Heavy carriage wheels split. Craft splints using gathered timber planks, forge steel replacements with ore, or take time to manually repair.
+- **Renown & Gold Payouts**: Safely guiding the wagons across miles of rugged trails triggers celebratory fanfares, awarding substantial gold coins, reputation renown, and explorer experience points.
+
+---
+
+## 21. Grimoire Magic Spell Tuning & Wands (v3.2.4)
+
+Introduces a robust magical tuning interface for spellcasters and sages, offering dynamic spell selection, mana point (MP) adjustments, and weapon-linked synergy bonuses.
+
+- **Automatic Grimoire Interface**: Equipping a magical Staff or Wand automatically populates an elegant spellcasting book overlay in the sidebar below active weaponry.
+- **Interactive Spell Grid**: Enable spellcasters to switch active projectiles instantly:
+  - 💥 **Fireball** (6 MP): Explodes on contact, dealing massive damage and igniting targets.
+  - ❄️ **Icicle** (4 MP): Shoots ice spikes, slowing enemies and inflicting Frost.
+  - ⚡ **Lightning Shock** (5 MP): Strikes with electric shocks, stunning hostiles.
+  - 🟢 **Poison Dart** (3 MP): Imparts poison debuffs dealing damage over time.
+  - 🔮 **Shadow Orb** (5 MP): Emits shadowy rifts draining target health.
+- **Wand Mana Conservation Tuning**: Channeling spells through a delicate Wand reduces the mana requirement of all spells by **-1 MP** (down to a minimum floor of 2 MP), rewarding swift and agile magic slingers.
+- **Interactive Combat Logs**: Real-time spellcasting logs, detailed costs, and spellcaster descriptions synchronize seamlessly with character status boards.
+
+---
+
+## 22. Dynamic Faction Wars & Territory Conquest (v3.5.0)
+
+Introduces a fully realized geopolitical overworld layer tracking territorial disputes between factions, with real-time tax dividends, faction war chest financing, and tactical direct deployment.
+
+- **Five Faction Territories**:
+  - **Borderlands**: Contested forest pass. Grunts passive +10% melee damage to controlling faction.
+  - **Shadow Fjord**: Soggy glacier rift. Grants passive +15% shadow resistance to controlling faction.
+  - **Moonshadow Cove**: Desert sea-cave. Grants passive +10% trade profit bonus on material sales.
+  - **Sunplate Ridge**: High tundra plateau. Grants passive +5 defense rating to controlling faction.
+  - **Swamp of Whispers**: Damp, marshy bog. Grants passive +10% alchemical brewing yield.
+- **Faction Conquest & War Room UI**: Adds an immersive tab to the Guild Headquarters Overlay where players can:
+  - **Monitor Ownership**: Track territory ownership and faction control percentages (0-100%) through custom gauges.
+  - **Claim Passive Taxes**: Withdraw accumulated gold coins and random craft supplies (metals, catalysts) generated in real-time by territories.
+  - **Finance the War Chest**: Contribute gold directly to your aligned faction's War Treasury in exchange for reputation renown.
+  - **Deploy Tactical Directives**: Authorize spending of faction treasury gold to implement powerful strategic directives (e.g. *Vanguard Aegis Shield*, *Syndicate Supply Poisoning*) that push territory control scales.
+- **Real-Time Turn-Based Tax Accumulators**: Background taxation loops generate gold and raw alloys/catalysts with every step you take in the overworld.
+- **Dynamic Conquest Defeat Hooks**: Defeating enemy soldiers or outlaws on the overworld map dynamically triggers tactical pushes, increasing control of adjacent territories for the player's allied faction.
+
+---
+
+## 23. Finnish Mythology & Epic Rune-Songs Expansion (v3.6.5)
+
+Infuses Sunder with high-fidelity, interactive Finnish folklore, adding a comprehensive history book lore-delivery mechanic, biome-specific runic POIs, Game Master divine intervention spells, and immersive text adjustments.
+
+- **10-Chapter Sunder-Finnish History Chronicle**: Adds a majestic lore-delivery system via the interactive History Book. Exploring the wild allows bards and mages to unlock chapters detailing:
+  - 🥚 **Chapter I: The Primordial Egg of Creation** (How Sunder's earth and sky arose from eggs laid on the water-mother's knee).
+  - 🎵 **Chapter II: The Ancient Rune-Singers** (The silver elves who learned to command the names of trees and stones).
+  - 🌊 **Chapter III: Ahti's Ocean Wrath** (The drowning of King Kenneth's fortress by the waves of the sea-god).
+  - 🦴 **Chapter IV: The Song-Giant Antero Vipunen** (Väinämöinen descending into the stomach of the sleeping song-giant to forge and retrieve power words).
+  - 🌋 **Chapter V: The Volcanic Crucible of Pohjola** (The geothermal ovens of master smith Ilmarinen deep inside the desert).
+  - 🌾 **Chapter VI: The Forging of the Sampo** (The miraculous multi-colored mill grinding endless corn, salt, and gold).
+  - 🌲 **Chapter VII: Tapio's Evergreen Kingdom** (The woodland domain governed by the moss-coated king and Queen Mielikki).
+  - 🛶 **Chapter VIII: The Swan of Tuonela** (The boiling, dark underworld river of the dead guarded by the majestic silver swan).
+  - ⚡ **Chapter IX: Ukko's Golden Hammer** (The sky-father striking the basalt cliffs to produce the first spark of iron and seed of fire).
+  - ❄️ **Chapter X: Louhi's Northland Frost** (The cold, dark witch of the far north stealing the sun and locking it in steel mountains).
+
+- **Procedural, Biome-Aware Runic POIs**: Landmarks throughout the overworld adapt their name, description, visual layout, and lore according to the local ecosystem:
+  - **Forest**: *Väinämöinen's Rune Stone* (🗿), *Shattered Sampo Fragment* (✨), or *Tapio's Evergreen Grove* (⛲).
+  - **Swamp**: *The Gates of Tuonela* (🏰) or *Vellamo's Healing Spring* (⛲).
+  - **Tundra**: *Ribs of Antero Vipunen* (🦴) or *Louhi's Frost Obelisk* (🗿).
+  - **Desert**: *Forge of Ilmarinen* (🔥) or *Ukko's Lightning Bolt* (⚡).
+
+- **Epic Mythical GM Interventions**: The Game Master storyteller can invoke three legendary events when the player needs guidance or is bored:
+  - ⚡ **Ukko's Golden Bolt**: Ukko strikes the nearest hostile creature for **35 celestial damage** and infuses the player with sky-sparks, restoring **+10 Mana**.
+  - 🎵 **Väinämöinen's Rune-Song**: Väinämöinen sings the ancient runes of creation, healing the hero for **+25 HP** and calming nearby hostiles back into patrolling.
+  - 🍯 **Mielikki's Honey Drop**: The woodland queen places a special survival basket directly into the adventurer's inventory containing **1 Campfire Grilled Fish** and **1 Prime Flame-Grilled Steak**.
+
+- **Finnish Mythological Overworld Enemies & Bosses**: Spawns unique, thematic folklore threats natively inside respective biomes in the overworld:
+  - 👹 **Hiisi Forest Fiend**: A rock-demon or ancient forest goblin born of woodland malice. They hurl earthen curses, guard ancestral stone mounds, and drop *Hiisi Rune Pebbles* and pine resin.
+  - 🧜 **Näkki Water Kelpie**: A malevolent swamp spirit that lures travelers with runic melodies. A ranged spellcaster that projects water blasts and drops *Näkki Pearls* and swamp water.
+  - 🐻 **Otso the Honey-Paw (Legendary Boss)**: The sacred King of the Forest. A majestic golden-clawed bear spirit that spawns rarely in forests. Drops the legendary *Otso's Heavy Fur-Plate* (chestplate with warm properties), *Mielikki's Sweet Honey* (fully heals and permanently increases Max HP), and prime wild meat.
+  - 🦅 **Louhi, Mistress of Pohjola (Legendary Boss)**: The shape-shifting ruler of the Northland, spawning in tundra glaciers. She casts glacial *frost storms* and drops the legendary *Louhi's Runed Frost Staff* (catalyst doubling frost magic) and the legendary *Sampo Fragment* (cosmic wealth-generator granting passive gold).
+
+- **Flavored GM Narratives**: Overworld navigation logs are saturated with rich references to epic Finnish folklore, mentioning the bellows of Ilmarinen, the cold sorceries of Louhi, and the bounteous boons of Mielikki.
+
+---
+
+## 24. Domain-Specific Engine Modularization & Cleanups (v3.6.7)
+
+Refactors Sunder's codebase to decouple dense game mechanics, system parameters, and configurations from the main visual layout components. Decoupling structures into highly specialized domain utilities inside `/src/utils/` ensures pristine maintainability, improved build speeds, and a simplified pathway for adding custom content.
+
+- **`weatherEngine.ts` (Meteorology)**: Consolidates the game's climate profiles (Sunny, Rainy, Foggy, Snowy, Sandstorm, Blizzard) with detailed movement speed penalizations, forged equipment immunities, and spellcasting elemental damage modifiers.
+- **`spellsAndEquipment.ts` (Arcanum Spells)**: Houses all player spell attributes (Arcane Bolt, Pyroblast, Frostbite Lance, Storm Strike, Poison Dart, Shadow Orb) including name, elements, mana costs, and splash/ignition properties.
+- **`shopData.ts` (Merchant Catalogs)**: Regulates shop pricing modifiers and specific inventory arrays for Oakhaven's Blacksmiths, General Traders, Taverns, and the wandering Seppo's secret shop.
+- **`fleeQuotes.ts` (Dialogue Generation)**: Generates context-appropriate comedic panic and escape quotes uttered by wildlife or cowardly hostiles when panicking or fleeing.
+- **`caravanAndTerritory.ts` (Geopolitics & Transit)**: Controls the background caravan merchant transit schedules and maps out faction geopolitical territory structures across Oakhaven.
+
+---
+
+## 25. Declarative World Generation & Meteorological Settings (v3.6.8)
+
+Further enhances engine modularity by externalizing overworld biome boundaries, climate probabilities, and environmental hazards into a declarative database:
+
+- **`worldConfig.json` (World Database)**: Standardizes overworld parameter limits, decoupling procedural terrain equations from code.
+- **Dynamic Whittaker Biome Mapping**: Biome thresholds (temperature limits, dryness indicators) are loaded dynamically, allowing instant re-tuning of world sizes or climates.
+- **Meteorological Frequency Matrices**: Weather states (clear sky, blizzard, rain storm, fog bank) are sampled directly from JSON-defined weights, ensuring smooth, regional transition flows.
+- **Procedural Environmental Hazards Control**: Fine-tunes lake counts, min/max lake radiuses, trap spawn frequencies, trap hazard profiles (Spikes, Fire Vents, Poison Marsh Geysers), loot chest volumes, and roaming monster populations dynamically on a per-biome basis.
+
+---
+
+## 26. Dual-Hand Combat Durability & Gauntlets/Neck Piece Armor Separation (v3.8.6)
+
+Introduces comprehensive overhauls to physical combat durability simulations and disentangles legacy armor mappings to establish distinct equipment types for Gauntlets and Neck Pieces:
+
+- **Dual-Hand Durability & Damage Simulation**:
+  - Overhauled physical melee and defensive block state calculations to correctly register and decay both the Right Hand (weapon) and Left Hand (shield or secondary weapon) slots.
+  - Attacking or blocking cleanly degrades weapon/shield durability based on hits/blocks, accounting for broken equipment states, dual-wielding combinations, and shield absorption rates.
+  - Implements the exact tracking of `effectiveWeaponDamage` across both slots to dynamic combat modifiers.
+- **Independent Armor Separation (Gauntlets & Neck Pieces)**:
+  - Disentangled the combined equipment slots to establish separate **Gauntlets** (`Gloves` type, 🧤 emoji) and **Neck Pieces** (`Amulet` type, 📿 emoji) as fully independent categories.
+  - Configures separate blacksmithing forge recipes, merchant inventory maps, alchemical mutations, and stat scaling systems for both slots.
+  - Updates the primary equipment paperdoll HUD inside the character inventory sheet to render distinct slots, visual labels, and unequip callbacks.
+- **Smart Repair Shop Sorting & Durability Overlays**:
+  - Automatically sorts player backpack inventories inside the repair shop to prioritize damaged or broken equipment: broken items (0% durability) bubble to the top, followed by partially damaged items, and pristine items at the bottom.
+  - Renders highly responsive, color-coded durability gauges and tooltips across all equipment displays.
+
+---
+
+## 27. Universal Equipment Loot Drops & Rare Necklace Probability (v3.8.7)
+
+Overhauls the procedurally generated drops and treasure chest inventories to ensure all gear types are fully lootable, while balancing necklaces as rare, valuable finds, fully integrated with dynamic player Luck scaling:
+
+- **Universal Gear Looting**:
+  - Transferred static name arrays into a fully procedural, multi-class equipment generator (`generateRandomLootGear`).
+  - Correctly types and classifies all dropped and discovered armor—such as Helmets, Gauntlets/Gloves, Boots, Shields, Heavy/Light body armor, and all weapon subtypes—ensuring they equip to their correct paperdoll slots without legacy slot collisions.
+  - Implemented specialized, legendary boss/dragon pools with appropriate, authentic item properties and flavor text for Surtur, Otso, Louhi, and Elder Wyrms.
+- **Luck-Scaled Drop & Loot Rates (v3.9.10)**:
+  - **Monster Drops**: Defeating monsters features a dynamic equipment drop chance scaling factor of **+3% per point of LCK above base 10** (up from 2%), which directly boosts the base 22% drop rate (capped up to 85%).
+  - **Chest Loot**: Finding random weapons, armor, or shields inside chests features a scaling factor of **+3% per point of LCK above base 10** (up from 2%), boosting the base 30% chest gear chance (capped up to 90%).
+- **Rare Necklace/Amulet Balance**:
+  - Tailored Necklaces/Amulets (`Amulet` subtype) to spawn with a low 5% probability from standard hostile remains and a balanced 10-15% chance in treasure caches.
+  - Generates rare pendants and charms with unique, powerful passive attribute stat rolls, adding high excitement value to lucky finds.
+
+---
+
+## 28. Immersive Storyteller Narratives & Tiered Loot Rarity (v3.8.8)
+
+Overhauls the active Game Master (GM) Storyteller outputs, debug commands, and procedural loot systems to fully preserve player immersion, alongside integrating a multi-tier rarity system for all lootable weapons and armor:
+
+- **Immersive Narrative Logs**:
+  - Removed all breaking of the fourth wall ("GM Storyteller", "God Gift", "GM Breathed", "GM Cast" labels inside player-facing adventure logs).
+  - Translated all Game Master events, actions, and custom triggers into rich, in-character descriptions. Rather than reporting external intervention, logs now describe organic overworld happenings (e.g., healing is detailed as a *"sudden warm Seraphic Healing Breeze"* whispering through the air; resource additions are detailed as a *"forgotten Sovereign Resource Cache found on the ground"*).
+- **Tiered Loot Rarity & Quality Scaling**:
+  - Engineered a modular rarity generator within `generateRandomLootGear` assigning items one of five distinctive combat tiers: **Common** (Gray, 65% weight), **Uncommon** (Green, 22% weight, +1 stat roll), **Rare** (Blue, 10% weight, +2 to +3 stat rolls), **Epic** (Purple, 2.5% weight, +4 to +6 stat rolls), and **Legendary** (Orange, 0.5% weight, +7 to +11 stat rolls).
+  - Scaled damage and defense attributes directly based on the rolled rarity. High-quality items are appropriately scarce, ensuring rare drops feel incredibly rewarding to discover.
+  - Generates custom stylistic prefixes based on the item's rolled tier (e.g., *Worn/Standard* for Common, *Sturdy/Polished* for Uncommon, *Exquisite/Gilded* for Rare, *Champion's/Sovereign* for Epic, and *Sky-Splitter's/God-Forge's* for Legendary).
+
+---
+
+## 29. NPC Coordinate Sanitization & Wall Spawn Prevention (v3.8.9)
+
+Introduces a robust overworld coordinate sanitization pass for all town citizens, merchants, tavernmasters, companions, and legendary cats, eliminating any possibility of NPCs spawning in walls or other solid layout geometry:
+
+- **Lively Walkable Tile Safety Rules**:
+  - Defines strict safety criteria ensuring NPCs can only spawn on non-blocking walkable tiles (specifically excluding `Wall`, `Window`, `Tree`, `PineTree`, `BirchTree`, `CopperVein`, `IronVein`, `Water`, `Table`, `Campfire`, and `Empty` states).
+- **Proactive Spiral Pathfinding Search**:
+  - Integrates an iterative, multi-layer spiral search algorithm scanning up to a 20-tile radius around desired spawn coordinates to find the nearest valid walkable tile in the event of an initial layout overlap or deterministic block shifting.
+- **Dynamic Schedule Coherence**:
+  - Seamlessly re-aligns NPC `x`/`y` current coordinates, as well as their scheduled `homeX`/`homeY` and `workX`/`workY` coordinates. This ensures that NPC pathing and schedule transitions never cause them to glitch or stand inside stone buildings or walls.
+
+---
+
+## 30. Safe Player Spawning & Companion Faction Targeting (v3.9.0)
+
+Implements robust coordinate-safety validations to guarantee the player never spawns in blocked tiles (e.g. inside trees, walls, or water) during movement or teleportation events, and refines follower AI targeting mechanics so companions do not engage in combat with neutral or allied entities unprovoked:
+
+- **Universal Player Coordinate Sanitization**:
+  - Integrates the 20-tile scanning coordinate sanitizer `findNearestSafePlayerTile` into all critical player spawning and repositioning events.
+  - Guarantees player safety during initial game boot placement, cardinal boundary chunk crossovers, caravan escort travel completions, and Recall Scroll teleports. If a destination coordinate overlaps with a tree, wall, water, or building, the scanner automatically shifts the player to the closest safe walkable tile.
+- **Follower Faction Targeting Refinements**:
+  - Configures all active companion followers (including recruited special cats) with intelligent tactical awareness.
+  - Followers will ignore and never attack town guards, crown peacekeepers, or allied caravan defenders under normal circumstances.
+- **Dynamic Provocation Aggression Hooks**:
+  - Programmed companions to instantly engage in combat if the player provokes and attacks guards (which flags the global `areGuardsHostile` state to true). Followers maintain total immersion, acting as reliable party buffers.
+
+## 31. Faction Watchtower Garrisons, Tribute Chests & Siege Reprisals (v3.9.1)
+
+Introduces high-altitude overworld watchtower structures guarded by elite Syndicate and Vanguard faction garrisons, featuring rare faction-locked tribute chests, dynamic capture-the-flag overworld claim mechanics, and real-time active siege reprisal events:
+
+- **Watchtower World Generation**:
+  - Spawns procedurally generated Watchtower fortresses on specific wilderness crossroads chunks, complete with stone battlements, arrow slits, barricades, and elevated observation decks.
+- **Elite Garrison Defenders**:
+  - Populates each watchtower with elite, high-HP faction-specific defenders (such as Vanguard Knights, Syndicate Enforcers, and Tower Rangers) to guard the strategic territory.
+- **Faction Tribute Chests & Flag Capture**:
+  - Places a locked Tribute Chest inside the central watchtower vault, plundered by acquiring keys dropped by Tower Commanders.
+  - Capture-the-Flag claiming: Defeating the active garrison allows players to hoist their chosen faction standard, converting the watchtower into an allied safe haven that spawns reinforcements and yields passive taxes.
+- **Dynamic Active Siege Reprisals**:
+  - Claimed watchtowers are subject to dynamic reprisal attacks from rival factions, triggering active siege alarms across the overworld.
+  - Simulates active siege battlegrounds by spawning waves of hostile attackers and reinforcing friendly defenders. Players can join the fray to secure the watchtower or let the countdown clock resolve the capture organically.
+  - Displays a high-fidelity **Active Watchtower Sieges** sidebar HUD widget showing active siege coordinates, defending/attacking forces, and countdown ticks.
+
+---
+
+## 32. Town Progression & Renown Expansion (v2.5.5)
+
+Introduces a highly reactive Town Progression and Renown expansion, linking the player's reputation with merchant access, hiring options, regional guards, shop grades, and specialized questlines, augmented by player Charisma scaling:
+
+- **Four Core Renown Milestone Tiers**:
+  - 🏴‍☠️ **Sunder Outlaw (0-20 Reputation)**: Hostile Town Guards attack the player on sight. Merchants and blacksmiths reject all trade, refusing to buy or sell resources.
+  - 🛡️ **Wandering Mercenary (21-50 Reputation)**: Standard trade relations with no price modifiers. Access to general quest board contracts.
+  - 🎖️ **Honored Protector (51-80 Reputation)**: Unlocks a passive **10% discount** on all town store purchases.
+  - 👑 **Champion of Sunder (81-100 Reputation)**: Unlocks a massive **20% discount** on purchases, triggers special legendary stocks, and enables recruiting elite heavy-plated City Guards as custom companions.
+- **Charisma-Scaled Shop Discounts (v3.9.10)**:
+  - Prices across all vendors—including the Blacksmith, Apothecary, Supply Merchant, Tavern Master, Exotic Artificer, and Caravan Merchants—are dynamically reduced by **-1.5% per point of CHA above base 10** (up from 1.0%), up to a maximum cumulative discount cap of **50%**.
+- **Village Infrastructure Upgrades**:
+  - **Blacksmith Forge & Apothecary Lab Upgrades**: Players can donate gold and metal alloys/crystals to upgrade the village blacksmith forge level and apothecary station tier.
+  - **Reputation and Stock Rewards**: Each upgrade successfully completed rewards large renown increases (**+8 to +15 Town Reputation**) and permanently upgrades stock availability for advanced materials, formulas, and gear.
+- **Outlaw Pardon Questline**:
+  - Notorious Outlaws are barred from regular quests but can seek the specialized **"Sunder Outlaw Pardon"** contract. Resolving this questline clears their criminal record, restoring town relations back to neutral Wandering Mercenary standing.
+- **Dynamic Renown Dashboard**:
+  - Integrated an immersive, real-time reputation status panel directly inside the Quest Board UI. Displays progression towards milestones, detailed tier summaries, current standing values, and status alerts.
+
+---
+
+## 33. Custom Structure Carving & Legend-Mapped Blueprint Designer (v3.9.2)
+
+Introduces a customizable structural carving mechanic and an advanced legend-mapping design engine to allow modders and players to create, customize, export, and dynamically apply spatial assets in the active game overworld:
+
+- **Modular Blueprint Presets (`src/utils/structurePlacer.ts`)**:
+  - Out of the box, the system features six highly detailed presets:
+    - 🏠 **Cozy Spawn Shelter** (5x5): Brick walls, wooden floor, a cozy bed, tables, chairs, and an interactive door.
+    - ⚔️ **Fenced Combat Arena** (8x8): Impenetrable walls flanking a sand ring, spawning two Elite Gladiators with hostile testing AI.
+    - 🌀 **Mystic Dungeon Portal** (5x5): An ancient stone array centering a functional Dungeon Entrance portal.
+    - 🍓 **Berry Forest Grove** (7x7): A lush natural grove replacing standard trees with walkable grass, dense canopy trees, and harvestable Berry Bushes.
+    - 🍻 **Royal Tavern & Lounge** (9x6): Tavern layout boasting comfortable beds, chairs, dining tables, and multiple exit entryways.
+    - 🏰 **Faction Watchtower Outpost** (9x9): High-defense watchtower structure lined with Watchtower Walls, Arrow Slits, Battlements, and a Faction Flag.
+- **Dynamic Legend Blueprint Translation**:
+  - Resolves non-standard grid coordinates by reading custom mapping hashes (`legend: Record<string, string>`) declared within layout blueprints.
+  - The designer's parser (`handleLoadPresetToDesigner` in `GodPanelOverlay.tsx`) inspects the legend mapping and translates custom/non-standard chars (like `W` for WatchtowerWall, `S` for Slits, `K` for Decks, `F` for Flags, and `+` for Doors) back into their standard `DESIGNER_LEGEND` equivalents during grid reconstruction.
+  - This guarantees that even complex, custom-mapped blueprints load flawlessly into the Structure Designer without character collisions or rendering errors.
+- **Sovereign Settlement Rebuild Engine**:
+  - Integrates the placement-validation engine `carveStructure` to ensure structures do not clip past world boundaries.
+  - Features a custom layout importer JSON text block (`handleApplyHousesJson`) in the God Panel. Developers can enter coordinate arrays of structure JSONs to instantaneously build, wipe, or overhaul the active overworld settlements live.
+
+---
+
+## 34. Wilderness Traveling NPCs & Crime Witness System (v3.9.3)
+
+Introduces interactive, role-appropriate traveling NPCs across the overworld wilderness with a proximity-based visual crime witness system that enforces reputation laws for assault crimes:
+
+- **Wilderness Traveling NPCs**:
+  - Organically spawns specialized traveling NPCs (Wilderness Hunters `🏹`, Wilderness Herbalists `🌿`, and Traveling Pilgrims `🚶`) in non-town, non-castle wilderness overworld chunks with a 50% chance.
+  - Features customized themed advice dialogues, helpful gameplay and lore tips, and fully integrated role-specific buy/sell trading stores (Hunters trade weapons and pelts, Herbalists supply potions and herbs, Pilgrims sell minor trinkets).
+- **Proximity Crime Witness Detection Engine**:
+  - Implements a sophisticated proximity-based visual scan checking surrounding visible tiles for any other active town citizens or faction members when initiating an attack on a traveler.
+  - If a witness sees the player assault the traveler, the crime is immediately reported to the Sunder authorities, dropping town reputation by **-35 Town Rep** and printing an public outrage warning.
+  - Performing the assault in absolute isolation (unwitnessed) lets the player engage in combat without public reputation consequences, enabling stealthy gameplay.
+- **Dynamic Combat Transition**:
+  - Transition traveling NPCs immediately into aggressive enemy entities on the active grid (ranged Hunters, melee Herbalists/Pilgrims) upon physical assault, seamlessly loading their combat stats into the turn-based engine.
+
+---
+
+## 35. Roaming Outlaw Camps & Bored GM Interventions (v3.9.4)
+
+Introduces dynamic, high-stakes overworld combat encounters triggered autonomously or manually when the Game Master grows bored, bringing lively local narrative flavor:
+
+- **Roaming Outlaw Camp Spawn**:
+  - The Game Master can spawn a small camp of 2-3 Outlaw Bandits around a newly lit wood campfire nearby on walkable tiles.
+  - Features an elite **Outlaw Bandit Leader** (85 HP, 11 ATK, 4 DEF) and auxiliary **Exile Camp Bandits** (55 HP, 8 ATK, 2 DEF).
+  - Spawns in an aggressive **Chasing** AI state, meaning they will actively pursue and engage the player immediately upon generation.
+- **Dynamic Lore Monologue Announcement**:
+  - On spawn, a dynamic narrative monologue is announced in-character to the adventure chronicle: *"🔥 LORE MONOLOGUE: You hear rowdy laughter and crackling wood nearby... A small Bandit Camp has set up campfire far to the [DIRECTION]! Go disperse them!"*
+  - Floating indicator text (`🔥 Bandit Camp! [DIRECTION]`) appears above the map to guide player exploration.
+- **Storyteller Integration**:
+  - Automatically integrated as a high-threat, double-edged storyteller intervention. When the GM's mood is Mischievous, Sadistic, or Intrigued, and boredom exceeds 30, the camp can materialize nearby to challenge the player's tactical combat readiness.
+
+---
+
+## 36. Quest-Giver Assaults & Responsive Multi-Viewport HUD (v3.9.5)
+
+Introduces the ability to reject, betray, and directly assault quest-giving traveling NPCs (instantly failing active/available quests and turning them hostile), and implements a fully responsive multi-viewport UI with custom mobile HUD systems:
+
+- **Interactive Quest-Giver Assaults**:
+  - Adds interactive choices ("Refuse & Attack" or "Betray & Attack") directly inside the traveling NPC dialog overlay interfaces.
+  - Doing so immediately fails any associated quests (such as collecting mushrooms for Herbalists, pelts for Hunters, or relics for Pilgrims) and prints a dramatic quest failure notification in the chronicle.
+  - Instantly spawns the traveling NPC as an active hostile map enemy with high stats and unique combat roles, letting you loot them on victory.
+- **Fluid Multi-Viewport Responsiveness**:
+  - Upgrades and refines the layout system checks to correctly support narrow displays (< 1024px) as well as touch devices and mobile user agent strings.
+  - Ensures seamless navigation and layout parity between desktop, window-resized browsers, and mobile screens.
+- **Compact Mobile HUD and Status Bars**:
+  - Displays a beautifully structured, compact statistics grid immediately above the game canvas in mobile mode for Vitals HP, Focus MP, Gold wealth, and Level/XP progress.
+  - Includes a dedicated environment sub-bar detailing exact map coordinates, current biomes or dungeon depths, town reputation standing, game clock time, and dynamic Moon Phases with tooltip support.
+
+---
+
+## 37. Scars of the Defeated & Effective Stats System (v3.9.7)
+
+Introduces a dynamic physical trauma tracking system ("Scars of the Defeated") coupled with an on-the-fly "Effective Stats" calculator, eliminating direct stat-mutating bugs and adding rich risk-reward gameplay layers:
+
+- **Battle Injuries & Dynamic Scar Scaling**:
+  - When the player takes severe, high-damage blows (dealing $\ge 12$ HP) or falls below 35% health, the combat system triggers a potential scar acquisition roll (`evaluateScarAcquisition`).
+  - Scars are categorized by severity levels: Minor, Major, Grave, and Legendary, pulling templates dynamically from a centralized database.
+- **Fresh (Healing) vs. Healed (Old) Healing Mechanics**:
+  - Newly acquired scars start in a **Fresh (Healing)** state, carrying an active countdown of **25 turns** to fully mend.
+  - While Fresh, the wound is tender and inflamed, inflicting negative stat modifiers (e.g., *Jagged Cheek Gash* inflicts `-1 Charisma`; *Shattered Left Ear* inflicts `-1 Defense`; *Shattered Ribcage Dent* inflicts `-4 Max HP` and `-1 Strength`).
+  - Once the 25-turn recovery cycle completes, the scar becomes **Healed (Old)**, hardening the adventurer and granting permanent mended bonuses (e.g., *Jagged Cheek Gash* grants `+1 Attack`; *Shattered Left Ear* grants `+1 Luck`; *Shattered Ribcage Dent* grants `+2 Defense`).
+- **Real-Time On-the-Fly Attribute Calculations (`getEffectiveStats`)**:
+  - To prevent glitches and permanent stat decay, the game engine calculates player attributes on-the-fly. The `getEffectiveStats` utility intercepts all stat access, computing modifications from scars, gear, and temporary curses dynamically.
+  - **Combat & Vitals Integration**: Player weapon attacks, defense ratings, spell damage, and maximum health pools recalculate dynamically based on active scar statuses during each combat tick.
+  - **Carrying Capacity Weight Sync**: Maximum carry limits automatically scale with effective Strength, meaning fresh muscle tears or collarbone fractures reduce inventory capacity temporarily until they heal.
+  - **Character Sheet Visual Feedback**: The character dashboard highlights active base values alongside responsive, color-coded effective values (green for buffs, red for penalties), displaying scar details, healing countdowns, and active status labels.
+- **Sovereign Creator Lab Manipulation**:
+  - Integrates direct battle trauma controls in the God Panel's Creator Lab tab, letting testers manually apply, test, or trigger any of the 24 unique battle scars instantly.
+
+---
+
+## 38. The Over-Forging Heat Gauge & Bellows System (v3.9.12)
+
+Introduces a high-stakes Over-Forging Bellows system across weapon forging, mutation, and equipment upgrades:
+
+- **Interactive Bellows Heat Control**: Players can set or pump the Over-Forging Heat level (0% to 100%) prior to crafting, mutating, or upgrading gear.
+- **Scaling Power Multipliers**: High heat scales equipment stats up to **2.25x** (+125% power) and unlocks divine "God-Forged" item titles and legendary prefixes.
+- **Shatter Risk & Anvil Recoil**: High heat increases the risk of equipment shattering (up to 65% at max heat) yielding scrap material, and inflicts anvil heat recoil damage (up to 15 HP) on player HP upon crafting.
+- **Modular Workbench Integration**: Extracted into `OverforgeGauge.tsx` and seamlessly integrated into Forge Equipment, Mutation Forge, and Upgrade Gear panels inside `CraftingPanel.tsx`.
+
+---
+
+## 39. Modular Engine Architecture & Discard Gump Modal (v3.9.13)
+
+Modularized core crafting systems, introduced an interactive fantasy-styled item disposal modal, guaranteed scroll stackability, and updated developer guides:
+
+- **Interactive Discard & Drop Gump Modal (`DiscardItemModal.tsx`)**: Built a retro fantasy-styled Gump modal for dropping or destroying items, supporting stack quantity sliders and physical ground loot placement.
+- **Stackable Spell Scroll Systems**: Guaranteed that all scroll items (Recall, Fireball, Teleport, etc.) are fully stackable in inventory slots with quantity tracking.
+- **Comprehensive Developer Documentation**: Updated `DEVELOPERS.md`, `FEATURES.md`, `README.md`, `VERSIONS.md`, and `todo.md` with clear instructions for adding custom items, recipes, weather, enemies, and structures.
+
+---
+
+## 40. Unstable Mutation "Synergy Chains" & Dual-Element Infusion (v3.9.14)
+
+Engineered a modular Unstable Mutation Synergy Chain system allowing gear to accumulate elemental catalysts, unlocking 10+ dual-element synergy traits, chain tiers, and strain gauges:
+
+- **Dual-Element Synergy Traits (`mutationSynergy.ts`)**: Infusing multiple elemental catalysts (Fire, Frost, Lightning, Shadow, Poison) unlocks named dual-element synergy traits such as *Thermal Shock*, *Plasma Arc*, *Hellfire Singularity*, and *Corrosive Blight*.
+- **Multi-Tier Chain Progression**: Successive mutations build Chain Levels (Lv 1 to Lv 10). Chain Lv 3 triggers Supercritical Resonance (+25% power bonus), while Chain Lv 5+ unlocks Omega Chaos Overcharge (+50% power bonus).
+- **Interactive Mutation Synergy Panel (`MutationSynergyPanel.tsx`)**: Displays infused elemental catalyst chips, active synergy traits, power multiplier forecasts, and a dynamic Mutagenic Strain Gauge (0% to 100%).
+- **State & Inventory Integration**: Mutated items persist `synergyCatalysts`, `synergyTitle`, `mutationStrain`, and traits across player saves and item tooltips.
+
+---
+
+## 41. Portable Blacksmith Anvil & Field Station Adjacency (v3.9.15)
+
+Implemented a deployable Blacksmith Anvil structure allowing players to forge, mutate, and upgrade equipment anywhere in the field:
+
+- **Craftable Anvil Structure**: Craftable in the *Survival* tab using 5x Tempered Iron and 2x Scrap Wood. Deploys a solid Anvil tile (`⚒️`) at an adjacent map position.
+- **Station Adjacency Requirements**: Forging weapons, mutating equipment, and upgrading gear require standing adjacent to a Blacksmith Anvil (`⚒️`) when in the field, or visiting Town. Clear informational banners guide players when away from a forge station.
+- **Developer Cheats Integration**: Added an instant "Anvil (⚒️)" spawn button inside the Developer God Panel console (`GodPanelOverlay.tsx`) for rapid testing.
+- **Map & AI Collisions**: Fully integrated `TileType.Anvil` into pathfinding (`ai.ts`), collision detection, mini-map rendering (`ChunkMinimap.tsx`), and sprite/glyph engine (`GameCanvas.tsx`).
+

@@ -1,0 +1,45 @@
+{
+  "creator_notes": "Welcome to the game configuration database! You can adjust any value here to easily customize the game balance, starting attributes, level up coefficients, or item drop scaling without touching complex TypeScript state code.",
+  
+  "startingPlayerStats": {
+    "hp": 80,
+    "maxHp": 80,
+    "mp": 30,
+    "maxMp": 30,
+    "level": 1,
+    "xp": 0,
+    "nextLevelXp": 100,
+    "gold": 30,
+    "atk": 1,
+    "def": 1,
+    "str": 10,
+    "dex": 10,
+    "int": 10,
+    "cha": 10,
+    "lck": 10,
+    "unspentPoints": 5,
+    "scoutingLevel": 1,
+    "scoutingXp": 0
+  },
+
+  "levelUpBonuses": {
+    "maxHp": 18,
+    "maxMp": 6,
+    "atk": 1,
+    "def": 1,
+    "attributePoints": 5,
+    "xpThresholdMultiplier": 1.5
+  },
+
+  "craftingAndGathering": {
+    "treeWoodShedLimit": 10,
+    "miningLootChance": 0.35,
+    "berryBushLootMax": 3
+  },
+
+  "worldRates": {
+    "equipmentDropRateBonusPerLuck": 0.03,
+    "enemyBaseDamageMultiplier": 1.0,
+    "townShopDiscountRatePerCharisma": 0.015
+  }
+}

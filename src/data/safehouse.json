@@ -1,0 +1,22 @@
+{
+  "id": "wilderness_safehouse",
+  "name": "Wilderness Safehouse",
+  "description": "A secure wilderness shelter containing a comfortable bed, warm campfire, solid brick walls, and a wood floor.",
+  "emoji": "⛺",
+  "width": 5,
+  "height": 5,
+  "grid": [
+    "#####",
+    "#F.B#",
+    "#...#",
+    "#...#",
+    "##D##"
+  ],
+  "legend": {
+    "#": "Wall",
+    ".": "Floor",
+    "F": "Campfire",
+    "B": "Bed",
+    "D": "Door"
+  }
+}

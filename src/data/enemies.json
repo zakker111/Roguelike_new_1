@@ -1,0 +1,242 @@
+{
+  "Deer": {
+    "name": "Wild Meadow Deer",
+    "baseHp": 12,
+    "baseAtk": 0,
+    "baseDef": 0,
+    "range": 1,
+    "speed": 0.8,
+    "char": "🦌",
+    "color": "#fb923c"
+  },
+  "Boar": {
+    "name": "Sunder Forest Boar",
+    "baseHp": 18,
+    "baseAtk": 2,
+    "baseDef": 1,
+    "range": 1,
+    "speed": 1.1,
+    "char": "🐗",
+    "color": "#a16207"
+  },
+  "Goat": {
+    "name": "Mountain Billy Goat",
+    "baseHp": 10,
+    "baseAtk": 1,
+    "baseDef": 0,
+    "range": 1,
+    "speed": 0.9,
+    "char": "🐐",
+    "color": "#e2e8f0"
+  },
+  "Bandit": {
+    "name": "Outlaw Bandit",
+    "baseHp": 18,
+    "baseAtk": 4,
+    "baseDef": 1,
+    "range": 1,
+    "speed": 1.0,
+    "char": "B",
+    "color": "#f43f5e"
+  },
+  "Troll": {
+    "name": "Cave Troll",
+    "baseHp": 45,
+    "baseAtk": 7,
+    "baseDef": 4,
+    "range": 1,
+    "speed": 1.5,
+    "char": "T",
+    "color": "#10b981"
+  },
+  "Trapmaster": {
+    "name": "Kobold Trapsmith",
+    "baseHp": 22,
+    "baseAtk": 4,
+    "baseDef": 2,
+    "range": 3,
+    "speed": 1.0,
+    "char": "K",
+    "color": "#22c55e"
+  },
+  "OrcBrute": {
+    "name": "Orc Skullbreaker",
+    "baseHp": 30,
+    "baseAtk": 6,
+    "baseDef": 3,
+    "range": 1,
+    "speed": 1.3,
+    "char": "O",
+    "color": "#ea580c"
+  },
+  "SkeletonMage": {
+    "name": "Skeleton Spellflinger",
+    "baseHp": 14,
+    "baseAtk": 4,
+    "baseDef": 0,
+    "range": 4,
+    "speed": 1.0,
+    "char": "S",
+    "color": "#60a5fa"
+  },
+  "Goblin": {
+    "name": "Scavenger Goblin",
+    "baseHp": 12,
+    "baseAtk": 2,
+    "baseDef": 1,
+    "range": 1,
+    "speed": 1.0,
+    "char": "g",
+    "color": "#eab308"
+  },
+  "Rat": {
+    "name": "Giant Plague Rat",
+    "baseHp": 6,
+    "baseAtk": 1,
+    "baseDef": 0,
+    "range": 1,
+    "speed": 1.0,
+    "char": "r",
+    "color": "#a1a1aa"
+  },
+  "LootGoblin": {
+    "name": "Alchemical Loot Goblin",
+    "baseHp": 25,
+    "baseAtk": 0,
+    "baseDef": 2,
+    "range": 1,
+    "speed": 0.8,
+    "char": "🧚",
+    "color": "#facc15"
+  },
+  "Ghost": {
+    "name": "Wraith of the Depths",
+    "baseHp": 14,
+    "baseAtk": 3,
+    "baseDef": 5,
+    "range": 2,
+    "speed": 0.9,
+    "char": "👻",
+    "color": "#818cf8"
+  },
+  "Vampire": {
+    "name": "Fledgling Vampire",
+    "baseHp": 24,
+    "baseAtk": 5,
+    "baseDef": 1,
+    "range": 1,
+    "speed": 0.8,
+    "char": "🧛",
+    "color": "#f43f5e"
+  },
+  "Slime": {
+    "name": "Caustic Acid Slime",
+    "baseHp": 18,
+    "baseAtk": 3,
+    "baseDef": 2,
+    "range": 1,
+    "speed": 1.2,
+    "char": "🧼",
+    "color": "#10b981"
+  },
+  "Spider": {
+    "name": "Sunder Webspinner",
+    "baseHp": 15,
+    "baseAtk": 3,
+    "baseDef": 1,
+    "range": 2,
+    "speed": 0.9,
+    "char": "🕷️",
+    "color": "#fb923c"
+  },
+  "Necromancer": {
+    "name": "Acolyte Necromancer",
+    "baseHp": 20,
+    "baseAtk": 4,
+    "baseDef": 1,
+    "range": 4,
+    "speed": 1.1,
+    "char": "🧙",
+    "color": "#a855f7"
+  },
+  "DreadKnight": {
+    "name": "Dread Iron Warden",
+    "baseHp": 35,
+    "baseAtk": 5,
+    "baseDef": 5,
+    "range": 1,
+    "speed": 1.2,
+    "char": "⛓️",
+    "color": "#94a3b8"
+  },
+  "Dragon": {
+    "name": "Sunder Ashwyrm Dragon",
+    "baseHp": 120,
+    "baseAtk": 11,
+    "baseDef": 6,
+    "range": 3,
+    "speed": 1.2,
+    "char": "🐉",
+    "color": "#ef4444"
+  },
+  "Hiisi": {
+    "name": "Hiisi Forest Fiend",
+    "baseHp": 25,
+    "baseAtk": 5,
+    "baseDef": 2,
+    "range": 1,
+    "speed": 1.0,
+    "char": "👹",
+    "color": "#16a34a"
+  },
+  "Nakki": {
+    "name": "Näkki Water Kelpie",
+    "baseHp": 22,
+    "baseAtk": 4,
+    "baseDef": 1,
+    "range": 2,
+    "speed": 0.9,
+    "char": "🧜",
+    "color": "#06b6d4"
+  },
+  "Otso": {
+    "name": "Otso the Honey-Paw",
+    "baseHp": 180,
+    "baseAtk": 12,
+    "baseDef": 7,
+    "range": 1,
+    "speed": 1.1,
+    "char": "🐻",
+    "color": "#b45309"
+  },
+  "Louhi": {
+    "name": "Louhi, Mistress of Pohjola",
+    "baseHp": 260,
+    "baseAtk": 15,
+    "baseDef": 10,
+    "range": 4,
+    "speed": 0.8,
+    "char": "🦅",
+    "color": "#c084fc"
+  },
+  "IkuTurso": {
+    "name": "Iku-Turso Eternal Leviathan",
+    "baseHp": 200,
+    "baseAtk": 14,
+    "baseDef": 8,
+    "range": 2,
+    "speed": 1.0,
+    "char": "🦑",
+    "color": "#0ea5e9"
+  },
+  "Kalma": {
+    "name": "Kalma Grave Goddess",
+    "baseHp": 90,
+    "baseAtk": 8,
+    "baseDef": 4,
+    "range": 3,
+    "speed": 0.9,
+    "char": "💀",
+    "color": "#a855f7"
+  }
+}

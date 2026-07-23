@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cat_fire",
+    "name": "Ignition Core",
+    "description": "Seethes with persistent burning heat.",
+    "type": "Fire",
+    "color": "#f97316",
+    "damageType": "Fire",
+    "statusEffectChance": 0.35,
+    "statusDuration": 3
+  },
+  {
+    "id": "cat_frost",
+    "name": "Everfrost Shard",
+    "description": "Cooled directly in glacial vaults to freeze targets.",
+    "type": "Frost",
+    "color": "#38bdf8",
+    "damageType": "Frost",
+    "statusEffectChance": 0.40,
+    "statusDuration": 2
+  },
+  {
+    "id": "cat_poison",
+    "name": "Viper Poison Sap",
+    "description": "Distilled acid secretion causing severe continuous neurotoxin reaction.",
+    "type": "Poison",
+    "color": "#22c55e",
+    "damageType": "Poison",
+    "statusEffectChance": 0.45,
+    "statusDuration": 4
+  },
+  {
+    "id": "cat_lightning",
+    "name": "Volt Amber Clump",
+    "description": "Vibrates with voltage static, ready to shock.",
+    "type": "Lightning",
+    "color": "#eab308",
+    "damageType": "Lightning",
+    "statusEffectChance": 0.30,
+    "statusDuration": 1
+  },
+  {
+    "id": "cat_shadow",
+    "name": "Null Echo Stone",
+    "description": "Absorbs surrounding light, blinding targets who look upon it.",
+    "type": "Shadow",
+    "color": "#a855f7",
+    "damageType": "Shadow",
+    "statusEffectChance": 0.25,
+    "statusDuration": 3
+  }
+]

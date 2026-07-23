@@ -1,0 +1,92 @@
+[
+  {
+    "id": "scroll_spell_pyro_firestorm",
+    "name": "Scroll of Pyro Firestorm 🔥",
+    "color": "#f97316",
+    "description": "An ancient fire magic scroll. Deals massive fire damage and ignites enemies, dealing 6 damage/turn for 4 turns. Consumes 20 MP to cast on any enemy in sight.",
+    "value": 120,
+    "mpCost": 20,
+    "baseDamage": 35,
+    "element": "Fire",
+    "debuff": {
+      "type": "Fire",
+      "duration": 4,
+      "damagePerTurn": 6
+    },
+    "combos": [
+      {
+        "onDebuff": "Frost",
+        "bonusDamage": 20,
+        "effectText": "💧 STEAM BLAST! +20",
+        "logMessage": "was Frozen/Chilled, and your Scroll Inferno vaporized the ice! Deals +20 bonus damage!"
+      },
+      {
+        "onDebuff": "Poison",
+        "bonusDamage": 20,
+        "effectText": "💥 COMBUSTION! +20",
+        "logMessage": "was Poisoned, and your Scroll Inferno ignited the noxious fumes! Deals +20 bonus damage!"
+      }
+    ],
+    "recipe": {
+      "materials": { "mat_obsidian": { "name": "Obsidian Shard", "required": 1 } },
+      "catalysts": { "cat_fire": { "name": "Fire Catalyst", "required": 1 } }
+    },
+    "successMsgText": "📜 [ARCANUM CRAFT]: You fuse an Obsidian Glass Shard and a Pyrotactile Fire Catalyst into a glowing Scroll of Pyro Firestorm!"
+  },
+  {
+    "id": "scroll_spell_tide_wave",
+    "name": "Scroll of Tide Wave 🌊",
+    "color": "#38bdf8",
+    "description": "A high-tier water/ice magic scroll. Deals high frost damage and freezes enemies, dealing 3 damage/turn and slowing them for 3 turns. Consumes 20 MP to cast on any enemy in sight.",
+    "value": 120,
+    "mpCost": 20,
+    "baseDamage": 35,
+    "element": "Frost",
+    "debuff": {
+      "type": "Frost",
+      "duration": 3,
+      "damagePerTurn": 3
+    },
+    "combos": [
+      {
+        "onDebuff": "Fire",
+        "bonusDamage": 20,
+        "effectText": "💧 THERMAL SHOCK! +20",
+        "logMessage": "was Burning, and your Tidal Wave rapidly cooled their flesh! Deals +20 bonus damage!"
+      }
+    ],
+    "recipe": {
+      "materials": { "mat_iron": { "name": "Iron Ore", "required": 1 } },
+      "catalysts": { "cat_frost": { "name": "Ice Catalyst", "required": 1 } }
+    },
+    "successMsgText": "📜 [ARCANUM CRAFT]: You fuse an Iron Alloy Ore and a Cryo-forged Ice Catalyst into a crystal-clear Scroll of Tide Wave!"
+  },
+  {
+    "id": "scroll_spell_noxious_swarm",
+    "name": "Scroll of Noxious Swarm ☣️",
+    "color": "#10b981",
+    "description": "A noxious alchemical scroll. Deals high poison damage and severely poisons enemies, dealing 4 damage/turn for 5 turns. Consumes 20 MP to cast on any enemy in sight.",
+    "value": 120,
+    "mpCost": 20,
+    "baseDamage": 35,
+    "element": "Poison",
+    "debuff": {
+      "type": "Poison",
+      "duration": 5,
+      "damagePerTurn": 4
+    },
+    "combos": [
+      {
+        "onDebuff": "Fire",
+        "bonusDamage": 20,
+        "effectText": "💥 COMBUSTION! +20",
+        "logMessage": "was Burning, and your Noxious Swarm triggered a volatile combustion! Deals +20 bonus damage!"
+      }
+    ],
+    "recipe": {
+      "materials": { "mat_wood": { "name": "Driftwood", "required": 1 } },
+      "catalysts": { "cat_poison": { "name": "Poison Catalyst", "required": 1 } }
+    },
+    "successMsgText": "📜 [ARCANUM CRAFT]: You weave Driftwood Timber and a Venom-stung Gas Catalyst into a toxic-vapored Scroll of Noxious Swarm!"
+  }
+]

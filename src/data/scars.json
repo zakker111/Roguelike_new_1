@@ -1,0 +1,242 @@
+[
+  {
+    "name": "Jagged Cheek Gash",
+    "description": "A thick, raised crimson ridge stretching diagonally across your left cheek. It gives you the hardened look of a seasoned vanguard.",
+    "icon": "⚔️",
+    "severity": "Minor",
+    "freshEffect": "Tender, throbbing tissue. -1 Charisma.",
+    "healedEffect": "Hardened vanguard smirk. +1 Attack.",
+    "freshModifiers": { "cha": -1 },
+    "healedModifiers": { "atk": 1 }
+  },
+  {
+    "name": "Shattered Left Ear",
+    "description": "A portion of your upper ear cartilage was torn or hacked off in a close-quarters struggle. It throbs faintly when frost sets in.",
+    "icon": "👂",
+    "severity": "Minor",
+    "freshEffect": "Constant ringing and disorientation. -1 Defense.",
+    "healedEffect": "Vigilant instinct. +1 Luck.",
+    "freshModifiers": { "def": -1 },
+    "healedModifiers": { "lck": 1 }
+  },
+  {
+    "name": "Crushed Collarbone Ridge",
+    "description": "A crooked, calcified bump where your clavicle snapped and mended slightly misaligned. Creaks under heavy physical stress.",
+    "icon": "🦴",
+    "severity": "Minor",
+    "freshEffect": "Pain when carrying weight or pulling bows. -1 Strength.",
+    "healedEffect": "Calcified and reinforced bone structure. +1 Defense.",
+    "freshModifiers": { "str": -1 },
+    "healedModifiers": { "def": 1 }
+  },
+  {
+    "name": "Tundra Frostbite Patches",
+    "description": "A patch of dull, insensitive skin across your right shoulder from exposure or exposure to magical ice. Faint and numb.",
+    "icon": "❄️",
+    "severity": "Minor",
+    "freshEffect": "Poor circulation and numbing chills. -2 Max HP.",
+    "healedEffect": "Hardened skin acclimated to cold. +5 Max HP.",
+    "freshModifiers": { "maxHp": -2 },
+    "healedModifiers": { "maxHp": 5 }
+  },
+  {
+    "name": "Sovereign Rift Singe Mark",
+    "description": "A swirling spiral of darkened, purple scorched skin left behind by spatial rifts or void magic. Faintly hums beneath the starlight.",
+    "icon": "🌌",
+    "severity": "Major",
+    "freshEffect": "Void whispers in your mind. -1 Intelligence.",
+    "healedEffect": "Cosmic attunement. +2 Intelligence.",
+    "freshModifiers": { "int": -1 },
+    "healedModifiers": { "int": 2 }
+  },
+  {
+    "name": "Beast Fang Puncture",
+    "description": "Four deep, circular scar rings on your forearm from a savage teeth sink. The skin around them is thick, pale, and tight.",
+    "icon": "🐺",
+    "severity": "Major",
+    "freshEffect": "Stiffness and forearm muscle spasms. -1 Dexterity.",
+    "healedEffect": "Beast-hunting reflexes. +1 Attack.",
+    "freshModifiers": { "dex": -1 },
+    "healedModifiers": { "atk": 1 }
+  },
+  {
+    "name": "Jagged Abdominal Gash",
+    "description": "A long, silver-white line of scar tissue crossing your stomach. You can feel the muscle tension tighten when pulling heavy bows.",
+    "icon": "🪵",
+    "severity": "Major",
+    "freshEffect": "Unstable core; heavy breathing hurts. -3 Max HP.",
+    "healedEffect": "Ironcore mended fibers. +8 Max HP.",
+    "freshModifiers": { "maxHp": -3 },
+    "healedModifiers": { "maxHp": 8 }
+  },
+  {
+    "name": "Searing Acid Splash",
+    "description": "A mottled, textured pattern of pale skin running down your neck, resembling a frozen liquid splash. Restores memories of green vapor.",
+    "icon": "🧪",
+    "severity": "Major",
+    "freshEffect": "Mottled acid burns weep. -1 Charisma.",
+    "healedEffect": "Leathery, resilient collar-skin. +1 Defense.",
+    "freshModifiers": { "cha": -1 },
+    "healedModifiers": { "def": 1 }
+  },
+  {
+    "name": "Shadow Mark of the Void",
+    "description": "An ink-dark, starburst-like imprint on your chest over your heart. Fades to deep blue when nearby dark or hostile anomalies approach.",
+    "icon": "🖤",
+    "severity": "Grave",
+    "freshEffect": "Abyssal pull drains your soul. -2 Max MP, -1 Luck.",
+    "healedEffect": "Infused void energy. +2 Strength, +2 Intelligence.",
+    "freshModifiers": { "maxMp": -2, "lck": -1 },
+    "healedModifiers": { "str": 2, "int": 2 }
+  },
+  {
+    "name": "Blind Right Eye (Leathery Patch)",
+    "description": "A brutal strike permanently clouded your right eye, which you now keep covered with a weathered leather patch. (Will restrict future FOV).",
+    "icon": "👁️",
+    "severity": "Grave",
+    "freshEffect": "Terrible depth perception and vertigo. -2 Dexterity.",
+    "healedEffect": "Salty legendary swagger. +3 Defense, +2 Luck.",
+    "freshModifiers": { "dex": -2 },
+    "healedModifiers": { "def": 3, "lck": 2 }
+  },
+  {
+    "name": "Obsidian Shard Fragment",
+    "description": "A dark, glass-sharp sliver of obsidian remained embedded deep near your collarbone. Extricating it is too dangerous; it glints slightly.",
+    "icon": "💎",
+    "severity": "Grave",
+    "freshEffect": "Sliver grinds painfully with arm movement. -1 Strength, -1 Dexterity.",
+    "healedEffect": "Shard channels kinetic shock. +2 Attack.",
+    "freshModifiers": { "str": -1, "dex": -1 },
+    "healedModifiers": { "atk": 2 }
+  },
+  {
+    "name": "Grizzled Eyebrow Split",
+    "description": "A clean vertical part in your left eyebrow where a dagger tip grazed too close. It adds a permanently focused, rogueish glint to your eyes.",
+    "icon": "🤨",
+    "severity": "Minor",
+    "freshEffect": "Tender skin under eyebrow. -1 Charisma.",
+    "healedEffect": "Strikingly focused charm. +1 Dexterity, +1 Charisma.",
+    "freshModifiers": { "cha": -1 },
+    "healedModifiers": { "dex": 1, "cha": 1 }
+  },
+  {
+    "name": "Wyrm Breath Vapor Burn",
+    "description": "A patch of iridescent, shimmering heat scales across your shoulder blade, memento of an encounter with extreme mystical flames.",
+    "icon": "🐉",
+    "severity": "Major",
+    "freshEffect": "Severe blistering and heat sensitivity. -4 Max HP.",
+    "healedEffect": "Dragon-scale dermal insulation. +1 Defense, +6 Max HP.",
+    "freshModifiers": { "maxHp": -4 },
+    "healedModifiers": { "def": 1, "maxHp": 6 }
+  },
+  {
+    "name": "Spectral Lich Shiver Curse",
+    "description": "A pale, perpetually chilled scar ring around your wrist. It leaves the skin icy to the touch and slightly clouds nearby light.",
+    "icon": "💀",
+    "severity": "Grave",
+    "freshEffect": "Bone-chilling cold drains mana pathways. -3 Max MP.",
+    "healedEffect": "Spectral mana resonance. +6 Max MP.",
+    "freshModifiers": { "maxMp": -3 },
+    "healedModifiers": { "maxMp": 6 }
+  },
+  {
+    "name": "Heart of the Abyss Seal",
+    "description": "A blazing, star-shaped brand over your breastbone, earned by descending deep into the roots of Sunder. Pulsates with void power.",
+    "icon": "🖤",
+    "severity": "Legendary",
+    "freshEffect": "Void madness clouds premonitions. -2 Luck.",
+    "healedEffect": "Absolute abyssal domination. +3 Strength, +3 Intelligence.",
+    "freshModifiers": { "lck": -2 },
+    "healedModifiers": { "str": 3, "int": 3 }
+  },
+  {
+    "name": "Celestial Crest Alignment",
+    "description": "A brilliant, faint golden seal that burned itself onto your hand during a legendary duel. Glows with a celestial warmth.",
+    "icon": "⚜️",
+    "severity": "Legendary",
+    "freshEffect": "Golden skin is raw and tender. -1 Attack.",
+    "healedEffect": "Divine stellar favor. +2 Luck, +2 Intelligence.",
+    "freshModifiers": { "atk": -1 },
+    "healedModifiers": { "lck": 2, "int": 2 }
+  },
+  {
+    "name": "Rusty Trap Bolt Gash",
+    "description": "A jagged horizontal slash across your thigh from a rusty spring-trap. It still aches when storm clouds brew.",
+    "icon": "⚙️",
+    "severity": "Minor",
+    "freshEffect": "Limping and slow movement reflexes. -1 Dexterity.",
+    "healedEffect": "Hyper-vigilant reflexes. +1 Dexterity.",
+    "freshModifiers": { "dex": -1 },
+    "healedModifiers": { "dex": 1 }
+  },
+  {
+    "name": "Gilded Ghoul Bite",
+    "description": "A double-crescent puncture mark from a high-tier dungeon ghoul. The wound mended into an ash-grey circular scar.",
+    "icon": "🧟",
+    "severity": "Major",
+    "freshEffect": "Necrotic fever and muscle fatigue. -2 Max HP, -1 Strength.",
+    "healedEffect": "Marrow toxin resistance. +5 Max HP, +1 Luck.",
+    "freshModifiers": { "maxHp": -2, "str": -1 },
+    "healedModifiers": { "maxHp": 5, "lck": 1 }
+  },
+  {
+    "name": "Shattered Ribcage Dent",
+    "description": "A deep hollow in your lower ribs from a crushing warhammer blow. The bones fused into a steel-like calcified defense.",
+    "icon": "🛡️",
+    "severity": "Grave",
+    "freshEffect": "Severely restricted shallow breathing. -4 Max HP, -1 Strength.",
+    "healedEffect": "Impenetrable bony shield. +2 Defense.",
+    "freshModifiers": { "maxHp": -4, "str": -1 },
+    "healedModifiers": { "def": 2 }
+  },
+  {
+    "name": "Basilisk Gaze Calcification",
+    "description": "A hardened, grey scales patch over your forearm left by petrifying vapors. It is heavy but dense.",
+    "icon": "🦎",
+    "severity": "Grave",
+    "freshEffect": "Flesh is heavy, sluggish, and grey. -2 Dexterity, -1 Strength.",
+    "healedEffect": "Living stone protection. +3 Defense.",
+    "freshModifiers": { "dex": -2, "str": -1 },
+    "healedModifiers": { "def": 3 }
+  },
+  {
+    "name": "Deep Swamp Rot Blisters",
+    "description": "Irregular circular scars from navigating caustic swamp waters in Sunder. The skin has mended into thick calluses.",
+    "icon": "🤢",
+    "severity": "Minor",
+    "freshEffect": "Oozing raw blisters and burning skin. -2 Max HP.",
+    "healedEffect": "Swamp pathogen resilience. +3 Max HP.",
+    "freshModifiers": { "maxHp": -2 },
+    "healedModifiers": { "maxHp": 3 }
+  },
+  {
+    "name": "Iron Maiden Spike Scar",
+    "description": "A row of small, round scar dimples on your shoulders from surviving an iron torture cage. It hardened your resolve.",
+    "icon": "📌",
+    "severity": "Major",
+    "freshEffect": "Wounds bleed lightly with action. -3 Max HP.",
+    "healedEffect": "Slayer's pain tolerance. +1 Defense, +1 Attack.",
+    "freshModifiers": { "maxHp": -3 },
+    "healedModifiers": { "def": 1, "atk": 1 }
+  },
+  {
+    "name": "Kraken Harpoon Scrape",
+    "description": "A spiral, corded rope scar around your left arm, a reminder of grappling with leviathans.",
+    "icon": "🐙",
+    "severity": "Major",
+    "freshEffect": "Heavy rope burn restricts swings. -1 Dexterity, -1 Attack.",
+    "healedEffect": "Unbreakable sailor's grip. +2 Strength.",
+    "freshModifiers": { "dex": -1, "atk": -1 },
+    "healedModifiers": { "str": 2 }
+  },
+  {
+    "name": "Cursed Executioner's Rope Mark",
+    "description": "A dark, bruised necklace-like scar from escaping a bandit hangman. Surviving it made you incredibly lucky.",
+    "icon": "➰",
+    "severity": "Grave",
+    "freshEffect": "Coughing and tracheal swelling. -3 Max HP, -2 Max MP.",
+    "healedEffect": "Death-defying luck. +3 Luck.",
+    "freshModifiers": { "maxHp": -3, "maxMp": -2 },
+    "healedModifiers": { "lck": 3 }
+  }
+]

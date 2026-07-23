@@ -1,0 +1,250 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+// Core types for our immersive History and POI system
+export interface LoreChapter {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  unlockedAt: string; // Dynamic info showing where the player found it
+}
+
+export interface POIBlueprint {
+  type: 'monolith' | 'shrine' | 'hearth' | 'sunken_keep' | 'fossil';
+  name: string;
+  char: string;
+  color: string;
+  description: string;
+  historySnippet: string;
+  chapterId: string; // Unlocks this chapter in the History Log
+}
+
+export const WORLD_HISTORY_CHAPTERS: Record<string, { title: string; category: string; description: string; content: string }> = {
+  sunder_oakhaven: {
+    title: "Chapter I: The Primordial Egg of Creation",
+    category: "The Age of Genesis",
+    description: "The cosmic birth of Sunder from the duck's egg and Ukko's lightning sparks.",
+    content: "Before Sunder was carved into forests and molten depths, it was a boundless primordial ocean. Legend tells of the Golden-eye duck seeking a nesting place, landing upon the knee of the Water-Mother. Seven eggs were laid—six of gold, and one of iron. When they broke, the lower half of the shells became the loam and deep earth, the upper half became the high sky-dome, the whites became the silver moon, and the yolks shone as the golden sun. Ukko, the Great Sky-Father, struck his golden hammer, sending a spark of primal lightning down to ignite the cosmic forge, carving Sunder's first deep valleys and pristine lakes."
+  },
+  elven_diaspora: {
+    title: "Chapter II: The Ancient Rune-Singers",
+    category: "The Woodwarden Records",
+    description: "Of the silver elves who learned the cosmic Spell-Songs (Laulut) to bend nature.",
+    content: "During the Second Age, Silver Elves of Sunder discovered that everything—from the tall spruce to the hard iron—possesses an eternal Name. By learning these names, the ancient Rune-Singers of the forest could sing epic Spell-Songs to soothe wild beasts, mend shattered iron swords, or heal mortal wounds. They established the Whispering Leyline Shrines around pristine waters, keeping the secret spells of nature safe from the corrupting darkness of the swamp depths."
+  },
+  sunken_crown: {
+    title: "Chapter III: Ahti's Ocean Wrath",
+    category: "Medieval Dynasties",
+    description: "How King Kenneth's fortress drowned beneath the crystal tides of Ahti.",
+    content: "In the century of the Frost Wyrm, King Kenneth IV built a magnificent limestone citadel near the eastern water shelf. Arrogant in his defenses, he mocked Ahti, the ancient god of waves, and Vellamo, his sea-queen. In retribution, Ahti raised a thunderous tidal wave from the depths, reclaiming the stone fortress in a single night of stormy fury. Now known as the Sunken Keep, its stone columns rise from the swamp lakes, guarded by water-ghouls, holding locked royal hoard chests filled with Ahti's silver coins."
+  },
+  titan_conflict: {
+    title: "Chapter IV: The Song-Giant Antero Vipunen",
+    category: "The Mythos of Giants",
+    description: "Of the ancient giant who swallowed the bard and sleeps in the tundra.",
+    content: "The massive fossils clutting the snowy tundra are not mere ancient bones. They are the skeletal ribs of Antero Vipunen, the legendary song-giant who fell into a deep slumber under the earth, with pine trees growing over his massive stone belly. Ancient tales say Väinämöinen, seeking the three lost words of creation, descended into the giant's iron stomach and forged a smithy until the giant awoke and sang his epic runes of power. Touching these fossilized ribs allows a true explorer to hear the deep tectonic vibrations of Vipunen's ancient songs."
+  },
+  flame_lords_crucible: {
+    title: "Chapter V: The Volcanic Crucible of Pohjola",
+    category: "Subterranean Lore",
+    description: "Ilmarinen's hot geothermal ovens hidden deep in the desert mantle.",
+    content: "Deep beneath the scorching desert dunes lies the molten mantle of the world. Here, the great smith Ilmarinen first set up his colossal bellows and iron furnaces. Feeding on geothermal volcanic fissures, his smithy hammered raw iron, fire, and copper into legendary armaments. To this day, the active Altar of the Flame Lord serves as a conduit of Ilmarinen's cosmic forge, allowing brave heroes to reinforce their weapons, provided they show respect to the fire-spirit of the earth."
+  },
+  kalevala_sampo: {
+    title: "Chapter VI: The Forging of the Sampo",
+    category: "The Cosmic Talisman",
+    description: "Ilmarinen's masterwork that grinds endless wealth out of thin air.",
+    content: "Desperate to win the favor of the Northland, the eternal blacksmith Ilmarinen agreed to forge the Sampo—a miraculous cosmic mill with a lid of many colors. For three days, his bellows blew: on the first day came a golden crossbow, on the second a silver boat, on the third a golden heifer. Finally, on the fourth day, the Sampo was born. It ground corn from one side, salt from another, and gold from the third, filling chests of endless prosperity. When the Sampo was shattered in the great battle at sea, its glowing fragments scattered across Sunder's forests, blessing the land with passive mineral veins."
+  },
+  tapio_realm: {
+    title: "Chapter VII: Tapio's Evergreen Kingdom",
+    category: "The Forest Spirit Lord",
+    description: "The deep woods of Tapio and the gentle goddess Mielikki.",
+    content: "The dense forests of Sunder are governed by Tapio, the King of the Woods, who wears a coat of moss and a beard of spruce needles. Beside him is Mielikki, his soft-handed queen, who heals injured wildlife and fills hunters' bags with sweet wild honey and forest berries. Those who walk through the forest with humbleness are blessed with Tapio's safe-passage; those who burn trees or slaughter animals needlessly are lead astray by mischievous wood-sprites into bottomless swamps."
+  },
+  tuonela_river: {
+    title: "Chapter VIII: The Swan of Tuonela",
+    category: "The Realm of Death",
+    description: "The dark, boiling river of the underworld and the silver swan.",
+    content: "Deep in the bottomless caverns of Sunder flows the black, boiling river of Tuonela, the land of the dead. Swimming on its dark waters is the legendary Swan of Tuonela, a magnificent creature of pure silver light whose song can send any mortal into an eternal, peaceful sleep. Warriors seeking to conquer the Abyss must cross this river, braving the shadow-spirits and toxic gas geysers to reach the ultimate molten chambers."
+  },
+  ukko_fire: {
+    title: "Chapter IX: Ukko's Golden Hammer",
+    category: "The Sky-Father's Spark",
+    description: "Ukko Ylijumala's lightning strikes and the first seed of fire.",
+    content: "Ukko, the high god of the sky and thunder, watches Sunder from the heavenly dome. Wielding his burning golden axe and his thunder-hammer, he strikes down evil spirits that crawl from the deep caverns. Legend says that during a great dark winter, Ukko struck a spark of fire in the sky, which fell down through the clouds into the deep Alinen underworld, becoming the first seed of fire that blacksmiths used to tame iron."
+  },
+  louhi_shadow: {
+    title: "Chapter X: Louhi's Northland Frost",
+    category: "The Mistress of Pohjola",
+    description: "The cold winters and the lock of the sun from the Northland.",
+    content: "From the icy tundra of the far north comes Louhi, the clever Mistress of Pohjola. Wielding powerful dark sorcery, she is said to have locked the sun and moon inside a steel mountain and stolen fire from Sunder, leaving the world in a bitter, eternal winter. Only by singing the epic rune-songs and braving the frost-weaver titans can heroes hope to retrieve the keys to Louhi's icy vaults and restore the spring sun."
+  }
+};
+
+export const POI_BLUEPRINTS: Record<string, POIBlueprint> = {
+  monolith: {
+    type: 'monolith',
+    name: "Väinämöinen's Rune Stone",
+    char: '🗿',
+    color: '#818cf8',
+    description: "A monumental ancient stone inscribed with primeval runes of power. It vibrates with the Spell-Songs of the Eternal Bard.",
+    historySnippet: "Inscribed in copper: 'Out of the song-weaver's voice, the world was born.'",
+    chapterId: 'sunder_oakhaven'
+  },
+  shrine: {
+    type: 'shrine',
+    name: "Tapio's Evergreen Grove",
+    char: '⛲',
+    color: '#10b981',
+    description: "A tranquil marble structure blessed by Tapio, King of the Forest. The air smells of spruce and wild honey.",
+    historySnippet: "A spruce bark tablet: 'Respect the forest, and Tapio's cloak shall shield you.'",
+    chapterId: 'tapio_realm'
+  },
+  hearth: {
+    type: 'hearth',
+    name: "Forge of Ilmarinen",
+    char: '🔥',
+    color: '#f97316',
+    description: "A geothermal obsidian anvil honoring the eternal blacksmith who forged the dome of heaven.",
+    historySnippet: "A fiery rune carving: 'The steel must obey the fire, for I have forged the sky-dome.'",
+    chapterId: 'ilmarinen_forge'
+  },
+  sunken_keep: {
+    type: 'sunken_keep',
+    name: "The Gates of Tuonela",
+    char: '🏰',
+    color: '#38bdf8',
+    description: "Dark, skeletal archways rising from the black swamp waters, resembling the threshold of the dead.",
+    historySnippet: "A chilling plaque: 'The black river of Tuonela flows forever. Sing the spells of iron to cross.'",
+    chapterId: 'tuonela_river'
+  },
+  fossil: {
+    type: 'fossil',
+    name: "Ribs of Antero Vipunen",
+    char: '🦴',
+    color: '#e2e8f0',
+    description: "Gigantic fossilized ribs rising from the tundra, belonging to the sleeping song-giant.",
+    historySnippet: "A metallic resonance: 'He who lies under the frozen earth holds three hundred words of power.'",
+    chapterId: 'titan_conflict'
+  }
+};
+
+/**
+ * Dynamically returns a biome-aware, Finnish-lore-infused POI blueprint
+ */
+export function getPOIBlueprint(
+  pType: 'monolith' | 'shrine' | 'hearth' | 'sunken_keep' | 'fossil',
+  biome: string,
+  prngVal: number
+): POIBlueprint {
+  if (biome === 'forest') {
+    if (pType === 'shrine') {
+      return {
+        type: 'shrine',
+        name: "Tapio's Evergreen Grove",
+        char: '⛲',
+        color: '#15803d',
+        description: "A moss-draped wooden shrine dedicated to Tapio, the King of the Forest. The air hums with forest songs.",
+        historySnippet: "Spruce bark tablet: 'Respect the forest, and Tapio's green cloak shall shield you from the dark.'",
+        chapterId: 'tapio_realm'
+      };
+    } else {
+      // monolith
+      if (prngVal > 0.5) {
+        return {
+          type: 'monolith',
+          name: "Väinämöinen's Rune Stone",
+          char: '🗿',
+          color: '#818cf8',
+          description: "A monumental ancient stone inscribed with primeval runes. It vibrates with the Spell-Songs of the Eternal Bard.",
+          historySnippet: "Copper glyphs: 'Out of a duck's egg, the sky was formed. Out of the song-weaver's voice, the world was born.'",
+          chapterId: 'sunder_oakhaven'
+        };
+      } else {
+        return {
+          type: 'monolith',
+          name: "Shattered Sampo Fragment",
+          char: '✨',
+          color: '#f59e0b',
+          description: "A pulsating, geometric remnant of the legendary cosmic mill, half-buried in the soil, glowing with prosperity.",
+          historySnippet: "Gold plating: 'The Sampo was forged to bring endless corn, salt, and gold, but was shattered into the sea.'",
+          chapterId: 'kalevala_sampo'
+        };
+      }
+    }
+  } else if (biome === 'swamp') {
+    if (pType === 'sunken_keep') {
+      return {
+        type: 'sunken_keep',
+        name: "The Gates of Tuonela",
+        char: '🏰',
+        color: '#475569',
+        description: "Dark, skeletal stone archways rising from the black swamp waters, resembling the threshold to the land of the dead.",
+        historySnippet: "A chilling runic plaque: 'The black river of Tuonela flows forever. None cross unless they sing the spells of iron.'",
+        chapterId: 'tuonela_river'
+      };
+    } else {
+      // shrine
+      return {
+        type: 'shrine',
+        name: "Vellamo's Healing Spring",
+        char: '⛲',
+        color: '#06b6d4',
+        description: "A bubbling spring of pure water inside the murky swamp, blessed by Vellamo, the goddess of waves.",
+        historySnippet: "Water-carved words: 'Wash your scars in Vellamo's foam. The waters of the deep carry the memories of the elven age.'",
+        chapterId: 'elven_diaspora'
+      };
+    }
+  } else if (biome === 'tundra') {
+    if (pType === 'fossil') {
+      return {
+        type: 'fossil',
+        name: "Ribs of Antero Vipunen",
+        char: '🦴',
+        color: '#f1f5f9',
+        description: "Gigantic fossilized ribs rising from the frozen permafrost, belonging to the ancient giant sleeping beneath the soil.",
+        historySnippet: "A metallic resonance: 'He who lies under the frozen earth holds three hundred words of power. Awake him, and Sunder shall shake.'",
+        chapterId: 'titan_conflict'
+      };
+    } else {
+      // monolith
+      return {
+        type: 'monolith',
+        name: "Louhi's Frost Obelisk",
+        char: '🗿',
+        color: '#93c5fd',
+        description: "A spire of pure black obsidian encrusted with blue glacier ice, marking the frosty power of Louhi, Mistress of Pohjola.",
+        historySnippet: "Frozen text warns: 'From the Northland comes the cold that freezes the sun. Louhi commands the frost-giants to lock the sky.'",
+        chapterId: 'louhi_shadow'
+      };
+    }
+  } else {
+    // desert
+    if (pType === 'hearth') {
+      return {
+        type: 'hearth',
+        name: "Forge of Ilmarinen",
+        char: '🔥',
+        color: '#f97316',
+        description: "A massive obsidian forge anvil powered by deep volcanic vents, honoring the eternal smith who forged the heavens.",
+        historySnippet: "Fiery inscription: 'I forged the sky-dome with no marks of tongs, and no signs of hammers. The steel must obey the fire.'",
+        chapterId: 'ilmarinen_forge'
+      };
+    } else {
+      // fossil
+      return {
+        type: 'fossil',
+        name: "Ukko's Lightning Bolt",
+        char: '⚡',
+        color: '#eab308',
+        description: "A calcified, crackling column of petrified lightning, struck down by Ukko the Sky-Father in the ancient dawn of time.",
+        historySnippet: "A gold plate reads: 'Ukko's golden axe struck the basalt peaks, planting the first spark of iron and seed of fire.'",
+        chapterId: 'ukko_fire'
+      };
+    }
+  }
+}

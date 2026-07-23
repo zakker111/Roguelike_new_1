@@ -1,0 +1,167 @@
+[
+  {
+    "id": "crimson_heart",
+    "name": "Crimson Heart of the Sanctum",
+    "description": "A pulsing ruby core that leaks rejuvenating blood magic into your veins.",
+    "details": "+15 Max HP, and automatically regenerates 2 HP at the end of every active game turn.",
+    "icon": "❤️",
+    "rarity": "Common",
+    "color": "text-red-400",
+    "borderColor": "border-red-900/60",
+    "bgColor": "bg-gradient-to-br from-red-950/20 to-slate-900"
+  },
+  {
+    "id": "mana_battery",
+    "name": "Unstable Leyline Battery",
+    "description": "A crystalline sphere buzzing with highly condensed, crackling magical electricity.",
+    "details": "+10 Max MP, and all grimoire spells cost 3 less MP to cast (minimum cost remains 1 MP).",
+    "icon": "⚡",
+    "rarity": "Common",
+    "color": "text-blue-400",
+    "borderColor": "border-blue-900/60",
+    "bgColor": "bg-gradient-to-br from-blue-950/20 to-slate-900"
+  },
+  {
+    "id": "thief_dexterity",
+    "name": "Slight-of-Hand Gloaming Gloves",
+    "description": "Ultrathin obsidian-threaded gloves that move in perfect unison with your lockpicks.",
+    "details": "Increases Lockpicking skill score by +4, and lockpicking failure checks are automatically bypassed!",
+    "icon": "🧤",
+    "rarity": "Rare",
+    "color": "text-amber-400",
+    "borderColor": "border-amber-900/60",
+    "bgColor": "bg-gradient-to-br from-amber-950/20 to-slate-900"
+  },
+  {
+    "id": "golden_touch",
+    "name": "Midas Alchemical Crucible",
+    "description": "A heavy brass chalice that transmutes ordinary lead and carbon scrap into pure, brilliant bullion.",
+    "details": "Earns 25% extra gold coins whenever looting or trading, and instantly grants 100 gold coins on acquisition.",
+    "icon": "🪙",
+    "rarity": "Rare",
+    "color": "text-yellow-400",
+    "borderColor": "border-yellow-900/60",
+    "bgColor": "bg-gradient-to-br from-yellow-950/20 to-slate-900"
+  },
+  {
+    "id": "giants_blood",
+    "name": "Primal Giant’s Vitriol",
+    "description": "A bubbling, thick golden syrup extracted from ancient mountain sovereigns.",
+    "details": "Permanently increases ATK damage rating by +4, and physical weapon swings have a 25% chance to stun enemies for 1 turn.",
+    "icon": "🌋",
+    "rarity": "Legendary",
+    "color": "text-orange-400",
+    "borderColor": "border-orange-800/80",
+    "bgColor": "bg-gradient-to-br from-orange-950/30 to-slate-900"
+  },
+  {
+    "id": "mirror_shield_relic",
+    "name": "Polished Aegis of Reflection",
+    "description": "A flawless, mirror-like silver plate that bounces physical and elemental kinetic trajectories.",
+    "details": "Permanently increases DEF stat rating by +3, and grants a 20% chance to reflect 50% of incoming attack damage back to enemies.",
+    "icon": "🛡️",
+    "rarity": "Rare",
+    "color": "text-cyan-400",
+    "borderColor": "border-cyan-900/60",
+    "bgColor": "bg-gradient-to-br from-cyan-950/20 to-slate-900"
+  },
+  {
+    "id": "spell_weaver",
+    "name": "Aetheric Loom Needle",
+    "description": "A needle of concentrated celestial starlight that embroiders magical spell-weaves.",
+    "details": "All magic grimoire spell damage is increased by +15%, and your Elemental Spell Combos deal +5 flat bonus damage.",
+    "icon": "🔮",
+    "rarity": "Legendary",
+    "color": "text-purple-400",
+    "borderColor": "border-purple-800/80",
+    "bgColor": "bg-gradient-to-br from-purple-950/30 to-slate-900"
+  },
+  {
+    "id": "windrunners_boots",
+    "name": "Featherlight Gale Boots",
+    "description": "Wind-infused leather boots that lift your weight slightly off terrestrial dirt.",
+    "details": "Increases Overworld movement speed. Grants permanent Water Walking status and a 20% chance to bypass exhaustion gains entirely.",
+    "icon": "🥾",
+    "rarity": "Common",
+    "color": "text-teal-400",
+    "borderColor": "border-teal-900/60",
+    "bgColor": "bg-gradient-to-br from-teal-950/20 to-slate-900"
+  },
+  {
+    "id": "loot_magnet",
+    "name": "Hyperconducting Lodestone",
+    "description": "A magnetic alloy block that attracts precious metals, dense raw elements, and rare blueprints.",
+    "details": "Elite hostiles have double drop frequency. Player backpack capacity limits and item weights are reduced by 30%.",
+    "icon": "🧲",
+    "rarity": "Rare",
+    "color": "text-emerald-400",
+    "borderColor": "border-emerald-900/60",
+    "bgColor": "bg-gradient-to-br from-emerald-950/20 to-slate-900"
+  },
+  {
+    "id": "scholars_quill",
+    "name": "Chronicle Quill of the Scribe",
+    "description": "A golden-nibbed quill that writes history onto the margins, optimizing strategic learning rates.",
+    "details": "Grants +20% extra experience points (XP) from all combat encounters, secret scouting, and quest board completions.",
+    "icon": "✍️",
+    "rarity": "Common",
+    "color": "text-pink-400",
+    "borderColor": "border-pink-900/60",
+    "bgColor": "bg-gradient-to-br from-pink-950/10 to-slate-900"
+  },
+  {
+    "id": "sunder_catalyst_relic",
+    "name": "Chaotic Resonance Catalyst",
+    "description": "An oscillating volatile core that prevents active elemental forces from dispersing.",
+    "details": "Extends all debuff and elemental affliction status durations on enemies by +2 turns (applied on infusing attacks).",
+    "icon": "🧪",
+    "rarity": "Legendary",
+    "color": "text-rose-400",
+    "borderColor": "border-rose-800/80",
+    "bgColor": "bg-gradient-to-br from-rose-950/30 to-slate-900"
+  },
+  {
+    "id": "sampo_mill",
+    "name": "Sunder Celestial Sampo 🎡",
+    "description": "A miraculous cosmic mill of three-sided wealth, originally forged by the divine smith Ilmarinen.",
+    "details": "Boosts all gold looting/selling gains by +35% and gives a 20% chance per movement turn to manifest +10 Gold or +1 random high-grade alloy.",
+    "icon": "🎡",
+    "rarity": "Legendary",
+    "color": "text-yellow-400 font-bold",
+    "borderColor": "border-yellow-600/70 shadow-[0_0_15px_rgba(234,179,8,0.2)]",
+    "bgColor": "bg-gradient-to-br from-yellow-950/40 via-amber-950/20 to-slate-950"
+  },
+  {
+    "id": "vaimo_kantele",
+    "name": "Pike-Jaw Kantele of Väinämöinen 🪕",
+    "description": "A sacred five-string harp carved from the great pike’s jawbone, strung with horsehair from Hiisi’s stallion.",
+    "details": "Increases Spell Power by +15% and has a 25% chance during enemy strikes to soothe their anger, reducing incoming strike damage by 30%.",
+    "icon": "🪕",
+    "rarity": "Legendary",
+    "color": "text-purple-400 font-semibold",
+    "borderColor": "border-purple-600/70 shadow-[0_0_15px_rgba(168,85,247,0.2)]",
+    "bgColor": "bg-gradient-to-br from-purple-950/40 via-fuchsia-950/20 to-slate-950"
+  },
+  {
+    "id": "ukonvasara_relic",
+    "name": "Ukonvasara Thunder Bolt 🌩️",
+    "description": "The ancient copper-forged lightning hammer belonging to Ukko, high god of the skies and storms.",
+    "details": "Gives +5 bonus ATK power, and physical/elemental attacks have a 30% chance to unleash chain-thunder, dealing 12 light-infused damage to all adjacent enemies.",
+    "icon": "🌩️",
+    "rarity": "Legendary",
+    "color": "text-cyan-400 font-bold",
+    "borderColor": "border-cyan-600/70 shadow-[0_0_15px_rgba(34,211,238,0.2)]",
+    "bgColor": "bg-gradient-to-br from-cyan-950/40 via-blue-950/20 to-slate-950"
+  },
+  {
+    "id": "mielikki_crown",
+    "name": "Birch Crown of Mielikki 👑",
+    "description": "A crown woven from fresh forest birch twigs, forest flowers, and healing mosses, blessed by the Queen of Tapio’s Evergreen Kingdom.",
+    "details": "Increases all healing effect output by +30% and grants absolute immunity to Swamp Poison, Frostbite, and environmental Trap damage.",
+    "icon": "👑",
+    "rarity": "Rare",
+    "color": "text-emerald-400 font-semibold",
+    "borderColor": "border-emerald-700/60 shadow-[0_0_12px_rgba(16,185,129,0.15)]",
+    "bgColor": "bg-gradient-to-br from-emerald-950/30 via-teal-950/10 to-slate-950"
+  }
+]

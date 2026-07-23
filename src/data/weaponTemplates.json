@@ -1,0 +1,112 @@
+{
+  "Sword": {
+    "baseType": "Sword",
+    "name": "Recruits Broadsword",
+    "description": "A standard steel sword with dependable slashing motions.",
+    "baseDamage": 5,
+    "baseCrit": 0.10,
+    "range": 1,
+    "manaCost": 0,
+    "icon": "⚔️",
+    "isTwoHanded": false
+  },
+  "Spear": {
+    "baseType": "Spear",
+    "name": "Ironwood Pike",
+    "description": "Lances through targets ahead, allowing safer offensive range. Requires both hands.",
+    "baseDamage": 4,
+    "baseCrit": 0.08,
+    "range": 2,
+    "manaCost": 0,
+    "icon": "🔱",
+    "isTwoHanded": true
+  },
+  "Dagger": {
+    "baseType": "Dagger",
+    "name": "Stiletto Shard",
+    "description": "Vicious rapid attacks boasting high precision.",
+    "baseDamage": 3,
+    "baseCrit": 0.25,
+    "range": 1,
+    "manaCost": 0,
+    "icon": "🗡️",
+    "isTwoHanded": false
+  },
+  "Hammer": {
+    "baseType": "Hammer",
+    "name": "Granite Mallet",
+    "description": "Slow, heavy, devastating swings which knock entities back.",
+    "baseDamage": 7,
+    "baseCrit": 0.05,
+    "range": 1,
+    "manaCost": 0,
+    "icon": "🔨",
+    "isTwoHanded": false
+  },
+  "Staff": {
+    "baseType": "Staff",
+    "name": "Elder Conduit Stave",
+    "description": "Harnesses absolute spiritual flow to focus projection beads at distance. Requires both hands.",
+    "baseDamage": 6,
+    "baseCrit": 0.12,
+    "range": 3,
+    "manaCost": 4,
+    "icon": "🪄",
+    "isTwoHanded": true
+  },
+  "Bow": {
+    "baseType": "Bow",
+    "name": "Recruits Recurve Bow",
+    "description": "A physical ranged weapon with long reach. Shoots piercing arrows. Requires both hands.",
+    "baseDamage": 5,
+    "baseCrit": 0.15,
+    "range": 4,
+    "manaCost": 0,
+    "icon": "🏹",
+    "isTwoHanded": true
+  },
+  "Wand": {
+    "baseType": "Wand",
+    "name": "Apprentice Spark Wand",
+    "description": "A light magic conduit. Projects electric spark beads at distance.",
+    "baseDamage": 4,
+    "baseCrit": 0.10,
+    "range": 3,
+    "manaCost": 3,
+    "icon": "✨",
+    "isTwoHanded": false
+  },
+  "Crossbow": {
+    "baseType": "Crossbow",
+    "name": "Alloy Windlass Crossbow",
+    "description": "A heavy 2-handed mechanical crossbow of incredible force. Requires both hands.",
+    "baseDamage": 10,
+    "baseCrit": 0.22,
+    "range": 5,
+    "manaCost": 0,
+    "icon": "🎯",
+    "isTwoHanded": true
+  },
+  "Greatsword": {
+    "baseType": "Greatsword",
+    "name": "Mithril Zweihander",
+    "description": "A colossal 2-handed greatsword with wide slashing curves. Requires both hands.",
+    "baseDamage": 12,
+    "baseCrit": 0.15,
+    "range": 1,
+    "manaCost": 0,
+    "icon": "⚔️",
+    "isTwoHanded": true
+  },
+  "Warhammer": {
+    "baseType": "Warhammer",
+    "name": "Volcanic Skullsplitter",
+    "description": "A colossal 2-handed crushing hammer that obliterates armor. Requires both hands.",
+    "baseDamage": 16,
+    "baseCrit": 0.05,
+    "range": 1,
+    "manaCost": 0,
+    "icon": "🧱",
+    "isTwoHanded": true
+  }
+}
