@@ -1,5 +1,6 @@
 import { EquipmentItem, WeaponBaseType, CatalystType } from '../types';
 import { SPELL_SCROLLS, getSpellScrollAsEquipmentItem } from './spellScrolls';
+export { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';
 
 export const BLACKSMITH_SHOP_ITEMS: EquipmentItem[] = [
   { id: 'shop_steel_broadsword', name: 'Alloy Broadsword', type: 'weapon', subType: WeaponBaseType.Sword, defense: 0, damage: 9, critChance: 0.12, range: 1, color: '#38bdf8', description: 'Finely-forged steel with edge sharpness.', value: 95 },
@@ -265,4 +266,25 @@ export const getMerchantConfig = (role: string, id: string): { maxGold: number, 
     maxGold: config.gold,
     defaultStock: config.stock
   };
+};
+
+export const getCharismaDiscountMultiplier = (gameState: any): number => {
+  const charisma = gameState.attributes?.CHA ?? 10;
+  const discount = Math.min(0.25, Math.max(0, (charisma - 10) * 0.01));
+  return 1.0 - discount;
+};
+
+export const getBiomePriceMultiplier = (itemId: string, biome?: string): number => {
+  if (!biome) return 1.0;
+  if (biome === 'desert' || biome === 'volcano') {
+    if (itemId === 'mat_wood' || itemId === 'cat_frost') return 1.4;
+    if (itemId === 'mat_obsidian' || itemId === 'cat_fire') return 0.8;
+  } else if (biome === 'snow' || biome === 'glacier') {
+    if (itemId === 'cat_fire' || itemId === 'mat_wood') return 1.4;
+    if (itemId === 'cat_frost') return 0.8;
+  } else if (biome === 'swamp' || biome === 'forest') {
+    if (itemId === 'mat_iron' || itemId === 'mat_mithril') return 1.3;
+    if (itemId === 'mat_wood') return 0.8;
+  }
+  return 1.0;
 };

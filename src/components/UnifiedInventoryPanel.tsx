@@ -27,7 +27,7 @@ interface UnifiedInventoryPanelProps {
   playSound: (soundId: string) => void;
 }
 
-export default function UnifiedInventoryPanel({
+function UnifiedInventoryPanelComponent({
   gameState,
   setGameState,
   handleEatMeat,
@@ -1400,3 +1400,6 @@ export default function UnifiedInventoryPanel({
     </div>
   );
 }
+
+export const UnifiedInventoryPanel = React.memo(UnifiedInventoryPanelComponent);
+export default UnifiedInventoryPanel;

@@ -16,7 +16,7 @@ export interface CookingTabProps {
   handleCook: (recipe: CookingRecipe) => void;
 }
 
-export const CookingTab: React.FC<CookingTabProps> = ({
+export const CookingTab = React.memo<CookingTabProps>(({
   isNextToCampfire,
   onRestCampfire,
   getMaterialCount,
@@ -185,4 +185,6 @@ export const CookingTab: React.FC<CookingTabProps> = ({
       </div>
     </div>
   );
-};
+});
+
+export default CookingTab;

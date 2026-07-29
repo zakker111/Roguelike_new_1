@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, ShieldAlert, Heart, Zap, Compass, Code, Home, Plus, RotateCw, Play, Sparkles, Sliders, Hammer, Swords, Check, Trash2, Activity, Sigma, Shuffle, History, FileText, Skull, Download, Copy, Upload, Calendar, MapPin, Map, Navigation, Clock } from 'lucide-react';
+import { X, ShieldAlert, Heart, Zap, Compass, Code, Home, Plus, RotateCw, Play, Sparkles, Sliders, Hammer, Swords, Check, Trash2, Activity, Sigma, Shuffle, History, FileText, Skull, Download, Copy, Upload, Calendar, MapPin, Map, Navigation, Clock, Minimize2, Maximize2 } from 'lucide-react';
 import { GameState, Enemy, EnemyState, EnemyType, TileType, Follower, Scar, TrapType, GameLogMessage, CatalystType } from '../types';
 import { playSound } from '../utils/audio';
-import { getEnemyTemplate } from '../utils/dungeon';
+import { getEnemyTemplate, generateLevel, generateDungeonProps } from '../utils/dungeon';
 import { carveStructure, STRUCTURE_PRESETS, StructurePreset, getAvailableStructures } from '../utils/structurePlacer';
 import { generateOverworldChunk, getCurrentWorldSeed, randomizeTownAndCastleLayouts, setWorldSeed } from '../utils/overworld';
 import { computeFOV, getNextStepTowards } from '../utils/ai';
@@ -10,6 +10,8 @@ import { SCAR_DATABASE } from '../utils/scars';
 import { BESTIARY_ENTRIES } from '../utils/bestiary';
 import townTemplates from '../data/townTemplates.json';
 import { SPELL_SCROLLS, getSpellScrollAsEquipmentItem } from '../utils/spellScrolls';
+import { findStairsOrWalkablePosition } from '../utils/gameUtils';
+import { getGMStorytellerState } from '../utils/gmStoryteller';
 import { GodStatEditor } from './god/GodStatEditor';
 import { GodWorldEditor } from './god/GodWorldEditor';
 import { GodItemSpawner } from './god/GodItemSpawner';
@@ -82,7 +84,7 @@ interface GodPanelOverlayProps {
   setIsAutoplayActive?: (active: boolean) => void;
 }
 
-export default function GodPanelOverlay({ 
+function GodPanelOverlayComponent({ 
   gameState, 
   setGameState, 
   onClose,
@@ -93,6 +95,7 @@ export default function GodPanelOverlay({
 }: GodPanelOverlayProps) {
   
   const [activeTab, setActiveTab] = useState<'sovereign' | 'arena' | 'structures' | 'struct_json' | 'enemies' | 'town' | 'creator' | 'admin_editor' | 'smoketest' | 'replay' | 'bestiary_test' | 'house_editor' | 'npc_planner'>('sovereign');
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
 
   // Visual House & Structure Designer state
   const [designerWidth, setDesignerWidth] = useState<number>(6);
@@ -371,11 +374,30 @@ export default function GodPanelOverlay({
           setWorldSeed(targetSeed);
         }
         
-        // Restore the full state snapshot
-        setGameState(prev => ({
-          ...prev,
-          ...snapshot.state
-        }));
+        setGameState(prev => {
+          const mapToUse = snapshot.state.map || prev.map;
+          const px = snapshot.state.playerX ?? prev.playerX;
+          const py = snapshot.state.playerY ?? prev.playerY;
+          
+          let restoredVisible = snapshot.state.visible;
+          if (!restoredVisible && mapToUse && mapToUse.length > 0) {
+            restoredVisible = computeFOV(px, py, mapToUse, 6);
+          }
+          
+          let restoredDiscovered = snapshot.state.discovered;
+          if (!restoredDiscovered && restoredVisible && mapToUse && mapToUse.length > 0) {
+            restoredDiscovered = mapToUse.map((row: any[], y: number) =>
+              row.map((_, x) => (restoredVisible && restoredVisible[y] ? restoredVisible[y][x] : false))
+            );
+          }
+
+          return {
+            ...prev,
+            ...snapshot.state,
+            ...(restoredVisible ? { visible: restoredVisible } : {}),
+            ...(restoredDiscovered ? { discovered: restoredDiscovered } : {})
+          };
+        });
       }
     }
   }, [currentReplayIdx, replayPayload, setGameState]);
@@ -1562,6 +1584,267 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
     onClose();
   };
 
+  const TeleportToDungeon = (targetDepth: number = 1) => {
+    playSound('levelUp');
+    setGameState((prev) => {
+      const currentChunkKey = `${prev.currentChunkX},${prev.currentChunkY}`;
+      const currentChunkCopy = {
+        chunkX: prev.currentChunkX,
+        chunkY: prev.currentChunkY,
+        map: prev.map,
+        discovered: prev.discovered,
+        visible: prev.visible,
+        enemies: prev.enemies,
+        traps: prev.traps,
+        chests: prev.chests,
+        npcs: prev.npcs,
+        lootPiles: prev.lootPiles || [],
+        dungeons: [],
+        towns: [],
+        biome: prev.biome,
+        weather: prev.weather
+      };
+
+      const updatedOverworldChunks = prev.isOverworld
+        ? { ...prev.overworldChunks, [currentChunkKey]: currentChunkCopy }
+        : prev.overworldChunks;
+
+      const chunkX = prev.currentChunkX;
+      const chunkY = prev.currentChunkY;
+      const dungeonKey = `${chunkX},${chunkY}_depth-${targetDepth}`;
+      const dungeonLevelsSafe = prev.dungeonLevels || {};
+      const existing = dungeonLevelsSafe[dungeonKey];
+
+      const nextLogs = [
+        ...prev.logs,
+        {
+          id: `teleport_dung_${Date.now()}`,
+          text: `🔮 [GOD TELEPORT]: Warped directly into Abyss Dungeon Floor ${targetDepth}!`,
+          type: 'system' as const,
+          timestamp: 'GOD'
+        }
+      ];
+
+      if (existing) {
+        const { x: stairsUpX, y: stairsUpY } = findStairsOrWalkablePosition(existing.map, TileType.StairsUp, `Abyss Floor ${targetDepth}`);
+
+        const fov = computeFOV(stairsUpX, stairsUpY, existing.map, 8);
+        const discovered = existing.map.map((row, y) =>
+          row.map((cell, x) => (existing.discovered?.[y]?.[x] || fov?.[y]?.[x] || false))
+        );
+
+        return {
+          ...prev,
+          isOverworld: false,
+          isArena: false,
+          dungeonEntranceChunkX: chunkX,
+          dungeonEntranceChunkY: chunkY,
+          dungeonEntrancePlayerX: prev.isOverworld ? prev.playerX : (prev.dungeonEntrancePlayerX ?? prev.playerX),
+          dungeonEntrancePlayerY: prev.isOverworld ? prev.playerY : (prev.dungeonEntrancePlayerY ?? prev.playerY),
+          overworldChunks: updatedOverworldChunks,
+          playerX: stairsUpX,
+          playerY: stairsUpY,
+          map: existing.map,
+          visible: fov,
+          discovered: discovered,
+          enemies: existing.enemies,
+          traps: existing.traps,
+          chests: existing.chests,
+          npcs: [],
+          lootPiles: existing.lootPiles || [],
+          corpses: existing.corpses || [],
+          bloodSplatters: existing.bloodSplatters || [],
+          dungeonProps: existing.props || [],
+          playerStats: {
+            ...prev.playerStats,
+            depth: targetDepth
+          },
+          logs: nextLogs
+        };
+      } else {
+        const nextLvl = generateLevel(
+          64,
+          40,
+          targetDepth,
+          prev.playerStats.turnsPlayed,
+          prev.playerStats.realTimeSeconds,
+          prev.playerStats,
+          prev.currentWeapon,
+          prev.defeatedEnemiesCount,
+          prev.clearedCamps?.length || 0
+        );
+
+        const fov = computeFOV(nextLvl.playerX, nextLvl.playerY, nextLvl.map, 8);
+        const discovered = nextLvl.map.map((row, y) => row.map((_, x) => fov[y][x]));
+        const props = generateDungeonProps(nextLvl.map, targetDepth);
+
+        const nextDungeonLevels = {
+          ...dungeonLevelsSafe,
+          [dungeonKey]: {
+            depth: targetDepth,
+            chunkX,
+            chunkY,
+            map: nextLvl.map,
+            discovered,
+            enemies: nextLvl.enemies,
+            traps: nextLvl.traps,
+            chests: nextLvl.chests,
+            lootPiles: [],
+            corpses: [],
+            bloodSplatters: [],
+            props
+          }
+        };
+
+        return {
+          ...prev,
+          isOverworld: false,
+          isArena: false,
+          dungeonEntranceChunkX: chunkX,
+          dungeonEntranceChunkY: chunkY,
+          dungeonEntrancePlayerX: prev.isOverworld ? prev.playerX : (prev.dungeonEntrancePlayerX ?? prev.playerX),
+          dungeonEntrancePlayerY: prev.isOverworld ? prev.playerY : (prev.dungeonEntrancePlayerY ?? prev.playerY),
+          overworldChunks: updatedOverworldChunks,
+          playerX: nextLvl.playerX,
+          playerY: nextLvl.playerY,
+          map: nextLvl.map,
+          visible: fov,
+          discovered: discovered,
+          enemies: nextLvl.enemies,
+          traps: nextLvl.traps,
+          chests: nextLvl.chests,
+          npcs: [],
+          lootPiles: [],
+          corpses: [],
+          bloodSplatters: [],
+          dungeonProps: props,
+          dungeonLevels: nextDungeonLevels,
+          playerStats: {
+            ...prev.playerStats,
+            depth: targetDepth
+          },
+          logs: nextLogs
+        };
+      }
+    });
+
+    triggerSuccessLog(`🔮 Direct Teleport to Dungeon Abyss Floor ${targetDepth}!`);
+    onClose();
+  };
+
+  const TeleportToDungeonEntranceOverworld = () => {
+    playSound('bump');
+    setGameState((prev) => {
+      // Restore overworld map if currently in dungeon or arena
+      let nextMap = prev.map;
+      let playerX = prev.playerX;
+      let playerY = prev.playerY;
+
+      if (!prev.isOverworld) {
+        const overworldChunkKey = `${prev.dungeonEntranceChunkX ?? prev.currentChunkX},${prev.dungeonEntranceChunkY ?? prev.currentChunkY}`;
+        const cachedChunk = prev.overworldChunks[overworldChunkKey];
+        if (cachedChunk) {
+          nextMap = cachedChunk.map;
+          playerX = prev.dungeonEntrancePlayerX ?? Math.floor(cachedChunk.map[0].length / 2);
+          playerY = prev.dungeonEntrancePlayerY ?? Math.floor(cachedChunk.map.length / 2);
+        }
+      }
+
+      // Find all dungeon entrances on the current map
+      const entrances: { x: number; y: number; dist: number }[] = [];
+      for (let y = 0; y < nextMap.length; y++) {
+        for (let x = 0; x < nextMap[0].length; x++) {
+          if (nextMap[y][x] === TileType.DungeonEntrance) {
+            const dist = Math.hypot(x - playerX, y - playerY);
+            entrances.push({ x, y, dist });
+          }
+        }
+      }
+
+      let entX = -1;
+      let entY = -1;
+      const mapCopy = nextMap.map(r => [...r]);
+
+      if (entrances.length > 0) {
+        entrances.sort((a, b) => a.dist - b.dist);
+        entX = entrances[0].x;
+        entY = entrances[0].y;
+      } else {
+        // Fallback: spawn a 3x3 dungeon structure with door near player
+        const spawnX = Math.max(2, Math.min(mapCopy[0].length - 5, Math.floor(playerX) + 2));
+        const spawnY = Math.max(2, Math.min(mapCopy.length - 5, Math.floor(playerY) + 2));
+
+        for (let dy = 0; dy < 3; dy++) {
+          for (let dx = 0; dx < 3; dx++) {
+            mapCopy[spawnY + dy][spawnX + dx] = TileType.Wall;
+          }
+        }
+        mapCopy[spawnY + 1][spawnX + 1] = TileType.DungeonEntrance;
+        mapCopy[spawnY + 2][spawnX + 1] = TileType.Door; // Door on south wall
+
+        entX = spawnX + 1;
+        entY = spawnY + 1;
+      }
+
+      // Determine best destination tile (preferably door or walkable space directly adjacent to entrance)
+      let px = entX;
+      let py = entY + 1;
+
+      const candidates = [
+        { x: entX, y: entY + 1 }, // South (door)
+        { x: entX, y: entY - 1 }, // North
+        { x: entX + 1, y: entY }, // East
+        { x: entX - 1, y: entY }, // West
+        { x: entX + 1, y: entY + 1 },
+        { x: entX - 1, y: entY + 1 },
+      ];
+
+      for (const cand of candidates) {
+        if (
+          cand.y >= 0 && cand.y < mapCopy.length &&
+          cand.x >= 0 && cand.x < mapCopy[0].length
+        ) {
+          const t = mapCopy[cand.y][cand.x];
+          if (t === TileType.Door || t === TileType.Grass || t === TileType.Path || t === TileType.Floor) {
+            px = cand.x;
+            py = cand.y;
+            break;
+          }
+        }
+      }
+
+      const fov = computeFOV(px, py, mapCopy, 8);
+      const discovered = mapCopy.map((row, y) =>
+        row.map((cell, x) => (prev.discovered?.[y]?.[x] || fov?.[y]?.[x] || false))
+      );
+
+      const nextLogs = [
+        ...prev.logs,
+        {
+          id: `teleport_dung_ent_${Date.now()}`,
+          text: `🔮 [GOD TELEPORT]: Warped to nearest Dungeon Entrance at (${entX}, ${entY})!`,
+          type: 'system' as const,
+          timestamp: 'GOD'
+        }
+      ];
+
+      return {
+        ...prev,
+        isOverworld: true,
+        isArena: false,
+        map: mapCopy,
+        playerX: px,
+        playerY: py,
+        visible: fov,
+        discovered: discovered,
+        logs: nextLogs
+      };
+    });
+
+    triggerSuccessLog("🔮 Teleported to Nearest Overworld Dungeon Entrance!");
+    onClose();
+  };
+
   const handleGrantMaterials = () => {
     setGameState((prev) => {
       const nextMaterials = { ...prev.inventoryMaterials };
@@ -2480,6 +2763,138 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
     triggerSuccessLog("Restored default custom structure blueprints!");
   };
 
+  if (isMinimized) {
+    if (activeTab === 'replay' && replayPayload) {
+      const currentSnapshot = replayPayload.snapshots?.[currentReplayIdx];
+      const latestLog = currentSnapshot?.state?.logs?.slice(-1)[0];
+
+      return (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-2xl w-[94vw] sm:w-full bg-slate-950/95 border border-emerald-500/60 shadow-[0_0_35px_rgba(16,185,129,0.25)] rounded-2xl p-3 text-xs font-mono text-slate-200 backdrop-blur-md space-y-2.5 animate-in slide-in-from-bottom-4">
+          {/* Header row in dock */}
+          <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 relative">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${replayIsPlaying ? 'bg-emerald-400 opacity-75' : 'bg-amber-400 opacity-50'}`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${replayIsPlaying ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              </span>
+              <span className="font-bold uppercase tracking-wider text-[11px] text-emerald-400 flex items-center gap-1.5">
+                <History className="w-3.5 h-3.5" />
+                <span>Replay Sim</span>
+              </span>
+              <span className="bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-[10px] text-slate-300 font-bold">
+                Turn {currentReplayIdx + 1} / {replayPayload.snapshots?.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsMinimized(false)}
+                className="px-2.5 py-1 bg-emerald-950/80 hover:bg-emerald-900/90 border border-emerald-600/80 text-emerald-300 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all hover:scale-105"
+                title="Expand full Developer Overlay panel"
+              >
+                <Maximize2 className="w-3 h-3" />
+                <span>EXPAND PANEL</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800/60 cursor-pointer"
+                title="Exit Replay / Close Panel"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Controls & Scrubber in dock */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+              <button
+                onClick={() => {
+                  setCurrentReplayIdx(Math.max(0, currentReplayIdx - 1));
+                  setReplayIsPlaying(false);
+                }}
+                disabled={currentReplayIdx === 0}
+                className="py-1 px-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-[11px] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+              >
+                ◀ Step
+              </button>
+              <button
+                onClick={() => setReplayIsPlaying(!replayIsPlaying)}
+                className={`py-1 px-3 font-bold text-[11px] rounded transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                  replayIsPlaying
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                }`}
+              >
+                {replayIsPlaying ? '⏸ PAUSE' : '▶ PLAY'}
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentReplayIdx(Math.min(replayPayload.snapshots.length - 1, currentReplayIdx + 1));
+                  setReplayIsPlaying(false);
+                }}
+                disabled={currentReplayIdx === replayPayload.snapshots.length - 1}
+                className="py-1 px-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-[11px] rounded disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+              >
+                Step ▶
+              </button>
+            </div>
+
+            {/* Scrub slider */}
+            <div className="flex-1 w-full px-1">
+              <input
+                type="range"
+                min="0"
+                max={replayPayload.snapshots.length - 1}
+                value={currentReplayIdx}
+                onChange={(e) => {
+                  setCurrentReplayIdx(parseInt(e.target.value));
+                  setReplayIsPlaying(false);
+                }}
+                className="w-full accent-emerald-500 cursor-ew-resize h-1.5"
+              />
+            </div>
+
+            {/* Speed slider */}
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+              <span>SPEED:</span>
+              <input
+                type="range"
+                min="50"
+                max="1000"
+                step="50"
+                value={replaySpeed}
+                onChange={(e) => setReplaySpeed(parseInt(e.target.value))}
+                className="w-16 accent-amber-500 cursor-ew-resize h-1.5"
+              />
+              <span className="text-amber-400 font-bold w-10 text-right">{replaySpeed}ms</span>
+            </div>
+          </div>
+
+          {/* Latest turn event preview */}
+          {latestLog && (
+            <div className="bg-slate-900/90 border border-slate-800/80 rounded-lg px-2.5 py-1 text-[10px] text-emerald-300 truncate font-mono">
+              <span className="text-slate-500 font-bold">[{latestLog.timestamp || 'LOG'}]</span> {latestLog.text}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="fixed bottom-4 right-4 z-50 font-mono">
+        <button
+          onClick={() => setIsMinimized(false)}
+          className="px-3.5 py-2 bg-slate-900/95 hover:bg-slate-800 border border-amber-500/50 shadow-xl text-amber-400 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-all backdrop-blur-md hover:scale-105"
+        >
+          <ShieldAlert className="w-4 h-4 text-amber-400 animate-pulse" />
+          <span>Dev Panel (Minimized)</span>
+          <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs font-mono">
       <div 
@@ -2488,17 +2903,35 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
       >
         {/* Header */}
         <div className="border-b border-slate-800 p-4 flex items-center justify-between bg-slate-950/40">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <ShieldAlert className="w-5 h-5 text-red-500 animate-pulse" />
             <span className="text-sm font-bold uppercase tracking-wider text-slate-200">Sovereign Developer Lab & Configurator</span>
+            <span className={`text-[9px] px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 border ${
+              (gameState.gmAutonomousWeather ?? true)
+                ? 'bg-indigo-950/80 border-indigo-500/60 text-indigo-300'
+                : 'bg-slate-950 border-slate-800 text-slate-500'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${ (gameState.gmAutonomousWeather ?? true) ? 'bg-indigo-400 animate-ping' : 'bg-slate-600' }`} />
+              <span>GM ENGINE: {(gameState.gmAutonomousWeather ?? true) ? 'ACTIVE (DEFAULT ON)' : 'OFF'}</span>
+            </span>
           </div>
-          <button 
-            id="close-god-btn"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/50 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-slate-400 hover:text-emerald-400 px-2 py-1 rounded-lg hover:bg-slate-800/50 cursor-pointer flex items-center gap-1 text-xs font-bold transition-colors"
+              title="Minimize panel to watch gameplay"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Minimize</span>
+            </button>
+            <button 
+              id="close-god-btn"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/50 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Improved flex wrap tab bar to scale with expanded scope tabs */}
@@ -2711,19 +3144,20 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-900/40 p-2.5 rounded-lg border border-slate-800">
                   <button
                     onClick={() => {
-                      const nextVal = !gameState.gmAutonomousWeather;
+                      const currentVal = gameState.gmAutonomousWeather ?? true;
+                      const nextVal = !currentVal;
                       setGameState(prev => ({ ...prev, gmAutonomousWeather: nextVal }));
                       triggerSuccessLog(nextVal ? "Autonomous Weather Engine Engaged! 🌌" : "Autonomous Weather Engine Deactivated.");
                       playSound('spell');
                     }}
                     className={`py-1.5 px-3 border rounded font-mono font-bold transition-all text-center cursor-pointer text-[10px] flex justify-between items-center ${
-                      gameState.gmAutonomousWeather 
+                      (gameState.gmAutonomousWeather ?? true) 
                         ? 'bg-indigo-950/50 border-indigo-500 text-indigo-300' 
                         : 'bg-slate-950 border-slate-850 text-slate-400'
                     }`}
                   >
                     <span>🌌 Autonomous GM Engine</span>
-                    <span>{gameState.gmAutonomousWeather ? 'ACTIVE (ON)' : 'OFF'}</span>
+                    <span>{(gameState.gmAutonomousWeather ?? true) ? 'ACTIVE (ON)' : 'OFF'}</span>
                   </button>
 
                   <div className="flex items-center justify-between bg-slate-950 border border-slate-850 p-1.5 px-2.5 rounded text-[10px] font-mono">
@@ -3021,6 +3455,51 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
                   >
                     <span>🏰 Teleport to Castle Ruins</span>
                     <span className="text-slate-500">Chunk (-2,1)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Dungeon & Abyss Direct Teleports */}
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-350 uppercase tracking-widest text-[10px] border-b border-slate-800 pb-1.5 flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-purple-400" />
+                  <span>🌀 Dungeon & Abyss Direct Teleports</span>
+                </h4>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button 
+                    onClick={() => TeleportToDungeon(1)}
+                    className="py-2 px-2.5 bg-purple-950/30 hover:bg-purple-900/40 border border-purple-800/50 hover:border-purple-600 text-purple-300 rounded text-left flex justify-between items-center cursor-pointer transition-all"
+                  >
+                    <span>🪜 Warp to Dungeon Floor 1</span>
+                    <span className="text-[10px] text-purple-400 font-mono font-bold bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-800/40">FL 1</span>
+                  </button>
+                  <button 
+                    onClick={() => TeleportToDungeon(2)}
+                    className="py-2 px-2.5 bg-purple-950/30 hover:bg-purple-900/40 border border-purple-800/50 hover:border-purple-600 text-purple-300 rounded text-left flex justify-between items-center cursor-pointer transition-all"
+                  >
+                    <span>🔥 Warp to Abyss Floor 2</span>
+                    <span className="text-[10px] text-purple-400 font-mono font-bold bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-800/40">FL 2</span>
+                  </button>
+                  <button 
+                    onClick={() => TeleportToDungeon(5)}
+                    className="py-2 px-2.5 bg-indigo-950/30 hover:bg-indigo-900/40 border border-indigo-800/50 hover:border-indigo-600 text-indigo-300 rounded text-left flex justify-between items-center cursor-pointer transition-all"
+                  >
+                    <span>⚔️ Warp to Floor 5 Threshold</span>
+                    <span className="text-[10px] text-indigo-400 font-mono font-bold bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/40">FL 5</span>
+                  </button>
+                  <button 
+                    onClick={() => TeleportToDungeon(10)}
+                    className="py-2 px-2.5 bg-red-950/40 hover:bg-red-900/50 border border-red-800/60 hover:border-red-500 text-red-300 rounded text-left flex justify-between items-center cursor-pointer transition-all"
+                  >
+                    <span>👑 Warp to Boss Surtur Vault</span>
+                    <span className="text-[10px] text-red-400 font-mono font-bold bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800/60">FL 10</span>
+                  </button>
+                  <button 
+                    onClick={TeleportToDungeonEntranceOverworld}
+                    className="col-span-2 py-2 px-2.5 bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-800/50 hover:border-emerald-600 text-emerald-300 rounded text-left flex justify-between items-center cursor-pointer transition-all"
+                  >
+                    <span>🌀 Warp to Overworld Dungeon Portal</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">Overworld Portal</span>
                   </button>
                 </div>
               </div>
@@ -3848,20 +4327,50 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
                 </button>
               </div>
 
-              {/* ARENA QUICK WARP OPTION */}
-              <button 
-                onClick={TeleportToEmptyArena}
-                className="w-full py-2.5 px-3.5 bg-gradient-to-r from-red-950/20 via-indigo-950/20 to-slate-900/30 hover:from-amber-950/30 hover:to-indigo-900/40 border border-indigo-500/30 hover:border-indigo-500/80 rounded-lg text-slate-100 font-bold cursor-pointer transition-all flex items-center justify-between text-xs shadow-md group"
-              >
-                <div className="flex items-center gap-2 text-left">
-                  <span className="text-base group-hover:animate-spin">⚔️</span>
-                  <div>
-                    <div className="font-bold text-slate-200">Enter the Empty Sandbox Testing Arena Now</div>
-                    <div className="text-[9px] text-slate-400 font-normal">Spawns you inside a massive testing lab with no obstacles. Exit staircase is at (25, 12).</div>
+              {/* DUNGEON & ARENA QUICK WARP OPTIONS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <button 
+                  onClick={TeleportToDungeonEntranceOverworld}
+                  className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-950/30 via-teal-950/30 to-slate-900/30 hover:from-emerald-900/40 hover:to-teal-900/50 border border-emerald-500/40 hover:border-emerald-400 rounded-lg text-slate-100 font-bold cursor-pointer transition-all flex items-center justify-between text-xs shadow-md group"
+                >
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="text-base group-hover:scale-110 transition-transform">🚪</span>
+                    <div>
+                      <div className="font-bold text-slate-200">Teleport to Nearest Dungeon Entrance</div>
+                      <div className="text-[9px] text-slate-400 font-normal">Warps directly outside the closest dungeon door in the realm.</div>
+                    </div>
                   </div>
-                </div>
-                <span className="text-[10px] bg-indigo-950/80 border border-indigo-700 font-bold px-2 py-1 rounded text-indigo-300">Warp Now ✨</span>
-              </button>
+                  <span className="text-[10px] bg-emerald-950/80 border border-emerald-700 font-bold px-2 py-1 rounded text-emerald-300">Entrance 🚪</span>
+                </button>
+
+                <button 
+                  onClick={() => TeleportToDungeon(1)}
+                  className="w-full py-2.5 px-3 bg-gradient-to-r from-purple-950/30 via-indigo-950/30 to-slate-900/30 hover:from-purple-900/40 hover:to-indigo-900/50 border border-purple-500/40 hover:border-purple-400 rounded-lg text-slate-100 font-bold cursor-pointer transition-all flex items-center justify-between text-xs shadow-md group"
+                >
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="text-base group-hover:scale-110 transition-transform">🌀</span>
+                    <div>
+                      <div className="font-bold text-slate-200">Enter Abyss Floor 1</div>
+                      <div className="text-[9px] text-slate-400 font-normal">Direct warp into Dungeon Abyss FL 1 interior.</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-purple-950/80 border border-purple-700 font-bold px-2 py-1 rounded text-purple-300">Warp FL 1 🌀</span>
+                </button>
+
+                <button 
+                  onClick={TeleportToEmptyArena}
+                  className="w-full py-2.5 px-3 bg-gradient-to-r from-red-950/20 via-indigo-950/20 to-slate-900/30 hover:from-amber-950/30 hover:to-indigo-900/40 border border-indigo-500/30 hover:border-indigo-500/80 rounded-lg text-slate-100 font-bold cursor-pointer transition-all flex items-center justify-between text-xs shadow-md group"
+                >
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="text-base group-hover:animate-spin">⚔️</span>
+                    <div>
+                      <div className="font-bold text-slate-200">Enter Testing Arena</div>
+                      <div className="text-[9px] text-slate-400 font-normal">Blank sandbox canvas with exit staircase at (25, 12).</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-indigo-950/80 border border-indigo-700 font-bold px-2 py-1 rounded text-indigo-300">Warp Arena ✨</span>
+                </button>
+              </div>
 
               {/* Toggles */}
               <div className="grid grid-cols-2 gap-3">
@@ -5732,19 +6241,183 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
               {/* Input section or Replay controls */}
               {!replayPayload ? (
                 <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-lg space-y-3">
-                  <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-wider">
-                    Paste Log File Content (including the simulator replay block)
-                  </label>
-                  <textarea
-                    rows={8}
-                    value={pastedLogs}
-                    onChange={(e) => {
-                      setPastedLogs(e.target.value);
-                      setReplayError(null);
+                  <div className="flex justify-between items-center pb-1 border-b border-slate-900">
+                    <label className="block text-[10px] text-slate-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Upload or Paste Playthrough Log File</span>
+                    </label>
+                    <span className="text-[8px] text-slate-500 font-sans font-semibold">SUPPORTS MASSIVE LOG FILES (.TXT / .JSON)</span>
+                  </div>
+
+                  {/* Drag-and-Drop & File Upload Importer for Log Files */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
                     }}
-                    placeholder="Paste the entire text of the downloaded .txt logs file here..."
-                    className="w-full bg-slate-950 text-slate-200 text-xs font-mono p-3 rounded-lg border border-slate-800 focus:outline-none focus:border-slate-700 focus:ring-1 focus:ring-slate-700 placeholder-slate-600 resize-none"
-                  />
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                          const content = evt.target?.result as string;
+                          if (content) {
+                            setPastedLogs(content.length > 50000 ? content.slice(0, 50000) + "\n... [Truncated preview for UI smoothness]" : content);
+                            setReplayError(null);
+                            // Fast parse immediately
+                            try {
+                              const startMarker = "--- COMPREHENSIVE SIMULATOR REPLAY DATA ---";
+                              const endMarker = "--- END OF SIMULATOR REPLAY DATA ---";
+                              let searchSource = content;
+                              const startIdx = content.indexOf(startMarker);
+                              if (startIdx !== -1) {
+                                const afterStart = content.substring(startIdx + startMarker.length);
+                                const endIdx = afterStart.indexOf(endMarker);
+                                searchSource = endIdx !== -1 ? afterStart.substring(0, endIdx) : afterStart;
+                              }
+                              const firstBrace = searchSource.indexOf('{');
+                              const lastBrace = searchSource.lastIndexOf('}');
+                              let jsonText = "";
+                              if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                                jsonText = searchSource.substring(firstBrace, lastBrace + 1).trim();
+                              } else if (firstBrace !== -1) {
+                                jsonText = searchSource.substring(firstBrace).trim();
+                              } else {
+                                jsonText = searchSource.trim();
+                              }
+                              if (!jsonText) throw new Error("Could not find structured simulation JSON payload in file.");
+                              const parsed = JSON.parse(jsonText);
+                              if (!parsed.snapshots || !Array.isArray(parsed.snapshots)) throw new Error("Parsed data does not contain turn-by-turn snapshots.");
+                              setReplayPayload(parsed);
+                              setCurrentReplayIdx(0);
+                              setReplayError(null);
+                            } catch (err: any) {
+                              setReplayError(err.message || String(err));
+                            }
+                          }
+                        };
+                        reader.readAsText(file);
+                      }
+                    }}
+                    onClick={() => {
+                      document.getElementById('log-replay-file-input')?.click();
+                    }}
+                    className="border border-dashed border-slate-800 hover:border-emerald-600/60 bg-slate-950/60 hover:bg-slate-950 p-3.5 rounded-lg text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 group"
+                  >
+                    <input
+                      id="log-replay-file-input"
+                      type="file"
+                      accept=".txt,.json,.log"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (evt) => {
+                            const content = evt.target?.result as string;
+                            if (content) {
+                              setPastedLogs(content.length > 50000 ? content.slice(0, 50000) + "\n... [Truncated preview for UI smoothness]" : content);
+                              setReplayError(null);
+                              try {
+                                const startMarker = "--- COMPREHENSIVE SIMULATOR REPLAY DATA ---";
+                                const endMarker = "--- END OF SIMULATOR REPLAY DATA ---";
+                                let searchSource = content;
+                                const startIdx = content.indexOf(startMarker);
+                                if (startIdx !== -1) {
+                                  const afterStart = content.substring(startIdx + startMarker.length);
+                                  const endIdx = afterStart.indexOf(endMarker);
+                                  searchSource = endIdx !== -1 ? afterStart.substring(0, endIdx) : afterStart;
+                                }
+                                const firstBrace = searchSource.indexOf('{');
+                                const lastBrace = searchSource.lastIndexOf('}');
+                                let jsonText = "";
+                                if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                                  jsonText = searchSource.substring(firstBrace, lastBrace + 1).trim();
+                                } else if (firstBrace !== -1) {
+                                  jsonText = searchSource.substring(firstBrace).trim();
+                                } else {
+                                  jsonText = searchSource.trim();
+                                }
+                                if (!jsonText) throw new Error("Could not find structured simulation JSON payload in file.");
+                                const parsed = JSON.parse(jsonText);
+                                if (!parsed.snapshots || !Array.isArray(parsed.snapshots)) throw new Error("Parsed data does not contain turn-by-turn snapshots.");
+                                setReplayPayload(parsed);
+                                setCurrentReplayIdx(0);
+                                setReplayError(null);
+                              } catch (err: any) {
+                                setReplayError(err.message || String(err));
+                              }
+                            }
+                          };
+                          reader.readAsText(file);
+                        }
+                      }}
+                    />
+                    <Upload className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-[10.5px] text-slate-300">
+                      📁 Drag & Drop Log File (.txt / .json) here
+                    </span>
+                    <span className="text-[8.5px] text-slate-500 font-sans">
+                      or click to choose log file directly from your device (Instant Zero-Lag Loader)
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <label className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">
+                      Or Paste Raw Log Text Below:
+                    </label>
+                    <textarea
+                      rows={6}
+                      value={pastedLogs}
+                      onPaste={(e) => {
+                        const pasted = e.clipboardData?.getData('text') || '';
+                        if (pasted.length > 50000) {
+                          // Prevent massive React controlled component re-rendering locks
+                          e.preventDefault();
+                          setPastedLogs(pasted.slice(0, 50000) + "\n... [Truncated UI Preview - Large File Detected]");
+                          setReplayError(null);
+                          setTimeout(() => {
+                            try {
+                              const startMarker = "--- COMPREHENSIVE SIMULATOR REPLAY DATA ---";
+                              const endMarker = "--- END OF SIMULATOR REPLAY DATA ---";
+                              let searchSource = pasted;
+                              const startIdx = pasted.indexOf(startMarker);
+                              if (startIdx !== -1) {
+                                const afterStart = pasted.substring(startIdx + startMarker.length);
+                                const endIdx = afterStart.indexOf(endMarker);
+                                searchSource = endIdx !== -1 ? afterStart.substring(0, endIdx) : afterStart;
+                              }
+                              const firstBrace = searchSource.indexOf('{');
+                              const lastBrace = searchSource.lastIndexOf('}');
+                              let jsonText = "";
+                              if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                                jsonText = searchSource.substring(firstBrace, lastBrace + 1).trim();
+                              } else if (firstBrace !== -1) {
+                                jsonText = searchSource.substring(firstBrace).trim();
+                              } else {
+                                jsonText = searchSource.trim();
+                              }
+                              if (!jsonText) throw new Error("Could not find structured simulation JSON payload in pasted content.");
+                              const parsed = JSON.parse(jsonText);
+                              if (!parsed.snapshots || !Array.isArray(parsed.snapshots)) throw new Error("Parsed data does not contain turn-by-turn snapshots.");
+                              setReplayPayload(parsed);
+                              setCurrentReplayIdx(0);
+                              setReplayError(null);
+                            } catch (err: any) {
+                              setReplayError(err.message || String(err));
+                            }
+                          }, 10);
+                        }
+                      }}
+                      onChange={(e) => {
+                        setPastedLogs(e.target.value);
+                        setReplayError(null);
+                      }}
+                      placeholder="Paste text of the downloaded .txt logs file here..."
+                      className="w-full bg-slate-950 text-slate-200 text-xs font-mono p-3 rounded-lg border border-slate-800 focus:outline-none focus:border-slate-700 focus:ring-1 focus:ring-slate-700 placeholder-slate-600 resize-none"
+                    />
+                  </div>
+
                   <button
                     onClick={() => {
                       try {
@@ -5752,32 +6425,27 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
                           throw new Error("Pasted content is empty.");
                         }
                         
-                        // Robust parser
+                        // Fast non-allocating parser
                         const startMarker = "--- COMPREHENSIVE SIMULATOR REPLAY DATA ---";
                         const endMarker = "--- END OF SIMULATOR REPLAY DATA ---";
                         
+                        let searchSource = pastedLogs;
+                        const startIdx = pastedLogs.indexOf(startMarker);
+                        if (startIdx !== -1) {
+                          const afterStart = pastedLogs.substring(startIdx + startMarker.length);
+                          const endIdx = afterStart.indexOf(endMarker);
+                          searchSource = endIdx !== -1 ? afterStart.substring(0, endIdx) : afterStart;
+                        }
+                        
+                        const firstBrace = searchSource.indexOf('{');
+                        const lastBrace = searchSource.lastIndexOf('}');
                         let jsonText = "";
-                        if (pastedLogs.includes(startMarker)) {
-                          const parts = pastedLogs.split(startMarker);
-                          if (parts[1]) {
-                            const subParts = parts[1].split(endMarker);
-                            const rawBlock = subParts[0];
-                            const firstBrace = rawBlock.indexOf('{');
-                            const lastBrace = rawBlock.lastIndexOf('}');
-                            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-                              jsonText = rawBlock.substring(firstBrace, lastBrace + 1).trim();
-                            } else {
-                              jsonText = rawBlock.trim();
-                            }
-                          }
+                        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                          jsonText = searchSource.substring(firstBrace, lastBrace + 1).trim();
+                        } else if (firstBrace !== -1) {
+                          jsonText = searchSource.substring(firstBrace).trim();
                         } else {
-                          const firstBrace = pastedLogs.indexOf('{');
-                          const lastBrace = pastedLogs.lastIndexOf('}');
-                          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-                            jsonText = pastedLogs.substring(firstBrace, lastBrace + 1).trim();
-                          } else if (firstBrace !== -1) {
-                            jsonText = pastedLogs.substring(firstBrace).trim();
-                          }
+                          jsonText = searchSource.trim();
                         }
                         
                         if (!jsonText) {
@@ -5872,13 +6540,24 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
                         </button>
                         <button
                           onClick={() => setReplayIsPlaying(!replayIsPlaying)}
-                          className={`flex-1 sm:flex-none py-1.5 px-4 font-bold text-xs rounded transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                          className={`flex-1 sm:flex-none py-1.5 px-3 font-bold text-xs rounded transition-all flex items-center justify-center gap-1 cursor-pointer ${
                             replayIsPlaying
                               ? 'bg-amber-600 hover:bg-amber-500 text-white'
                               : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                           }`}
                         >
                           {replayIsPlaying ? '⏸ PAUSE' : '▶ PLAY'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setReplayIsPlaying(true);
+                            setIsMinimized(true);
+                          }}
+                          className="flex-1 sm:flex-none py-1.5 px-3 bg-emerald-950/80 hover:bg-emerald-900/90 border border-emerald-600/80 text-emerald-300 font-bold text-xs rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+                          title="Start playback and minimize panel to watch gameplay live on canvas"
+                        >
+                          <Minimize2 className="w-3.5 h-3.5" />
+                          <span>PLAY & MINIMIZE</span>
                         </button>
                         <button
                           onClick={() => {
@@ -6614,7 +7293,7 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
               </div>
 
               {/* SECTION 1: Direct Player Parameters */}
-              <GodStatEditor gameState={gameState} setGameState={setGameState} />
+              <GodStatEditor gameState={gameState} setGameState={setGameState} scarDatabase={SCAR_DATABASE} />
 
               {/* SECTION 2: Visual Spell Scrolls & Recipes Laboratory */}
               <div className="space-y-4">
@@ -6920,3 +7599,6 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
     </div>
   );
 }
+
+export const GodPanelOverlay = React.memo(GodPanelOverlayComponent);
+export default GodPanelOverlay;

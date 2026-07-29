@@ -15,14 +15,19 @@ function getAudioContext(): AudioContext | null {
     }
   }
   if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    audioCtx.resume().catch(() => {});
   }
   return audioCtx;
 }
 
 export function playSound(type: 'bump' | 'slash' | 'spell' | 'loot' | 'trap' | 'levelUp' | 'injury' | 'defeat' | 'victory' | 'craft' | 'forge' | 'mutate' | 'lockpick_click' | 'lockpick_snap' | 'unlock' | 'eat' | 'drink' | 'click' | (string & {})) {
   const ctx = getAudioContext();
-  if (!ctx || ctx.state === 'suspended') return;
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+    return;
+  }
 
   const now = ctx.currentTime;
 

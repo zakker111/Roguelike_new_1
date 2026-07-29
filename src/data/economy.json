@@ -1,0 +1,50 @@
+{
+  "reputationScaling": {
+    "neutralThreshold": 50,
+    "friendlyThreshold": 51,
+    "championThreshold": 81,
+    "friendlyDiscount": 0.9,
+    "championDiscount": 0.8
+  },
+  "charismaDiscount": {
+    "maxDiscountPercent": 0.25,
+    "percentPerPointAbove10": 0.01
+  },
+  "caravanBonus": {
+    "sellPayoutMultiplier": 1.30
+  },
+  "biomePriceMultipliers": {
+    "desert": {
+      "mat_wood": 1.4,
+      "cat_frost": 1.4,
+      "mat_obsidian": 0.8,
+      "cat_fire": 0.8
+    },
+    "volcano": {
+      "mat_wood": 1.4,
+      "cat_frost": 1.4,
+      "mat_obsidian": 0.8,
+      "cat_fire": 0.8
+    },
+    "snow": {
+      "cat_fire": 1.4,
+      "mat_wood": 1.4,
+      "cat_frost": 0.8
+    },
+    "glacier": {
+      "cat_fire": 1.4,
+      "mat_wood": 1.4,
+      "cat_frost": 0.8
+    },
+    "swamp": {
+      "mat_iron": 1.3,
+      "mat_mithril": 1.3,
+      "mat_wood": 0.8
+    },
+    "forest": {
+      "mat_iron": 1.3,
+      "mat_mithril": 1.3,
+      "mat_wood": 0.8
+    }
+  }
+}

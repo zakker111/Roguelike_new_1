@@ -230,7 +230,7 @@ export function carveStructure(
       } else if (char === ' ') {
         // Empty space leaves the tile untouched
       } else {
-        // Default fallback to walkable floor if char isn't specified but matched legend fails
+        console.error(`[DEV ERROR] carveStructure: Preset '${preset.id}' has unmapped char '${char}' at local offset (${x}, ${y})! Legend mapping failed. Defaulting tile to Floor.`);
         updatedMap[sy + y][sx + x] = TileType.Floor;
       }
     }

@@ -16,7 +16,7 @@ interface DifficultyTrackerProps {
   currentWeapon?: { damage: number; name?: string } | null;
 }
 
-export default function DifficultyTracker({ 
+function DifficultyTrackerComponent({ 
   turnsPlayed, 
   realTimeSeconds, 
   depth,
@@ -236,3 +236,6 @@ export default function DifficultyTracker({
     </div>
   );
 }
+
+export const DifficultyTracker = React.memo(DifficultyTrackerComponent);
+export default DifficultyTracker;

@@ -57,8 +57,49 @@ export function findNearestSafePlayerTile(
     }
   }
 
-  // Fallback to center coordinates
+  console.error(`[DEV ERROR] findNearestSafePlayerTile: No valid safe spawn point found within radius 25 around (${startX}, ${startY}). Defaulting to map center.`);
   return { x: Math.floor(LEVEL_WIDTH / 2), y: Math.floor(LEVEL_HEIGHT / 2) };
+}
+
+/**
+ * Searches for a target stair or tile type on the map.
+ * If missing, raises an explicit developer error instead of silently defaulting to hardcoded coordinates.
+ */
+export function findStairsOrWalkablePosition(
+  map: TileType[][],
+  targetTile: TileType,
+  contextName: string = 'Dungeon Level'
+): { x: number; y: number } {
+  if (!map || map.length === 0) {
+    console.error(`[DEV ERROR] ${contextName}: Provided map is empty or invalid!`);
+    return { x: 1, y: 1 };
+  }
+
+  let targetY = map.findIndex((row) => row.includes(targetTile));
+  let targetX = targetY !== -1 && map[targetY] ? map[targetY].indexOf(targetTile) : -1;
+
+  if (targetY !== -1 && targetX !== -1) {
+    return { x: targetX, y: targetY };
+  }
+
+  console.error(
+    `[DEV ERROR] ${contextName}: Expected tile '${targetTile}' was missing from the map! Automatically repairing level map...`
+  );
+
+  // Search for the first walkable floor tile and repair the map
+  for (let y = 0; y < map.length; y++) {
+    for (let x = 0; x < map[0].length; x++) {
+      const tile = map[y][x];
+      if (tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path || tile === TileType.StairsUp || tile === TileType.StairsDown) {
+        map[y][x] = targetTile;
+        console.warn(`[DEV REPAIR] Placed missing '${targetTile}' at (${x}, ${y}) on ${contextName}.`);
+        return { x, y };
+      }
+    }
+  }
+
+  console.error(`[DEV CRITICAL ERROR] ${contextName}: No walkable floor tile found on entire map!`);
+  return { x: 1, y: 1 };
 }
 
 export function hasEquippedTrait(gameState: Partial<GameState>, trait: string): boolean {

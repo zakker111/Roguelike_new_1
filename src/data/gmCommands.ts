@@ -1,6 +1,9 @@
 import React from 'react';
 import { GameState, Enemy, EnemyType, EnemyState, TileType, Follower, EquipmentItem } from '../types';
 import { isCastleTownAtChunk } from '../utils/overworld';
+import { generateLevel, generateDungeonProps } from '../utils/dungeon';
+import { computeFOV } from '../utils/ai';
+import { findStairsOrWalkablePosition } from '../utils/gameUtils';
 
 export interface GmCommand {
   id: string;
@@ -207,6 +210,114 @@ export const GM_COMMANDS: GmCommand[] = [
       });
       addLog('📦 You found a forgotten Sovereign Resource Cache on the ground containing (+3 Mithril, +2 Obsidian, and +2 Catalyst Shards)!', 'loot');
       return { success: true, message: 'Premium materials package deposited safely.' };
+    }
+  },
+  {
+    id: 'warp_dungeon_depth1',
+    name: 'Open Portal to Abyss Dungeon',
+    description: 'Instantly warp the hero straight into Depth 1 of the Abyss Dungeon.',
+    category: 'Spawning Actions',
+    iconName: 'Sparkles',
+    costBoredom: -20,
+    execute: (gameState, setGameState, addLog) => {
+      setGameState(prev => {
+        const chunkX = prev.currentChunkX;
+        const chunkY = prev.currentChunkY;
+        const dungeonKey = `${chunkX},${chunkY}_depth-1`;
+        const dungeonLevelsSafe = prev.dungeonLevels || {};
+        const existing = dungeonLevelsSafe[dungeonKey];
+
+        if (existing) {
+          const { x: stairsUpX, y: stairsUpY } = findStairsOrWalkablePosition(existing.map, TileType.StairsUp, `Abyss Floor 1`);
+
+          const fov = computeFOV(stairsUpX, stairsUpY, existing.map, 8);
+          const discovered = existing.map.map((row, y) =>
+            row.map((cell, x) => (existing.discovered?.[y]?.[x] || fov?.[y]?.[x] || false))
+          );
+
+          return {
+            ...prev,
+            isOverworld: false,
+            isArena: false,
+            dungeonEntranceChunkX: chunkX,
+            dungeonEntranceChunkY: chunkY,
+            dungeonEntrancePlayerX: prev.isOverworld ? prev.playerX : (prev.dungeonEntrancePlayerX ?? prev.playerX),
+            dungeonEntrancePlayerY: prev.isOverworld ? prev.playerY : (prev.dungeonEntrancePlayerY ?? prev.playerY),
+            playerX: stairsUpX,
+            playerY: stairsUpY,
+            map: existing.map,
+            visible: fov,
+            discovered: discovered,
+            enemies: existing.enemies,
+            traps: existing.traps,
+            chests: existing.chests,
+            npcs: [],
+            dungeonProps: existing.props || [],
+            playerStats: {
+              ...prev.playerStats,
+              depth: 1
+            }
+          };
+        } else {
+          const nextLvl = generateLevel(
+            64,
+            40,
+            1,
+            prev.playerStats.turnsPlayed,
+            prev.playerStats.realTimeSeconds,
+            prev.playerStats,
+            prev.currentWeapon,
+            prev.defeatedEnemiesCount,
+            prev.clearedCamps?.length || 0
+          );
+          const fov = computeFOV(nextLvl.playerX, nextLvl.playerY, nextLvl.map, 8);
+          const discovered = nextLvl.map.map((row, y) => row.map((_, x) => fov[y][x]));
+          const props = generateDungeonProps(nextLvl.map, 1);
+
+          return {
+            ...prev,
+            isOverworld: false,
+            isArena: false,
+            dungeonEntranceChunkX: chunkX,
+            dungeonEntranceChunkY: chunkY,
+            dungeonEntrancePlayerX: prev.isOverworld ? prev.playerX : (prev.dungeonEntrancePlayerX ?? prev.playerX),
+            dungeonEntrancePlayerY: prev.isOverworld ? prev.playerY : (prev.dungeonEntrancePlayerY ?? prev.playerY),
+            playerX: nextLvl.playerX,
+            playerY: nextLvl.playerY,
+            map: nextLvl.map,
+            visible: fov,
+            discovered: discovered,
+            enemies: nextLvl.enemies,
+            traps: nextLvl.traps,
+            chests: nextLvl.chests,
+            npcs: [],
+            dungeonProps: props,
+            dungeonLevels: {
+              ...dungeonLevelsSafe,
+              [dungeonKey]: {
+                depth: 1,
+                chunkX,
+                chunkY,
+                map: nextLvl.map,
+                discovered,
+                enemies: nextLvl.enemies,
+                traps: nextLvl.traps,
+                chests: nextLvl.chests,
+                lootPiles: [],
+                corpses: [],
+                bloodSplatters: [],
+                props
+              }
+            },
+            playerStats: {
+              ...prev.playerStats,
+              depth: 1
+            }
+          };
+        }
+      });
+      addLog('🌀 GM TELEPORT: Opened an abyss portal, warping you directly into Dungeon Abyss Floor 1!', 'system');
+      return { success: true, message: 'Warped to Dungeon Abyss Floor 1!' };
     }
   },
   {

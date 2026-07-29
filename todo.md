@@ -136,14 +136,56 @@ This document outlines the master roadmap, active system checklists, and future 
    [v3.9.14] Unstable Mutation Synergy Chains & Dual-Element Infusion (DONE ✔)
        │
        ▼
-    [v4.0.0-tbd] Infinite Ocean Navigation, Ship Crafting & Sea Monsters (ROADMAP)
+    [v4.0.4] Engine Architectural Deconstruction, Custom Hooks & Rendering Optimization (DONE ✔)
+        │
+        ▼
+     [v4.0.5-tbd] Infinite Ocean Navigation, Ship Crafting & Sea Monsters (ROADMAP)
 ```
 
 ---
 
+## 🏗️ Monolith Deconstruction & Architectural Refactoring Plan (v4.1.0 Roadmap)
+
+### Phase 1: GodPanelOverlay.tsx Tab Splitting (Low Risk)
+* **Goal**: Reduce `GodPanelOverlay.tsx` from 7,435 lines to ~1,500 lines.
+* **Action**: Extract dedicated UI tab sub-components into `/src/components/god/`:
+  * [ ] `GodEntitySpawner.tsx` (Monster/NPC/Follower spawn controls)
+  * [ ] `GodTeleportWarpPanel.tsx` (Abyss/Town/Dungeon warp controls)
+  * [ ] `GodWeatherScarEditor.tsx` (Scar manipulation & season controls)
+  * [ ] `GodCaravanManager.tsx` (Merchant & trade inspection controls)
+
+### Phase 2: App.tsx Handler & Modal Decoupling (Medium Risk)
+* **Goal**: Reduce `App.tsx` from 10,525 lines to ~3,500 lines.
+* **Action**:
+  * [ ] Extract combat calculations and turn resolution handlers into a dedicated `/src/hooks/useCombatEngine.ts`.
+  * [ ] Extract inline modal rendering blocks into modular wrapper components inside `/src/components/modals/`.
+  * [ ] Move global event listeners (keyboard shortcut binders, save/load state serialization) into `/src/hooks/useGameStatePersistence.ts`.
+
+### Phase 3: overworld.ts Subsystem Modularization (Low Risk)
+* **Goal**: Reduce `overworld.ts` from 2,867 lines to ~800 lines.
+* **Action**:
+  * [ ] Move structure templates and placement logic into `/src/world/structureGenerators.ts`.
+  * [ ] Move POI (Watchtowers, Ruins, Shrines) state logic into `/src/world/poiGenerators.ts`.
+  * [ ] Retain core chunk heightmap & biome generation in `overworld.ts`.
+
+### Phase 4: Guild & Crafting UI Extraction (Low Risk)
+* **Goal**: Shrink `GuildOverlay.tsx` (1,979 lines) and `CraftingPanel.tsx` (1,738 lines).
+* **Action**:
+  * [ ] Extract Guild Treasury and Mission Board sub-components into `/src/components/guild/`.
+  * [ ] Extract Recipe Catalog and Material Slot selectors into `/src/components/crafting/`.
+
+---
+
 ## 🗺️ 1. Active & Implemented Mechanics (Our Foundation)
+*   [x] **Engine Deconstruction & Custom Hooks Extraction (v4.0.4)**: Extracted `useSaveLoad.ts`, `useKeyboardInput.ts`, `usePlayerMovement.ts`, `useCombatEngine.ts`, and `useEnemyAI.ts` from `App.tsx` into standalone modular hooks.
+*   [x] **World Generators Isolation (v4.0.4)**: Modularized `dungeonGen.ts` and `overworldGen.ts` into `src/world/`.
+*   [x] **Performance & Rendering Optimization (v4.0.4)**: Implemented FOV spatial hash memoization and `React.memo` component render boundary isolation.
+*   [x] **Landing Page Tactical Primer Update (v4.0.3)**: Updated movement text to WASD or Numpad and added floor trap avoidance guidance in Tactical Primer instructions on the landing start screen.
+*   [x] **Engine Performance Pass, 2D Canvas Minimap & Context State Optimization (v4.0.2)**: 2D Canvas migration for ChunkMinimap, fast squared distance raycasting, and canvas context font setup optimization.
+*   [x] **Autonomous GM Engine, Replay Sim Dock, Chaos Natural Decay & Combat Rest Guard (v4.0.1)**: Default Autonomous GM mode enabled, minimizable Replay Sim bottom HUD dock, peaceful Chaos natural decay toward 20%, and campfire combat rest restrictions.
+*   [x] **Phase 4 Performance, Render Isolation & Admin Editor Safety (v4.0.0)**: Spatial hashing FOV optimizations, React.memo render boundaries, and Admin Editor crash fixes.
 *   [x] **Portable Blacksmith Anvil & Field Station Adjacency (v3.9.15)**: Deployable anvil station allowing equipment forging, mutation, and upgrades in the wild.
-*   [⏳] **Codebase Architecture, Refactoring & Performance Optimizations (v3.9.16)**: Systemic cleanup and modularization of monolithic files.
+*   [x] **Codebase Architecture, Refactoring & Performance Optimizations (v3.9.16)**: Systemic cleanup and modularization of monolithic files.
 These features are fully completed, integrated into our core engine, and balanced:
 
 *   [x] **Visceral Kinematics & Damage Feedback (v2.9.9)**:
@@ -747,20 +789,157 @@ Systemic architectural refactoring plan to eliminate code duplication, decompose
     *   [x] Split sub-tabs into `src/components/crafting/CookingTab.tsx`, `AlchemyTab.tsx`, and auxiliary subcomponents.
     *   [x] Centralize shared overforge heat gauge logic (`OverforgeGauge.tsx`).
 
-#### **Phase 3: Core App Engine Deconstruction (`App.tsx` Monolith - 18,000+ lines)**
-*   [ ] **3.1 Extract Custom Engine Hooks**:
-    *   [ ] `useSaveLoad.ts`: LocalStorage serialization, auto-save timers, and save file sanitization.
-    *   [ ] `usePlayerMovement.ts`: Key bindings, tile collisions, stamina consumption, and stair transitions.
-    *   [ ] `useCombatEngine.ts`: Attack calculations, scar triggers, overforge heat recoil, and critical hits.
-    *   [ ] `useEnemyAI.ts`: Pathfinding, faction chase algorithms, and turn-based enemy actions.
-*   [ ] **3.2 Isolate World & Dungeon Generators**:
-    *   [ ] Extract dungeon generation algorithms into `src/world/dungeonGen.ts`.
-    *   [ ] Extract overworld chunk generation and landmark placement into `src/world/overworldGen.ts`.
+#### **Phase 3: Core App Engine Deconstruction & Custom Hooks (`src/hooks/`) - DONE ✔**
+*   [x] **3.1 Extract Custom Engine Hooks**:
+    *   [x] `useSaveLoad.ts`: LocalStorage serialization, auto-save timers, import/export save state sanitization.
+    *   [x] `useKeyboardInput.ts`: Key bindings, WASD/Numpad/Arrow controls, hotkey actions, and modal input suppression.
+    *   [x] `usePlayerMovement.ts`: Movement logic, tile collisions, stamina consumption, and stair transitions.
+    *   [x] `useCombatEngine.ts`: Attack calculations, scar triggers, overforge heat recoil, and critical hits.
+    *   [x] `useEnemyAI.ts`: Pathfinding, faction chase algorithms, and turn-based enemy actions.
+*   [x] **3.2 Isolate World & Dungeon Generators**:
+    *   [x] Extract dungeon generation algorithms into `src/world/dungeonGen.ts`.
+    *   [x] Extract overworld chunk generation and landmark placement into `src/world/overworldGen.ts`.
 
-#### **Phase 4: Performance & Rendering Optimization (High Performance Gains)**
-*   [ ] **4.1 FOV & Line-of-Sight Raycasting Memoization**:
-    *   [ ] Memoize raycasting computations to prevent re-running visibility checks on static turns.
-*   [ ] **4.2 Render Boundary & Canvas Optimization**:
-    *   [ ] Wrap canvas overlays and HUD sub-panels in `React.memo` to prevent cascading re-renders when unrelated state variables change.
+#### **Phase 4: Performance & Rendering Optimization (High Performance Gains - DONE ✔)**
+*   [x] **4.1 FOV & Line-of-Sight Raycasting Memoization**:
+    *   [x] Memoize raycasting computations (`computeFOV`, `bresenhamLine`) with bounding-box hashing to prevent re-running visibility checks on static turns.
+*   [x] **4.2 Render Boundary & Canvas Optimization**:
+    *   [x] Wrap canvas overlays and HUD sub-panels (`GameCanvas`, `GameLog`, `DifficultyTracker`, `DungeonGlancePanel`, `UnifiedInventoryPanel`, `CraftingPanel`, `GodPanelOverlay`, `AppOverlays`, `MutationSynergyPanel`, `OverforgeGauge`, `CookingTab`, `AlchemyTab`) in `React.memo` to prevent cascading re-renders when unrelated state variables change.
+
+#### **Phase 5: Infinite Ocean Navigation & Naval Crafting (v4.0.5 Roadmap)**
+*   [ ] **5.1 Ship Building & Shipyard Crafting Station**:
+    *   [ ] Add Shipyard building to coastal settlement chunks (`ShipyardTab.tsx`).
+    *   [ ] Implement vessel blueprints: Longship, Brigantine, Ironclad Skiff.
+    *   [ ] Add naval timber, sailcloth, and pitch crafting recipes.
+*   [ ] **5.2 Open Sea Navigation & Archipelago Procedural Generation**:
+    *   [ ] Generate infinite oceanic water chunks with coral reefs, deep trenches, and hidden islands.
+    *   [ ] Implement wind vector mechanics affecting ship velocity and direction.
+*   [ ] **5.3 Aquatic Bestiary & Abyssal Encounters**:
+    *   [ ] Add sea monsters: Kraken tentacles, Leviathans, Sirens, Drowned Marauders.
+    *   [ ] Implement ship-to-ship cannon combat and broadside mechanics.
+
+#### **Phase 6: Faction Wars, Diplomacy & Territory Conquest (v4.0.6 Roadmap)**
+*   [ ] **6.1 Dynamic Faction Reputation & Alliance System**:
+    *   [ ] Implement 4 major factions: Pohjola Clan, Kalevala Guardians, Deep-Forge Guild, Sovereign Raiders.
+    *   [ ] Add dynamic alliance matrix, bounty contracts, and regional influence indicators.
+*   [ ] **6.2 Fortress Conquest & Territory Siege Engine**:
+    *   [ ] Allow player-constructed outposts and guard towers to claim surrounding territory nodes.
+    *   [ ] Implement siege weapons (catapults, ballistas) and automated faction raid defense events.
+
+#### **Phase 7: Elemental Alchemy & High-Tier Spell Synthesizer (v4.0.7 Roadmap)**
+*   [ ] **7.1 Advanced Catalyst Combination Matrix**:
+    *   [ ] Implement multi-catalyst spell weaving combining Fire, Frost, Lightning, Void, and Solar affinities.
+    *   [ ] Add lingering environmental hazards (electrified water, freezing miasma, burning oil trails).
+*   [ ] **7.2 Mythic Boss Relics & Divine Transformation Engine**:
+    *   [ ] Implement avatar transformations (Form of Surtur, Avatar of Ukko, Ice Sovereign).
+    *   [ ] Add unique ultimate ability cooldowns and screen-shake combat visual feedback.
+
+#### **Phase 8: Audio Engine & Procedural Soundscapes (v4.0.8 Roadmap)**
+*   [ ] **8.1 Multi-Layer Dynamic Ambient Audio System**:
+    *   [ ] Add biome-specific ambient audio loops (forest breeze, deep dungeon echoes, ocean waves, desert winds).
+    *   [ ] Dynamic music intensity transitions during boss encounters and low-HP critical state.
+*   [ ] **8.2 Spatial Weapon Sound FX & UI Audio Feedback**:
+    *   [ ] Add distinct impact sounds for blunts, blades, arrows, magic missiles, and parry blocks.
+
+#### **Phase 9: Modal UI Componentization & `App.tsx` Size Reduction (v4.0.9 Refactoring Roadmap)**
+*   [x] **9.1 Extract Inline Modal Dialogs (`src/components/modals/`)**:
+    *   [x] Extract NPC Dialogue & Quest Modal (`DialogueModal.tsx`).
+    *   [x] Extract Merchant & Settlement Trade Modal (`TradeModal.tsx`).
+    *   [x] Extract Caravan Escort Journey Modal (`CaravanEscortModal.tsx`).
+    *   [x] Extract Point of Interest Choice Modal (`PoiChoiceModal.tsx`).
+    *   [x] Extract Settlement & Structure Management Modal (`BuildingInteractModal.tsx`).
+*   [x] **9.2 Reduce `App.tsx` Footprint**:
+    *   [x] Modularize remaining inline UI handlers and trade/modal overlays into dedicated components.
+
+#### **Phase 10: State Management & Context Slicing (v4.1.0 Architecture Roadmap)**
+*   [x] **10.1 Modularize `GameState` into Domain Contexts (`src/context/`)**:
+    *   [x] Create `PlayerContext.tsx` for stats, inventory, equipment, and active scars/effects.
+    *   [x] Create `WorldContext.tsx` for chunk maps, dungeons, weather, time, and structures.
+    *   [x] Create `CombatContext.tsx` for enemies, turn queues, combat logs, and AI state.
+*   [x] **10.2 Atomic Reducer State Updates**:
+    *   [x] Replace heavy monolithic `setGameState` spreads with targeted reducer actions to minimize memory churn.
+
+#### **Phase 11: Data & Economy Centralization (`src/data/`)**
+*   [x] **11.1 Centralize Dialogue Trees & Quest Matrices**:
+    *   [x] Extract inline NPC dialogue text and quest trees into `src/data/dialogues.json`.
+    *   [x] Extract settlement trade tables and price scaling rules into `src/data/economy.json`.
+*   [x] **11.2 Centralize Game Balance Constants**:
+    *   [x] Consolidate damage formulas, armor mitigation curves, and XP leveling thresholds into `src/data/balance.ts`.
+
+#### **Phase 12: Automated Verification & Unit Testing Framework (Comprehensive Suite)**
+*   [x] **12.1 Core AI, Movement & Pathfinding Verification**:
+    *   [x] Add test suite for A* pathfinding algorithms, obstacle navigation, and Bresenham FOV line-of-sight raycasting math (`ai.ts` & spatial hashing).
+    *   [x] Add test suite for follower movement AI, anti-trapping position swapping on player step, and idle jitter dispersion.
+    *   [x] Add test suite for NPC coordinate sanitization & 20-tile spiral search validation to prevent spawning inside solid walls, trees, or water tiles.
+    *   [x] Add test suite for enemy pursuit state machines, spellcasting projectile paths (`Nakki`, `Louhi`), and boss AI behaviors.
+*   [x] **12.2 Combat Engine, Invasion Events & Debuff Property Safety**:
+    *   [x] Add test suite for Watchtower Siege and Castle Invasion dynamic event spawners, validating that all spawned attackers/defenders have initialized `debuffs: []`, `maxHp`, and valid type definitions.
+    *   [x] Add test suite for player melee, ranged, and scroll spell attacks against all enemy types and faction guards to ensure 0 crashes or missing property runtime errors.
+    *   [x] Add test suite for combat damage calculations, armor mitigation formulas, and sub-linear ATK scaling dampening vs monster HP/DEF scaling.
+    *   [x] Add test suite for status affliction processing (`turnsRemaining` vs `duration` fallbacks) and debuff tick damage in `useEnemyAI.ts` and `useSpellcasting.ts`.
+    *   [x] Add test suite for dual-hand equipment durability degradation across weapon and shield slots under combat strikes and blocks.
+    *   [x] Add test suite for scar acquisition probability checks ($\ge 12$ HP damage or $< 35\%$ HP), fresh countdown (25 turns) to healed transition, and `getEffectiveStats` attribute calculation accuracy.
+    *   [x] Add test suite for overforge heat bellows gauge recoil, risk/reward modifiers, and blacksmith repair priority sorting.
+*   [x] **12.3 World Generation, Chunk Scrolling & Camera Focus Tests**:
+    *   [x] Add test suite for 64x40 overworld chunk generation, Whittaker biome mapping (`worldConfig.json`), and landmark structure preset carving (`carveStructure`).
+    *   [x] Add test suite for dungeon level generation, staircase descend transitions, level state persistence, and return coordinate accuracy.
+    *   [x] Add test suite for smooth camera tracking interpolation, chunk boundary jump snap repositioning, and minimap spatial hash updates.
+*   [x] **12.4 Save File Serialization & Backward Compatibility Suite**:
+    *   [x] Add test suite for LocalStorage game state serialization, schema validation (`useSaveLoad.ts`), and missing key sanitization.
+    *   [x] Add test suite for backward compatibility and migration of legacy save files across versions without runtime exceptions.
+    *   [x] Add test suite for export/import JSON payload verification, payload corruption recovery defaults, and log history export integrity.
+*   [x] **12.5 Economy, Caravans, Trading & Life Skills Tests**:
+    *   [x] Add test suite for biome-based trade price multiplier formulas, dynamic trade rate badges, and vendor purchase discounts (`tradeEconomy.ts`).
+    *   [x] Add test suite for Caravan Escort road event resolver (Bandit Ambushes, Rockslides, d20 stat check DC thresholds, and resource deductions).
+    *   [x] Add test suite for campfire cooking recipes, alchemical brewing inputs/outputs, and Apothecary lab tier upgrade deductions.
+*   [x] **12.6 Log Integrity, UI Renderers & System Diagnostics Suite**:
+    *   [x] Add test suite for `GameLog` text formatting, string null guards, unique row keys, duplicate log frequency counter collapsing, and log export utilities.
+    *   [x] Add test suite for `entityLayerRenderer.ts` corpse and entity rendering string safety checks (`name?.toLowerCase()`).
+    *   [x] Add test suite for Scroll of Recall and fast travel target coordinate sanitization (Oakhaven Town, Central Outpost, Safehouses).
+    *   [x] Add test suite for Virtual Smoke Test Runner automated tick execution and continuous core loop stability checks.
+*   [x] **12.7 Item Stacking, Scroll Inventory & Overencumbrance Verification**:
+    *   [x] Add test suite for scroll stack consolidation, scroll consumption, item adding, and inventory carrying weight capacity calculations (`itemsAndInventory.test.ts`).
+
+#### **Phase 13: `src/App.tsx` Monolith Decomposition Roadmap**
+*   [x] **13.1 Extract Spellcasting & Ability Engine (`src/hooks/useSpellcasting.ts`)**:
+    *   [x] Move spell casting, mana verification, projectile targeting, AOE effects, status applications, and scroll consumption out of `App.tsx` into `useSpellcasting.ts`.
+*   [x] **13.2 Extract World & Dungeon Interactions (`src/hooks/useWorldInteraction.ts`)**:
+    *   [x] Extract overworld stairs navigation, resource harvesting (trees/ore veins), door opening, and environment interactions out of `App.tsx` into `useWorldInteraction.ts`.
+*   [x] **13.3 Extract Crafting, Repair & Alchemy Engine (`src/hooks/useCraftingEngine.ts`)**:
+    *   [x] Move weapon/armor crafting handlers, overforge heat recoil calculations, equipment repairs, and alchemy brewing out of `App.tsx`.
+*   [x] **13.4 Extract Main App Layout & View Shell (`src/components/MainAppLayout.tsx`)**:
+    *   [x] Decouple HUD elements, status bars, canvas containers, and active modal overlays from `App.tsx` to streamline top-level state rendering.
+
+#### **Phase 14: `src/components/GodPanelOverlay.tsx` Sub-System Decomposition**
+*   [x] **14.1 Split God Panel Tabs into Subcomponents (`src/components/god/`)**:
+    *   [x] Move God Item/Weapon Spawner into `GodItemSpawner.tsx`.
+    *   [x] Move World Map Editor & Biome Tools into `GodWorldEditor.tsx`.
+    *   [x] Move Player Stat & Scar Modifier into `GodStatEditor.tsx`.
+
+#### **Phase 15: `src/utils/overworld.ts` Map Generator Decomposition**
+*   [x] **15.1 Modularize Overworld Generation Sub-modules**:
+    *   [x] Extract Biome Distribution logic into `src/world/overworldBiomes.ts`.
+    *   [x] Extract Structure & POI Placement into `src/world/overworldStructures.ts`.
+
+#### **Phase 16: `src/components/GameCanvas.tsx` Render Layer Modularization**
+*   [x] **16.1 Separate Canvas Layer Renderers**:
+    *   [x] Modularize Tile Map Renderer, Entity Layer Renderer, and Weather/Lighting FX Layer into isolated rendering modules (`src/canvas/tileMapRenderer.ts`, `src/canvas/entityLayerRenderer.ts`, `src/canvas/weatherLightingRenderer.ts`, `src/canvas/spriteRenderer.ts`).
+
+#### **Phase 17: Dungeon Entrance Crash Fix & Code Cleanup Audit**
+*   [x] **17.1 Fix Dungeon Entrance Crash (`TypeError: Cannot read properties of undefined (reading 'id')`)**:
+    *   [x] Save `dungeonLevels: nextDungeonLevels` in `usePlayerMovement.ts` first floor descend transition.
+    *   [x] Guard `activeTargetedScroll` in `useSpellcasting.ts`.
+    *   [x] Guard `item` and `item.id` in `useEquipmentHandlers.ts`.
+    *   [x] Replace non-null assertions in `useCraftingEngine.ts` with safe fallbacks.
+    *   [x] Guard `enemy.id` in `GameCanvas.tsx` shaker handler.
+    *   [x] Guard `guardFollower.id` in `GuildOverlay.tsx`.
+    *   [x] Guard `poi.id` and `choice.id` in `PoiInteractionOverlay.tsx`.
+    *   [x] Add default merchant name fallback in `App.tsx` trade booth tab button.
+*   [x] **17.2 Code Base Audit & Import/Export Cleanup**:
+    *   [x] Verify zero TypeScript errors across all modules (`tsc --noEmit`).
+    *   [x] Confirm production build succeeds (`compile_applet`).
+
+
+
 
 

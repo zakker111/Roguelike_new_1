@@ -210,8 +210,10 @@ export default function GuildOverlay({ gameState, setGameState, addLogMessage, p
         }
 
         // Remove the guard follower from active party and map entities
-        nextFollowers = nextFollowers.filter(f => f.id !== guardFollower.id);
-        nextEnemies = nextEnemies.filter(e => e.followerId !== guardFollower.id);
+        if (guardFollower) {
+          nextFollowers = nextFollowers.filter(f => f.id !== guardFollower.id);
+          nextEnemies = nextEnemies.filter(e => e.followerId !== guardFollower.id);
+        }
 
         // Add them as a stationary merchant NPC guarding the safehouse
         nextNpcs = nextNpcs.filter(n => n.id !== guardNpcId);

@@ -18,7 +18,7 @@ export interface AlchemyTabProps {
   handleBrew: (recipe: BrewingRecipe) => void;
 }
 
-export const AlchemyTab: React.FC<AlchemyTabProps> = ({
+export const AlchemyTab = React.memo<AlchemyTabProps>(({
   labTier,
   nextUpgradeCost,
   playerGold,
@@ -156,4 +156,6 @@ export const AlchemyTab: React.FC<AlchemyTabProps> = ({
       </div>
     </div>
   );
-};
+});
+
+export default AlchemyTab;

@@ -10,7 +10,7 @@ interface MutationSynergyPanelProps {
   compact?: boolean;
 }
 
-export const MutationSynergyPanel: React.FC<MutationSynergyPanelProps> = ({
+export const MutationSynergyPanel = React.memo<MutationSynergyPanelProps>(({
   existingCatalysts = [],
   selectedCatalystType,
   mutationCount = 0,
@@ -152,4 +152,6 @@ export const MutationSynergyPanel: React.FC<MutationSynergyPanelProps> = ({
       </div>
     </div>
   );
-};
+});
+
+export default MutationSynergyPanel;

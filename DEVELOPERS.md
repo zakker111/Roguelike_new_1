@@ -13,6 +13,21 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   ├── main.tsx                   # React Entry Point
   ├── index.css                  # Tailwinds Styling Entry Point
   │
+  ├── 📂 hooks                   # Custom Domain Engine Hooks (v4.0.5)
+  │   ├── useCraftingEngine.ts   # Forging, cooking, campfires, anvils, repairs & mutation forge (NEW)
+  │   ├── useSpellcasting.ts     # Spell casting, mana verification, projectile targeting & scroll consumption (NEW)
+  │   ├── useWorldInteraction.ts # Overworld stairs, resource harvesting (trees/ore), door opening (NEW)
+  │   ├── useEnemyAI.ts          # Pathfinding, faction chase algorithms, and enemy turn solver
+  │   ├── useCombatEngine.ts     # Attack calculations, scar triggers, overforge heat recoil
+  │   ├── usePlayerMovement.ts   # Movement logic, tile collisions, stamina consumption
+  │   ├── useKeyboardInput.ts    # Key bindings, hotkey actions, and modal input suppression
+  │   ├── useEquipmentHandlers.ts# Equipment equipping, unequipping, swapping, durability & stat hooks
+  │   └── useSaveLoad.ts         # LocalStorage serialization, auto-save timers
+  │
+  ├── 📂 world                   # Isolated World & Dungeon Generators (v4.0.4)
+  │   ├── dungeonGen.ts          # Procedural Cave/Dungeon Generator
+  │   └── overworldGen.ts        # Overworld chunk generation & landmark placement
+  │
   ├── 📂 components              # Modular UI Components & Screens
   │   ├── GameCanvas.tsx         # Canvas-based Grid Rendering Engine
   │   ├── CraftingPanel.tsx      # Alchemy, Forging & Cook Station Panel
@@ -21,14 +36,17 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   └── ...                    # Specific Modals & Interfaces
   │
   ├── 📂 data                    # Static Game Databases & JSON Schemas
-      ├── combatFlavors.ts       # Text generators for rich narrative combat
-      ├── enemies.json           # Declarative base monster stats
-      ├── gameConfig.json        # Engine tuning constants
-      ├── townTemplates.json     # Town layouts and merchant spawn configs
-      ├── worldConfig.json       # Biome thresholds, climate occurrence weights, and hazards
-      ├── relics.json            # Externalized Relic definitions and properties
-      ├── spellScrolls.json      # Externalized Spell Scroll templates and mana costs
-      └── scars.json             # Externalized Scar definitions and severity tables
+  │   ├── balance.ts             # Centralized XP leveling formulas, armor mitigation, & combat curves (NEW)
+  │   ├── economy.json           # Settlement trade tables, reputation tiers, & biome pricing (NEW)
+  │   ├── dialogues.json         # Externalized NPC dialogue trees & quest matrices (NEW)
+  │   ├── combatFlavors.ts       # Text generators for rich narrative combat
+  │   ├── enemies.json           # Declarative base monster stats
+  │   ├── gameConfig.json        # Engine tuning constants
+  │   ├── townTemplates.json     # Town layouts and merchant spawn configs
+  │   ├── worldConfig.json       # Biome thresholds, climate occurrence weights, and hazards
+  │   ├── relics.json            # Externalized Relic definitions and properties
+  │   ├── spellScrolls.json      # Externalized Spell Scroll templates and mana costs
+  │   └── scars.json             # Externalized Scar definitions and severity tables
   │
   └── 📂 utils                   # Pure Functional Engine Sub-Systems
       ├── weatherEngine.ts       # Data-driven weather effects & modifiers (NEW)
@@ -106,11 +124,14 @@ The engine will **automatically** parse your configuration for combat buffs, mov
 
 ---
 
-## ⚔️ How to Customize Combat & Spells
+## ⚔️ How to Customize Combat, Spells & Game Balance
 
+- **Centralized Balance Constants (`src/data/balance.ts`)**: Tweak XP formulas (`getXpForLevel`), damage mitigation curves (`calculateNetDamage`), critical hit multipliers (`calculateCritDamage`), and exhaustion thresholds in one central configuration.
 - **Basic Weapons & Crafting Materials**: Managed inside `src/utils/itemsData.ts`. Customize base templates, durability, range, and material modifiers.
 - **Spells & Spellcast**: Cast costs and custom magic projectiles are handled under `handleCastSpell` in `src/App.tsx`.
 - **Combat Narratives**: If you want to change how fights feel, modify `src/data/combatFlavors.ts` to add custom striking verbs, damage descriptions, and funny failure modes.
+- **Economy & Price Rules (`src/data/economy.json`)**: Configure settlement reputation discounts, charisma trade scaling, caravan multipliers, and regional biome pricing tables.
+- **NPC Dialogues & Quests (`src/data/dialogues.json`)**: Externalize and edit NPC dialogue trees, town rumors, and quest matrices.
 
 ---
 
@@ -338,12 +359,14 @@ The base threat is clamped to a defensive floor of **0.70x** to maintain a minim
 
 ## 🎒 Equipment & Inventory Swapping Architecture
 
-The equipment swapping mechanism in `src/App.tsx` handles swapping and unequipping for all equipment slots (`equippedArmor`, `equippedHelmet`, `equippedGloves`, `equippedBoots`, `equippedShield`, `equippedAmulet`, and `currentWeapon`):
+The equipment management engine is encapsulated in `src/hooks/useEquipmentHandlers.ts` and handles equipping, swapping, and unequipping across all paperdoll slots (`equippedArmor`, `equippedHelmet`, `equippedGloves`, `equippedBoots`, `equippedShield`, `equippedAmulet`, and `currentWeapon`):
 
-1. **Instance Preservation**: When an item is equipped from `equipmentInventory`, only a single matching instance is removed from `equipmentInventory`, preventing duplicate item IDs from being accidentally purged.
-2. **Bi-directional Swapping**: When equipping a new item into a slot that already contains an equipped item (including main hand weapons, off-hand shields, or body armor), the currently worn item is returned directly to `equipmentInventory` with all its original stats, durability, mutation counts, and stat bonuses intact.
-3. **Full Unequip Capability**: Any weapon or piece of armor (including starter weapons) can be unequipped ("Doffed") directly from the character paperdoll or status panel into the inventory stash.
-4. **Dual-Wielding & Two-Handed Rules**:
+1. **Modular Hook Abstraction (`useEquipmentHandlers.ts`)**: Encapsulates slot assignment, stat recalculations, and durability decay tracking into a dedicated custom hook.
+2. **Defensive Object Null-Safeguards**: Standard equipment items or drop loot that lack explicit `materialUsed` or `catalystUsed` objects are automatically populated with safe default objects (`Scrap Iron` material and `Normal/Shadow` catalyst) upon equipping and rendering, preventing runtime `TypeError: Cannot read properties of undefined (reading 'name')` exceptions.
+3. **Instance Preservation**: When an item is equipped from `equipmentInventory`, only a single matching instance is removed from `equipmentInventory`, preventing duplicate item IDs from being accidentally purged.
+4. **Bi-directional Swapping**: When equipping a new item into a slot that already contains an equipped item (including main hand weapons, off-hand shields, or body armor), the currently worn item is returned directly to `equipmentInventory` with all its original stats, durability, mutation counts, and stat bonuses intact.
+5. **Full Unequip Capability**: Any weapon or piece of armor (including starter weapons) can be unequipped ("Doffed") directly from the character paperdoll or status panel into the inventory stash.
+6. **Dual-Wielding & Two-Handed Rules**:
    - **One-Handed Weapons & Off-Hand Items**: One-handed weapons (Sword, Dagger, Hammer, Wand) can be equipped in either the Right Hand or Left Hand slot. Equipping a weapon in the off-hand adds a **Dual-Wielding Strike Bonus** (+50% off-hand weapon damage) to player attacks.
    - **Two-Handed Weapons**: Weapons marked as two-handed (Spear, Bow, Staff, Crossbow, Greatsword, Warhammer) require both hands. Equipping a 2-handed weapon in the Right Hand automatically unequips any item in the Left Hand back into inventory. Equipping an off-hand item while holding a 2-handed weapon automatically unequips the 2-handed weapon back to inventory.
 
@@ -460,6 +483,124 @@ To register a new elemental synergy trait (e.g. Earth + Fire -> Magma Burst):
 1. Open `src/data/enemies.json`.
 2. Add a new enemy key (e.g. `"FrostGiant"`) with `name`, `baseHp`, `baseAtk`, `baseDef`, `range`, `speed`, `char`, and `color`.
 3. (Optional) Add its custom drop matrix or boss flags in `src/utils/dungeon.ts` or `src/utils/overworld.ts`.
+
+---
+
+## 🚪 How to Construct & Spawn a Valid Dungeon Entrance Near the Player
+
+To test dungeon generation, transition logic, or level mechanics, developers can construct a valid dungeon entrance directly near the player in three ways:
+
+### Method A: Using Sovereign God Mode (Tile Painter)
+1. Open Sovereign God Mode by pressing `~` (Tilde) or clicking the God Mode icon (`F12`).
+2. Select the **World / Map Editor** tab.
+3. In the Tile Palette, select **`StairsDown`** (`🧱 Staircase / Dungeon Entrance`).
+4. Click on any walkable tile adjacent to the player's position `(playerX + 1, playerY)`.
+5. Step onto the tile and press `>` or click **Enter Dungeon** in the action bar. The game engine will automatically call `generateLevel(...)` and link `TileType.StairsUp` at the entry.
+
+### Method B: Using the GM Teleport / Portal Console Command
+1. Open the GM Console (`/` or Sovereign Console).
+2. Execute the **Open Portal to Abyss Dungeon** action (`/warp abyss` or select from GM Warp dropdown).
+3. The engine instantly generates a full 40x64 dungeon floor at Depth 1, positions the player on a valid `TileType.StairsUp` tile, and populates enemies, chests, traps, and props flawlessy.
+
+### Method C: Programmatic TypeScript Construction in Code
+To spawn a valid dungeon entrance programmatically next to the player in a custom hook or developer trigger:
+
+```typescript
+import { TileType } from '../types';
+import { findStairsOrWalkablePosition } from '../utils/gameUtils';
+import { generateLevel, generateDungeonProps } from '../utils/dungeon';
+
+// 1. Place a StairsDown tile adjacent to the player's current overworld coordinate
+const targetX = gameState.playerX + 1;
+const targetY = gameState.playerY;
+
+// Mutate map tile safely
+const updatedMap = gameState.map.map((row) => [...row]);
+updatedMap[targetY][targetX] = TileType.StairsDown;
+
+// 2. When player steps onto targetX, targetY and interacts, trigger transition:
+const depth = 1;
+const levelState = generateLevel(
+  LEVEL_WIDTH,
+  LEVEL_HEIGHT,
+  depth,
+  gameState.playerStats.turnsPlayed,
+  gameState.playerStats.realTimeSeconds,
+  gameState.playerStats,
+  gameState.currentWeapon,
+  gameState.defeatedEnemiesCount,
+  gameState.clearedCamps?.length || 0
+);
+
+// 3. Find/repair entry stairs to guarantee a safe player spawn
+const stairsUp = findStairsOrWalkablePosition(
+  levelState.map,
+  TileType.StairsUp,
+  `Dungeon Depth ${depth}`
+);
+
+// 4. Update Game State with new dungeon map & props
+const props = generateDungeonProps(levelState.map, depth);
+setGameState((prev) => ({
+  ...prev,
+  map: levelState.map,
+  playerX: stairsUp.x,
+  playerY: stairsUp.y,
+  inDungeon: true,
+  currentDepth: depth,
+  enemies: levelState.enemies,
+  chests: levelState.chests,
+  traps: levelState.traps,
+  props,
+}));
+```
+
+---
+
+## 🌌 Autonomous GM Engine Architecture & Controls
+
+The **Autonomous GM (Game Master) Engine** (`src/utils/gmStoryteller.ts`) is an intelligent, reactive narrative controller running natively inside the game loop. It monitors battlefield tension, player HP ratios, movement patterns, and idle turns to dynamically steer gameplay events.
+
+### ⚙️ Core Parameters & Default State
+- **Default Enabled**: The Autonomous GM Engine is **ON by Default** (`gmAutonomousWeather: true` in initial `GameState` and `WorldContext`).
+- **Ritual Turn Interval**: Configured by default to **25 turns** (`gmWeatherInterval: 25`), governing atmospheric weather transitions and narrative interventions.
+- **Storyteller Personalities**: Dynamically shifts between `Benevolent`, `Intrigued`, `Mischievous`, `Sadistic`, and `Apathetic` based on player status and boredom metrics.
+
+### 🌀 Dynamic Storyteller Interventions
+When active, the Autonomous GM monitors each turn step and automatically invokes narrative interventions when specific battlefield conditions are met:
+1. **Divine Protection Aura**: Casts a protective shield when player HP drops into critical danger (< 15% max HP).
+2. **Guardian Paladin Spawn**: Summons an Ethereal Holy Templar follower during extreme battlefield pressure or boss fights.
+3. **Ether Mana Surge**: Channels raw MP directly to the player when their mana reservoir reaches 0.
+4. **Alchemical Sprite Manifestation**: Drops a Volatile Alchemical Sprite near the player carrying high-tier elemental catalysts.
+5. **Ore Thief & Bandit Camp Spawns**: Summons Ilmarinen's Ore Thieves carrying rare metals or outlaw encampments around campfires.
+6. **Spike Traps & Chaos Surges**: Sadistic or mischievous moods trigger local floor spike hazards or passive chaos rolls.
+7. **Global Weather Rituals**: Autonomously invokes Solar Cleansings, Storm Callings, Shadow Fog Chants, Frostfalls, Sandstorms, and Glacial Blizzards.
+
+### 🛠️ Developer Inspection & Controls
+Developers can inspect and adjust the Autonomous GM Engine in real time through multiple tools:
+1. **God Panel (`F12` / `~`)**:
+   - Displays the **`GM ENGINE: ACTIVE (DEFAULT ON)`** live badge in the header.
+   - Under the **Sovereign** tab, developers can toggle the Autonomous GM Engine on/off, adjust the Ritual Turn Interval (10, 25, 40, 60, 100 turns), and monitor GM Boredom Pressure.
+2. **GM Storyteller Panel (`/` Console or GM Metrics Button)**:
+   - Provides live readouts of the GM's internal monologue thoughts feed, active personality, boredom %, and tension rating.
+   - Allows forcing specific interventions (e.g., Immediate Rift Spawn, Lightning Smite, Paladin Summoning) on demand.
+
+---
+
+## 📄 High-Performance Log System & Replay Importer Architecture
+
+The game includes a zero-lag log management and simulation replay architecture (`src/components/GameLog.tsx`, `src/components/GodPanelOverlay.tsx`):
+
+### 1. High-Volume Log Stream Virtualization & Duplicate Collapsing
+- **Virtual DOM Slicing**: Rendered logs in `GameLog.tsx` are hard-capped at the latest **150 entries** (`maxRenderedLogs = 150`), preventing React DOM layout recalculation freezes even when 50,000+ combat actions are accumulated in memory.
+- **Consecutive Message Aggregation**: Identical consecutive log events (e.g. repeated melee swings) are automatically collapsed into single rows with counter badges (`(x5)`), reducing visual clutter.
+
+### 2. Zero-Lag Drag-and-Drop File Importer
+- **File Reader Stream Loading**: The Replay Simulation Dock in God Panel accepts large log `.txt` or `.json` file uploads via drag-and-drop or direct device file picker.
+- **Preview Truncation & Non-Allocating Parsing**: Text previews in state are truncated to 50,000 characters to ensure 60 FPS UI responsiveness, while the full file stream parses embedded JSON replay blocks (`--- COMPREHENSIVE SIMULATOR REPLAY DATA ---`) in background ticks.
+[diff_block_end]
+
+
 
 
 

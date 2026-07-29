@@ -14,7 +14,7 @@ interface GameLogProps {
   className?: string;
 }
 
-export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }: GameLogProps) {
+function GameLogComponent({ logs, onClearLogs, onDownloadLogs, className }: GameLogProps) {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [sortOrder, setSortOrder] = useState<'newest-first' | 'oldest-first'>('newest-first');
   const [isPinned, setIsPinned] = useState(true);
@@ -171,27 +171,46 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
     });
   };
 
-  // Filter logs based on active filter
-  const filteredLogs = logs.filter((log) => {
+  // Filter logs based on active filter safely
+  const filteredLogs = (logs || []).filter((log) => {
+    if (!log || typeof log !== 'object') return false;
+    const textStr = typeof log.text === 'string' ? log.text : String(log.text || '');
+    if (!textStr) return false;
+
     if (activeFilter === 'all') return true;
     
     // For combat filter, match types 'combat' or 'danger' or common combat action patterns
+    const textLower = textStr.toLowerCase();
     return (
       log.type === 'combat' || 
       log.type === 'danger' || 
-      log.text.toLowerCase().includes('struck') ||
-      log.text.toLowerCase().includes('strikes') ||
-      log.text.toLowerCase().includes('damage') ||
-      log.text.toLowerCase().includes('healed') ||
-      log.text.toLowerCase().includes('defeated') ||
-      log.text.toLowerCase().includes('slain')
+      textLower.includes('struck') ||
+      textLower.includes('strikes') ||
+      textLower.includes('damage') ||
+      textLower.includes('healed') ||
+      textLower.includes('defeated') ||
+      textLower.includes('slain')
     );
   });
 
-  // Performance: Limit DOM rendering to the latest 150 logs so the DOM size doesn't grow infinitely,
-  // while preserving full log download integrity via onDownloadLogs.
+  // Aggregate consecutive duplicate log entries for cleaner feed
+  const collapsedLogs: Array<{ log: GameLogMessage; count: number }> = [];
+  filteredLogs.forEach((currentLog) => {
+    const textStr = typeof currentLog.text === 'string' ? currentLog.text : String(currentLog.text || '');
+    const lastItem = collapsedLogs[collapsedLogs.length - 1];
+    if (lastItem) {
+      const lastText = typeof lastItem.log.text === 'string' ? lastItem.log.text : String(lastItem.log.text || '');
+      if (lastText === textStr && lastItem.log.type === currentLog.type) {
+        lastItem.count += 1;
+        return;
+      }
+    }
+    collapsedLogs.push({ log: currentLog, count: 1 });
+  });
+
+  // Performance: Limit DOM rendering to the latest 150 log entries
   const maxRenderedLogs = 150;
-  const slicedLogs = filteredLogs.slice(-maxRenderedLogs);
+  const slicedLogs = collapsedLogs.slice(-maxRenderedLogs);
   const displayLogs = sortOrder === 'newest-first' ? [...slicedLogs].reverse() : slicedLogs;
 
   return (
@@ -250,13 +269,16 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
       `}</style>
 
       {/* Log Header */}
-      <div className="bg-slate-950 px-3 py-2 border-b border-slate-800 flex items-center justify-between z-10 select-none">
-        <div className="flex items-center gap-2">
-          <ScrollText className="w-3.5 h-3.5 text-emerald-500" />
-          <span className="text-slate-300 font-sans font-medium text-[10px] uppercase tracking-wider">Adventure Chronologue</span>
+      <div className="bg-slate-950 px-3 py-1.5 border-b border-slate-800 flex items-center justify-between z-10 select-none flex-wrap gap-1.5">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ScrollText className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-slate-300 font-sans font-medium text-[10px] uppercase tracking-wider hidden sm:inline">Adventure Chronologue</span>
+            <span className="text-slate-300 font-sans font-medium text-[10px] uppercase tracking-wider sm:hidden">Logs</span>
+          </div>
           
           {/* Tactical Filters */}
-          <div className="flex items-center gap-1 ml-4 bg-slate-900/80 p-0.5 rounded border border-slate-800">
+          <div className="flex items-center gap-1 bg-slate-900/80 p-0.5 rounded border border-slate-800 shrink-0">
             <button
               onClick={() => setActiveFilter('all')}
               className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold transition-all ${
@@ -265,7 +287,7 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
                   : 'text-slate-500 hover:text-slate-300 border border-transparent'
               }`}
             >
-              All Feed
+              All
             </button>
             <button
               onClick={() => setActiveFilter('combat')}
@@ -276,14 +298,14 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
               }`}
             >
               <Swords className="w-2.5 h-2.5" />
-              Combat Only
+              Combat
             </button>
           </div>
 
           {/* Compact Spacing Toggle */}
           <button
             onClick={() => setIsCompact(!isCompact)}
-            className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold transition-all border ${
+            className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold transition-all border shrink-0 ${
               isCompact
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                 : 'text-slate-500 hover:text-slate-300 border-transparent'
@@ -296,18 +318,18 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
           {/* Sort Order Toggle */}
           <button
             onClick={() => setSortOrder(prev => prev === 'newest-first' ? 'oldest-first' : 'newest-first')}
-            className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold transition-all border ${
+            className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold transition-all border shrink-0 ${
               sortOrder === 'newest-first'
                 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                 : 'text-slate-500 hover:text-slate-300 border-transparent'
             }`}
             title="Toggle log ordering (Newest on top / Oldest on top)"
           >
-            {sortOrder === 'newest-first' ? 'Newest First' : 'Oldest First'}
+            {sortOrder === 'newest-first' ? 'Newest' : 'Oldest'}
           </button>
         </div>
         
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           {onDownloadLogs && (
             <button
               onClick={onDownloadLogs}
@@ -316,7 +338,8 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
               id="download-logs-game-btn"
             >
               <Download className="w-2.5 h-2.5 text-emerald-400" />
-              <span>EXPORT SIM LOGS</span>
+              <span className="hidden sm:inline">EXPORT LOGS</span>
+              <span className="sm:hidden">EXPORT</span>
             </button>
           )}
           <button
@@ -338,15 +361,17 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
           isCompact ? 'p-2 text-[12px] leading-snug' : 'p-3 text-[14px] leading-relaxed'
         } font-mono flex flex-col gap-1.5`}
       >
-        {filteredLogs.length === 0 ? (
+        {collapsedLogs.length === 0 ? (
           <div className="text-slate-600 italic text-center py-8">
             {activeFilter === 'combat' 
               ? "No combat skirmishes recorded in this region yet..." 
               : "The halls are silent. Take a step to record your descent..."}
           </div>
         ) : (
-          displayLogs.map((log) => {
-            const textLower = log.text.toLowerCase();
+          displayLogs.map(({ log, count }, idx) => {
+            if (!log) return null;
+            const safeText = typeof log.text === 'string' ? log.text : String(log.text || '');
+            const textLower = safeText.toLowerCase();
             const isDragonLog = textLower.includes('dragon');
             const isScaleLog = textLower.includes('scale') || textLower.includes('wyrmscale');
 
@@ -359,11 +384,18 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
               rowStyle = 'bg-orange-950/15 border-l-2 border-orange-500/60 pl-1.5 pr-1 py-0.5 my-0.5 rounded-r';
             }
 
+            const uniqueKey = log.id || `log_row_${idx}_${safeText.slice(0, 10)}`;
+
             return (
-              <div key={log.id} className={`flex items-start transition-all border-b border-slate-900/20 ${isCompact ? 'gap-1.5 py-0.5' : 'gap-2 py-1'} ${rowStyle}`}>
-                <span className={`text-slate-600 shrink-0 select-none ${isCompact ? 'text-[10px]' : 'text-[11.5px]'}`}>[{log.timestamp}]</span>
+              <div key={uniqueKey} className={`flex items-start transition-all border-b border-slate-900/20 ${isCompact ? 'gap-1.5 py-0.5' : 'gap-2 py-1'} ${rowStyle}`}>
+                <span className={`text-slate-600 shrink-0 select-none ${isCompact ? 'text-[10px]' : 'text-[11.5px]'}`}>[{log.timestamp || '00:00'}]</span>
                 <div className={`flex-1 ${isCompact ? 'leading-snug' : 'leading-relaxed'} ${rowStyle ? getMessageTextColor(log.type) : getMessageStyles(log.type)}`}>
-                  {parseMessageText(log.text)}
+                  {parseMessageText(safeText)}
+                  {count > 1 && (
+                    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-sans font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                      x{count}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -383,3 +415,6 @@ export default function GameLog({ logs, onClearLogs, onDownloadLogs, className }
     </div>
   );
 }
+
+export const GameLog = React.memo(GameLogComponent);
+export default GameLog;

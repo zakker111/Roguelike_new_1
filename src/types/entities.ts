@@ -66,6 +66,7 @@ export enum EnemyState {
   Patrolling = 'Patrolling',
   Chasing = 'Chasing',
   Retreating = 'Retreating',
+  Sleeping = 'Sleeping',
 }
 
 export enum EnemyType {
@@ -124,6 +125,9 @@ export interface Enemy {
   animalType?: 'deer' | 'boar' | 'sheep'; // Type of animal
   isBoss?: boolean;      // Boss flag
   faction?: 'syndicate' | 'vanguard' | 'outlaw' | 'goblin' | 'bandits';
+  shift?: 'day' | 'night' | 'sentry'; // Guard duty shift schedule
+  barracksBed?: { x: number; y: number; z?: number }; // Target bed tile in barracks
+  originalChar?: string; // Original icon character before sleeping
 }
 
 export interface NPC {

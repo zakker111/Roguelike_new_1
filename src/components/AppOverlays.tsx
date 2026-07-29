@@ -88,7 +88,7 @@ export interface AppOverlaysProps {
   handleRecallTeleport: (target: any) => void;
 }
 
-export const AppOverlays: React.FC<AppOverlaysProps> = ({
+export const AppOverlays = React.memo<AppOverlaysProps>(({
   isHelpOpen,
   setIsHelpOpen,
   isGodPanelOpen,
@@ -383,6 +383,6 @@ export const AppOverlays: React.FC<AppOverlaysProps> = ({
       )}
     </>
   );
-};
+});
 
 export default AppOverlays;

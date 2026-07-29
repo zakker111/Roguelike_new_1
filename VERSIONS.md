@@ -6,6 +6,111 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v4.1.0] — Phase 12 Automated Verification & Unit Testing Framework (July 29, 2026)
+*Implemented comprehensive automated unit testing suite across AI pathfinding, combat damage formulas, scar stats, overworld & dungeon generation, save state serialization, economy pricing, and renderer string safety.*
+
+- **Automated Vitest Test Engine Integration**: Configured Vitest runner (`npm run test`), providing 6 modular test suites and 25 unit tests running in <2 seconds.
+- **AI & Pathfinding Verification (`src/tests/ai.test.ts`)**: Added unit tests for Bresenham FOV raycasting, line-of-sight blockage behind walls, BFS obstacle navigation around walls/doors, and follower anti-trapping position swapping.
+- **Combat & Debuff Safety Verification (`src/tests/combat.test.ts`)**: Added unit tests for `calculateNetDamage` 75% max armor mitigation, critical damage multipliers, sub-linear XP scaling, scar acquisition evaluation thresholds ($\ge 12$ HP damage), `getEffectiveStats` scar modifier attribute applications, and debuff duration reduction without undefined access errors.
+- **World & Dungeon Generation Verification (`src/tests/worldGen.test.ts`)**: Added unit tests for 64x40 overworld chunk generation across biomes, dungeon level generation across depths 1–5 ensuring non-wall player spawns, initialized enemy debuffs arrays, and camera snap repositioning on chunk transitions.
+- **Save File & Backward Compatibility (`src/tests/saveLoad.test.ts`)**: Added unit tests for JSON save state payload serialization, legacy save schema deserialization with fallback defaults (`chaosScore`, `townReputation`), and corrupted JSON error handling.
+- **Economy, Trading & Biome Scarcity (`src/tests/economyAndEvents.test.ts`)**: Added unit tests for regional trade price multipliers (e.g. 3.5x wood in desert, 0.8x in swamp, 2.5x frost catalyst in desert), regional market price report generation, and trade guild upgrade data structures.
+- **Log Integrity & Renderer Diagnostics (`src/tests/logAndDiagnostics.test.ts`)**: Added unit tests for `entityLayerRenderer.ts` corpse glyph string safety (`corpse.name?.toLowerCase()`), unique row key generation for duplicate combat logs in `GameLog.tsx`, fast travel coordinate bounds sanitization, and virtual smoke testing engine execution.
+
+
+## [v4.0.9] — Developer Error Diagnostics, Map Repair & Import Verification (July 28, 2026)
+*Replaced silent coordinate/template fallbacks with explicit console errors and auto-repair logic; verified case-sensitive import paths across all 96 source files.*
+
+- **Explicit Developer Diagnostics & Map Repair**: Created `findStairsOrWalkablePosition` in `src/utils/gameUtils.ts` that emits explicit `[DEV ERROR]` console messages when expected stairs or target tiles are missing, automatically repairing maps by placing the missing tile on the first walkable floor.
+- **Dungeon & GM Teleport Stabilization**: Replaced silent stair lookups in `usePlayerMovement.ts`, `GodPanelOverlay.tsx`, and `gmCommands.ts` with `findStairsOrWalkablePosition`.
+- **Enemy Template Error Guards**: Updated `getEnemyTemplate` in `src/utils/dungeon.ts` and `carveStructure` in `src/utils/structurePlacer.ts` to log explicit `[DEV ERROR]` alerts when unmapped templates or legend keys occur.
+- **Full Project Import Audit & Direct Type Re-exports**: Updated `src/types.ts` to re-export directly from sub-modules (`map`, `items`, `entities`, `game`), eliminating language server index resolution shadowing between `src/types.ts` and `src/types/index.ts`. Built and executed automated import verification tool confirming 100% case-sensitive import path and exported symbol resolution across all 96 TS/TSX project files.
+- **Dungeon Chest Generation Fix**: Fixed material tier filtering in `generateLevel()` inside `src/utils/dungeon.ts` to properly match `"Tier1"`, `"Tier2"`, and `"Tier3"` category strings from `materials.json`, preventing undefined rolls when populating chest loot. Added safe fallback arrays and optional chaining (`rolledMat?.id`).
+- **JSON Module Resolution Fix**: Configured `"resolveJsonModule": true` in `tsconfig.json` and created `src/declarations.d.ts` with explicit `*.json` type declarations to resolve TS2307 module errors on `import enemyTemplates from '../data/enemies.json'`.
+- **Full Dungeon Simulation Suite**: Created and ran a simulation runner testing `generateLevel()` across 15 depth tiers. Fixed SSR/Node `window` context checks in `getEnemyTemplate()` and added alias resolution for `Brute`, `Mage`, and `captive` enemy templates, ensuring zero runtime errors or warnings during dungeon transitions.
+
+## [v4.0.8] — Phase 17 Dungeon Entrance Fix & Final Code Audit Cleanup (July 27, 2026)
+*Resolved the dungeon transition crash, audited all module imports/exports, and verified zero typescript compile errors.*
+
+- **Dungeon Transition Fix**: Added missing `dungeonLevels: nextDungeonLevels` state assignment in `usePlayerMovement.ts` first floor descend routine, preserving dungeon level data across state transitions.
+- **Null Safety & Optional Chaining Audit**: Systematically guarded property lookups across `useSpellcasting.ts`, `useEquipmentHandlers.ts`, `useCraftingEngine.ts`, `GameCanvas.tsx`, `GuildOverlay.tsx`, `PoiInteractionOverlay.tsx`, and `App.tsx` trade booth tab button to prevent `Cannot read properties of undefined (reading 'id')` errors.
+- **Module Import/Export Verification**: Audited module interfaces and component boundaries across all 17 completed refactoring phases; verified clean build (`compile_applet` & `tsc --noEmit`).
+
+## [v4.0.7] — Comprehensive Engine Stability & AI Behavior Bug Fix Pass (July 27, 2026)
+*Resolved all reported stability issues and NPC/feline behavior glitches in BUGS.md.*
+
+- **Dungeon Stairs Transition Safety**: Resolved dungeon entrance runtime crashes by adding safe coordinate resolution and array bounds checks for `StairsUp` and `StairsDown` array indexing in `usePlayerMovement.ts`.
+- **Equipment Null-Safety Guard**: Fixed item equipment crashes in `useEquipmentHandlers.ts` by adding strict null checks on items and safe default values (`0` for missing defense/damage stats) across all paperdoll slot assignments and unequip routines.
+- **Town Guard Defense AI**: Added active threat hunting to `useEnemyAI.ts` so town guards scan for, pursue, and attack hostile monsters (brawlers, bandits, goblins) entering the settlement.
+- **Companion & Cat Targeting Safety**: Fixed companion and feline follower attack checks in `useEnemyAI.ts` so followers only target enemies hostile to the player, preventing cats from attacking friendly town guards.
+- **Caravan Travel Merchant Restriction**: Fixed `TradeModal.tsx` so only genuine caravan master NPCs offer caravan escort and fast travel options instead of standard town shopkeepers.
+
+## [v4.0.6] — Phase 13-16 Monolith Decomposition & Canvas Render Layer Modularization (July 27, 2026)
+*Deconstructed App.tsx into dedicated hooks (useSpellcasting, useWorldInteraction, useCraftingEngine) and MainAppLayout, decomposed GodPanelOverlay into subcomponents, modularized overworld map generators, and modularized GameCanvas into isolated render layers (tileMapRenderer, entityLayerRenderer, weatherLightingRenderer, spriteRenderer).*
+
+- **Main App Layout & View Shell (`src/components/MainAppLayout.tsx`)**: Decoupled HUD bars, status bars, canvas containers, and active modal overlays from `App.tsx` into a modular layout component.
+- **Spellcasting Engine Hook (`src/hooks/useSpellcasting.ts`)**: Extracted spell casting, mana verification, projectile targeting, AOE effects, status applications, and scroll consumption out of `App.tsx`.
+- **World Interaction Hook (`src/hooks/useWorldInteraction.ts`)**: Extracted overworld stairs navigation, resource harvesting (trees/ore veins), door opening, and environment interactions out of `App.tsx`.
+- **Crafting & Alchemy Hook (`src/hooks/useCraftingEngine.ts`)**: Extracted weapon/armor crafting handlers, overforge heat calculations, equipment repairs, and alchemy brewing out of `App.tsx`.
+- **God Panel Sub-System Decomposition (`src/components/god/`)**: Modularized `GodPanelOverlay.tsx` into `GodItemSpawner.tsx`, `GodWorldEditor.tsx`, and `GodStatEditor.tsx`.
+- **Overworld Map Generator Decomposition (`src/world/`)**: Extracted biome distribution into `overworldBiomes.ts` and structure/POI placement into `overworldStructures.ts`.
+- **GameCanvas Render Layer Modularization (`src/canvas/`)**: Modularized canvas drawing routines into isolated layers:
+  - `tileMapRenderer.ts`: Grid map rendering loop with viewport culling, tile colors, and ASCII/sprite mappings.
+  - `entityLayerRenderer.ts`: Corpses, dungeon props, traps, chests, POIs, loot piles, NPCs, enemies, player, and floating particle effects/projectiles.
+  - `weatherLightingRenderer.ts`: Ambient day/night lighting shader, celestial rift effects, weather layers (rain, snow, fog, sandstorm, blizzard), and seasonal particle effects.
+  - `spriteRenderer.ts`: Shared ASCII fallback and sprite sheet tile drawer.
+
+## [v4.0.5] — Phase 11 Data Centralization, Equipment Hooks & Durability Null Safety Patch (July 26, 2026)
+*Centralized game balance constants, economy matrices, and NPC dialogue trees into declarative data modules, extracted equipment handling into `useEquipmentHandlers.ts`, and implemented defensive null safeguards against equipment crashes.*
+
+- **Centralized Balance Constants (`src/data/balance.ts`)**: Unified XP level thresholds (`getXpForLevel`), net damage mitigation curves (`calculateNetDamage`), critical hit multipliers (`calculateCritDamage`), and overforge safety limits into a central, easy-to-balance module.
+- **Centralized Settlement Economy & Price Scaling (`src/data/economy.json`)**: Externalized reputation discount tiers, charisma trade scaling factors, caravan payout formulas, and regional biome pricing tables.
+- **Centralized NPC Dialogue Trees & Quests (`src/data/dialogues.json`)**: Externalized shopkeeper dialogues, tavern rumors, and quest objective matrices into declarative JSON schemas.
+- **Equipment Handlers Hook (`useEquipmentHandlers.ts`)**: Extracted paperdoll slot assignment, stat recalculations, and durability degradation into a standalone custom engine hook.
+- **Equipment Null-Safety Guard**: Resolved runtime `TypeError: Cannot read properties of undefined (reading 'name')` crashes when equipping weapons or armor missing explicit `materialUsed` or `catalystUsed` properties by injecting safe default fallback objects (`Forged Alloy` material and `Physical` catalyst) during item equipping and rendering.
+
+## [v4.0.4] — Phase 3 & 4 Architectural Deconstruction, Custom Hooks & Codebase Refactoring (July 25, 2026)
+*Deconstructed core monolithic game loops into modular custom React hooks (`useEnemyAI`, `useCombatEngine`, `usePlayerMovement`, `useKeyboardInput`, `useSaveLoad`), isolated world generators (`dungeonGen.ts`, `overworldGen.ts`), and implemented spatial hash memoization and component render isolation (`React.memo`).*
+
+- **Modular Enemy AI Hook (`useEnemyAI.ts`)**: Extracted and restored the turn-based AI solver, enemy melee and ranged attacks, follower combat assistance, player dodge calculations, armor durability decay, permanent scar acquisition, weather state transitions, GM storyteller events, and seasonal turn ticks into a custom hook.
+- **Modular Combat Engine Hook (`useCombatEngine.ts`)**: Extracted physical strike damage calculations, scar acquisition evaluation, overforge heat recoil, durability decay, and critical hits into a custom hook.
+- **Modular Player Movement Hook (`usePlayerMovement.ts`)**: Modularized player movement, terrain collisions, tile traps, stamina consumption, and stair navigation.
+- **Modular Keyboard Input Hook (`useKeyboardInput.ts`)**: Decoupled WASD, Arrow, and Numpad hotkey bindings with modal input suppression logic.
+- **Modular Save/Load Hook (`useSaveLoad.ts`)**: Extracted LocalStorage state serialization, auto-save timers, and save import/export sanitization.
+- **World & Dungeon Generators Isolation (`src/world/`)**: Modularized procedural dungeon generation into `src/world/dungeonGen.ts` and overworld chunk/landmark placement into `src/world/overworldGen.ts`.
+- **FOV & Line-of-Sight Spatial Hash Memoization**: Memoized raycasting visibility queries (`computeFOV`, `bresenhamLine`) with spatial bounding-box hashing in `ai.ts`.
+- **Component Render Isolation (`React.memo`)**: Wrapped all HUD panels, overlays, and canvas subcomponents in `React.memo` to eliminate cascading re-renders.
+
+## [v4.0.3] — Landing Page Tactical Primer Update (July 24, 2026)
+*Cleaned up Tactical Primer copy and updated movement controls documentation on the landing page screen.*
+
+- **Tactical Primer Copy Refinement**: Updated movement instructions in `App.tsx` to explicitly indicate WASD or Numpad movement, replaced obsolete push triggers reference with trap avoidance guidance, and refined landing screen instructions.
+
+## [v4.0.2] — Engine Performance Pass, 2D Canvas Minimap & Context State Optimization (July 24, 2026)
+*Migrated Chunk Minimap from 441 React DOM nodes to a 2D Canvas element, optimized raycasting distance math, and streamlined canvas context state calls.*
+
+- **Chunk Minimap Canvas Migration**: Replaced 441 React grid `<div>` nodes in `ChunkMinimap.tsx` with a single high-performance HTML5 2D `<canvas>` element, eliminating DOM node allocation thrashing on player turns.
+- **Raycasting Inner Loop Math**: Replaced floating-point `Math.sqrt` calculations in `ai.ts` line-of-sight raycasting with fast squared distance checks (`distSq > radiusSq`), accelerating FOV calculation.
+- **Canvas Context State & Font Overhead Reduction**: Eliminated per-tile `ctx.save()` / `ctx.restore()` stack pushes in `GameCanvas.tsx` and initialized canvas font/alignment once before tile loops, avoiding re-parsing font strings 600+ times per frame.
+
+## [v4.0.1] — Autonomous GM Engine, Replay Sim Dock, Chaos Natural Decay & Combat Rest Guard (July 24, 2026)
+*Enabled default Autonomous GM Storyteller mode, added a collapsible/minimized Replay Simulator HUD, implemented peaceful Chaos natural decay, and restricted campfire resting during combat.*
+
+- **Autonomous GM Storyteller Active by Default**: Enabled the autonomous GM Storyteller matrix and un-restricted gift interventions by default (`gmStoryteller.ts`), granting active story interventions and atmospheric monitoring.
+- **Minimizable Replay Simulator Dock**: Added a `Minimize` button and compact bottom floating HUD to `GodPanelOverlay.tsx`, enabling real-time canvas gameplay observation while controlling simulation replay playback, scrubbing, and speed.
+- **Peaceful Chaos Matrix Natural Decay**: Modified `gmStoryteller.ts` and `ChaosConsole.tsx` so Chaos automatically drifts down toward the 20% natural baseline during peaceful or non-combat turns.
+- **Campfire Combat Rest Restriction**: Enforced a proximity check in `App.tsx` preventing players from resting at a campfire while hostile monsters are within 8 tiles.
+
+
+## [v4.0.0] — Phase 4 Performance, Rendering & Admin Editor Safety Update (July 24, 2026)
+*Implemented comprehensive memoization optimizations, spatial hashing for line-of-sight/FOV raycasting, React component render boundary isolation, and resolved Admin Editor initialization crash bugs.*
+
+- **FOV & Line-of-Sight Spatial Hashing**: Bounded and memoized `computeFOV` and spatial visibility queries using bounding-box spatial hashes in `ai.ts`, eliminating redundant calculations on unchanged turns.
+- **Render Boundary & Component Optimization (`React.memo`)**: Wrapped key UI overlays, HUD panels, and canvas components (`GameCanvas`, `GameLog`, `DifficultyTracker`, `DungeonGlancePanel`, `UnifiedInventoryPanel`, `CraftingPanel`, `GodPanelOverlay`, `GodStatEditor`, `AppOverlays`, `MutationSynergyPanel`, `OverforgeGauge`, `CookingTab`, `AlchemyTab`) in `React.memo` to eliminate cascading parent re-renders.
+- **Admin Editor Safety Patch**: Fixed `GodStatEditor` scar database fallback to default `SCAR_DATABASE` to eliminate uncaught `TypeError` crashes when clicking Admin Editor in the Dev Panel.
+- **Map Bound & Safe Pathing Guard**: Added strict safe-navigation array checks (`map?.[0]?.length`) in pathfinding and enemy movement routines (`App.tsx`, `ai.ts`) to prevent undefined grid crash risks.
+
+
 ## [v3.9.15] — Portable Blacksmith Anvil & Field Station Adjacency (July 23, 2026)
 *Implemented a deployable Blacksmith Anvil structure allowing players to forge, mutate, and upgrade equipment anywhere in the field.*
 

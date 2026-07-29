@@ -437,11 +437,13 @@ export default function PoiInteractionOverlay({
   const choices = getChoices();
 
   const handleSelectChoice = (choice: any) => {
-    if (!choice.isAvailable || poi.isInteracted) return;
+    if (!choice || !choice.isAvailable || poi?.isInteracted) return;
     playSound('levelUp');
     const outcomes = choice.execute();
-    onSelectOption(poi.id, choice.id, outcomes);
-    setSelectedChoiceId(choice.id);
+    if (poi?.id && choice?.id) {
+      onSelectOption(poi.id, choice.id, outcomes);
+      setSelectedChoiceId(choice.id);
+    }
   };
 
   return (

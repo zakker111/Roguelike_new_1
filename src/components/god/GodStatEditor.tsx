@@ -6,20 +6,22 @@
 import React, { useState } from 'react';
 import { GameState, Scar } from '../../types';
 import { Plus } from 'lucide-react';
+import { SCAR_DATABASE } from '../../utils/scars';
 
 export interface GodStatEditorProps {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  scarDatabase: Scar[];
+  scarDatabase?: Scar[];
 }
 
 export const GodStatEditor: React.FC<GodStatEditorProps> = ({
   gameState,
   setGameState,
-  scarDatabase,
+  scarDatabase = SCAR_DATABASE,
 }) => {
+  const scarList = scarDatabase || SCAR_DATABASE;
   const [selectedScarName, setSelectedScarName] = useState<string>(
-    scarDatabase[0]?.name || ''
+    scarList[0]?.name || ''
   );
 
   const handleModifyAttribute = (key: string, delta: number) => {
@@ -33,7 +35,7 @@ export const GodStatEditor: React.FC<GodStatEditorProps> = ({
   };
 
   const handleInjectScar = (scarName: string) => {
-    const targetScar = scarDatabase.find((s) => s.name === scarName);
+    const targetScar = scarList.find((s) => s.name === scarName);
     if (!targetScar) return;
 
     setGameState((prev) => {
@@ -81,7 +83,7 @@ export const GodStatEditor: React.FC<GodStatEditorProps> = ({
               onChange={(e) => setSelectedScarName(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-slate-200 text-xs font-mono focus:border-rose-600 focus:outline-none"
             >
-              {scarDatabase.map((scar) => (
+              {scarList.map((scar) => (
                 <option key={scar.name} value={scar.name}>
                   {scar.icon} {scar.name} ({scar.severity}) — {scar.description.substring(0, 50)}...
                 </option>

@@ -14,7 +14,7 @@ export interface OverforgeGaugeProps {
   backfireDmgPreview: number;
 }
 
-export const OverforgeGauge: React.FC<OverforgeGaugeProps> = ({
+export const OverforgeGauge = React.memo<OverforgeGaugeProps>(({
   overforgeHeat,
   setOverforgeHeat,
   overforgePowerMult,
@@ -136,4 +136,6 @@ export const OverforgeGauge: React.FC<OverforgeGaugeProps> = ({
       </div>
     </div>
   );
-};
+});
+
+export default OverforgeGauge;

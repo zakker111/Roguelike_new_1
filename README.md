@@ -125,6 +125,35 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
 25. **Unstable Mutation "Synergy Chains" (v3.9.14)**:
    - **Modular Synergy Engine**: Combining multiple elemental catalysts unlocks dual-element traits like *Thermal Shock*, *Plasma Arc*, *Hellfire Singularity*, and *Corrosive Blight*.
    - **Chain Tiers & Strain Gauge**: Multi-stage mutation chains unlock Supercritical (+25%) and Omega (+50%) power surges with live Mutagenic Strain Gauges.
+26. **Portable Blacksmith Anvil & Field Station Adjacency (v3.9.15)**:
+   - **Deployable Field Anvils**: Craftable Anvil structure (`⚒️`) in the Survival tab allowing gear forging, mutations, and upgrades anywhere in the wild.
+   - **Adjacency Checks**: Enforces nearby Anvil or Town proximity for crafting, with warning notices when far from a workbench.
+27. **Phase 4 Performance, Rendering & Admin Editor Safety (v4.0.0)**:
+   - **Spatial Hashing & Memoized FOV**: Bounded and memoized spatial visibility raycasting in `ai.ts`, eliminating unnecessary turns computations.
+   - **Component Render Isolation (`React.memo`)**: Wrapped overlays, HUDs, and canvas views in `React.memo` to eliminate cascading re-renders.
+   - **Admin Editor & Guard Safety Patch**: Fixed Admin Editor scar database fallback to prevent uncaught `TypeError` crashes and guarded array safe-navigation checks across pathfinding loops.
+28. **Autonomous GM, Replay Sim Dock, Chaos Natural Decay & Combat Rest Guard (v4.0.1)**:
+   - **Autonomous GM Active by Default**: Defaulted the Autonomous GM Storyteller to active mode with gift interventions enabled.
+   - **Minimizable Replay Simulator Dock**: Added a `Minimize` button and bottom floating HUD for watching gameplay on the canvas while scrubbing or playing log replays.
+   - **Peaceful Chaos Natural Decay**: Chaos/Boredom automatically decays toward the 20% baseline during peaceful turns.
+   - **Campfire Combat Rest Restriction**: Blocked resting at campfires while hostile monsters are within 8 tiles.
+29. **Engine Performance Pass, 2D Canvas Minimap & Context State Optimization (v4.0.2)**:
+   - **Chunk Minimap Canvas Migration**: Converted the 441-node React grid in `ChunkMinimap.tsx` to a single high-performance 2D Canvas element.
+   - **Raycasting Distance Math**: Replaced floating-point square root calculations in `ai.ts` FOV routines with fast squared distance comparisons.
+   - **Canvas Context & Font Optimization**: Streamlined canvas context state handling in `GameCanvas.tsx`, avoiding per-tile `save()`/`restore()` calls and font parsing overhead.
+30. **Landing Page Tactical Primer Update (v4.0.3)**:
+   - **Tactical Primer Copy Refinement**: Updated movement controls in `App.tsx` to explicitly indicate WASD or Numpad, and added trap avoidance guidance to the Tactical Primer card.
+31. **Architectural Deconstruction, Custom Hooks & Engine Refactoring (v4.0.4)**:
+   - **Modular Custom Engine Hooks (`src/hooks/`)**: Modularized monolithic game loops into `useEnemyAI.ts` (pathfinding, AI solvers, faction chase), `useCombatEngine.ts` (attack math, scars, recoil, durability), `usePlayerMovement.ts` (movement, terrain traps, stamina), `useKeyboardInput.ts` (WASD/Numpad controls, hotkey toggles), and `useSaveLoad.ts` (LocalStorage auto-save, JSON import/export).
+   - **World Generators Isolation (`src/world/`)**: Isolated procedural generators into `src/world/dungeonGen.ts` and `src/world/overworldGen.ts`.
+   - **Raycasting Memoization & Render Isolation**: Memoized line-of-sight raycasting (`computeFOV`, `bresenhamLine`) with spatial bounding-box hashing in `ai.ts`, and isolated HUD components with `React.memo`.
+32. **Phase 11 Data Centralization, Equipment Hooks & Durability Null Safety Patch (v4.0.5)**:
+   - **Centralized Balance Constants (`src/data/balance.ts`)**: Externalized XP leveling formulas, damage mitigation curves, critical strike multipliers, and overforge limits.
+   - **Centralized Settlement Economy (`src/data/economy.json`)**: Externalized reputation discounts, charisma scaling, caravan payouts, and regional biome pricing tables.
+   - **Centralized Dialogue Trees (`src/data/dialogues.json`)**: Externalized NPC shop dialogues, tavern rumors, and quest objective matrices.
+   - **Equipment Management Hook (`src/hooks/useEquipmentHandlers.ts`)**: Decoupled equipment paperdoll actions and durability tracking into a custom hook with safe default fallbacks (`Forged Alloy` material and `Physical` catalyst) preventing equipment crashes.
+
+
 
 
 ---

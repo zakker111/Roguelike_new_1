@@ -64,9 +64,9 @@ let globalGMState: GMState = {
     lastInterventionTurn: 0,
   },
   thoughts: [
-    "Sovereign matrix initialized. Player coords registered. Commencing passive monitoring...",
+    "Sovereign matrix initialized. Player coords registered. Autonomous GM active and monitoring...",
   ],
-  disableGifts: true
+  disableGifts: false
 };
 
 export function getGMStorytellerState(): GMState {
@@ -1006,13 +1006,22 @@ export function tickActiveGMStoryteller(
     (1 - hpRatio) * 60 + surroundingEnemies * 12
   )));
 
-  // Calculate dynamic boredom metric
-  // If player is idling, boredom rises faster. Successful combat combats boredom.
-  let boredomDelta = 1;
-  if (mem.idleTurns > 3) {
-    boredomDelta = 3;
-  } else if (surroundingEnemies > 0) {
+  // Calculate dynamic boredom/chaos metric
+  // If player is in close combat, combat keeps GM engaged (boredom decreases).
+  // If player is idling in one spot (idleTurns > 3), boredom rises slightly.
+  // During peaceful / non-combat turns, Chaos/Boredom automatically drifts down toward 20% baseline!
+  let boredomDelta = 0;
+  if (surroundingEnemies > 0) {
     boredomDelta = -2; // kept engaged by close combat!
+  } else if (mem.idleTurns > 3) {
+    boredomDelta = 2; // extended idling gently increases boredom
+  } else {
+    // Peaceful or non-combat active turns: natural decay toward 20% baseline
+    if (currentGM.boredom > 20) {
+      boredomDelta = -1; // drift down toward 20%
+    } else if (currentGM.boredom < 20) {
+      boredomDelta = 1; // drift up toward 20%
+    }
   }
 
   const calculatedBoredom = Math.max(10, Math.min(100, currentGM.boredom + boredomDelta));

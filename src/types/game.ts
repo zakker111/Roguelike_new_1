@@ -165,6 +165,7 @@ export interface GameState {
   caravanAmbushState?: { [coordKey: string]: 'active' | 'success' | 'failed' }; // e.g. "2,1": "success"
   godMode?: boolean;
   isTown?: boolean;
+  activeMount?: string;
 
   // v2.7.0: Advanced Trade Economy & Guild Houses
   guildOwned?: boolean; // Guild Headquarters purchased

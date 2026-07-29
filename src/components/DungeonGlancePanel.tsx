@@ -13,7 +13,7 @@ interface DungeonGlancePanelProps {
   playSound?: (soundId: string) => void;
 }
 
-export default function DungeonGlancePanel({
+function DungeonGlancePanelComponent({
   gameState,
   setGameState,
   handleEatMeat,
@@ -416,3 +416,6 @@ export default function DungeonGlancePanel({
     </div>
   );
 }
+
+export const DungeonGlancePanel = React.memo(DungeonGlancePanelComponent);
+export default DungeonGlancePanel;

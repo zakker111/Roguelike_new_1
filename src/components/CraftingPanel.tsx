@@ -97,7 +97,7 @@ export const ARMOR_TEMPLATES: ArmorTemplate[] = [
   { subType: 'Boots', name: 'Armored Greaves', description: 'Steel plate plating for lower leg protection and stability in muddy biome fields.', baseDefense: 1, icon: '🥾' }
 ];
 
-export default function CraftingPanel({
+function CraftingPanelComponent({
   inventoryMaterials,
   inventoryCatalysts,
   onCraftWeapon,
@@ -1733,3 +1733,6 @@ export default function CraftingPanel({
     </div>
   );
 }
+
+export const CraftingPanel = React.memo(CraftingPanelComponent);
+export default CraftingPanel;

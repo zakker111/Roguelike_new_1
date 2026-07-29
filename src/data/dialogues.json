@@ -1,0 +1,55 @@
+{
+  "dialogues": {
+    "merchant": [
+      "Welcome, adventurer! Browse my fine selection of wares and materials.",
+      "The trade routes have been dangerous lately, but my inventory remains unmatched.",
+      "Bring me rare materials, and I'll make sure you get a fair price in gold."
+    ],
+    "blacksmith": [
+      "Looking for sturdy steel or a sharp edge? You came to the right forge.",
+      "Good metal isn't cheap, but it will save your life out in the wilderness.",
+      "Keep your gear repaired. A dull blade is a dangerous thing in Sunder."
+    ],
+    "apothecary": [
+      "Potions, catalysts, and alchemical remedies... what ails you?",
+      "Harvesting wild plants and monster shards yields potent concoctions.",
+      "A single health potion can be the difference between victory and defeat."
+    ],
+    "tavern_master": [
+      "Pull up a bench! Have a cold mug of frothy beer or warm hearth bread.",
+      "Travelers pass through here daily. Ask around if you're looking for rumors.",
+      "Nothing cures overworld fatigue quite like a good meal and a rest."
+    ],
+    "guard": [
+      "Keep your weapon sheathed in settlement bounds, traveler.",
+      "Watchtowers keep Sunder safe from outlaw raids. Support your local faction.",
+      "Report any suspicious activity or wild beast sightings directly to us."
+    ]
+  },
+  "quests": [
+    {
+      "id": "q_clear_wolves",
+      "title": "Clear the Wild Wolves",
+      "description": "Defeat 3 wild wolves terrorizing the settlement borders.",
+      "objectiveCount": 3,
+      "rewardGold": 150,
+      "rewardXp": 100
+    },
+    {
+      "id": "q_harvest_timber",
+      "title": "Supply Oakhaven Timber",
+      "description": "Collect 5 Oakhaven Timber logs for the blacksmith forge.",
+      "objectiveCount": 5,
+      "rewardGold": 120,
+      "rewardXp": 80
+    },
+    {
+      "id": "q_explore_watchtower",
+      "title": "Claim a Watchtower",
+      "description": "Reach and secure a regional watchtower for your faction.",
+      "objectiveCount": 1,
+      "rewardGold": 300,
+      "rewardXp": 250
+    }
+  ]
+}

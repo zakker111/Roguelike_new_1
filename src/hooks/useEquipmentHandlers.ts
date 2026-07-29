@@ -24,6 +24,7 @@ export function useEquipmentHandlers({
 }: UseEquipmentHandlersParams) {
 
   const handleEquipItem = (item: EquipmentItem, hand?: 'right' | 'left') => {
+    if (!item) return;
     playSound('loot');
     
     setGameState((prev) => {
@@ -44,9 +45,9 @@ export function useEquipmentHandlers({
       let nextAmulet = prev.equippedAmulet;
       let nextWeapon = prev.currentWeapon;
 
-      if (item.subType === 'Scroll') {
-        if (item.id.includes("scroll_spell_")) {
-          const template = SPELL_SCROLLS.find(t => item.id.includes(t.id));
+      if (item?.subType === 'Scroll') {
+        if (item.id?.includes("scroll_spell_")) {
+          const template = SPELL_SCROLLS.find(t => item.id?.includes(t.id));
           const requiredMp = template ? template.mpCost : 20;
           if (prev.playerStats.mp < requiredMp) {
             setTimeout(() => {
@@ -62,7 +63,7 @@ export function useEquipmentHandlers({
           return prev;
         }
 
-        if (item.name.includes("Recall") || item.id.includes("recall_town")) {
+        if (item.name?.includes("Recall") || item.id?.includes("recall_town")) {
           if (prev.playerStats.mp < 15) {
             setTimeout(() => {
               addLogMessage(`❌ Insufficient Mana! You need at least 15 MP to channel the dimensional magic of the Scroll of Recall. (Current MP: ${prev.playerStats.mp}/${prev.playerStats.maxMp})`, 'system');
@@ -98,18 +99,18 @@ export function useEquipmentHandlers({
 
         const saved: DungeonLevelState = {
           depth: currentDepth,
+          chunkX: exChunkX,
+          chunkY: exChunkY,
           map: prev.map,
           discovered: prev.discovered,
           visible: prev.visible,
           enemies: prev.enemies,
           traps: prev.traps,
           chests: prev.chests,
-          lootPiles: prev.lootPiles,
-          corpses: prev.corpses,
-          bloodSplatters: prev.bloodSplatters,
-          props: prev.props,
-          visitedTiles: prev.visitedTiles,
-          isCleared: prev.enemies.filter(e => e.isAlive).length === 0,
+          lootPiles: prev.lootPiles || [],
+          corpses: prev.corpses || [],
+          bloodSplatters: prev.bloodSplatters || [],
+          props: prev.dungeonProps || [],
         };
 
         const targetChunk = prev.overworldChunks[`${exChunkX},${exChunkY}`];
@@ -165,7 +166,7 @@ export function useEquipmentHandlers({
         if (gear.statBonuses.cha) updatedStats.cha = (updatedStats.cha || 10) + gear.statBonuses.cha * mult;
       };
 
-      if (item.subType === 'HeavyArmor' || item.subType === 'LightArmor' || item.subType === 'Armor' || item.type === 'armor') {
+      if ((item.subType as string) === 'HeavyArmor' || (item.subType as string) === 'LightArmor' || (item.subType as string) === 'Armor' || (item.type === 'armor' && item.subType !== 'Shield')) {
         if (item.subType === 'Helmet') {
           if (nextHelmet) {
             updatedInventory.push(nextHelmet);
@@ -193,15 +194,6 @@ export function useEquipmentHandlers({
           nextBoots = item;
           updatedStats.def += item.defense;
           applyStatBonuses(item, true);
-        } else if (item.subType === 'Shield') {
-          if (nextShield) {
-            updatedInventory.push(nextShield);
-            updatedStats.def = Math.max(0, updatedStats.def - nextShield.defense);
-            applyStatBonuses(nextShield, false);
-          }
-          nextShield = item;
-          updatedStats.def += item.defense;
-          applyStatBonuses(item, true);
         } else if (item.subType === 'Amulet') {
           if (nextAmulet) {
             updatedInventory.push(nextAmulet);
@@ -222,57 +214,114 @@ export function useEquipmentHandlers({
           updatedStats.def += item.defense;
           applyStatBonuses(item, true);
         }
-      } else if (item.type === 'weapon') {
-        if (nextWeapon) {
-          const returnedItem: EquipmentItem = {
-            id: nextWeapon.id,
-            name: nextWeapon.name,
-            type: (nextWeapon.type as any) || 'weapon',
-            subType: (nextWeapon.baseType as any) || 'Sword',
-            defense: nextWeapon.defense ?? 0,
-            damage: nextWeapon.damage,
-            critChance: nextWeapon.critChance,
-            range: nextWeapon.range,
-            color: nextWeapon.color,
-            description: nextWeapon.effectDescription,
-            value: (nextWeapon as any).value ?? 25,
-            durability: nextWeapon.durability ?? 100,
-            maxDurability: nextWeapon.maxDurability ?? 100,
-            upgradeLevel: nextWeapon.upgradeLevel,
-            isMutated: nextWeapon.isMutated,
-            mutationCount: nextWeapon.mutationCount,
-            traits: nextWeapon.traits,
-            statBonuses: nextWeapon.statBonuses,
-          };
-          updatedInventory.push(returnedItem);
-          applyStatBonuses(returnedItem, false);
-          if (nextWeapon.defense) {
-            updatedStats.def = Math.max(0, updatedStats.def - nextWeapon.defense);
-          }
-        }
+      } else if (item.type === 'weapon' || item.subType === 'Shield') {
+        const targetHand = hand || (item.subType === 'Shield' ? 'left' : 'right');
 
-        nextWeapon = {
-          id: item.id,
-          name: item.name,
-          baseType: item.subType as any,
-          type: item.type,
-          damage: item.damage,
-          critChance: item.critChance,
-          range: item.range,
-          color: item.color,
-          effectDescription: item.description,
-          durability: item.durability ?? 100,
-          maxDurability: item.maxDurability ?? 100,
-          defense: item.defense,
-          upgradeLevel: item.upgradeLevel,
-          isMutated: item.isMutated,
-          mutationCount: item.mutationCount,
-          traits: item.traits,
-          statBonuses: item.statBonuses,
-        };
-        applyStatBonuses(item, true);
-        if (item.defense) {
-          updatedStats.def += item.defense;
+        if (targetHand === 'left') {
+          // Equipping to Left Hand (offhand)
+          // 1. If currently wielding a 2-handed weapon in Right Hand, unequip it
+          if (nextWeapon && (nextWeapon.baseType === ('Greatsword' as any) || nextWeapon.baseType === ('Greataxe' as any) || nextWeapon.baseType === ('Bow' as any) || nextWeapon.baseType === ('Staff' as any))) {
+            const returnedWeapon: EquipmentItem = {
+              id: nextWeapon.id,
+              name: nextWeapon.name,
+              type: (nextWeapon.type as any) || 'weapon',
+              subType: (nextWeapon.baseType as any) || 'Sword',
+              defense: nextWeapon.defense ?? 0,
+              damage: nextWeapon.damage,
+              critChance: nextWeapon.critChance,
+              range: nextWeapon.range,
+              color: nextWeapon.color,
+              description: nextWeapon.effectDescription,
+              value: (nextWeapon as any).value ?? 25,
+              durability: nextWeapon.durability ?? 100,
+              maxDurability: nextWeapon.maxDurability ?? 100,
+              upgradeLevel: nextWeapon.upgradeLevel,
+              isMutated: nextWeapon.isMutated,
+              mutationCount: nextWeapon.mutationCount,
+              traits: nextWeapon.traits,
+              statBonuses: nextWeapon.statBonuses,
+            };
+            updatedInventory.push(returnedWeapon);
+            applyStatBonuses(returnedWeapon, false);
+            if (nextWeapon.defense) updatedStats.def = Math.max(0, updatedStats.def - nextWeapon.defense);
+            nextWeapon = null;
+          }
+
+          // 2. If Left Hand already has an item, unequip it to inventory
+          if (nextShield) {
+            updatedInventory.push(nextShield);
+            applyStatBonuses(nextShield, false);
+            if (nextShield.defense) updatedStats.def = Math.max(0, updatedStats.def - nextShield.defense);
+          }
+
+          // 3. Equip new item into Left Hand
+          nextShield = item;
+          applyStatBonuses(item, true);
+          if (item.defense) updatedStats.def += item.defense;
+
+        } else {
+          // Equipping to Right Hand (main hand)
+          const is2Handed = (item.subType as string) === 'Greatsword' || (item.subType as string) === 'Greataxe' || (item.subType as string) === 'Bow' || (item.subType as string) === 'Staff';
+          if (is2Handed && nextShield) {
+            updatedInventory.push(nextShield);
+            applyStatBonuses(nextShield, false);
+            if (nextShield.defense) updatedStats.def = Math.max(0, updatedStats.def - nextShield.defense);
+            nextShield = null;
+          }
+
+          if (nextWeapon) {
+            const returnedItem: EquipmentItem = {
+              id: nextWeapon.id,
+              name: nextWeapon.name,
+              type: (nextWeapon.type as any) || 'weapon',
+              subType: (nextWeapon.baseType as any) || 'Sword',
+              defense: nextWeapon.defense ?? 0,
+              damage: nextWeapon.damage,
+              critChance: nextWeapon.critChance,
+              range: nextWeapon.range,
+              color: nextWeapon.color,
+              description: nextWeapon.effectDescription,
+              value: (nextWeapon as any).value ?? 25,
+              durability: nextWeapon.durability ?? 100,
+              maxDurability: nextWeapon.maxDurability ?? 100,
+              upgradeLevel: nextWeapon.upgradeLevel,
+              isMutated: nextWeapon.isMutated,
+              mutationCount: nextWeapon.mutationCount,
+              traits: nextWeapon.traits,
+              statBonuses: nextWeapon.statBonuses,
+            };
+            updatedInventory.push(returnedItem);
+            applyStatBonuses(returnedItem, false);
+            if (nextWeapon.defense) {
+              updatedStats.def = Math.max(0, updatedStats.def - nextWeapon.defense);
+            }
+          }
+
+          nextWeapon = {
+            id: item.id,
+            name: item.name,
+            baseType: item.subType as any,
+            type: item.type,
+            damage: item.damage,
+            critChance: item.critChance,
+            range: item.range,
+            color: item.color,
+            effectDescription: item.description,
+            durability: item.durability ?? 100,
+            maxDurability: item.maxDurability ?? 100,
+            defense: item.defense,
+            upgradeLevel: item.upgradeLevel,
+            isMutated: item.isMutated,
+            mutationCount: item.mutationCount,
+            traits: item.traits,
+            statBonuses: item.statBonuses,
+            materialUsed: (item as any).materialUsed || { id: 'mat_iron', name: 'Scrap Iron', color: '#475569', baseDamageMod: 0, critMod: 0, extraProperty: 'NONE' },
+            catalystUsed: (item as any).catalystUsed || { id: 'cat_plain', type: 'Shadow', name: 'Normal', statusEffectChance: 0, statusDuration: 0, color: '#94a3b8', damageType: 'Physical' },
+          };
+          applyStatBonuses(item, true);
+          if (item.defense) {
+            updatedStats.def += item.defense;
+          }
         }
       }
 

@@ -3,12 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TileType, Trap, TrapType, Chest, Enemy, EnemyType, EnemyState, CatalystType } from '../types';
+import { TileType, Trap, TrapType, Chest, Enemy, EnemyType, EnemyState, CatalystType, Follower, DungeonProp, MaterialCategory } from '../types';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';
+import { LEVEL_WIDTH, LEVEL_HEIGHT } from './gameUtils';
 import enemyTemplates from '../data/enemies.json';
 
 export function getEnemyTemplate(type: EnemyType | string) {
-  const customEnemies = (window as any).customEnemies;
+  if (type === 'captive') {
+    return { name: 'Captive Villager', baseHp: 15, baseAtk: 0, baseDef: 0, range: 1, speed: 1.0, char: '👤', color: '#38bdf8' };
+  }
+
+  const customEnemies = typeof window !== 'undefined' ? (window as any).customEnemies : undefined;
   if (customEnemies) {
     const custom = customEnemies.find((e: any) => e.type === type);
     if (custom) {
@@ -25,8 +30,13 @@ export function getEnemyTemplate(type: EnemyType | string) {
     }
   }
 
+  // Alias lookup map
+  let mappedKey = type;
+  if (type === 'Brute') mappedKey = 'OrcBrute';
+  if (type === 'Mage') mappedKey = 'SkeletonMage';
+
   // Fallback defaults loaded from easy-to-modify JSON
-  const template = (enemyTemplates as any)[type];
+  const template = (enemyTemplates as any)[mappedKey] || (enemyTemplates as any)[type];
   if (template) {
     return {
       name: template.name,
@@ -41,6 +51,7 @@ export function getEnemyTemplate(type: EnemyType | string) {
   }
 
   // Extreme fallback default in case key is missing
+  console.error(`[DEV ERROR] getEnemyTemplate: Unknown or missing enemy type '${type}'! Returning default Giant Plague Rat template.`);
   return { name: 'Giant Plague Rat', baseHp: 8, baseAtk: 2, baseDef: 0, range: 1, speed: 1.0, char: 'r', color: '#a1a1aa' };
 }
 
@@ -440,26 +451,31 @@ export function generateLevel(
         const matCount = Math.random() < 0.3 ? 1 : Math.random() < 0.82 ? 2 : 3;
         for (let m = 0; m < matCount; m++) {
           const depthWeight = Math.random() + (depth * 0.1);
+          let candidates = BASIC_MATERIALS;
           if (depthWeight > 1.2) {
-            // High tier
-            const legMats = BASIC_MATERIALS.filter((mat) => mat.category === 'Legendary');
-            const rolledMat = legMats[Math.floor(Math.random() * legMats.length)];
-            materialsInside.push(rolledMat.id);
+            candidates = BASIC_MATERIALS.filter((mat) => (mat.category as string) === 'Tier3' || mat.category === MaterialCategory.Tier3);
           } else if (depthWeight > 0.6) {
-            const rareMats = BASIC_MATERIALS.filter((mat) => mat.category === 'Rare' || mat.category === 'Common');
-            const rolledMat = rareMats[Math.floor(Math.random() * rareMats.length)];
-            materialsInside.push(rolledMat.id);
+            candidates = BASIC_MATERIALS.filter((mat) => (mat.category as string) === 'Tier2' || mat.category === MaterialCategory.Tier2);
           } else {
-            const comMats = BASIC_MATERIALS.filter((mat) => mat.category === 'Common');
-            const rolledMat = comMats[Math.floor(Math.random() * comMats.length)];
-            materialsInside.push(rolledMat.id);
+            candidates = BASIC_MATERIALS.filter((mat) => (mat.category as string) === 'Tier1' || mat.category === MaterialCategory.Tier1);
+          }
+          if (!candidates || candidates.length === 0) {
+            candidates = BASIC_MATERIALS;
+          }
+          if (candidates && candidates.length > 0) {
+            const rolledMat = candidates[Math.floor(Math.random() * candidates.length)];
+            if (rolledMat && rolledMat.id) {
+              materialsInside.push(rolledMat.id);
+            }
           }
         }
 
         // Chance of crystal catalyst
-        if (Math.random() < 0.55) {
+        if (Math.random() < 0.55 && ELEMENTAL_CATALYSTS && ELEMENTAL_CATALYSTS.length > 0) {
           const rolledCat = ELEMENTAL_CATALYSTS[Math.floor(Math.random() * ELEMENTAL_CATALYSTS.length)];
-          catalystsInside.push(rolledCat.id);
+          if (rolledCat && rolledCat.id) {
+            catalystsInside.push(rolledCat.id);
+          }
         }
 
         chests.push({
@@ -835,4 +851,197 @@ export function generateLevel(
     chests,
     enemies,
   };
+}
+
+export function spawnFollowersOnLevelLoadByReset(
+  enemiesArray: Enemy[],
+  fList: Follower[],
+  playerX: number,
+  playerY: number,
+  map: TileType[][],
+  activeCompanionQuestsList?: any[]
+): Enemy[] {
+  const safeEnemies = enemiesArray || [];
+  const filtered = safeEnemies.filter(e => !e?.isFollower || e?.id?.startsWith('wt_ally_'));
+  const nextEnemies = [...filtered];
+  
+  const activeQuests = activeCompanionQuestsList || [];
+  const activeQuestFollowerIds = activeQuests
+    .filter((q: any) => q && q.durationTurns > 0)
+    .map((q: any) => q.followerId);
+
+  const safeFollowers = fList || [];
+  const availableFollowers = safeFollowers.filter(fol => fol && !activeQuestFollowerIds.includes(fol.id));
+
+  availableFollowers.forEach((fol) => {
+    const spots = [
+      { dx: -1, dy: 0 }, { dx: 1, dy: 0 }, { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+      { dx: -1, dy: -1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
+    ];
+    
+    let spotX = playerX;
+    let spotY = playerY;
+    
+    for (const s of spots) {
+      const tx = playerX + s.dx;
+      const ty = playerY + s.dy;
+      if (tx >= 0 && tx < LEVEL_WIDTH && ty >= 0 && ty < LEVEL_HEIGHT) {
+        if (map[ty]?.[tx] === TileType.Floor || map[ty]?.[tx] === TileType.Grass || map[ty]?.[tx] === TileType.Path) {
+          const occupied = nextEnemies.some(ne => ne.x === tx && ne.y === ty);
+          if (!occupied) {
+            spotX = tx;
+            spotY = ty;
+            break;
+          }
+        }
+      }
+    }
+
+    const isCat = fol.archetypeId === 'cat' || fol.char === '🐈' || fol.char === '🐱' || ['Jekku', 'Pulla', 'Alli', 'Leevi'].some((c) => fol.name?.includes(c));
+    const folChar = isCat ? '🐈' : (fol.char || (fol.role === 'Knight' ? '🛡️' : fol.role === 'Mage' ? '🧙' : '🏹'));
+    const folColor = isCat ? (fol.color || '#fb923c') : (fol.color || (fol.role === 'Knight' ? '#60a5fa' : fol.role === 'Mage' ? '#c084fc' : '#facc15'));
+    const folName = isCat ? (fol.name.startsWith('🐈') ? fol.name : `🐈 ${fol.name}`) : (fol.name.startsWith('🛡️') ? fol.name : `🛡️ ${fol.name} (${fol.role || 'Companion'})`);
+
+    nextEnemies.push({
+      id: `fol_${fol.id}_${Date.now()}`,
+      x: spotX,
+      y: spotY,
+      type: EnemyType.Goblin,
+      name: folName,
+      hp: fol.hp,
+      maxHp: fol.maxHp,
+      atk: fol.atk,
+      def: fol.def,
+      range: fol.role === 'Mage' ? 3 : 1,
+      speed: 1.0,
+      char: folChar,
+      color: folColor,
+      state: EnemyState.Chasing,
+      isElite: true,
+      isFollower: true,
+      followerId: fol.id,
+      debuffs: [],
+      patrolPath: [],
+      patrolIndex: 0
+    });
+  });
+
+  return nextEnemies;
+}
+
+export function generateDungeonProps(map: TileType[][], depth: number): DungeonProp[] {
+  const propsList: DungeonProp[] = [];
+  const height = map.length;
+  const width = map[0]?.length || 0;
+
+  const PROP_TEMPLATES = [
+    { char: '☠', name: 'Pile of Bones', color: '#cbd5e1', description: 'Bleached mortal remains scattered in dust.' },
+    { char: '🕸', name: 'Cobweb', color: '#64748b', description: 'Stretched ancient cobweb covering stone structures.' },
+    { char: '⌸', name: 'Broken Barrel', color: '#78350f', description: 'A crushed wooden frame with rusted trim.' },
+    { char: 'π', name: 'Ancient Column', color: '#94a3b8', description: 'A cracked stone pillar of forgotten craftsmanship.' },
+    { char: '⎖', name: 'Iron Shackle', color: '#64748b', description: 'Heavy prison bolts anchored to damp floors.' },
+    { char: '⎗', name: 'Stained Altar', color: '#b91c1c', description: 'A blackened granite stone carved with sacrificial runes.' }
+  ];
+
+  const SHRINE_TEMPLATES = [
+    {
+      id_prefix: 'forbidden_strength',
+      char: '⛧',
+      name: 'Shrine of Forbidden Strength',
+      color: '#f87171',
+      description: 'An obsidian pillar carved with bleeding runes. Pray to gain permanent +4 Strength, but suffer -15 HP and receive the Curse of Vulnerability (-5 Defense for 40 turns).'
+    },
+    {
+      id_prefix: 'blind_oracle',
+      char: '🔮',
+      name: 'Shrine of the Blind Oracle',
+      color: '#c084fc',
+      description: 'A swirling void of deep cosmic purple. Touch to fully reveal the floor map and gain permanent +3 Intellect, but suffer Cursed Sight (-5 Attack and -15% Crit Chance for 45 turns).'
+    },
+    {
+      id_prefix: 'blood_transfusion',
+      char: '🧪',
+      name: 'Shrine of Blood Transfusion',
+      color: '#34d399',
+      description: 'A bubbling font of dark jade ley-water. Offer blood to gain permanent +12 Max MP (mana is fully restored), but instantly drain -15 HP.'
+    },
+    {
+      id_prefix: 'covetous_greed',
+      char: '🏺',
+      name: 'Altar of the Covetous Greed',
+      color: '#facc15',
+      description: 'A glowing brass urn of endless wealth. Claims a toll on your armor to grant +250 Gold instantly, but inflicts Cursed Weight (-2 Strength and -2 Dexterity for 30 turns).'
+    },
+    {
+      id_prefix: 'reckless_berserker',
+      char: '⚔️',
+      name: 'Shrine of the Reckless Berserker',
+      color: '#fb923c',
+      description: 'A blood-spattered anvil of combat rage. Pray to permanently gain +15% Critical Strike Chance, but permanently sacrifices -20 Max HP.'
+    },
+    {
+      id_prefix: 'chrono_shift',
+      char: '🌀',
+      name: 'Altar of the Chrono-Shift',
+      color: '#60a5fa',
+      description: 'A twisting sapphire temporal vortex. Pray to permanently gain +3 Dexterity, but suffer +30 physical exhaustion points immediately.'
+    }
+  ];
+
+  // 1. Generate 12-20 decorative props
+  const count = 12 + Math.floor(Math.random() * 9); // 12-20 props
+  let attempts = 0;
+  
+  for (let i = 0; i < count && attempts < 1500; i++) {
+    attempts++;
+    const rx = Math.floor(Math.random() * width);
+    const ry = Math.floor(Math.random() * height);
+
+    if (map[ry]?.[rx] === TileType.Floor) {
+      const dup = propsList.some(p => p.x === rx && p.y === ry);
+      if (!dup) {
+        const t = PROP_TEMPLATES[Math.floor(Math.random() * PROP_TEMPLATES.length)];
+        propsList.push({
+          id: `d_prop_${Date.now()}_${Math.random()}`,
+          x: rx,
+          y: ry,
+          char: t.char,
+          name: t.name,
+          color: t.color,
+          description: t.description
+        });
+      }
+    }
+  }
+
+  // 2. Ensure exactly 2 unique double-edged shrines per dungeon floor
+  const shuffledShrines = [...SHRINE_TEMPLATES].sort(() => 0.5 - Math.random());
+  const shrinesToSpawn = shuffledShrines.slice(0, 2);
+
+  let shrinesSpawned = 0;
+  let shrineAttempts = 0;
+  while (shrinesSpawned < shrinesToSpawn.length && shrineAttempts < 1000) {
+    shrineAttempts++;
+    const rx = Math.floor(Math.random() * width);
+    const ry = Math.floor(Math.random() * height);
+
+    if (map[ry]?.[rx] === TileType.Floor) {
+      const dup = propsList.some(p => p.x === rx && p.y === ry);
+      if (!dup) {
+        const s = shrinesToSpawn[shrinesSpawned];
+        propsList.push({
+          id: `d_shrine_${s.id_prefix}_${Date.now()}_${Math.random()}`,
+          x: rx,
+          y: ry,
+          char: s.char,
+          name: s.name,
+          color: s.color,
+          description: s.description
+        });
+        shrinesSpawned++;
+      }
+    }
+  }
+
+  return propsList;
 }

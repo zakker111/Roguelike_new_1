@@ -82,14 +82,14 @@ export const WEIGHT_CONFIG = {
  */
 export function getMaxWeight(gameState: GameState): number {
   // Let the God Panel or sandboxes deactivate weight rules easily via custom settings
-  const bypass = (window as any).bypassWeightLimit;
+  const bypass = typeof window !== 'undefined' ? (window as any).bypassWeightLimit : false;
   const effStats = getEffectiveStats(gameState.playerStats);
   if (bypass === true || effStats.str >= 999) {
     return 9999.0;
   }
 
   // Allow customizable override value in memory (from developer sandbox UI)
-  const customLimit = (window as any).customBaseMaxWeight;
+  const customLimit = typeof window !== 'undefined' ? (window as any).customBaseMaxWeight : undefined;
   const base = customLimit !== undefined ? customLimit : WEIGHT_CONFIG.baseMaxWeight;
 
   return base + (effStats.str * WEIGHT_CONFIG.strengthMultiplier);

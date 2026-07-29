@@ -7,9 +7,16 @@ import { TileType } from '../types';
 
 /**
  * Returns a list of coordinates of a straight line connecting two grid points.
- * Uses Bresenham's Line Algorithm.
+ * Uses Bresenham's Line Algorithm with memoization.
  */
+const lineCache = new Map<string, { x: number; y: number }[]>();
+const MAX_LINE_CACHE_SIZE = 1000;
+
 export function bresenhamLine(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
+  const key = `${x0},${y0},${x1},${y1}`;
+  const cached = lineCache.get(key);
+  if (cached) return cached;
+
   const points: { x: number; y: number }[] = [];
   const dx = Math.abs(x1 - x0);
   const dy = Math.abs(y1 - y0);
@@ -34,19 +41,59 @@ export function bresenhamLine(x0: number, y0: number, x1: number, y1: number): {
     }
   }
 
+  if (lineCache.size >= MAX_LINE_CACHE_SIZE) {
+    lineCache.clear();
+  }
+  lineCache.set(key, points);
+
   return points;
 }
 
 /**
  * Computes light visibility for raw raycasting grid.
  * Updates the visible boolean array up to a certain maximum light radius.
+ * Uses bounding-box hashing for memoization across static turns.
  */
+const fovCache = new Map<string, boolean[][]>();
+const MAX_FOV_CACHE_SIZE = 120;
+
+function getBoxHash(px: number, py: number, map: TileType[][], radius: number): string {
+  if (!map || map.length === 0 || !map[0]) return '';
+  const height = map.length;
+  const width = map[0].length;
+
+  const minX = Math.max(0, px - radius);
+  const maxX = Math.min(width - 1, px + radius);
+  const minY = Math.max(0, py - radius);
+  const maxY = Math.min(height - 1, py + radius);
+
+  let hash = `${px},${py},${radius}:${width}x${height}:`;
+  for (let y = minY; y <= maxY; y++) {
+    const row = map[y];
+    if (!row) continue;
+    for (let x = minX; x <= maxX; x++) {
+      hash += row[x] || '0';
+    }
+  }
+  return hash;
+}
+
 export function computeFOV(
   px: number,
   py: number,
   map: TileType[][],
   radius: number
 ): boolean[][] {
+  if (!map || map.length === 0 || !map[0] || map[0].length === 0) return [];
+
+  const hashKey = getBoxHash(px, py, map, radius);
+  if (hashKey) {
+    const cachedFOV = fovCache.get(hashKey);
+    if (cachedFOV) {
+      return cachedFOV;
+    }
+  }
+
   const height = map.length;
   const width = map[0].length;
   const visible = Array(height)
@@ -66,6 +113,8 @@ export function computeFOV(
   const minY = Math.max(0, clampedPy - radius);
   const maxY = Math.min(height - 1, clampedPy + radius);
 
+  const radiusSq = radius * radius;
+
   // Cast rays outward
   for (let x = minX; x <= maxX; x++) {
     castRay(clampedPx, clampedPy, x, minY);
@@ -79,14 +128,14 @@ export function computeFOV(
   function castRay(x0: number, y0: number, x1: number, y1: number) {
     const line = bresenhamLine(x0, y0, x1, y1);
     for (const p of line) {
-      // Bounds check for point coordinates to prevent "Cannot set properties of undefined" or other exceptions
+      // Bounds check for point coordinates to prevent exceptions
       if (p.x < 0 || p.x >= width || p.y < 0 || p.y >= height) {
         continue;
       }
 
-      // Distance check
-      const dist = Math.sqrt((p.x - x0) ** 2 + (p.y - y0) ** 2);
-      if (dist > radius) break;
+      // Fast squared distance check to avoid Math.sqrt in hot raycasting loop
+      const distSq = (p.x - x0) * (p.x - x0) + (p.y - y0) * (p.y - y0);
+      if (distSq > radiusSq) break;
 
       visible[p.y][p.x] = true;
 
@@ -102,6 +151,11 @@ export function computeFOV(
       }
     }
   }
+
+  if (fovCache.size >= MAX_FOV_CACHE_SIZE) {
+    fovCache.clear();
+  }
+  fovCache.set(hashKey, visible);
 
   return visible;
 }
@@ -120,6 +174,7 @@ export function getNextStepTowards(
   otherEnemies: { x: number; y: number }[],
   isWaterWalkable?: boolean
 ): { x: number; y: number } | null {
+  if (!map || map.length === 0 || !map[0] || map[0].length === 0) return null;
   const height = map.length;
   const width = map[0].length;
 

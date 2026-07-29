@@ -4,58 +4,21 @@ import { getEnemyTemplate } from './dungeon';
 import { POI_BLUEPRINTS, getPOIBlueprint } from '../data/worldHistory';
 import townTemplates from '../data/townTemplates.json';
 import worldConfig from '../data/worldConfig.json';
+import { getOrganicBiome as getOrganicBiomeModule, getOrganicNoise as getOrganicNoiseModule } from '../world/overworldBiomes';
+import {
+  getBuildingCoordinates as getBuildingCoordinatesModule,
+  hasTownAtChunk as hasTownAtChunkModule,
+  isCastleTownAtChunk as isCastleTownAtChunkModule,
+  getDeterministicTownName as getDeterministicTownNameModule,
+  buildModularTownSquare as buildModularTownSquareModule,
+  buildCastleKeep as buildCastleKeepModule,
+} from '../world/overworldStructures';
 
 let currentWorldSeed = 8675309;
 
 // Calculate building positions from JSON expressions like "width - 12" safely without eval
 export function getBuildingCoordinates(width: number, height: number, chunkX?: number, chunkY?: number): any[] {
-  // If it's the starting town and a GM has set a custom layout on window, use that
-  if (chunkX === 0 && chunkY === 0 && typeof window !== 'undefined' && (window as any).customHouses) {
-    return (window as any).customHouses;
-  }
-
-  // Otherwise, deterministically/randomly choose from the town layouts pool in JSON
-  const layouts = townTemplates.townLayouts;
-  let layoutIndex = 0;
-  if (chunkX !== undefined && chunkY !== undefined) {
-    // deterministic prng based on coordinates and current world seed
-    layoutIndex = Math.floor(prng(chunkX, chunkY, 4821) * layouts.length);
-  } else {
-    // fallback or random layout selection
-    layoutIndex = Math.floor(Math.random() * layouts.length);
-  }
-
-  const selectedLayout = layouts[layoutIndex];
-  
-  return selectedLayout.buildings.map((b: any) => {
-    let computedX = 0;
-    let computedY = 0;
-
-    const xStr = String(b.x);
-    if (xStr.includes('width')) {
-      const offset = parseInt(xStr.replace('width', '').replace('-', '').replace('+', '').trim() || '0', 10);
-      computedX = xStr.includes('-') ? width - offset : width + offset;
-    } else {
-      computedX = parseInt(xStr, 10);
-    }
-
-    const yStr = String(b.y);
-    if (yStr.includes('height')) {
-      const offset = parseInt(yStr.replace('height', '').replace('-', '').replace('+', '').trim() || '0', 10);
-      computedY = yStr.includes('-') ? height - offset : height + offset;
-    } else {
-      computedY = parseInt(yStr, 10);
-    }
-
-    return {
-      id: b.id,
-      name: b.name,
-      x: computedX,
-      y: computedY,
-      w: b.w,
-      h: b.h
-    };
-  });
+  return getBuildingCoordinatesModule(width, height, chunkX, chunkY, prng);
 }
 
 export function setWorldSeed(seed: number) {
@@ -106,110 +69,39 @@ export function prng(x: number, y: number, localSeed: number = 0): number {
 
 // Deterministic smooth organic noise based on low-frequency sine/cosine waves to make contiguous regions
 export function getOrganicNoise(x: number, y: number, offset: number): number {
-  const f1 = Math.sin(x * 0.16 + offset + (currentWorldSeed % 1000) * 0.01) * 0.45;
-  const f2 = Math.cos(y * 0.14 - offset * 1.3 - (currentWorldSeed % 1000) * 0.015) * 0.45;
-  const f3 = Math.sin((x + y) * 0.07 + offset * 0.7) * 0.2;
-  const f4 = Math.cos((x - y) * 0.09 - offset * 0.5) * 0.1;
-  return 0.5 + (f1 + f2 + f3 + f4); // Normalized range [0.0, 1.0]
+  return getOrganicNoiseModule(x, y, offset, currentWorldSeed);
 }
 
 // Determine Biome using an organic, Whittaker-like temperature/moisture transition system
 export function getOrganicBiome(chunkX: number, chunkY: number): 'forest' | 'desert' | 'tundra' | 'swamp' {
-  if (chunkX === 0 && chunkY === 0) {
-    return 'forest'; // spawn town is always lush forest
-  }
-
-  // Generate organic temperature and moisture
-  const tempNoise = getOrganicNoise(chunkX, chunkY, 12.34);
-  const moistNoise = getOrganicNoise(chunkX, chunkY, 56.78);
-
-  // Global gradients: North is colder, South is warmer. East is drier, West is wetter.
-  const tempGrad = chunkY * 0.06; // negative Y goes North (colder), positive Y goes South (warmer)
-  const moistGrad = -chunkX * 0.06; // positive X goes East (drier), negative X goes West (wetter)
-
-  const temperature = tempNoise + tempGrad;
-  const moisture = moistNoise + moistGrad;
-
-  const thresholds = worldConfig.biomeThresholds;
-
-  if (temperature < thresholds.tundra.temperatureMax) {
-    return 'tundra'; // Cold environments are snowy Tundra
-  } else if (temperature >= thresholds.desert.temperatureMin && moisture < thresholds.desert.moistureMax) {
-    return 'desert'; // Warm and dry environments are Desert
-  } else if (temperature >= thresholds.swamp.temperatureMin && moisture >= thresholds.swamp.moistureMin) {
-    return 'swamp';  // Warm and highly wet environments are Swamp
-  } else {
-    return 'forest'; // Standard balanced environments are Forest
-  }
+  return getOrganicBiomeModule(chunkX, chunkY, currentWorldSeed);
 }
 
-const TOWN_PREFIXES = ["Stone", "Oak", "River", "Deep", "High", "Silver", "Iron", "Gold", "Green", "Winter", "Shadow", "Cloud"];
-const TOWN_SUFFIXES = ["haven", "wood", "run", "fall", "crest", "ford", "keep", "ridge", "glen", "vale", "dale", "barrow", "town"];
-
 export function hasTownAtChunk(chunkX: number, chunkY: number): boolean {
-  if (chunkX === 0 && chunkY === 0) return true;
-  if (chunkX === 3 && chunkY === -2) return true; // Vanguard Harbor Port is the sail destination
+  return hasTownAtChunkModule(chunkX, chunkY, prng);
+}
 
-  // Deterministic seed hash based on coordinates and currentWorldSeed
-  const val = prng(chunkX, chunkY, 8271);
-  return val < 0.12; // 12% probability of a town
+export function isCastleTownAtChunk(chunkX: number, chunkY: number): boolean {
+  return isCastleTownAtChunkModule(chunkX, chunkY, prng);
 }
 
 export function getDeterministicTownName(cx: number, cy: number): string {
-  if (cx === 0 && cy === 0) return "Oakhaven Village";
-  if (cx === 3 && cy === -2) return "Vanguard Harbor Port";
-
-  const isCastle = isCastleTownAtChunk(cx, cy);
-
-  // Use a deterministic seed hash based on coordinates and world seed
-  const index = Math.abs(cx * 11 + cy * 19 + (currentWorldSeed % 100));
-  const pIdx = index % TOWN_PREFIXES.length;
-  const sIdx = (index + 3) % TOWN_SUFFIXES.length;
-
-  if (isCastle) {
-    const castleDescriptors = ["Castle", "Citadel", "Fortress", "Bastion", "Stronghold", "Keep"];
-    const dIdx = (index + 7) % castleDescriptors.length;
-    return `${TOWN_PREFIXES[pIdx]} ${castleDescriptors[dIdx]}`;
-  }
-
-  return `Town of ${TOWN_PREFIXES[pIdx]}${TOWN_SUFFIXES[sIdx]}`;
+  return getDeterministicTownNameModule(cx, cy, currentWorldSeed, prng);
 }
 
 export function buildModularTownSquare(map: TileType[][], cx: number, cy: number, seedVal: number) {
-  // Flush central 5x5 to slate clean roads first
-  for (let dy = -2; dy <= 2; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      if (cx + dx >= 0 && cx + dx < map[0].length && cy + dy >= 0 && cy + dy < map.length) {
-        map[cy + dy][cx + dx] = TileType.Path;
-      }
-    }
-  }
+  return buildModularTownSquareModule(map, cx, cy, seedVal);
+}
 
-  const squares = townTemplates.townSquares;
-  const sIndex = Math.abs(seedVal) % squares.length;
-  const selectedSquare = squares[sIndex];
-
-  // Render the 5x5 grid from JSON relative to central coordinates (cx, cy)
-  const grid = selectedSquare.grid;
-  const legend: Record<string, string> = selectedSquare.legend;
-
-  for (let dy = -2; dy <= 2; dy++) {
-    const row = grid[dy + 2];
-    if (!row) continue;
-    for (let dx = -2; dx <= 2; dx++) {
-      const char = row[dx + 2];
-      if (!char) continue;
-      const mappedTileName = legend[char];
-      if (mappedTileName) {
-        const tileVal = (TileType as any)[mappedTileName];
-        const tx = cx + dx;
-        const ty = cy + dy;
-        if (tileVal && tx >= 0 && tx < map[0].length && ty >= 0 && ty < map.length) {
-          map[ty][tx] = tileVal;
-        }
-      }
-    }
-  }
+export function buildCastleKeep(
+  map: TileType[][],
+  startX: number,
+  startY: number,
+  w: number,
+  h: number,
+  secondFloorMap?: TileType[][]
+) {
+  return buildCastleKeepModule(map, startX, startY, w, h, secondFloorMap);
 }
 
 export function generateOverworldChunk(
@@ -434,18 +326,36 @@ export function generateOverworldChunk(
     }
 
     // Spawn modular defense force of guards
+    const barracksHouse = housesList.find((h: any) => h.id === 'barracks') || housesList[5] || { x: 18, y: height - 11, w: 14, h: 8 };
+
+    // Explicitly place bed tiles in map inside the barracks house so guards have beds to sleep in!
+    if (barracksHouse && map) {
+      const bY = barracksHouse.y + 1;
+      if (bY > 0 && bY < map.length - 1) {
+        [2, 4, 6, 8].forEach(offsetX => {
+          const bX = barracksHouse.x + offsetX;
+          if (bX > 0 && bX < map[0].length - 1) {
+            map[bY][bX] = TileType.Bed;
+          }
+        });
+      }
+    }
+
+    const bBed1 = { x: barracksHouse.x + 2, y: barracksHouse.y + 1 };
+    const bBed2 = { x: barracksHouse.x + 4, y: barracksHouse.y + 1 };
+    const bBed3 = { x: barracksHouse.x + 6, y: barracksHouse.y + 1 };
+
     if (isCastleTown) {
-      const barracksHouse = housesList.find((h: any) => h.id === 'barracks') || housesList[5];
       const blacksmithHouse = housesList.find((h: any) => h.id === 'blacksmith') || housesList[0];
 
       // Defenses with Archers (bowers), Swordsmen, and Crossbowmen (fully relative)
       const guardPositions = [
-        { x: 3, y: midY - 2, role: 'Archer', name: 'Castle Archer Sentry' },
-        { x: width - 6, y: midY - 2, role: 'Archer', name: 'Castle Archer Sentry' },
-        { x: midX - 3, y: 3, role: 'Crossbowman', name: 'Gate Crossbow Sentry' },
-        { x: midX + 3, y: height - 4, role: 'Crossbowman', name: 'Gate Crossbow Sentry' },
-        { x: midX - 4, y: midY, role: 'Swordsman', name: 'Courtyard Swordsman Patrol' },
-        { x: barracksHouse.x + 4, y: barracksHouse.y - 1, role: 'Swordsman', name: 'Keep Swordsman Sentry' }
+        { x: 3, y: midY - 2, role: 'Archer', name: 'Castle Archer Sentry', shift: 'sentry' as const, bed: bBed1 },
+        { x: width - 6, y: midY - 2, role: 'Archer', name: 'Castle Archer Sentry', shift: 'sentry' as const, bed: bBed2 },
+        { x: midX - 3, y: 3, role: 'Crossbowman', name: 'Gate Crossbow Sentry', shift: 'sentry' as const, bed: bBed3 },
+        { x: midX + 3, y: height - 4, role: 'Crossbowman', name: 'Gate Crossbow Sentry', shift: 'sentry' as const, bed: bBed1 },
+        { x: midX - 4, y: midY, role: 'Swordsman', name: 'Courtyard Day Guard', shift: 'day' as const, bed: bBed2 },
+        { x: barracksHouse.x + 4, y: barracksHouse.y - 1, role: 'Swordsman', name: 'Keep Night Guard', shift: 'night' as const, bed: bBed3 }
       ];
 
       guardPositions.forEach((g, idx) => {
@@ -498,8 +408,11 @@ export function generateOverworldChunk(
           speed,
           color,
           char,
+          originalChar: char,
           state: EnemyState.Patrolling,
           isElite: false,
+          shift: g.shift,
+          barracksBed: g.bed,
           patrolPath: [
             { x: g.x, y: g.y },
             { x: g.x + (g.role === 'Swordsman' ? 6 : 2), y: g.y },
@@ -518,7 +431,7 @@ export function generateOverworldChunk(
         x: midX - 3,
         y: midY,
         type: EnemyType.Goblin,
-        name: "Town Guard",
+        name: "Day Patrol Guard",
         hp: 45,
         maxHp: 45,
         atk: 6,
@@ -527,8 +440,11 @@ export function generateOverworldChunk(
         speed: 1,
         color: '#3b82f6', // bright guard blue
         char: '🛡',
+        originalChar: '🛡',
         state: EnemyState.Patrolling,
         isElite: false,
+        shift: 'day',
+        barracksBed: bBed1,
         patrolPath: [
           { x: midX - 8, y: midY },
           { x: midX + 8, y: midY },
@@ -545,7 +461,7 @@ export function generateOverworldChunk(
         x: midX + 3,
         y: midY + 1,
         type: EnemyType.Goblin,
-        name: "Gate Sentry",
+        name: "Night Patrol Guard",
         hp: 45,
         maxHp: 45,
         atk: 6,
@@ -554,13 +470,44 @@ export function generateOverworldChunk(
         speed: 1,
         color: '#3b82f6',
         char: '🛡',
+        originalChar: '🛡',
         state: EnemyState.Patrolling,
         isElite: false,
+        shift: 'night',
+        barracksBed: bBed2,
         patrolPath: [
           { x: midX + 5, y: midY + 5 },
           { x: midX - 5, y: midY - 5 },
           { x: midX + 5, y: midY - 5 },
           { x: midX - 5, y: midY + 5 }
+        ],
+        patrolIndex: 0,
+        debuffs: [],
+        isTownGuard: true
+      } as any);
+
+      enemies.push({
+        id: `town_guard_${chunkX}_${chunkY}_3`,
+        x: midX,
+        y: midY + 5,
+        type: EnemyType.Goblin,
+        name: "Gate Sentry",
+        hp: 50,
+        maxHp: 50,
+        atk: 7,
+        def: 5,
+        range: 1,
+        speed: 1,
+        color: '#2563eb',
+        char: '🛡',
+        originalChar: '🛡',
+        state: EnemyState.Patrolling,
+        isElite: false,
+        shift: 'sentry',
+        barracksBed: bBed3,
+        patrolPath: [
+          { x: midX - 3, y: midY + 5 },
+          { x: midX + 3, y: midY + 5 }
         ],
         patrolIndex: 0,
         debuffs: [],
@@ -1770,21 +1717,22 @@ export function generateOverworldChunk(
                               (playerStats.cha || 10) + 
                               (playerStats.lck || 10);
           const statExcess = Math.max(0, totalStats - 50);
-          const statBonusFactor = statExcess * 0.05; // +5% per allocated stat point
-          const levelBonusFactor = Math.max(0, pLevel - 1) * 0.25; // +25% per level above level 1
+          const statBonusFactor = statExcess * 0.01; // +1% per allocated stat point
+          const levelBonusFactor = Math.max(0, pLevel - 1) * 0.05; // +5% per level above level 1
           playerScaleCoeff += levelBonusFactor + statBonusFactor;
         }
         
         if (currentWeapon) {
           const weaponVal = Math.max(0, currentWeapon.damage || 0);
-          const weaponBonusFactor = weaponVal * 0.15; // +15% per weapon damage point (makes monsters scale with your main weapon!)
+          const weaponBonusFactor = weaponVal * 0.02; // +2% per weapon damage point
           playerScaleCoeff += weaponBonusFactor;
         }
 
-        // Overworld scale factor: scale with player power to keep it challenging!
+        // Overworld scale factor: scale HP smoothly, but damp attack scaling to prevent 1-shots
         baseHp = Math.round(baseHp * playerScaleCoeff);
-        baseAtk = Math.round(baseAtk * playerScaleCoeff);
-        baseDef = Math.round(baseDef * playerScaleCoeff);
+        const atkScaleCoeff = 1.0 + (playerScaleCoeff - 1.0) * 0.35;
+        baseAtk = Math.round(baseAtk * atkScaleCoeff);
+        baseDef = Math.round(baseDef * atkScaleCoeff);
 
         enemies.push({
           id: `wild_enemy_${chunkX}_${chunkY}_${i}`,
@@ -2378,9 +2326,9 @@ export function generateOverworldChunk(
         }
 
         npcs.push({
-          id: `wandering_merchant_${chunkX}_${chunkY}`,
+          id: `caravan_merchant_${chunkX}_${chunkY}`,
           name: mName,
-          role: 'merchant' as any,
+          role: 'merchant_caravan' as any,
           char: mChar,
           color: mColor,
           x: caravanX,
@@ -2830,110 +2778,6 @@ function buildHouse(
         secondFloorMap[startY + 2][startX + w - 4] = TileType.Chair;
       }
     }
-  }
-}
-
-
-export function isCastleTownAtChunk(chunkX: number, chunkY: number): boolean {
-  if (chunkX === 0 && chunkY === 0) return false;
-  if (chunkX === 3 && chunkY === -2) return false;
-  if (!hasTownAtChunk(chunkX, chunkY)) return false;
-  
-  // Castles are rarer than villages. Only 25% of random wild towns will trigger Castle fortifications.
-  const val = prng(chunkX, chunkY, 9483);
-  return val < 0.25;
-}
-
-function buildCastleKeep(
-  map: TileType[][],
-  startX: number,
-  startY: number,
-  w: number,
-  h: number,
-  secondFloorMap?: TileType[][]
-) {
-  for (let y = startY; y < startY + h; y++) {
-    for (let x = startX; x < startX + w; x++) {
-      if (y === startY || y === startY + h - 1 || x === startX || x === startX + w - 1) {
-        map[y][x] = TileType.Wall;
-      } else {
-        map[y][x] = TileType.Floor;
-      }
-    }
-  }
-
-  // Interior wall dividing keep into Guard quarters (left) and War room (right)
-  const midWallX = startX + 6;
-  if (midWallX > startX && midWallX < startX + w - 1) {
-    for (let y = startY + 1; y < startY + h - 1; y++) {
-      if (y !== startY + h - 3) {
-        map[y][midWallX] = TileType.Wall;
-      } else {
-        map[y][midWallX] = TileType.Door; // Inner door connecting rooms
-      }
-    }
-  }
-
-  // Main entrance of castle keep facing north
-  const doorY = startY;
-  if (startX + 4 < startX + w - 1 && startX + 5 < startX + w - 1) {
-    map[doorY][startX + 4] = TileType.Door;
-    map[doorY][startX + 5] = TileType.Door;
-  } else {
-    map[doorY][startX + Math.floor(w / 2)] = TileType.Door;
-  }
-
-  // Front windows flanking doors
-  if (startX + 2 < startX + w - 1) map[startY][startX + 2] = TileType.Window;
-  if (startX + 8 < startX + w - 1) map[startY][startX + 8] = TileType.Window;
-
-  // Interior furnishings: Guards side
-  map[startY + 1][startX + 1] = TileType.Bed;
-  if (startY + 2 < startY + h - 1) map[startY + 2][startX + 1] = TileType.Bed;
-  map[startY + h - 2][startX + 1] = TileType.Fireplace;
-  if (startX + 3 < startX + w - 1) map[startY + 2][startX + 3] = TileType.Table;
-  if (startX + 4 < startX + w - 1) map[startY + 2][startX + 4] = TileType.Chair;
-
-  // Interior furnishings: War Room / Throne side
-  const throneX = startX + w - 2;
-  const throneY = startY + 2;
-  if (throneX > startX && throneY < startY + h - 1) {
-    map[throneY][throneX] = TileType.Chair; // Royal Throne Chair
-    if (throneX - 1 > startX) map[throneY][throneX - 1] = TileType.Table; // War desk
-    map[throneY - 1][throneX] = TileType.Torch; // Torches flanking throne
-    if (throneY + 1 < startY + h - 1) map[throneY + 1][throneX] = TileType.Torch;
-  }
-
-  // Large blueprint mapping table in War Room center
-  const mapTableX = startX + w - 5;
-  const mapTableY = startY + h - 3;
-  if (mapTableX > startX && mapTableY > startY && mapTableY < startY + h - 1) {
-    map[mapTableY][mapTableX] = TileType.Table;
-    if (mapTableX - 1 > startX) map[mapTableY][mapTableX - 1] = TileType.Chair;
-    if (mapTableY + 1 < startY + h - 1) map[mapTableY + 1][mapTableX] = TileType.Chair;
-  }
-
-  // Second floor castle keep
-  if (secondFloorMap) {
-    for (let y = startY; y < startY + h; y++) {
-      for (let x = startX; x < startX + w; x++) {
-        if (y === startY || y === startY + h - 1 || x === startX || x === startX + w - 1) {
-          secondFloorMap[y][x] = TileType.Wall;
-        } else {
-          secondFloorMap[y][x] = TileType.Floor;
-        }
-      }
-    }
-    // Stairs
-    const stairsX = startX + 1;
-    const stairsY = startY + 1;
-    map[stairsY][stairsX] = TileType.StairsUp;
-    secondFloorMap[stairsY][stairsX] = TileType.StairsDown;
-
-    // Decorate second floor of Keep (e.g. Commander's bed and table)
-    secondFloorMap[startY + 2][startX + w - 2] = TileType.Bed;
-    secondFloorMap[startY + 3][startX + w - 3] = TileType.Table;
-    secondFloorMap[startY + 3][startX + w - 4] = TileType.Chair;
   }
 }
 
