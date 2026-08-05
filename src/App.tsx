@@ -9,20 +9,15 @@ import { TileType, Enemy, Trap, Chest, GameState, CraftedWeapon, PlayerStats, Ga
 import { generateLevel, getEnemyTemplate, spawnFollowersOnLevelLoadByReset, generateDungeonProps } from './utils/dungeon';
 import { computeFOV, getNextStepTowards, bresenhamLine } from './utils/ai';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS, WEAPON_TEMPLATES } from './utils/itemsData';
-import { playSound } from './utils/audio';
-import { generateOverworldChunk, formatGameTime, setWorldSeed, getDeterministicTownName, hasTownAtChunk, isCastleTownAtChunk, prng, getCurrentWorldSeed, getOrganicBiome, isTileSafeForNpc, findNearestSafeNpcTile } from './utils/overworld';
-import { getGMPointOfInterestNudge } from './utils/gmNarrator';
-import { tickActiveGMStoryteller, getGMStorytellerState } from './utils/gmStoryteller';
+import { playSound, getAudioSettings, toggleAudioMute } from './utils/audio';
+import { generateOverworldChunk, formatGameTime, setWorldSeed, getDeterministicTownName, hasTownAtChunk, isCastleTownAtChunk, prng, getCurrentWorldSeed, getOrganicBiome, findNearestSafeNpcTile } from './utils/overworld';
+import { tickActiveGMStoryteller } from './utils/gmStoryteller';
 import { getCurrentWeight, getMaxWeight, checkWeightCapacity, getItemWeight, getMaterialUnitWeight } from './utils/itemWeight';
 import { evaluateScarAcquisition, getEffectiveStats } from './utils/scars';
 import { 
   getBiomePriceMultiplier, 
   getPriceReports, 
-  GUILD_UPGRADES, 
-  GUILD_DECORS, 
-  COMPANION_QUEST_BOARD, 
-  SYNDICATE_GEAR, 
-  VANGUARD_GEAR 
+  GUILD_UPGRADES 
 } from './utils/tradeEconomy';
 
 import GameCanvas from './components/GameCanvas';
@@ -35,8 +30,12 @@ import ChaosConsole from './components/ChaosConsole';
 import { COMBAT_FLAVOR_TEXTS, FALLBACK_FLAVORS } from './data/combatFlavors';
 import gameConfig from './data/gameConfig.json';
 
+import { useAmbientAudio } from './hooks/useAmbientAudio';
+import { isPlayerIndoors } from './utils/buildingAudio';
+import { AudioSettingsModal } from './components/AudioSettingsModal';
 import HelpOverlay from './components/HelpOverlay';
 import AppOverlays from './components/AppOverlays';
+import ModalRouter from './components/ModalRouter';
 import { useEquipmentHandlers } from './hooks/useEquipmentHandlers';
 import { useSpellcasting } from './hooks/useSpellcasting';
 import { useWorldInteraction } from './hooks/useWorldInteraction';
@@ -46,15 +45,24 @@ import { useSaveLoad } from './hooks/useSaveLoad';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
 import { useCombatEngine } from './hooks/useCombatEngine';
 import { useEnemyAI } from './hooks/useEnemyAI';
+import { useOverworldEvents } from './hooks/useOverworldEvents';
+import { useTradeEconomy } from './hooks/useTradeEconomy';
+import { useQuestsAndGuild } from './hooks/useQuestsAndGuild';
+import { useCaravanTravel } from './hooks/useCaravanTravel';
+import { useTownServices } from './hooks/useTownServices';
+import { useGameLoop } from './hooks/useGameLoop';
+import { getSiegeCombatants } from './utils/siegeUtils';
 import BestiaryOverlay from './components/BestiaryOverlay';
 import { incrementDefeatedEnemyCount } from './utils/bestiary';
 import FollowerInspectOverlay from './components/FollowerInspectOverlay';
 import QuestBoardOverlay from './components/QuestBoardOverlay';
 import GodPanelOverlay from './components/GodPanelOverlay';
-import { SPELL_SCROLLS, getSpellScrollAsEquipmentItem } from './utils/spellScrolls';
+import { SPELL_SCROLLS } from './utils/spellScrolls';
 import GmPanelOverlay from './components/GmPanelOverlay';
 import GuildOverlay from './components/GuildOverlay';
 import SleepOverlay from './components/SleepOverlay';
+import { AppHeaderBar } from './components/AppHeaderBar';
+import { AppNavigationTabs } from './components/AppNavigationTabs';
 import HistoryBookOverlay from './components/HistoryBookOverlay';
 import FishingMiniGame from './components/FishingMiniGame';
 import LockpickingMiniGame from './components/LockpickingMiniGame';
@@ -69,24 +77,11 @@ import { WEATHER_EFFECTS } from './utils/weatherEngine';
 import { Spell, SPELLS, STARTING_WEAPON, STARTING_ARMOR, getItemDurabilityDecay } from './utils/spellsAndEquipment';
 import SanctumRelicsDraftOverlay from './components/SanctumRelicsDraftOverlay';
 import RecallScrollOverlay from './components/RecallScrollOverlay';
-import { consumeItemFromInventory, addEquipmentItemToInventory, consolidateStackableItems } from './utils/scrollUtils';
-import { SANCTUM_RELICS, getRandomRelicDraft, SanctumRelic } from './utils/relics';
-import { resolveMutationSynergyChain } from './utils/mutationSynergy';
+import { consumeItemFromInventory } from './utils/scrollUtils';
+import { getRandomRelicDraft, SanctumRelic } from './utils/relics';
 import { DEFAULT_QUESTS } from './utils/questData';
-import { getEnemyFleeQuote } from './utils/fleeQuotes';
-import {
-  BLACKSMITH_SHOP_ITEMS,
-  MERCHANT_RESOURCES,
-  TAVERN_SHOP_ITEMS,
-  SEPPO_SHOP_ITEMS,
-  SEPPO_RESOURCES,
-  APOTHECARY_ITEMS,
-  MERCHANT_INITIALS,
-  getBlacksmithItems,
-  getApothecaryItems,
-  getMerchantConfig
-} from './utils/shopData';
-import { syncCaravanState, getRegionIdForChunk, getUpdatedTerritoriesOnKill } from './utils/caravanAndTerritory';
+import { getMerchantConfig } from './utils/shopData';
+import { getUpdatedTerritoriesOnKill } from './utils/caravanAndTerritory';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -133,7 +128,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isVictory, setIsVictory] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary'>('dungeon');
+  const [activeTab, setActiveTab] = useState<'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary' | 'chronicles'>('dungeon');
   const [bagSubTab, setBagSubTab] = useState<'allies' | 'gear' | 'food' | 'resources'>('allies');
   const [dungeonBagTab, setDungeonBagTab] = useState<'allies' | 'gear' | 'food' | 'mats'>('allies');
   const [shakeTrigger, setShakeTrigger] = useState(0);
@@ -174,11 +169,12 @@ export default function App() {
   const activeMobileView = forceLayoutMode === 'mobile';
 
   // Overlay states
+  const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => getAudioSettings().isAudioMuted);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isGodPanelOpen, setIsGodPanelOpen] = useState(false);
   const [isGmPanelOpen, setIsGmPanelOpen] = useState(false);
   const [isSleepOpen, setIsSleepOpen] = useState(false);
-  const [isHistoryBookOpen, setIsHistoryBookOpen] = useState(false);
   const [isBestiaryOpen, setIsBestiaryOpen] = useState(false);
   const [isFishingOpen, setIsFishingOpen] = useState(false);
   const [isLockpickingOpen, setIsLockpickingOpen] = useState(false);
@@ -188,6 +184,7 @@ export default function App() {
   const [activePoi, setActivePoi] = useState<PoiType | null>(null);
   const [activeDrunkNpc, setActiveDrunkNpc] = useState<NPC | null>(null);
   const [activeTravelerNpc, setActiveTravelerNpc] = useState<NPC | null>(null);
+  const [activeDialogueNpc, setActiveDialogueNpc] = useState<NPC | null>(null);
   const [isAutoplayActive, setIsAutoplayActive] = useState(false);
   const [activeRelicDraft, setActiveRelicDraft] = useState<SanctumRelic[] | null>(null);
   const [activeRecallScroll, setActiveRecallScroll] = useState<EquipmentItem | null>(null);
@@ -871,184 +868,13 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  // Setup Real-time difficulty ticking loop
-  useEffect(() => {
-    if (isPlaying && !isGameOver && !isVictory) {
-      timerRef.current = setInterval(() => {
-        setGameState((prev) => {
-          const nextSec = prev.playerStats.realTimeSeconds + 1;
-          
-          // Small aesthetic: notify of scalable challenge triggers
-          let nextLogs = prev.logs;
-          if (nextSec % 120 === 0) {
-            nextLogs = [...prev.logs, {
-              id: `threat_escalation_${nextSec}`,
-              text: `⚠️ THE ATMOSPHERE HEAVENS GROWS HEAVIER - Chaos Threat has scaled! Monsters are reinforced!`,
-              type: 'danger',
-              timestamp: 'CHALLENGE',
-            }];
-            playSound('trap');
-          }
-
-          // Setup lazy real-time updates for watchtower sieges
-          let updatedChunks: Record<string, OverworldChunk> | null = null;
-          let updatedEnemies: Enemy[] | null = null;
-          let chunksChanged = false;
-          let enemiesChanged = false;
-
-          const getUpdatedChunks = () => {
-            if (!updatedChunks) {
-              updatedChunks = { ...prev.overworldChunks };
-            }
-            return updatedChunks;
-          };
-
-          const getUpdatedEnemies = () => {
-            if (!updatedEnemies) {
-              updatedEnemies = [...prev.enemies];
-            }
-            return updatedEnemies;
-          };
-
-          // 1. Trigger a random siege event every 80 seconds with a 35% chance
-          if (nextSec > 15 && nextSec % 80 === 0 && Math.random() < 0.35) {
-            // Find all claimed watchtowers that are not currently under siege
-            const watchtowerChunks = Object.values(prev.overworldChunks as Record<string, OverworldChunk>).filter(c => c.watchtower && c.watchtower.isClaimed && !c.watchtower.siegeState?.isUnderSiege);
-            if (watchtowerChunks.length > 0) {
-              const selectedChunk = watchtowerChunks[Math.floor(Math.random() * watchtowerChunks.length)] as OverworldChunk;
-              const wt = { ...selectedChunk.watchtower! };
-              
-              // Pick an attacker different from the current controller
-              const possibleAttackers: Array<'syndicate' | 'vanguard' | 'bandits'> = ['syndicate', 'vanguard', 'bandits'];
-              const filteredAttackers = possibleAttackers.filter(a => a !== wt.controller);
-              const attacker = filteredAttackers[Math.floor(Math.random() * filteredAttackers.length)];
-
-              wt.siegeState = {
-                isUnderSiege: true,
-                attacker,
-                defender: wt.controller || 'neutral',
-                siegeTimerSeconds: 120, // 2 minutes to respond
-                maxTimerSeconds: 120
-              };
-
-              const chunks = getUpdatedChunks();
-              chunks[`${selectedChunk.chunkX},${selectedChunk.chunkY}`] = {
-                ...selectedChunk,
-                watchtower: wt
-              };
-              chunksChanged = true;
-
-              if (nextLogs === prev.logs) {
-                nextLogs = [...prev.logs];
-              }
-              nextLogs.push({
-                id: `siege_alert_${Date.now()}`,
-                text: `📡 [WATCHTOWER SECTOR ALERT]: The Watchtower at Sector [${selectedChunk.chunkX}, ${selectedChunk.chunkY}] is being besieged by ${attacker === 'syndicate' ? 'Moonshadow Syndicate' : (attacker === 'vanguard' ? 'Dawn Vanguard' : 'Rust-Raider Bandits')} forces! Intervene within 120 seconds to defend!`,
-                type: 'danger',
-                timestamp: 'SIEGE'
-              });
-              
-              playSound('trap');
-
-              // If the player is currently inside this besieged watchtower's chunk, spawn the siege combatants immediately!
-              if (selectedChunk.chunkX === prev.currentChunkX && selectedChunk.chunkY === prev.currentChunkY) {
-                const wtX = wt.x;
-                const wtY = wt.y;
-                const defender = wt.siegeState.defender;
-                const playerFaction = prev.faction || 'neutral';
-                const reputation = prev.factionReputation || { syndicate: 0, vanguard: 0, bandits: 0 };
-                
-                const siegeEnemies = getSiegeCombatants(
-                  wtX,
-                  wtY,
-                  prev.currentChunkX,
-                  prev.currentChunkY,
-                  attacker,
-                  defender,
-                  playerFaction,
-                  reputation
-                );
-
-                const enemies = getUpdatedEnemies();
-                updatedEnemies = [...enemies, ...siegeEnemies];
-                enemiesChanged = true;
-              }
-            }
-          }
-
-          // 2. Count down active sieges
-          for (const key of Object.keys(prev.overworldChunks)) {
-            const chunk = prev.overworldChunks[key] as OverworldChunk;
-            if (chunk.watchtower && chunk.watchtower.siegeState?.isUnderSiege) {
-              const wt = { ...chunk.watchtower };
-              const sState = { ...wt.siegeState };
-              sState.siegeTimerSeconds -= 1;
-
-              if (sState.siegeTimerSeconds <= 0) {
-                // Attacker wins! Watchtower is captured
-                wt.isClaimed = true;
-                wt.controller = sState.attacker;
-                wt.claimPercent = 100;
-                wt.garrisonDefeated = false;
-                wt.siegeState = undefined; // Clear siege state
-
-                const chunks = getUpdatedChunks();
-                chunks[key] = {
-                  ...chunk,
-                  watchtower: wt
-                };
-                chunksChanged = true;
-
-                if (nextLogs === prev.logs) {
-                  nextLogs = [...prev.logs];
-                }
-                nextLogs.push({
-                  id: `siege_loss_${Date.now()}`,
-                  text: `💔 [WATCHTOWER OVERTHROWN]: The watchtower at Sector [${chunk.chunkX}, ${chunk.chunkY}] has fallen! It is now controlled by the ${sState.attacker === 'syndicate' ? 'Moonshadow Syndicate' : (sState.attacker === 'vanguard' ? 'Dawn Vanguard' : 'Rust-Raider Bandits')}.`,
-                  type: 'danger',
-                  timestamp: 'SYSTEM'
-                });
-                
-                playSound('trap');
-
-                // If player is in this chunk, remove any remaining siege combatants
-                if (chunk.chunkX === prev.currentChunkX && chunk.chunkY === prev.currentChunkY) {
-                  const enemies = getUpdatedEnemies();
-                  updatedEnemies = enemies.filter(e => !e.id.startsWith('siege_attacker_') && !e.id.startsWith('siege_defender_'));
-                  enemiesChanged = true;
-                }
-              } else {
-                wt.siegeState = sState;
-                const chunks = getUpdatedChunks();
-                chunks[key] = {
-                  ...chunk,
-                  watchtower: wt
-                };
-                chunksChanged = true;
-              }
-            }
-          }
-
-          return {
-            ...prev,
-            playerStats: {
-              ...prev.playerStats,
-              realTimeSeconds: nextSec,
-            },
-            logs: nextLogs,
-            overworldChunks: chunksChanged && updatedChunks ? updatedChunks : prev.overworldChunks,
-            enemies: enemiesChanged && updatedEnemies ? updatedEnemies : prev.enemies,
-          };
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isPlaying, isGameOver, isVictory]);
+  // Real-time difficulty ticking game loop hook
+  useGameLoop({
+    isPlaying,
+    isGameOver,
+    isVictory,
+    setGameState,
+  });
 
   // Command logs helper
   const addLogMessage = (text: string, type: GameLogMessage['type'] = 'info') => {
@@ -1078,127 +904,6 @@ export default function App() {
     playSound,
     hasEquippedTrait,
   });
-
-  const getSiegeCombatants = (
-    wtX: number,
-    wtY: number,
-    cx: number,
-    cy: number,
-    attacker: string,
-    defender: string,
-    playerFaction: string,
-    reputation: Record<string, number>
-  ): Enemy[] => {
-    const isAttackerFriendly = attacker === playerFaction || (reputation?.[attacker] !== undefined && reputation[attacker] > 40);
-    const isDefenderFriendly = defender === playerFaction || (reputation?.[defender] !== undefined && reputation[defender] > 40);
-
-    const attackerName = attacker === 'vanguard' ? 'Vanguard Crusader' : (attacker === 'syndicate' ? 'Syndicate Skirmisher' : 'Rust-Raider Outlaw');
-    const attackerColor = attacker === 'vanguard' ? '#38bdf8' : (attacker === 'syndicate' ? '#c084fc' : '#f97316');
-    const attackerChar = attacker === 'vanguard' ? '🗡️' : (attacker === 'syndicate' ? '☠️' : '🪓');
-    
-    const defenderName = defender === 'vanguard' ? 'Vanguard Shieldknight' : (defender === 'syndicate' ? 'Syndicate Enforcer' : (defender === 'bandits' ? 'Rust-Raider Sentry' : 'Independent Guard'));
-    const defenderColor = defender === 'vanguard' ? '#60a5fa' : (defender === 'syndicate' ? '#a78bfa' : (defender === 'bandits' ? '#ea580c' : '#94a3b8'));
-    const defenderChar = '🛡️';
-
-    const siegeEnemies: Enemy[] = [];
-
-    // Spawn defenders
-    const defenderCoords = [
-      { dx: 2, dy: 2 },
-      { dx: 6, dy: 2 },
-      { dx: 4, dy: 1 }
-    ];
-    defenderCoords.forEach((offset, idx) => {
-      const isDefAllied = isDefenderFriendly;
-      siegeEnemies.push({
-        id: isDefAllied ? `wt_ally_defender_${idx}_${cx}_${cy}` : `siege_defender_${idx}_${cx}_${cy}`,
-        x: wtX + offset.dx,
-        y: wtY + offset.dy,
-        type: EnemyType.OrcBrute,
-        name: isDefAllied ? `🛡️ [ALLY] ${defenderName}` : `🛡️ [DEFENDER] ${defenderName}`,
-        hp: 200,
-        maxHp: 200,
-        atk: 15,
-        def: 8,
-        range: 1,
-        speed: 1.0,
-        color: defenderColor,
-        char: defenderChar,
-        state: EnemyState.Chasing,
-        isElite: true,
-        faction: (defender === 'neutral' ? undefined : defender) as any,
-        isFollower: isDefAllied,
-        debuffs: [],
-        patrolPath: [],
-        patrolIndex: 0
-      });
-    });
-
-    // Spawn attackers
-    const attackerCoords = [
-      { dx: 2, dy: 5 },
-      { dx: 6, dy: 5 },
-      { dx: 4, dy: 6 }
-    ];
-    attackerCoords.forEach((offset, idx) => {
-      const isAttAllied = isAttackerFriendly;
-      siegeEnemies.push({
-        id: isAttAllied ? `wt_ally_attacker_${idx}_${cx}_${cy}` : `siege_attacker_${idx}_${cx}_${cy}`,
-        x: wtX + offset.dx,
-        y: wtY + offset.dy,
-        type: EnemyType.Bandit,
-        name: isAttAllied ? `⚔️ [ALLY] ${attackerName}` : `🔥 [ATTACKER] ${attackerName}`,
-        hp: 180,
-        maxHp: 180,
-        atk: 18,
-        def: 4,
-        range: 1,
-        speed: 1.0,
-        color: attackerColor,
-        char: attackerChar,
-        state: EnemyState.Chasing,
-        isElite: true,
-        faction: attacker as any,
-        isFollower: isAttAllied,
-        debuffs: [],
-        patrolPath: [],
-        patrolIndex: 0
-      });
-    });
-
-    // If player is neutral or has no friendly siege side, spawn 2 Allied Sellswords to fight alongside player!
-    if (!isAttackerFriendly && !isDefenderFriendly) {
-      const mercCoords = [
-        { dx: 1, dy: 7 },
-        { dx: 7, dy: 7 }
-      ];
-      mercCoords.forEach((offset, idx) => {
-        siegeEnemies.push({
-          id: `wt_ally_merc_${idx}_${cx}_${cy}`,
-          x: wtX + offset.dx,
-          y: wtY + offset.dy,
-          type: EnemyType.Bandit,
-          name: `⚔️ [ALLY] Allied Sellsword`,
-          hp: 170,
-          maxHp: 170,
-          atk: 14,
-          def: 5,
-          range: 1,
-          speed: 1.0,
-          color: '#fbbf24',
-          char: '⚔️',
-          state: EnemyState.Chasing,
-          isElite: true,
-          isFollower: true,
-          debuffs: [],
-          patrolPath: [],
-          patrolIndex: 0
-        });
-      });
-    }
-
-    return siegeEnemies;
-  };
 
   // Handle player interaction with Double-Edged Dungeon Shrines
   const handleInteractWithDungeonShrine = (shrine: DungeonProp) => {
@@ -1470,6 +1175,19 @@ export default function App() {
     gameState,
   });
 
+  const handleOpenNpcTrade = (npcId: string) => {
+    const npc = gameState.npcs?.find(n => n.id === npcId);
+    const rep = gameState.townReputation !== undefined ? gameState.townReputation : 100;
+    if (rep <= 20 && npc?.role !== 'merchant_seppo') {
+      playSound('deny');
+      addLogMessage(`😡 ${npc?.name || 'The merchant'} spits on the ground: "I don't deal with infamous Sunder Outlaws! Scram before I call the guards!"`, 'danger');
+    } else {
+      setGameState(prev => ({ ...prev, activeTradeNpcId: npcId }));
+      setActiveTab('market');
+      addLogMessage(`🛒 Trading store opened with ${npc?.name || 'Merchant'}! Buy equipment or sell materials and excess gear.`, 'craft');
+    }
+  };
+
   const interactWithNpc = (npc: NPC) => {
     playSound('loot');
     const normTime = gameState.gameTime % 1440;
@@ -1719,14 +1437,37 @@ export default function App() {
           timestamp: 'VOYAGE'
         }];
 
+        const targetChunkKey = `${targetCx},${targetCy}`;
+        let targetChunk = prev.overworldChunks?.[targetChunkKey];
+        let nextSpawnedCats = prev.spawnedCats ? [...prev.spawnedCats] : [];
+        let nextOverworldChunks = { ...(prev.overworldChunks || {}) };
+        if (!targetChunk) {
+          targetChunk = generateOverworldChunk(targetCx, targetCy, LEVEL_WIDTH, LEVEL_HEIGHT, nextSpawnedCats, prev.spawnedSeppo, prev.playerStats, prev.currentWeapon);
+          nextOverworldChunks[targetChunkKey] = targetChunk;
+        }
+
+        const destPx = 10;
+        const destPy = 12;
+        const fov = computeFOV(destPx, destPy, targetChunk.map, 6);
+        const discovered = targetChunk.map.map((row, y) =>
+          row.map((cell, x) => ((targetChunk.discovered && targetChunk.discovered[y] && targetChunk.discovered[y][x]) || (fov && fov[y] && fov[y][x]) || false))
+        );
+
         return {
           ...prev,
           currentChunkX: targetCx,
           currentChunkY: targetCy,
-          playerX: 10, 
-          playerY: 12,
+          playerX: destPx, 
+          playerY: destPy,
           isOverworld: true,
-          npcs: [], // force reload chunk npcs on cross over
+          overworldChunks: nextOverworldChunks,
+          map: targetChunk.map,
+          discovered: discovered,
+          visible: fov,
+          enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, destPx, destPy, targetChunk.map, prev.activeCompanionQuests),
+          traps: targetChunk.traps,
+          chests: targetChunk.chests,
+          npcs: targetChunk.npcs,
           gameTime: advancedTime,
           playerStats: {
             ...prev.playerStats,
@@ -1755,34 +1496,20 @@ export default function App() {
       return;
     }
 
-    if (isNight) {
-      text = npc.dialogue[3]; // sleeping dialogue
+    if (isNight && npc.isAsleep) {
+      text = npc.dialogue?.[3] || "Zzz... resting after a long day...";
       addLogMessage(`🗣️ ${npc.name} dreams: "${text}"`, 'system');
       const talkEvent = new CustomEvent('spawn-game-effect', {
         detail: { x: npc.x, y: npc.y, text: `💤 Zzz...`, type: 'heal' },
       });
       window.dispatchEvent(talkEvent);
     } else {
-      text = npc.dialogue[Math.floor(Math.random() * 3)];
-      addLogMessage(`🗣️ ${npc.name} says: "${text}"`, 'system');
-      
+      setActiveDialogueNpc(npc);
+      addLogMessage(`🗣️ You strike up a conversation with ${npc.name}.`, 'system');
       const talkEvent = new CustomEvent('spawn-game-effect', {
         detail: { x: npc.x, y: npc.y, text: `🗣️ Hello!`, type: 'heal' },
       });
       window.dispatchEvent(talkEvent);
-
-      // Open store dashboard if they are Merchant, Blacksmith, or Apothecary!
-      if (npc.role !== 'villager' && npc.role !== ('quest_board' as any) && npc.role !== ('companion_hire' as any)) {
-        const rep = gameState.townReputation !== undefined ? gameState.townReputation : 100;
-        if (rep <= 20 && npc.role !== 'merchant_seppo') {
-          playSound('deny');
-          addLogMessage(`😡 ${npc.name} spits on the ground: "I don't deal with infamous Sunder Outlaws! Scram before I call the guards!"`, 'danger');
-        } else {
-          setGameState(prev => ({ ...prev, activeTradeNpcId: npc.id }));
-          setActiveTab('market');
-          addLogMessage(`🛒 Trading store opened with ${npc.name}! Buy equipment or sell materials and excess gear.`, 'craft');
-        }
-      }
     }
   };
 
@@ -3881,6 +3608,57 @@ export default function App() {
     const nextVisited = { ...gameState.visitedTiles };
     nextVisited[`${targetX},${targetY},${gameState.currentChunkX},${gameState.currentChunkY}`] = true;
 
+    // Realistic indoor/outdoor acoustic transition & footstep audio engine
+    const wasIndoors = isPlayerIndoors(gameState);
+    const nowIndoors = isPlayerIndoors({
+      isOverworld: gameState.isOverworld,
+      map: gameState.map,
+      playerX: targetX,
+      playerY: targetY,
+    });
+
+    if (!wasIndoors && nowIndoors) {
+      playSound('door_open', { volume: 0.7 });
+      playSound('indoor_entry', { volume: 0.5 });
+      addLogMessage('🏠 [INDOOR SHELTER]: You step inside the building shelter. Outdoor atmospheric sound muffles.', 'system');
+    } else if (wasIndoors && !nowIndoors) {
+      playSound('door_close', { volume: 0.6 });
+      addLogMessage('🌲 [OUTDOOR AIR]: You step outside into the open atmosphere.', 'system');
+    } else if (nowIndoors) {
+      const stepTile = gameState.map[targetY]?.[targetX];
+      const isStone = stepTile === TileType.StairsUp || stepTile === TileType.StairsDown || stepTile === TileType.Anvil;
+      playSound(isStone ? 'stone_footstep' : 'wood_footstep', { volume: 0.08 });
+
+      if (stepTile === TileType.Anvil) {
+        addLogMessage('⚒️ [BLACKSMITH ANVIL]: You step right beside the heavy steel anvil! Open the Forge panel to forge, upgrade, and mutate gear.', 'craft');
+        setActiveTab('forge');
+      } else if (stepTile === TileType.Fireplace) {
+        addLogMessage('🔥 [FORGE HEARTH]: Searing heat radiates from the roaring forge hearth, warming you and cleansing chill.', 'system');
+        setGameState((prev) => ({
+          ...prev,
+          playerStats: {
+            ...prev.playerStats,
+            exhaustion: Math.max(0, (prev.playerStats.exhaustion || 0) - 10),
+            hp: Math.min(prev.playerStats.maxHp, prev.playerStats.hp + 5)
+          }
+        }));
+      } else if (stepTile === TileType.Chair) {
+        addLogMessage('🪑 [SEATED REST]: You sit down comfortably on the wooden chair/stool to rest your feet and catch your breath.', 'system');
+      } else if (stepTile === TileType.Bed) {
+        addLogMessage('🛏️ [COT REST]: You lie down on the comfortable cot to rest up. Restored +20 HP!', 'system');
+        setGameState((prev) => ({
+          ...prev,
+          playerStats: {
+            ...prev.playerStats,
+            hp: Math.min(prev.playerStats.maxHp, prev.playerStats.hp + 20),
+            exhaustion: Math.max(0, (prev.playerStats.exhaustion || 0) - 25)
+          }
+        }));
+      }
+    } else {
+      playSound('grass_step', { volume: 0.06 });
+    }
+
     setGameState((prev) => {
       let activeEffectsList = prev.playerStats.activeEffects ? [...prev.playerStats.activeEffects] : [];
       if (isPoisonedMove) {
@@ -5033,19 +4811,26 @@ export default function App() {
     isGameOver,
     isVictory,
     isLockpickingOpen,
+    setIsLockpickingOpen,
     isFishingOpen,
+    setIsFishingOpen,
     isHelpOpen,
     setIsHelpOpen,
     isGodPanelOpen,
     setIsGodPanelOpen,
     isGmPanelOpen,
     setIsGmPanelOpen,
-    isHistoryBookOpen,
-    setIsHistoryBookOpen,
     isBestiaryOpen,
     setIsBestiaryOpen,
+    isAudioSettingsOpen,
+    setIsAudioSettingsOpen,
+    isSleepOpen,
+    setIsSleepOpen,
+    isWeatherControlOpen,
+    setIsWeatherControlOpen,
     activeTab,
     setActiveTab,
+    setActiveDialogueNpc,
     handleBraceDefense,
     climbStairsUpToOverworld,
     climbToPreviousDepth,
@@ -5083,6 +4868,47 @@ export default function App() {
     setActiveTargetedScroll,
     setActiveTab,
     setActiveRecallScroll,
+  });
+
+  // Domain Partitioned Custom Hooks
+  const { tickTimeOfDay, triggerWeatherChange } = useOverworldEvents({
+    setGameState,
+    addLog: addLogMessage,
+  });
+
+  const { buyItemFromMerchant, sellItemToMerchant } = useTradeEconomy({
+    setGameState,
+    addLog: addLogMessage,
+    playSound: (s) => playSound(s as any),
+  });
+
+  const { acceptGuildQuest, claimQuestReward } = useQuestsAndGuild({
+    setGameState,
+    addLog: addLogMessage,
+    playSound: (s) => playSound(s as any),
+  });
+
+  const {
+    handleStartCaravanTravel,
+    handleAdvanceCaravanTravel,
+    handleResolveCaravanEncounterOption,
+    handleCompleteCaravanTravel,
+  } = useCaravanTravel({
+    setGameState,
+    addLogMessage,
+    playSound: (s) => playSound(s as any),
+  });
+
+  const {
+    handleUpgradeBlacksmith,
+    handleUpgradeApothecary,
+    handleBuyRumor,
+    handleTavernRest,
+    handleHireMercenary,
+  } = useTownServices({
+    setGameState,
+    addLogMessage,
+    playSound: (s) => playSound(s as any),
   });
 
   // Spellcasting & Arcanum Engine Hook
@@ -5223,7 +5049,7 @@ export default function App() {
           map: targetChunk.map,
           discovered: discovered,
           visible: fov,
-          enemies: targetChunk.enemies,
+          enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, exPlayerX, exPlayerY, targetChunk.map, prev.activeCompanionQuests),
           traps: targetChunk.traps,
           chests: targetChunk.chests,
           lootPiles: targetChunk.lootPiles || [],
@@ -5753,353 +5579,6 @@ export default function App() {
     }
   };
 
-  const handleUpgradeBlacksmith = () => {
-    const level = gameState.blacksmithForgeLevel ?? 1;
-    if (level >= 3) return;
-
-    if (level === 1) {
-      const goldCost = 250;
-      const ironCount = gameState.inventoryMaterials['mat_iron'] || 0;
-      if (gameState.playerStats.gold < goldCost || ironCount < 5) {
-        playSound('bump');
-        addLogMessage(`❌ Insufficient materials to upgrade Forge to Tier 2! Needs 250 Gold and 5 Scrap Iron.`, 'system');
-        return;
-      }
-      setGameState(prev => {
-        const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const nextRep = Math.min(100, prevRep + 10);
-        return {
-          ...prev,
-          blacksmithForgeLevel: 2,
-          townReputation: nextRep,
-          playerStats: {
-            ...prev.playerStats,
-            gold: prev.playerStats.gold - goldCost
-          },
-          inventoryMaterials: {
-            ...prev.inventoryMaterials,
-            'mat_iron': ironCount - 5
-          }
-        };
-      });
-      playSound('loot');
-      addLogMessage(`🔨 FORGE UPGRADED: The town Blacksmith forge is now Tier 2! Advanced crafting templates (Staff, Wand, Crossbow) are unlocked! (+10 Town Reputation)`, 'loot');
-    } else if (level === 2) {
-      const goldCost = 400;
-      const mithrilCount = gameState.inventoryMaterials['mat_mithril'] || 0;
-      if (gameState.playerStats.gold < goldCost || mithrilCount < 5) {
-        playSound('bump');
-        addLogMessage(`❌ Insufficient materials to upgrade Forge to Tier 3! Needs 400 Gold and 5 Glimmering Mithril.`, 'system');
-        return;
-      }
-      setGameState(prev => {
-        const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const nextRep = Math.min(100, prevRep + 15);
-        return {
-          ...prev,
-          blacksmithForgeLevel: 3,
-          townReputation: nextRep,
-          playerStats: {
-            ...prev.playerStats,
-            gold: prev.playerStats.gold - goldCost
-          },
-          inventoryMaterials: {
-            ...prev.inventoryMaterials,
-            'mat_mithril': mithrilCount - 5
-          }
-        };
-      });
-      playSound('loot');
-      addLogMessage(`🔥 FORGE MAXED: The town Blacksmith forge is now Tier 3! Elite legendary crafting templates (Greatsword, Warhammer) are unlocked! (+15 Town Reputation)`, 'loot');
-    }
-  };
-
-  const handleUpgradeApothecary = () => {
-    const tier = gameState.apothecaryTier ?? 1;
-    if (tier >= 3) return;
-
-    if (tier === 1) {
-      const goldCost = 150;
-      const berryCount = gameState.inventoryMaterials['mat_berry'] || 0;
-      if (gameState.playerStats.gold < goldCost || berryCount < 10) {
-        playSound('bump');
-        addLogMessage(`❌ Insufficient materials to upgrade Apothecary to Tier 2! Needs 150 Gold and 10x Wild Berries.`, 'system');
-        return;
-      }
-      setGameState(prev => {
-        const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const nextRep = Math.min(100, prevRep + 8);
-        return {
-          ...prev,
-          apothecaryTier: 2,
-          townReputation: nextRep,
-          playerStats: {
-            ...prev.playerStats,
-            gold: prev.playerStats.gold - goldCost
-          },
-          inventoryMaterials: {
-            ...prev.inventoryMaterials,
-            'mat_berry': berryCount - 10
-          }
-        };
-      });
-      playSound('loot');
-      addLogMessage(`🧪 LABORATORY UPGRADED: The Apothecary Laboratory is now Tier 2! Medium HP/MP restorative mixtures are now in stock! (+8 Town Reputation)`, 'loot');
-    } else if (tier === 2) {
-      const goldCost = 300;
-      const berryCount = gameState.inventoryMaterials['mat_berry'] || 0;
-      
-      const totalCats = Object.keys(gameState.inventoryCatalysts).reduce((sum, key) => sum + (gameState.inventoryCatalysts[key] || 0), 0);
-      if (gameState.playerStats.gold < goldCost || berryCount < 20 || totalCats < 2) {
-        playSound('bump');
-        addLogMessage(`❌ Insufficient materials to upgrade Apothecary to Tier 3! Needs 300 Gold, 20x Wild Berries, and any 2x Catalyst Shards.`, 'system');
-        return;
-      }
-      
-      setGameState(prev => {
-        const nextCats = { ...prev.inventoryCatalysts };
-        let deducted = 0;
-        for (const catId of Object.keys(nextCats)) {
-          if (nextCats[catId] > 0) {
-            const take = Math.min(nextCats[catId], 2 - deducted);
-            nextCats[catId] -= take;
-            deducted += take;
-            if (deducted >= 2) break;
-          }
-        }
-        const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const nextRep = Math.min(100, prevRep + 12);
-        return {
-          ...prev,
-          apothecaryTier: 3,
-          townReputation: nextRep,
-          playerStats: {
-            ...prev.playerStats,
-            gold: prev.playerStats.gold - goldCost
-          },
-          inventoryMaterials: {
-            ...prev.inventoryMaterials,
-            'mat_berry': berryCount - 20
-          },
-          inventoryCatalysts: nextCats
-        };
-      });
-      playSound('loot');
-      addLogMessage(`🔥 LABORATORY MAXED: The Apothecary Laboratory is now Tier 3! Elixir of Full Restoration and Chaos Catalysts are now in stock! (+12 Town Reputation)`, 'loot');
-    }
-  };
-
-  const handleBuyRumor = () => {
-    const cost = 80;
-    if (gameState.playerStats.gold < cost) {
-      playSound('bump');
-      addLogMessage(`❌ Insufficient Gold! You need 80 Gold to buy Frothy Beer Mug for Bartender Gossip.`, 'system');
-      return;
-    }
-
-    const rumorPools = [
-      { type: 'chest', text: `A merchant caravan dropped a heavy iron lockbox at coordinate ({x}, {y}) in chunk ({cx}, {cy})! It's buried in the trees.` },
-      { type: 'boss', text: `A seasoned ranger reported a deep dungeon entrance or dangerous beast den around coordinate ({x}, {y}) in chunk ({cx}, {cy})!` },
-      { type: 'cat', text: `A local shepherd swears they saw a mystical legendary cat resting near coordinate ({x}, {y}) in chunk ({cx}, {cy})!` }
-    ];
-
-    const randomType = rumorPools[Math.floor(Math.random() * rumorPools.length)];
-    const rx = Math.floor(Math.random() * 16) + 2;
-    const ry = Math.floor(Math.random() * 16) + 2;
-    const rcx = gameState.currentChunkX + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 2);
-    const rcy = gameState.currentChunkY + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 2);
-
-    const rumorMsg = randomType.text
-      .replace('{x}', rx.toString())
-      .replace('{y}', ry.toString())
-      .replace('{cx}', rcx.toString())
-      .replace('{cy}', rcy.toString());
-
-    setGameState(prev => {
-      const activeRumors = prev.purchasedRumors ? [...prev.purchasedRumors] : [];
-      activeRumors.push(rumorMsg);
-      return {
-        ...prev,
-        purchasedRumors: activeRumors,
-        playerStats: {
-          ...prev.playerStats,
-          gold: Math.max(0, prev.playerStats.gold - cost)
-        }
-      };
-    });
-
-    playSound('loot');
-    addLogMessage(`🍻 Bartender slides over a Frothy Beer: "Drink up, friend! Let me tell you..."`, 'loot');
-    addLogMessage(`📜 GOSSIP: "${rumorMsg}"`, 'system');
-  };
-
-  const handleTavernRest = () => {
-    const cost = 15;
-    if (gameState.playerStats.gold < cost) {
-      playSound('bump');
-      addLogMessage(`❌ Insufficient Gold! You need 15 Gold to rent a cozy room at the Inn.`, 'system');
-      return;
-    }
-
-    setGameState((prev) => {
-      const stats = prev.playerStats;
-      const nextStats = {
-        ...stats,
-        gold: Math.max(0, stats.gold - cost),
-        exhaustion: 0, // Fully purges exhaustion!
-        hp: stats.maxHp, // fully heals HP
-        mp: stats.maxMp  // fully heals MP
-      };
-
-      playSound('levelUp');
-      addLogMessage(`🛌 You rent a cozy room upstairs, tuck into a warm featherbed, and rest deeply. Your physical exhaustion is fully purged and you feel at your fighting peak! (HP & MP Fully Restored)`, 'loot');
-
-      const ev = new CustomEvent('spawn-game-effect', {
-        detail: { x: prev.playerX, y: prev.playerY, text: `Fully Restored! 💤`, type: 'heal' },
-      });
-      window.dispatchEvent(ev);
-
-      return {
-        ...prev,
-        playerStats: nextStats
-      };
-    });
-  };
-
-  const handleHireMercenary = (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard') => {
-    if (gameState.followers.length >= 3) {
-      addLogMessage('🗣️ Bartender: "Your party is full! You can only manage up to 3 companions."', 'system');
-      return;
-    }
-
-    const reputation = gameState.townReputation ?? 100;
-    if (reputation <= 20) {
-      playSound('bump');
-      addLogMessage('🗣️ Bartender whispers: "No mercenary here will fight for a wanted outlaw! Clean your name first!"', 'system');
-      return;
-    }
-
-    let cost = 180;
-    let name = "Sunder Recruit";
-    let hp = 35;
-    let atk = 6;
-    let def = 2;
-    let char = '🗡';
-    let color = '#38bdf8';
-    let level = 2;
-    let desc = "Novice cutthroat hired from the local tavern.";
-
-    if (type === 'veteran') {
-      cost = 280;
-      name = "Sunder Veteran";
-      hp = 55;
-      atk = 9;
-      def = 4;
-      char = '⚔️';
-      color = '#34d399';
-      level = 4;
-      desc = "Veteran sellsword with reinforced chainmail and a broadsword.";
-    } else if (type === 'champion') {
-      cost = 450;
-      name = "Champion Gladiator";
-      hp = 85;
-      atk = 14;
-      def = 7;
-      char = '🏆';
-      color = '#f59e0b';
-      level = 6;
-      desc = "Elite gladiator with high-impact strike shields and master training.";
-    } else if (type === 'merchant_guard') {
-      cost = 250;
-      name = "Merchant Guard";
-      hp = 60;
-      atk = 8;
-      def = 5;
-      char = '💂';
-      color = '#c084fc'; // medium purple
-      level = 3;
-      desc = "A heavily armed merchant guard. Specialized in safehouse protection and outpost defense.";
-    }
-
-    if (gameState.playerStats.gold < cost) {
-      playSound('bump');
-      addLogMessage(`❌ Insufficient Gold! Hiring ${name} requires ${cost} Gold.`, 'system');
-      return;
-    }
-
-    setGameState((prev) => {
-      const nextFollower: Follower = {
-        id: `fol_${Date.now()}`,
-        name: name,
-        archetypeId: type === 'champion' ? 'guard' : type === 'merchant_guard' ? 'merchant_guard' : 'thief',
-        role: 'follower',
-        char: char,
-        color: color,
-        hp: hp,
-        maxHp: hp,
-        atk: atk,
-        def: def,
-        level: level,
-        xp: 0,
-        xpNext: 150,
-        mode: 'follow',
-        equipment: { weapon: null, armor: null },
-        inventory: [],
-        injuries: [],
-        personality: desc,
-        temperament: 'Loyal'
-      };
-
-      const newActor: Enemy = {
-        id: `actor_${nextFollower.id}`,
-        x: prev.playerX,
-        y: prev.playerY,
-        type: 'Goblin' as any,
-        name: nextFollower.name,
-        hp: nextFollower.hp,
-        maxHp: nextFollower.maxHp,
-        atk: nextFollower.atk,
-        def: nextFollower.def,
-        range: 1,
-        speed: 1,
-        color: nextFollower.color,
-        char: nextFollower.char,
-        state: EnemyState.Chasing,
-        isElite: type === 'champion',
-        patrolPath: [],
-        patrolIndex: 0,
-        debuffs: [],
-        isFollower: true,
-        followerId: nextFollower.id
-      };
-
-      return {
-        ...prev,
-        playerStats: {
-          ...prev.playerStats,
-          gold: Math.max(0, prev.playerStats.gold - cost)
-        },
-        followers: [...prev.followers, nextFollower],
-        enemies: [...prev.enemies, newActor],
-        logs: [
-          ...prev.logs,
-          {
-            id: `hire_merc_${Date.now()}`,
-            text: `👥 MERCENARY HIRED: ${nextFollower.name} (Lvl ${level}) pledges their sword to you! (-${cost} Gold)`,
-            type: 'loot',
-            timestamp: 'RECRUIT'
-          }
-        ]
-      };
-    });
-
-    playSound('loot');
-    const talkEvent = new CustomEvent('spawn-game-effect', {
-      detail: { x: gameState.playerX, y: gameState.playerY, text: `⚔️ Hired!`, type: 'heal' },
-    });
-    window.dispatchEvent(talkEvent);
-  };
-
   // Trade/Sellers callbacks
   const handleBuyEquipment = (item: EquipmentItem) => {
     const activeId = gameState.activeTradeNpcId || 'npc_shop';
@@ -6504,721 +5983,6 @@ export default function App() {
       },
     });
     window.dispatchEvent(effectEv);
-  };
-
-  const generateRandomCaravanEncounter = (biome: string, state: GameState): CaravanEncounter => {
-    const roll = Math.random();
-    
-    if (roll < 0.11) {
-      return {
-        id: `enc_bandit_${Date.now()}`,
-        type: 'bandit_ambush',
-        title: '🗡️ RUTHLESS BANDIT TOLL ROAD (ELITE CHALLENGE)',
-        desc: 'A faction of heavily-armed Sunder Outlaws blocks a tight mountain pass with spike traps and readied iron crossbows. "Disperse 500 Gold, or feed the vultures, rich merchant!" the bandit captain sneers.',
-        resolved: false,
-        options: [
-          {
-            id: 'fight',
-            text: '⚔️ Draw steel and charge! (Requires Strength [STR] Check, Difficulty 19)',
-            statCheck: 'str',
-            difficulty: 19
-          },
-          {
-            id: 'intimidate',
-            text: '🗣️ Extort them back with deadly threats! (Requires Charisma [CHA] Check, Difficulty 18)',
-            statCheck: 'cha',
-            difficulty: 18
-          },
-          {
-            id: 'pay',
-            text: '🪙 Pay the 500 Gold toll to prevent bloodshed.',
-            costGold: 500
-          }
-        ]
-      };
-    } else if (roll < 0.22) {
-      return {
-        id: `enc_beast_${Date.now()}`,
-        type: 'beast_attack',
-        title: '🐺 DIRE WOLF FOREST AMBUSH (FERAL THREAT)',
-        desc: 'A pack of hungry, red-eyed Dire Wolves crawls out of the shadowy brushwood, snapping their jaws at the carriage draft horses!',
-        resolved: false,
-        options: [
-          {
-            id: 'fight',
-            text: '⚔️ Leap in front of the carriage to slay them! (Requires Dexterity [DEX] Check, Difficulty 18)',
-            statCheck: 'dex',
-            difficulty: 18
-          },
-          {
-            id: 'feed',
-            text: '🥩 Feed them stashed Wild Berries to pacify them. (Costs 15 Berries)',
-            costItems: [{ id: 'mat_berry', count: 15, label: 'Wild Berries' }]
-          },
-          {
-            id: 'intimidate',
-            text: '🗣️ Use a primal roar to terrify the beasts! (Requires Strength [STR] Check, Difficulty 19)',
-            statCheck: 'str',
-            difficulty: 19
-          }
-        ]
-      };
-    } else if (roll < 0.33) {
-      return {
-        id: `enc_obstacle_${Date.now()}`,
-        type: 'obstacle',
-        title: '🪨 AVALANCHE ROAD BLOCK',
-        desc: 'A massive boulder and rockslide debris from the mountain peaks has crashed down, fully blocking the narrow dirt road. The caravan is stuck!',
-        resolved: false,
-        options: [
-          {
-            id: 'push',
-            text: '💪 Lift and push the boulder with raw muscle! (Requires Strength [STR] Check, Difficulty 19)',
-            statCheck: 'str',
-            difficulty: 19
-          },
-          {
-            id: 'leverage',
-            text: '⚙️ Engineer a lever system with wooden logs. (Requires Intelligence [INT] Check, Difficulty 18)',
-            statCheck: 'int',
-            difficulty: 18
-          },
-          {
-            id: 'detour',
-            text: '🗺️ Guide the wagons through a dangerous swampy detour. (Requires Luck [LCK] Check, Difficulty 18)',
-            statCheck: 'lck',
-            difficulty: 18
-          }
-        ]
-      };
-    } else if (roll < 0.44) {
-      return {
-        id: `enc_pilgrim_${Date.now()}`,
-        type: 'pilgrim',
-        title: '✨ SHRINE OF THE FIRST AGE',
-        desc: 'An ancient, crumbling stone altar glows with white crystalline light. A gentle roadway priest is meditating nearby, tending to a pure water well. He offers a prayer for the caravan guards.',
-        resolved: false,
-        options: [
-          {
-            id: 'bless',
-            text: '🙏 Bow your head and accept a divine blessing. (Fills HP/MP, removes fatigue!)'
-          },
-          {
-            id: 'wisdom',
-            text: '📖 Recite ancient lore snippets with the priest. (Requires Intelligence [INT] Check, Difficulty 17)',
-            statCheck: 'int',
-            difficulty: 17
-          }
-        ]
-      };
-    } else if (roll < 0.55) {
-      return {
-        id: `enc_wheel_${Date.now()}`,
-        type: 'wheel_break',
-        title: '⚙️ CRACKED WOODEN AXLE',
-        desc: 'CRACK! The heavy caravan carriage strikes a deep, stony ditch. The rear wheel wood splintered, snapping the axle support!',
-        resolved: false,
-        options: [
-          {
-            id: 'repair_metal',
-            text: '🔨 Forge an iron bracing to fix it immediately. (Costs 8 Iron Ore)',
-            costItems: [{ id: 'mat_iron', count: 8, label: 'Iron Ore' }]
-          },
-          {
-            id: 'repair_lumber',
-            text: '🌲 Splice a wooden support brace. (Requires 18 Wood Planks)',
-            costItems: [{ id: 'mat_wood', count: 18, label: 'Wood Planks' }]
-          },
-          {
-            id: 'wait_fix',
-            text: '⏳ Take time to craft a replacement with simple tools. (Adds 30% physical Exhaustion, advances clock)'
-          }
-        ]
-      };
-    } else if (roll < 0.66) {
-      return {
-        id: `enc_storm_${Date.now()}`,
-        type: 'mana_storm',
-        title: '⛈️ DREADED MANA TEMPEST (ARCANE ANOMALY)',
-        desc: 'A sudden vortex of unstable raw violet lightning sweeps over the gravel road. The air hums with volatile mana, and the carriage wheel axles are starting to spark with dangerous static friction!',
-        resolved: false,
-        options: [
-          {
-            id: 'spell_barrier',
-            text: '🛡️ Cast an Arcane Dampening Barrier to shield the horses. (Requires Intelligence [INT] Check, Difficulty 18)',
-            statCheck: 'int',
-            difficulty: 18
-          },
-          {
-            id: 'ground_metal',
-            text: '⚡ Deploy copper/iron rod bypass groundings. (Requires Dexterity [DEX] Check, Difficulty 17)',
-            statCheck: 'dex',
-            difficulty: 17
-          },
-          {
-            id: 'ride_through',
-            text: '🐎 Gallop recklessly straight through the lightning field! (Requires Luck [LCK] Check, Difficulty 19)',
-            statCheck: 'lck',
-            difficulty: 19
-          }
-        ]
-      };
-    } else if (roll < 0.77) {
-      return {
-        id: `enc_bridge_${Date.now()}`,
-        type: 'bridge_collapse',
-        title: '🌉 CRACKED GORGE CHASM BRIDGE (STRUCTURAL DAMAGE)',
-        desc: 'The old log-and-rope bridge spanning a deep chasm has partially buckled. Only a single narrow wooden beam remains. A heavy carriage will surely crash unless bolstered or steered with divine precision.',
-        resolved: false,
-        options: [
-          {
-            id: 'carpentry',
-            text: '🪚 Build a sturdy timber brace ramp. (Costs 15 Scrap Wood logs)',
-            costItems: [{ id: 'mat_wood', count: 15, label: 'Scrap Wood' }]
-          },
-          {
-            id: 'steer',
-            text: '🐎 Precision-steer the horse carriage across the narrow girder. (Requires Dexterity [DEX] Check, Difficulty 19)',
-            statCheck: 'dex',
-            difficulty: 19
-          },
-          {
-            id: 'magical_levitation',
-            text: '🌀 Cast an arcane levitation wind to support the wheels. (Requires Intelligence [INT] Check, Difficulty 18)',
-            statCheck: 'int',
-            difficulty: 18
-          }
-        ]
-      };
-    } else if (roll < 0.88) {
-      return {
-        id: `enc_merchant_${Date.now()}`,
-        type: 'mysterious_merchant',
-        title: '🎒 WANDERING SHELTER TRADER',
-        desc: 'An eccentric merchant wearing heavy leather boots and riding a giant moss-covered tortoise waves you down. "Greetings travelers! I trade rare seeds and cure-all draughts for woodland supplies!"',
-        resolved: false,
-        options: [
-          {
-            id: 'buy_herbs',
-            text: '🪙 Buy a basket of fresh restorative herbs. (Costs 100 Gold)',
-            costGold: 100
-          },
-          {
-            id: 'trade_hides',
-            text: '🟤 Exchange heavy leather for refined scrap iron. (Costs 3 Thick Wild Hides)',
-            costItems: [{ id: 'mat_thick_hide', count: 3, label: 'Thick Wild Hide' }]
-          },
-          {
-            id: 'ignore',
-            text: '🚶 Politely refuse and keep rolling along the road.'
-          }
-        ]
-      };
-    } else {
-      return {
-        id: `enc_gas_${Date.now()}`,
-        type: 'swamp_gas',
-        title: '🤢 NOXIOUS SULFUR MIASMA (POISON HAZARD)',
-        desc: 'The mountain pass dips into a humid hollow filled with bubbling, yellow sulfur gas. The horses begin coughing and choking, and your lungs burn with every deep breath!',
-        resolved: false,
-        options: [
-          {
-            id: 'alchemy',
-            text: '🧪 Synthesize neutralizing air filter vapors. (Requires Intelligence [INT] Check, Difficulty 17)',
-            statCheck: 'int',
-            difficulty: 17
-          },
-          {
-            id: 'constitution',
-            text: '💪 Push through the suffocating vapors with pure grit. (Requires Strength [STR] Check, Difficulty 18)',
-            statCheck: 'str',
-            difficulty: 18
-          },
-          {
-            id: 'herbs',
-            text: '🌿 Chew on stashed Wild Berries to neutralize the toxins. (Costs 12 Wild Berries)',
-            costItems: [{ id: 'mat_berry', count: 12, label: 'Wild Berries' }]
-          }
-        ]
-      };
-    }
-  };
-
-  const handleStartCaravanTravel = (destX: number, destY: number, destName: string) => {
-    playSound('levelUp');
-    const distance = Math.max(Math.abs(destX - gameState.currentChunkX), Math.abs(destY - gameState.currentChunkY));
-    const totalSteps = Math.max(1, distance * 2);
-    const reward = 100 + distance * 80;
-
-    setGameState((prev) => {
-      const nextTravel: CaravanTravelState = {
-        active: true,
-        originX: prev.currentChunkX,
-        originY: prev.currentChunkY,
-        destX,
-        destY,
-        destName,
-        totalSteps,
-        currentStep: 0,
-        stepsHistory: ["🏕️ Caravan gathers. Baron Tobias checks the heavy iron axles. 'Ready to roll, guard! Keep your hand on your sword hilt!'"],
-        rewardGold: reward,
-        currentEncounter: null
-      };
-      
-      return {
-        ...prev,
-        activeTradeNpcId: null, // close trade menu
-        caravanTravel: nextTravel
-      };
-    });
-
-    addLogMessage(`🛡️ [ESCORT INITIATED]: Accompanying caravan to ${destName}! Safe journey!`, 'loot');
-  };
-
-  const handleAdvanceCaravanTravel = () => {
-    playSound('slash');
-    setGameState((prev) => {
-      const travel = prev.caravanTravel;
-      if (!travel) return prev;
-
-      let nextStep = travel.currentStep + 1;
-      const history = [...travel.stepsHistory];
-
-      if (isLunarBlessingActive(prev, 'waxing_crescent') && Math.random() < 0.20 && nextStep < travel.totalSteps) {
-        nextStep += 1;
-        history.push(`✨ [LUNAR SWIFTNESS]: Stardust Swiftness Blessing speeds up the draft horses, skipping a tedious leg of the journey!`);
-      }
-
-      const descriptions = [
-        "The heavy iron-reinforced wheels creak as the horses pull the massive wagons up a steep, pine-covered mountain ridge.",
-        "A cool forest breeze blows through the caravan canvas. You walk alongside the archers, keeping a keen watch on the treeline.",
-        "Baron Tobias hands you a flask of frothy ale. 'Good pace today! No bandit raiders in sight... yet.'",
-        "The travelers sing a traditional dwarven road ballad to pass the hours as the shadow of distant mountains grows larger.",
-        "You stop briefly by a crystalline creek to water the drafts. The caravan scouts check the pathway ahead for tracks.",
-        "A low fog rolls over the dirt road. The caravan guards light their bronze torches, whispering of forest ghosts.",
-        "Screeches of wild birds echo from the crags. You adjust your grip on your shield, feeling the wind turn cold."
-      ];
-      
-      const desc = descriptions[Math.floor(Math.random() * descriptions.length)];
-      history.push(`📍 [Step ${nextStep}/${travel.totalSteps}]: ${desc}`);
-
-      let encounter: CaravanEncounter | null = null;
-      if (nextStep < travel.totalSteps && Math.random() < 0.85) {
-        encounter = generateRandomCaravanEncounter(prev.biome || 'forest', prev);
-        history.push(`🚨 EVENT TRIPPED: ${encounter.title}! Journey halted.`);
-      }
-
-      const updatedTravel: CaravanTravelState = {
-        ...travel,
-        currentStep: nextStep,
-        stepsHistory: history,
-        currentEncounter: encounter
-      };
-
-      return {
-        ...prev,
-        caravanTravel: updatedTravel
-      };
-    });
-  };
-
-  const handleResolveCaravanEncounterOption = (optionId: string) => {
-    playSound('click');
-    setGameState((prev) => {
-      const travel = prev.caravanTravel;
-      if (!travel || !travel.currentEncounter) return prev;
-
-      const encounter = travel.currentEncounter;
-      const option = encounter.options.find(o => o.id === optionId);
-      if (!option) return prev;
-
-      if (option.costGold && prev.playerStats.gold < option.costGold) {
-        playSound('bump');
-        return prev;
-      }
-
-      if (option.costItems) {
-        let hasEnough = true;
-        for (const itemCost of option.costItems) {
-          const currentCount = prev.inventoryMaterials[itemCost.id] || 0;
-          if (currentCount < itemCost.count) {
-            hasEnough = false;
-          }
-        }
-        if (!hasEnough) {
-          playSound('bump');
-          return prev;
-        }
-      }
-
-      let nextGold = prev.playerStats.gold;
-      if (option.costGold) {
-        nextGold -= option.costGold;
-      }
-
-      const nextMats = { ...prev.inventoryMaterials };
-      if (option.costItems) {
-        option.costItems.forEach(itemCost => {
-          nextMats[itemCost.id] = Math.max(0, (nextMats[itemCost.id] || 0) - itemCost.count);
-        });
-      }
-
-      let d20 = 0;
-      let modifier = 0;
-      let totalRoll = 0;
-      let isSuccess = true;
-      let resultLog = '';
-      let hpChange = 0;
-      let xpGained = 0;
-      let exhaustionChange = 0;
-
-      const playerStats = prev.playerStats;
-
-      if (option.statCheck) {
-        d20 = Math.floor(Math.random() * 20) + 1;
-        const attrVal = getEffectiveAttribute(prev, option.statCheck);
-        modifier = Math.floor((attrVal - 10) / 2);
-        totalRoll = d20 + modifier;
-        isSuccess = totalRoll >= (option.difficulty || 10);
-      }
-
-      if (encounter.type === 'bandit_ambush') {
-        if (option.id === 'fight') {
-          if (isSuccess) {
-            xpGained = 60;
-            const rewardGold = 75;
-            nextGold += rewardGold;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You draw your steel weapon and leap over the wagons. With a whirlwind strike, you cut down the bandit vanguard. The remaining outlaws flee, dropping a coin pouch! Gained +${xpGained} XP and +${rewardGold} Gold.`;
-          } else {
-            hpChange = -28;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! You charge the bandits but they hurl spike iron traps and fire crossbolts. You block several with your shield, but one grazes your thigh before they retreat. Lost -28 HP.`;
-          }
-        } else if (option.id === 'intimidate') {
-          if (isSuccess) {
-            xpGained = 40;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You step forward, ignite a magic spark, and threaten the captain with slow combustion. Terrified of your fearsome reputation, they pack up their spike strip and scurry off! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -16;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! They laugh at your threats. "Big words, tiny traveler!" They hurl a jagged throwing axe, grazing your shoulder before Baron Tobias's guards open fire. Lost -16 HP.`;
-          }
-        } else if (option.id === 'pay') {
-          resultLog = `🤝 You count out 500 shiny gold coins and toss them to the bandit captain. Baron Tobias sighs. "An expensive road tax, but we live to trade another day." Paid 500 Gold.`;
-        }
-      } else if (encounter.type === 'beast_attack') {
-        if (option.id === 'fight') {
-          if (isSuccess) {
-            xpGained = 50;
-            nextMats['mat_raw_meat'] = (nextMats['mat_raw_meat'] || 0) + 2;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You intercept the lead alpha wolf, hacking it down with a swift strike. The rest of the pack panics and retreats back into the thick dark woodlands. Gained +${xpGained} XP and +2 Raw Meat.`;
-          } else {
-            hpChange = -22;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! A dire wolf lunges from behind, biting deep into your arm before you shake it off. Lost -22 HP.`;
-          }
-        } else if (option.id === 'feed') {
-          xpGained = 35;
-          resultLog = `🥩 You pull out your stashed Wild Berries and throw them on the road. The starving wolves eagerly fight over the forest harvest, completely ignoring the horses. The carriage rolls past safely! Gained +${xpGained} XP.`;
-        } else if (option.id === 'intimidate') {
-          if (isSuccess) {
-            xpGained = 45;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You let out a terrifying, earth-shaking war cry, slamming your weapon against your breastplate. Shocked by your raw aura, the wolves tuck their tails and flee! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -18;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! The wolves are too starved to care about your roars. They lunge in, biting your leg before being driven back by the caravan scouts. Lost -18 HP.`;
-          }
-        }
-      } else if (encounter.type === 'obstacle') {
-        if (option.id === 'push') {
-          if (isSuccess) {
-            xpGained = 40;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You plant your feet on the gravel road and leverage your colossal strength. With a loud grunt, you roll the massive boulder down the mountain cliffside, clearing the road! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -15;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! You strain your back muscles attempting to heave the giant rock. You manage to shift it just enough for the wagon to squeeze past, but your muscles ache. Lost -15 HP.`;
-          }
-        } else if (option.id === 'leverage') {
-          if (isSuccess) {
-            xpGained = 45;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You analyze the boulder's balance point and build a timber fulcrum lever. With minimal physical effort, you slide the stone out of the path! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -10;
-            exhaustionChange = 25;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! The wooden lever snaps under the boulder's weight. You are forced to dig it out manually, causing physical strain. Lost -10 HP and gained +25% Exhaustion.`;
-          }
-        } else if (option.id === 'detour') {
-          if (isSuccess) {
-            xpGained = 35;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! Following a lucky deer trail, you guide the carriage through a beautiful forest bypass, completely avoiding the rockslide. Gained +${xpGained} XP.`;
-          } else {
-            exhaustionChange = 45;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! The detour leads into a swampy marsh. The carriage gets stuck, and everyone spends hours pushing it out in the rain. Gained +45% Exhaustion.`;
-          }
-        }
-      } else if (encounter.type === 'pilgrim') {
-        if (option.id === 'bless') {
-          resultLog = `✨ The road priest touches your forehead and murmurs a chant of the old gods. A warm golden vapor wraps around you. Your health, mana, and fatigue are completely restored!`;
-        } else if (option.id === 'wisdom') {
-          if (isSuccess) {
-            xpGained = 80;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You discuss the lore of the Sunder Outlaws and the ancient dungeons. The priest is highly impressed by your intellect and shares forgotten runes of power. Gained +${xpGained} XP.`;
-          } else {
-            xpGained = 20;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! Your knowledge of old mythology is a bit rusty. The priest smiles gently and offers some simpler guidance. Gained +20 XP.`;
-          }
-        }
-      } else if (encounter.type === 'wheel_break') {
-        if (option.id === 'repair_metal') {
-          xpGained = 50;
-          resultLog = `🔨 You place the cracked iron band on an anvil block and forge-weld a reinforcement. The wagon axle is now stronger than before! Gained +${xpGained} XP. Used 8 Iron Ore.`;
-        } else if (option.id === 'repair_lumber') {
-          xpGained = 40;
-          resultLog = `🌲 Using your stashed wood planks, you carve a solid timber splint to bind the broken axle. It holds perfectly. Gained +${xpGained} XP. Used 18 Wood Planks.`;
-        } else if (option.id === 'wait_fix') {
-          exhaustionChange = 35;
-          resultLog = `⏳ Lacking materials, you spend hours carving and tying green branches to support the wheel. The caravan gets moving again, but you are thoroughly fatigued. Gained +35% Exhaustion.`;
-        }
-      } else if (encounter.type === 'mana_storm') {
-        if (option.id === 'spell_barrier') {
-          if (isSuccess) {
-            xpGained = 60;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You erect a glowing blue sphere of pure arcane energy around the horses and carriage. The wild magenta lightning bolts bounce off the barrier, charging your inner power! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -20;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! The electrical pressure is too intense. The magic barrier bursts, sending a violent shock back into your hands, stinging your nervous system! Lost -20 HP.`;
-          }
-        } else if (option.id === 'ground_metal') {
-          if (isSuccess) {
-            xpGained = 55;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! You quickly forge iron grounding lines from the metal stockpile down into the earth. The electrical charge safely dissipates into the muddy roadside, letting you cross without harm. Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -15;
-            exhaustionChange = 20;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! A stray flash of plasma strikes a wagon frame as you wire the line. You are thrown back by the static discharge, suffering burns and exhaustion. Lost -15 HP and gained +20% Exhaustion.`;
-          }
-        } else if (option.id === 'ride_through') {
-          if (isSuccess) {
-            xpGained = 50;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! Miraculously, you guide the horses in a zig-zag dash. Lightning bolts strike inches away, turning rocks to molten glass, but not a single spark touches the carriage! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -25;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! Unlucky! A direct strike hits the primary storage wagon, blasting splinters everywhere and shocking everyone in the vicinity. Lost -25 HP.`;
-          }
-        }
-      } else if (encounter.type === 'bridge_collapse') {
-        if (option.id === 'carpentry') {
-          xpGained = 55;
-          resultLog = `🔨 You dismantle spare timbers and lay a sturdy cross-hatched reinforcement ramp across the gorge chasm. The heavy wagons roll smoothly over the breach! Gained +${xpGained} XP. Used 15 Scrap Wood logs.`;
-        } else if (option.id === 'steer') {
-          if (isSuccess) {
-            xpGained = 70;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! Taking the leather reins from Baron Tobias, you hold the lead horses steady. With breathtaking precision, you glide the heavy wooden wheels directly along the narrow structural girder! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -15;
-            exhaustionChange = 30;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! One of the wheels slips off the girder, tilting the wagon dangerously! You strain your shoulder hauling it back onto safe dirt, but the rear carriage cargo took structural damage. Lost -15 HP and gained +30% Exhaustion.`;
-          }
-        } else if (option.id === 'magical_levitation') {
-          if (isSuccess) {
-            xpGained = 65;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! Channeling wind currents, you form a soft, floating updraft beneath the heavy wooden carriages. The horses pull them with weightless ease across the shattered gap! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -12;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! Your concentration wavers mid-cast, and the kinetic gravity lifts collapse abruptly. The carriage slams hard onto the rocky stone gap, giving everyone a jarring shock. Lost -12 HP.`;
-          }
-        }
-      } else if (encounter.type === 'mysterious_merchant') {
-        if (option.id === 'buy_herbs') {
-          xpGained = 30;
-          nextMats['mat_berry'] = (nextMats['mat_berry'] || 0) + 10;
-          nextMats['mat_thick_hide'] = (nextMats['mat_thick_hide'] || 0) + 2;
-          resultLog = `🪙 You hand over 100 gold coins. The eccentric trader laughs merrily and reaches into his tortoise saddlebags, gifting you a bundle of 10 Wild Berries and 2 Thick Wild Hides! Gained +30 XP.`;
-        } else if (option.id === 'trade_hides') {
-          xpGained = 40;
-          nextMats['mat_iron'] = (nextMats['mat_iron'] || 0) + 4;
-          resultLog = `🟤 You trade 3 Thick Wild Hides. The merchant inspects the furs with satisfaction and hands you 4 chunks of refined Scrap Iron metal from his forge trunk! Gained +40 XP. Used 3 Thick Wild Hides.`;
-        } else if (option.id === 'ignore') {
-          resultLog = `🚶 You wave a friendly goodbye. The eccentric tortoise merchant slowly moves aside, leaving the mountain path clear. Safe travels!`;
-        }
-      } else if (encounter.type === 'swamp_gas') {
-        if (option.id === 'alchemy') {
-          if (isSuccess) {
-            xpGained = 60;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! Combining mineral dust and moisture in an empty flask, you spray an acidic neutralizer. The thick yellow miasma dissolves into harmless vapor before it can harm the crew! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -18;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! Your reagent ratio was incorrect, resulting in a minor chemical flash. You inhale a mouthful of sulfur gas, coughing violently. Lost -18 HP.`;
-          }
-        } else if (option.id === 'constitution') {
-          if (isSuccess) {
-            xpGained = 55;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). SUCCESS! With lungs of iron, you lead the charge, guiding the horse carriage through the yellow fog at top speed. Your lungs burn but you pull everyone out safely without lasting damage! Gained +${xpGained} XP.`;
-          } else {
-            hpChange = -25;
-            exhaustionChange = 20;
-            resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). FAILURE! You inhale the poison mist. A horrible nausea overcomes you, leaving your limbs weak and heavy. Lost -25 HP and gained +20% Exhaustion.`;
-          }
-        } else if (option.id === 'herbs') {
-          xpGained = 45;
-          resultLog = `🌿 You mash 12 Wild Berries into a thick, sweet anti-toxic paste for the draft horses and guards. The natural fruit acids fully filter out the worst of the toxic fumes! Gained +${xpGained} XP. Used 12 Wild Berries.`;
-        }
-      }
-
-      let nextHp = playerStats.hp;
-      if (hpChange < 0) {
-        nextHp = Math.max(1, playerStats.hp + hpChange);
-        playSound('hurt');
-      } else if (encounter.type === 'pilgrim' && option.id === 'bless') {
-        nextHp = playerStats.maxHp;
-        playSound('heal');
-      }
-
-      let nextMp = playerStats.mp;
-      if (encounter.type === 'pilgrim' && option.id === 'bless') {
-        nextMp = playerStats.maxMp;
-      }
-
-      let nextExhaustion = Math.max(0, Math.min(100, (playerStats.exhaustion || 0) + exhaustionChange));
-      if (encounter.type === 'pilgrim' && option.id === 'bless') {
-        nextExhaustion = 0;
-      }
-
-      let nextXp = playerStats.xp + xpGained;
-      let nextLevel = playerStats.level;
-      let nextMaxHp = playerStats.maxHp;
-      let nextMaxMp = playerStats.maxMp;
-      let nextUnspentPoints = playerStats.unspentPoints;
-      let nextXpNext = playerStats.xpNext;
-
-      if (nextXp >= nextXpNext) {
-        nextLevel += 1;
-        nextXp -= nextXpNext;
-        nextXpNext = Math.round(nextXpNext * 1.5);
-        nextMaxHp += 15;
-        nextMaxMp += 8;
-        nextHp = nextMaxHp;
-        nextMp = nextMaxMp;
-        nextUnspentPoints += 3;
-        resultLog += ` 🎉 LEVEL UP! You have achieved Level ${nextLevel}! Attributes boosted.`;
-        playSound('levelUp');
-      }
-
-      const updatedEncounter: CaravanEncounter = {
-        ...encounter,
-        resolved: true,
-        selectedOptionId: optionId,
-        rolledValue: totalRoll,
-        resultLog
-      };
-
-      const updatedTravel: CaravanTravelState = {
-        ...travel,
-        currentEncounter: updatedEncounter,
-        stepsHistory: [...travel.stepsHistory, resultLog]
-      };
-
-      return {
-        ...prev,
-        playerStats: {
-          ...prev.playerStats,
-          gold: nextGold,
-          hp: nextHp,
-          mp: nextMp,
-          exhaustion: nextExhaustion,
-          xp: nextXp,
-          level: nextLevel,
-          maxHp: nextMaxHp,
-          maxMp: nextMaxMp,
-          xpNext: nextXpNext,
-          unspentPoints: nextUnspentPoints
-        },
-        inventoryMaterials: nextMats,
-        caravanTravel: updatedTravel
-      };
-    });
-  };
-
-  const handleCompleteCaravanTravel = () => {
-    playSound('levelUp');
-    setGameState((prev) => {
-      const travel = prev.caravanTravel;
-      if (!travel) return prev;
-
-      const destX = travel.destX;
-      const destY = travel.destY;
-      const destName = travel.destName;
-      const reward = travel.rewardGold;
-
-      const nextGold = prev.playerStats.gold + reward;
-
-      const targetChunkKey = `${destX},${destY}`;
-      let updatedChunks = prev.overworldChunks ? { ...prev.overworldChunks } : {};
-      let targetChunk = updatedChunks[targetChunkKey];
-      let nextSpawnedCats = prev.spawnedCats ? [...prev.spawnedCats] : [];
-      let hasSeppoOnLoad = false;
-      
-      const newPx = Math.floor(LEVEL_WIDTH / 2);
-      const newPy = Math.floor(LEVEL_HEIGHT / 2) + 2;
-
-      if (!targetChunk) {
-        targetChunk = generateOverworldChunk(destX, destY, LEVEL_WIDTH, LEVEL_HEIGHT, nextSpawnedCats, prev.spawnedSeppo, prev.playerStats, prev.currentWeapon);
-        targetChunk.npcs.forEach(n => {
-          if (n.id?.startsWith('npc_cat_')) {
-            const catName = n.name.split(' (')[0];
-            if (!nextSpawnedCats.includes(catName)) {
-              nextSpawnedCats.push(catName);
-            }
-          }
-        });
-        hasSeppoOnLoad = targetChunk.npcs.some(n => n.id === 'npc_seppo');
-      }
-
-      const safePlayerPos = findNearestSafePlayerTile(newPx, newPy, targetChunk.map);
-      const finalPx = safePlayerPos.x;
-      const finalPy = safePlayerPos.y;
-
-      const fov = computeFOV(finalPx, finalPy, targetChunk.map, 6);
-      const discovered = targetChunk.map.map((row, y) =>
-        row.map((cell, x) => ((targetChunk.discovered && targetChunk.discovered[y] && targetChunk.discovered[y][x]) || (fov && fov[y] && fov[y][x]) || false))
-      );
-
-      const nextVisited = { ...prev.visitedTiles };
-      nextVisited[`${finalPx},${finalPy},${destX},${destY}`] = true;
-
-      const newMsgs = [...prev.logs];
-      newMsgs.push({
-        id: `caravan_arrived_${Date.now()}`,
-        text: `🏆 [CARAVAN SECURED]: You have safely escorted the merchant caravan to ${destName}! Baron Tobias smiles warmly and slides a heavy reward pouch into your hands. +${reward} Gold collected!`,
-        type: 'loot',
-        timestamp: formatGameTime(prev.gameTime).timeStr
-      });
-
-      return {
-        ...prev,
-        playerX: finalPx,
-        playerY: finalPy,
-        currentChunkX: destX,
-        currentChunkY: destY,
-        overworldChunks: {
-          ...updatedChunks,
-          [targetChunkKey]: targetChunk
-        },
-        spawnedCats: nextSpawnedCats,
-        spawnedSeppo: prev.spawnedSeppo || hasSeppoOnLoad,
-        map: targetChunk.map,
-        discovered: discovered,
-        visible: fov,
-        enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, finalPx, finalPy, targetChunk.map),
-        traps: targetChunk.traps,
-        chests: targetChunk.chests,
-        npcs: targetChunk.npcs,
-        lootPiles: targetChunk.lootPiles || [],
-        logs: newMsgs,
-        playerStats: {
-          ...prev.playerStats,
-          gold: nextGold
-        },
-        caravanTravel: null
-      };
-    });
   };
 
   const handleRecallTeleport = (destX: number, destY: number, destName: string) => {
@@ -7929,7 +6693,7 @@ export default function App() {
           map: targetChunk.map,
           discovered: discovered,
           visible: fov,
-          enemies: targetChunk.enemies,
+          enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, exPlayerX, exPlayerY, targetChunk.map, prev.activeCompanionQuests),
           traps: targetChunk.traps,
           chests: targetChunk.chests,
           lootPiles: targetChunk.lootPiles || [],
@@ -8291,534 +7055,89 @@ export default function App() {
 
   const effectiveMaxHp = isLunarBlessingActive(gameState, 'waxing_gibbous') ? getEffectiveStats(gameState.playerStats).maxHp + 15 : getEffectiveStats(gameState.playerStats).maxHp;
 
+  useAmbientAudio(gameState);
+
   return (
     <MainAppLayout
       header={(
-        <header className="bg-slate-900 border-b border-slate-800 py-3 px-4 lg:py-3.5 lg:px-6 flex flex-col md:flex-row gap-3.5 items-center justify-between shadow-md select-none">
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="bg-amber-500/10 p-1.5 border border-amber-500/20 rounded-lg">
-              <Swords className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <h1 className="text-sm font-semibold tracking-wider font-sans uppercase text-slate-100 flex items-center gap-1.5">
-                <span>Dungeon Crafting Roguelike</span>
-                {activeMobileView && <span className="text-[9px] bg-sky-500/20 text-sky-400 border border-sky-500/30 px-1.5 py-0.5 rounded-full font-bold">MOBILE MODE</span>}
-              </h1>
-              <p className="text-[10px] text-slate-400 leading-normal">
-                Classical turn-based grid RPG with modular alloy assembly systems
-              </p>
-            </div>
-          </div>
-
-          {isPlaying && (
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto justify-end">
-              {/* Clock ticker HUD representation */}
-              <div className="flex items-center gap-2 bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-1.5 text-[11px] font-mono text-slate-300 select-none shadow-inner w-full sm:w-auto justify-center">
-                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-ping" />
-                {gameState.isArena ? (
-                  <span className="text-red-400 font-bold tracking-wider animate-pulse">⚔️ SANDBOX ARENA</span>
-                ) : gameState.isOverworld ? (
-                  <span className="text-amber-500 font-bold">🌍 OVERWORLD</span>
-                ) : (
-                  <span className="text-purple-400 font-bold">DUNGEON {gameState.playerStats.depth}F</span>
-                )}
-                <span className="text-slate-700">|</span>
-                <span className="text-amber-400 font-extrabold text-[13px] md:text-[14px] bg-slate-900 border border-slate-750 px-2.5 py-0.5 rounded shadow tracking-wide animate-pulse">
-                  {(() => {
-                    const formatted = formatGameTime(gameState.gameTime);
-                    return `${formatted.timeStr} (${formatted.period})`;
-                  })()}
-                </span>
-                <span className="text-slate-700">|</span>
-                {/* Season Display Badge */}
-                <span className={`px-2.5 py-0.5 rounded border text-[10px] font-extrabold tracking-wide uppercase flex items-center gap-1 shadow-sm select-none ${
-                  gameState.season === 'spring' 
-                    ? 'bg-rose-950/40 border-rose-500/30 text-rose-400' 
-                    : gameState.season === 'summer' 
-                    ? 'bg-amber-950/40 border-amber-500/30 text-amber-400 animate-pulse' 
-                    : gameState.season === 'autumn'
-                    ? 'bg-orange-950/40 border-orange-500/30 text-orange-400'
-                    : 'bg-sky-950/40 border-sky-500/30 text-sky-300 animate-pulse'
-                }`}>
-                  {gameState.season === 'spring' && '🌸 Spring'}
-                  {gameState.season === 'summer' && '☀️ Summer'}
-                  {gameState.season === 'autumn' && '🍂 Autumn'}
-                  {gameState.season === 'winter' && '❄️ Winter'}
-                </span>
-                <span className="text-slate-700">|</span>
-                <span>Turns: <strong>{gameState.playerStats.turnsPlayed}</strong></span>
-              </div>
-
-              {/* Stairs climb up helper */}
-              {!gameState.isOverworld && gameState.playerStats.depth >= 1 && (
-                <button
-                  id="climb-up-stairs-btn"
-                  onClick={gameState.playerStats.depth === 1 ? climbStairsUpToOverworld : climbToPreviousDepth}
-                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold rounded cursor-pointer transition-all flex items-center gap-1 shadow animate-pulse w-full sm:w-auto justify-center"
-                  title={gameState.playerStats.depth === 1 ? "Climb back out onto the Overworld" : "Climb back up to the previous dungeon floor"}
-                >
-                  {gameState.playerStats.depth === 1 ? "🪜 Exit to Overworld" : `🪜 Climb to Floor ${gameState.playerStats.depth - 1}`}
-                </button>
-              )}
-
-              {/* Quick Panel HUD Buttons */}
-              <div className="flex gap-1 bg-slate-950/40 p-1 border border-slate-800 rounded-lg w-full sm:w-auto justify-center flex-wrap">
-                <button
-                  onClick={() => {
-                    setForceLayoutMode(prev => prev === 'mobile' ? 'desktop' : 'mobile');
-                  }}
-                  className={`px-2 py-1 text-[10px] rounded border flex items-center gap-1 cursor-pointer font-bold transition-all ${
-                    activeMobileView 
-                      ? 'bg-sky-500/10 border-sky-500/40 text-sky-400 font-extrabold shadow-sm' 
-                      : 'bg-slate-900 border-slate-750 text-slate-300 hover:bg-slate-800'
-                  }`}
-                  title={`Layout mode: ${forceLayoutMode}. Click to toggle.`}
-                >
-                  <span>{activeMobileView ? '📱 Mobile View' : '💻 Windows View'}</span>
-                </button>
-
-                <button
-                  onClick={() => setIsHelpOpen(true)}
-                  className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-[10px] text-slate-300 rounded border border-slate-750 flex items-center gap-1 cursor-pointer font-medium"
-                  title="Help manual overlay"
-                >
-                  <span>Help</span>
-                  <span className="text-[8px] bg-slate-800 px-1 rounded text-slate-500 font-mono hidden sm:inline">F1</span>
-                </button>
-
-                <button
-                  onClick={() => setIsHistoryBookOpen(true)}
-                  className="px-2 py-1 bg-slate-900 hover:bg-indigo-950/60 text-[10px] text-indigo-400 rounded border border-indigo-500/20 flex items-center gap-1 cursor-pointer font-bold"
-                  title="Ancient History and World Chronicles"
-                >
-                  <span>📖 Chronicles</span>
-                  <span className="text-[8px] bg-indigo-950 px-1 rounded text-indigo-400 font-mono hidden sm:inline">H</span>
-                </button>
-
-                <button
-                  onClick={() => { playSound('click'); setActiveTab('chaos'); }}
-                  className="px-2 py-1 bg-slate-900 hover:bg-amber-950/60 text-[10px] text-amber-400 rounded border border-amber-500/20 flex items-center gap-1 cursor-pointer font-bold"
-                  title="Chaos Matrix parameters and difficulty tracker"
-                >
-                  <span>🌀 Chaos Matrix</span>
-                  <span className="text-[8px] bg-amber-950 px-1 rounded text-amber-400 font-mono hidden sm:inline">Y</span>
-                </button>
-                
-                <button
-                  onClick={() => { playSound('click'); setActiveTab('inventory'); }}
-                  className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-[10px] text-slate-300 rounded border border-slate-750 flex items-center gap-1 cursor-pointer font-medium"
-                  title="Attributes layout and follower management"
-                >
-                  <span>Bag & Allies</span>
-                  <span className="text-[8px] bg-slate-800 px-1 rounded text-slate-500 font-mono hidden sm:inline">C</span>
-                </button>
-
-                <button
-                  onClick={() => setIsGodPanelOpen(true)}
-                  className="px-2 py-1 bg-slate-900 hover:bg-slate-850 text-[10px] text-amber-500 rounded border border-amber-500/20 flex items-center gap-1 cursor-pointer font-medium"
-                  title="God Mode panel"
-                >
-                  <span>Dev Docs</span>
-                  <span className="text-[8px] bg-amber-500/10 px-1 rounded text-amber-500/50 font-mono hidden sm:inline">P</span>
-                </button>
-
-                <button
-                  onClick={() => setIsGmPanelOpen(true)}
-                  className="px-2 py-1 bg-slate-900 hover:bg-slate-850 text-[10px] text-purple-400 rounded border border-purple-500/20 flex items-center gap-1 cursor-pointer font-medium animate-pulse"
-                  title="GM parameters panel"
-                >
-                  <span>GM Metrics</span>
-                  <span className="text-[8px] bg-purple-500/10 px-1 rounded text-purple-400/50 font-mono hidden sm:inline">O</span>
-                </button>
-              </div>
-
-              <button
-                id="give-up-header-btn"
-                onClick={() => setIsGameOver(true)}
-                className="px-3 py-1 bg-rose-950/30 hover:bg-rose-950/60 border border-rose-800/50 text-[10px] font-semibold text-rose-400 rounded cursor-pointer transition-all w-full sm:w-auto"
-              >
-                Forfeit Run
-              </button>
-            </div>
-          )}
-        </header>
+        <AppHeaderBar
+          isPlaying={isPlaying}
+          activeMobileView={activeMobileView}
+          gameState={gameState}
+          formatGameTime={formatGameTime}
+          climbStairsUpToOverworld={climbStairsUpToOverworld}
+          climbToPreviousDepth={climbToPreviousDepth}
+          forceLayoutMode={forceLayoutMode}
+          setForceLayoutMode={setForceLayoutMode}
+          isMuted={isMuted}
+          toggleAudioMute={toggleAudioMute}
+          setIsMuted={setIsMuted}
+          getAudioSettings={getAudioSettings}
+          setIsAudioSettingsOpen={setIsAudioSettingsOpen}
+          setIsHelpOpen={setIsHelpOpen}
+          playSound={playSound}
+          setActiveTab={setActiveTab}
+          setIsGodPanelOpen={setIsGodPanelOpen}
+          setIsGmPanelOpen={setIsGmPanelOpen}
+          setIsGameOver={setIsGameOver}
+        />
       )}
       overlays={(
-        <>
-          {/* Interactive Tactical Overlays */}
-          <AppOverlays
-            isHelpOpen={isHelpOpen}
-            setIsHelpOpen={setIsHelpOpen}
-            isGodPanelOpen={isGodPanelOpen}
-            setIsGodPanelOpen={setIsGodPanelOpen}
-            isGmPanelOpen={isGmPanelOpen}
-            setIsGmPanelOpen={setIsGmPanelOpen}
-            isSleepOpen={isSleepOpen}
-            setIsSleepOpen={setIsSleepOpen}
-            isHistoryBookOpen={isHistoryBookOpen}
-            setIsHistoryBookOpen={setIsHistoryBookOpen}
-            isBestiaryOpen={isBestiaryOpen}
-            setIsBestiaryOpen={setIsBestiaryOpen}
-            isFishingOpen={isFishingOpen}
-            setIsFishingOpen={setIsFishingOpen}
-            isLockpickingOpen={isLockpickingOpen}
-            setIsLockpickingOpen={setIsLockpickingOpen}
-            activeLockpickingChestIndex={activeLockpickingChestIndex}
-            setActiveLockpickingChestIndex={setActiveLockpickingChestIndex}
-            activePoi={activePoi}
-            setActivePoi={setActivePoi}
-            activeDrunkNpc={activeDrunkNpc}
-            setActiveDrunkNpc={setActiveDrunkNpc}
-            activeTravelerNpc={activeTravelerNpc}
-            setActiveTravelerNpc={setActiveTravelerNpc}
-            unlawfulGuardTarget={unlawfulGuardTarget}
-            setUnlawfulGuardTarget={setUnlawfulGuardTarget}
-            activeRelicDraft={activeRelicDraft}
-            setActiveRelicDraft={setActiveRelicDraft}
-            activeRecallScroll={activeRecallScroll}
-            setActiveRecallScroll={setActiveRecallScroll}
-            isAutoplayActive={isAutoplayActive}
-            setIsAutoplayActive={setIsAutoplayActive}
-            gameState={gameState}
-            setGameState={setGameState}
-            addLogMessage={addLogMessage}
-            handleRegenerateCurrentLocation={handleRegenerateCurrentLocation}
-            handleConfirmSleep={handleConfirmSleep}
-            handleCatchFish={handleCatchFish}
-            handleFailFish={handleFailFish}
-            handleOpenChest={handleOpenChest}
-            handleConsumeLockpick={handleConsumeLockpick}
-            handlePoiChoiceSelected={handlePoiChoiceSelected}
-            handleDrunkNpcEffects={handleDrunkNpcEffects}
-            handleTravelerTrade={handleTravelerTrade}
-            handleTravelerAttack={handleTravelerAttack}
-            handleAcceptQuest={handleAcceptQuest}
-            handleTurnInQuest={handleTurnInQuest}
-            handleConfirmUnlawfulAttack={handleConfirmUnlawfulAttack}
-            handleRecallTeleport={handleRecallTeleport}
-          />
-
-          {gameState.activeQuestBoardOpen && (
-            <QuestBoardOverlay
-              gameState={gameState}
-              setGameState={setGameState}
-              onClose={() => setGameState(prev => ({ ...prev, activeQuestBoardOpen: false }))}
-              onAcceptQuest={handleAcceptQuest}
-              onTurnInQuest={handleTurnInQuest}
-            />
-          )}
-
-          {/* Caravan Travel & Escort Active Journey Overlay */}
-          {gameState.caravanTravel?.active && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 sm:p-6 overflow-y-auto font-sans text-slate-100">
-              <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-blue-500/30 rounded-2xl shadow-2xl flex flex-col min-h-[550px] max-h-[90vh] overflow-hidden">
-                
-                {/* Header Banner */}
-                <div className={`p-4 ${gameState.caravanTravel.currentEncounter && !gameState.caravanTravel.currentEncounter.resolved ? 'bg-red-950/40 border-b border-red-500/20' : 'bg-blue-950/40 border-b border-blue-500/20'} flex justify-between items-center transition-colors duration-300`}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl animate-bounce">🛡️</span>
-                    <div className="text-left">
-                      <h2 className="text-[10px] font-black uppercase tracking-widest text-blue-400">ACTIVE OVERWORLD ESCORT MISSION</h2>
-                      <div className="text-sm font-black text-slate-100 flex items-center gap-1.5 mt-0.5">
-                        <span>Region Chunk ({gameState.caravanTravel.originX}, {gameState.caravanTravel.originY})</span>
-                        <span className="text-blue-500">➔</span>
-                        <span className="text-emerald-400 font-bold">{gameState.caravanTravel.destName}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-3 py-1 bg-blue-950/80 border border-blue-800 rounded-lg text-xs font-mono font-bold text-blue-300">
-                    💰 Payout: {gameState.caravanTravel.rewardGold}g
-                  </div>
-                </div>
-
-                {/* Main Content Splitted Grid */}
-                <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-12 gap-5 min-h-0">
-                  
-                  {/* Left Column: Visual Map / Progress / Player Stats */}
-                  <div className="md:col-span-5 flex flex-col gap-4">
-                    
-                    {/* Parallax Traveling Wagon Carriage Animation */}
-                    <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl flex flex-col items-center justify-center min-h-[140px] relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-b from-blue-950/10 via-transparent to-slate-950/50 pointer-events-none" />
-                      
-                      <div className="absolute top-2 right-4 text-xl">🌅</div>
-                      
-                      <div className="text-slate-800 text-3xl font-bold opacity-30 select-none tracking-tight absolute bottom-8">
-                        ▲▲▲▲▲▲▲▲▲▲▲
-                      </div>
-                      
-                      <div className="relative z-10 flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-3 animate-pulse">
-                          <span className="text-3xl filter drop-shadow">🐎</span>
-                          <span className="text-3xl filter drop-shadow relative animate-bounce" style={{ animationDelay: '0.2s' }}>🛒</span>
-                          <span className="text-xs text-blue-400 font-mono font-black animate-pulse">💨 ROLLING...</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-1">"Clack-clack! Giddyup!"</div>
-                      </div>
-                      
-                      <div className="w-full h-1 border-t-2 border-dashed border-slate-700 mt-2 absolute bottom-6" />
-                    </div>
-
-                    {/* Progress Tracks */}
-                    <div className="bg-slate-950/50 border border-slate-850 p-4 rounded-xl text-left">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-2.5">
-                        Journey Milestones
-                      </h4>
-                      
-                      <div className="flex items-center justify-between gap-1 mt-4 px-2">
-                        <span className="text-[10px] text-slate-400 font-bold truncate max-w-[80px]">Start</span>
-                        <div className="flex-1 flex items-center justify-between relative px-2">
-                          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-800" />
-                          <div 
-                            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-500 transition-all duration-500" 
-                            style={{ width: `${(gameState.caravanTravel.currentStep / gameState.caravanTravel.totalSteps) * 100}%` }}
-                          />
-                          {Array.from({ length: gameState.caravanTravel.totalSteps + 1 }).map((_, i) => {
-                            const isCleared = i <= gameState.caravanTravel.currentStep;
-                            const isCurrent = i === gameState.caravanTravel.currentStep;
-                            return (
-                              <div 
-                                key={i} 
-                                className={`w-3.5 h-3.5 rounded-full border-2 z-10 flex items-center justify-center transition-all duration-300 ${
-                                  isCurrent 
-                                    ? 'bg-blue-500 border-slate-900 scale-125 ring-2 ring-blue-500/40 shadow-blue-500/50 shadow-md' 
-                                    : isCleared 
-                                      ? 'bg-blue-800 border-blue-500' 
-                                      : 'bg-slate-950 border-slate-800'
-                                }`}
-                              >
-                                {isCleared && <span className="text-[6px] text-white">✓</span>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <span className="text-[10px] text-emerald-400 font-bold truncate max-w-[80px] text-right">{gameState.caravanTravel.destName}</span>
-                      </div>
-
-                      <div className="mt-4 flex justify-between items-center text-[11px] font-mono border-t border-slate-850 pt-3">
-                        <span className="text-slate-400">Escort Progress:</span>
-                        <span className="text-slate-100 font-bold">
-                          {gameState.caravanTravel.currentStep} / {gameState.caravanTravel.totalSteps} Regions
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Guard Vital Stats */}
-                    <div className="bg-slate-950/50 border border-slate-850 p-4 rounded-xl text-left">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-2.5">
-                        Guard Vitality
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                          <span className="text-lg">❤️</span>
-                          <div>
-                            <div className="text-[10px] text-slate-400 uppercase">HP</div>
-                            <div className="font-bold font-mono text-rose-400">{gameState.playerStats.hp} / {gameState.playerStats.maxHp}</div>
-                          </div>
-                        </div>
-                        <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                          <span className="text-lg">⚡</span>
-                          <div>
-                            <div className="text-[10px] text-slate-400 uppercase">Exhaustion</div>
-                            <div className="font-bold font-mono text-amber-400">{gameState.playerStats.exhaustion}%</div>
-                          </div>
-                        </div>
-                        <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                          <span className="text-lg">🪙</span>
-                          <div>
-                            <div className="text-[10px] text-slate-400 uppercase">Gold</div>
-                            <div className="font-bold font-mono text-yellow-400">{gameState.playerStats.gold}g</div>
-                          </div>
-                        </div>
-                        <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                          <span className="text-lg">⭐</span>
-                          <div>
-                            <div className="text-[10px] text-slate-400 uppercase">Lvl</div>
-                            <div className="font-bold font-mono text-emerald-400">Level {gameState.playerStats.level}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Right Column: History Narrative Log & Active Encounters */}
-                  <div className="md:col-span-7 flex flex-col gap-4 min-h-0">
-                    
-                    {/* Journey Logs narrative scroll */}
-                    <div className="flex-1 bg-slate-950 border border-slate-850 rounded-xl p-4 flex flex-col min-h-[180px] max-h-[260px] overflow-hidden text-left shadow-inner">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-2 flex items-center gap-1 text-left">
-                        <span>📖</span> JOURNEY CHRONICLE
-                      </h4>
-                      <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 font-mono text-[10.5px] leading-relaxed scroll-smooth text-left">
-                        {gameState.caravanTravel.stepsHistory.map((stepMsg, i) => (
-                          <div 
-                            key={i} 
-                            className={`p-2 rounded-lg text-left ${
-                              stepMsg.includes('🚨') 
-                                ? 'bg-red-950/30 border border-red-500/20 text-red-300' 
-                                : stepMsg.includes('🎲') 
-                                  ? 'bg-amber-950/30 border border-amber-500/20 text-amber-300 font-bold' 
-                                  : stepMsg.includes('🏆') 
-                                    ? 'bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 font-bold' 
-                                    : 'bg-slate-900/40 border border-slate-850 text-slate-300'
-                            }`}
-                          >
-                            {stepMsg}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Active Wilderness Encounter Panel */}
-                    <div className="flex-grow flex flex-col">
-                      {gameState.caravanTravel.currentEncounter ? (
-                        <div className={`p-4 border rounded-xl flex flex-col gap-3 text-left transition-all shadow-lg ${
-                          gameState.caravanTravel.currentEncounter.resolved 
-                            ? 'bg-slate-950/40 border-slate-800' 
-                            : 'bg-red-950/10 border-red-500/30 ring-2 ring-red-500/5'
-                        }`}>
-                          <div className="flex justify-between items-center border-b border-slate-850 pb-1.5 text-left">
-                            <div className="flex items-center gap-1.5 text-left">
-                              <span className="animate-pulse">🚨</span>
-                              <h4 className="text-xs font-black uppercase tracking-wider text-rose-400 text-left">
-                                {gameState.caravanTravel.currentEncounter.title}
-                              </h4>
-                            </div>
-                            {gameState.caravanTravel.currentEncounter.resolved && (
-                              <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-bold text-emerald-400 uppercase tracking-wider">
-                                RESOLVED
-                              </span>
-                            )}
-                          </div>
-
-                          <p className="text-[11px] text-slate-300 leading-relaxed font-sans text-left">
-                            {gameState.caravanTravel.currentEncounter.desc}
-                          </p>
-
-                          {/* Display outcome if resolved, else option buttons */}
-                          {gameState.caravanTravel.currentEncounter.resolved ? (
-                            <div className="mt-2 p-3 bg-slate-950 border border-slate-850 rounded-lg text-[10px] font-mono text-emerald-300 leading-normal text-left">
-                              <div className="font-bold text-slate-400 uppercase mb-1 flex items-center gap-1 text-left">
-                                <span>🎲</span> RESOLVED ENCOUNTER RESULT:
-                              </div>
-                              {gameState.caravanTravel.currentEncounter.resultLog}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col gap-2 mt-2">
-                              {gameState.caravanTravel.currentEncounter.options.map((option, oIdx) => {
-                                const hasGold = option.costGold ? gameState.playerStats.gold >= option.costGold : true;
-                                let hasItems = true;
-                                if (option.costItems) {
-                                  option.costItems.forEach(itemCost => {
-                                    const cnt = gameState.inventoryMaterials[itemCost.id] || 0;
-                                    if (cnt < itemCost.count) hasItems = false;
-                                  });
-                                }
-
-                                const isAffordable = hasGold && hasItems;
-
-                                return (
-                                  <button
-                                    key={oIdx}
-                                    disabled={!isAffordable}
-                                    onClick={() => handleResolveCaravanEncounterOption(option.id)}
-                                    className={`w-full py-2 px-3 text-left text-xs font-bold rounded-lg transition-all border flex flex-col gap-1 ${
-                                      isAffordable 
-                                        ? 'bg-slate-950 hover:bg-slate-850 hover:border-blue-500/50 border-slate-800 text-slate-200 cursor-pointer' 
-                                        : 'bg-slate-950/50 border-slate-900 text-slate-500 opacity-60 cursor-not-allowed'
-                                    }`}
-                                  >
-                                    <span className="font-sans text-left">{option.text}</span>
-                                    {option.statCheck && (
-                                      <span className="text-[9px] font-mono text-blue-400 font-semibold uppercase text-left">
-                                        Your {option.statCheck.toUpperCase()}: {getEffectiveAttribute(gameState, option.statCheck)} (+{Math.floor(((getEffectiveAttribute(gameState, option.statCheck)) - 10) / 2)} modifier)
-                                      </span>
-                                    )}
-                                    {option.costItems && (
-                                      <span className="text-[9px] font-mono text-red-400 font-semibold flex items-center gap-1.5 text-left">
-                                        <span>⚠️ Cost:</span>
-                                        {option.costItems.map((ic, iIdx) => {
-                                          const have = gameState.inventoryMaterials[ic.id] || 0;
-                                          return (
-                                            <span key={iIdx} className={have >= ic.count ? 'text-slate-400' : 'text-red-500 font-bold'}>
-                                              {ic.count}x {ic.label} (You have: {have})
-                                            </span>
-                                          );
-                                        })}
-                                      </span>
-                                    )}
-                                    {option.costGold && (
-                                      <span className={`text-[9px] font-mono font-semibold text-left ${gameState.playerStats.gold >= option.costGold ? 'text-amber-400' : 'text-red-500 font-bold'}`}>
-                                        ⚠️ Cost: {option.costGold} Gold (You have: {gameState.playerStats.gold}g)
-                                      </span>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                        </div>
-                      ) : (
-                        <div className="flex-grow flex flex-col justify-center items-center border border-dashed border-slate-800 rounded-xl p-5 bg-slate-950/20">
-                          <span className="text-3xl animate-pulse">🛣️</span>
-                          <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wide mt-2">Wilderness is Calm</h4>
-                          <p className="text-[10px] text-slate-500 text-center mt-1 max-w-[280px]">
-                            The carriage draft horses trot along a smooth pathway. Ready the next stage of the voyage!
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* Bottom Action bar */}
-                <div className="p-4 bg-slate-950 border-t border-slate-850 flex justify-end items-center gap-3">
-                  {gameState.caravanTravel.currentEncounter && !gameState.caravanTravel.currentEncounter.resolved ? (
-                    <div className="text-[11px] font-bold text-red-400 flex items-center gap-1.5 animate-pulse">
-                      <span>⚠️</span> MUST RESOLVE THE WILDERNESS ENCOUNTER FIRST!
-                    </div>
-                  ) : gameState.caravanTravel.currentEncounter && gameState.caravanTravel.currentEncounter.resolved ? (
-                    <button
-                      onClick={() => setGameState(prev => {
-                        const travel = prev.caravanTravel;
-                        if (!travel) return prev;
-                        return {
-                          ...prev,
-                          caravanTravel: {
-                            ...travel,
-                            currentEncounter: null
-                          }
-                        };
-                      })}
-                      className="px-5 py-2 bg-slate-800 hover:bg-slate-700 hover:scale-[1.01] border border-slate-700 text-slate-200 font-bold text-xs rounded-xl transition-all shadow cursor-pointer text-center"
-                    >
-                      Clear Path & Roll Onward ➔
-                    </button>
-                  ) : gameState.caravanTravel.currentStep < gameState.caravanTravel.totalSteps ? (
-                    <button
-                      onClick={handleAdvanceCaravanTravel}
-                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 hover:scale-[1.01] text-slate-50 font-black text-xs rounded-xl transition-all shadow-lg flex items-center gap-1.5 cursor-pointer ring-2 ring-blue-500/20 text-center"
-                    >
-                      <span>Proceed Onward (Step {gameState.caravanTravel.currentStep + 1} of {gameState.caravanTravel.totalSteps}) ➔</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleCompleteCaravanTravel}
-                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] text-slate-50 font-black text-xs rounded-xl transition-all shadow-lg flex items-center gap-1.5 cursor-pointer ring-2 ring-emerald-500/20 animate-pulse text-center"
-                    >
-                      <span>🎉 Arrive in {gameState.caravanTravel.destName} & Collect Reward! ➔</span>
-                    </button>
-                  )}
-                </div>
-
-              </div>
-            </div>
-          )}
-        </>
+        <ModalRouter
+          isHelpOpen={isHelpOpen}
+          setIsHelpOpen={setIsHelpOpen}
+          isGodPanelOpen={isGodPanelOpen}
+          setIsGodPanelOpen={setIsGodPanelOpen}
+          isGmPanelOpen={isGmPanelOpen}
+          setIsGmPanelOpen={setIsGmPanelOpen}
+          isSleepOpen={isSleepOpen}
+          setIsSleepOpen={setIsSleepOpen}
+          isBestiaryOpen={isBestiaryOpen}
+          setIsBestiaryOpen={setIsBestiaryOpen}
+          isFishingOpen={isFishingOpen}
+          setIsFishingOpen={setIsFishingOpen}
+          isLockpickingOpen={isLockpickingOpen}
+          setIsLockpickingOpen={setIsLockpickingOpen}
+          activeLockpickingChestIndex={activeLockpickingChestIndex}
+          setActiveLockpickingChestIndex={setActiveLockpickingChestIndex}
+          activePoi={activePoi}
+          setActivePoi={setActivePoi}
+          activeDrunkNpc={activeDrunkNpc}
+          setActiveDrunkNpc={setActiveDrunkNpc}
+          activeTravelerNpc={activeTravelerNpc}
+          setActiveTravelerNpc={setActiveTravelerNpc}
+          activeDialogueNpc={activeDialogueNpc}
+          setActiveDialogueNpc={setActiveDialogueNpc}
+          onOpenNpcTrade={handleOpenNpcTrade}
+          unlawfulGuardTarget={unlawfulGuardTarget}
+          setUnlawfulGuardTarget={setUnlawfulGuardTarget}
+          activeRelicDraft={activeRelicDraft}
+          setActiveRelicDraft={setActiveRelicDraft}
+          activeRecallScroll={activeRecallScroll}
+          setActiveRecallScroll={setActiveRecallScroll}
+          isAutoplayActive={isAutoplayActive}
+          setIsAutoplayActive={setIsAutoplayActive}
+          gameState={gameState}
+          setGameState={setGameState}
+          addLogMessage={addLogMessage}
+          handleRegenerateCurrentLocation={handleRegenerateCurrentLocation}
+          handleConfirmSleep={handleConfirmSleep}
+          handleCatchFish={handleCatchFish}
+          handleFailFish={handleFailFish}
+          handleOpenChest={handleOpenChest}
+          handleConsumeLockpick={handleConsumeLockpick}
+          handlePoiChoiceSelected={handlePoiChoiceSelected}
+          handleDrunkNpcEffects={handleDrunkNpcEffects}
+          handleTravelerTrade={handleTravelerTrade}
+          handleTravelerAttack={handleTravelerAttack}
+          handleAcceptQuest={handleAcceptQuest}
+          handleTurnInQuest={handleTurnInQuest}
+          handleConfirmUnlawfulAttack={handleConfirmUnlawfulAttack}
+          handleRecallTeleport={handleRecallTeleport}
+          handleResolveCaravanEncounterOption={handleResolveCaravanEncounterOption}
+          handleAdvanceCaravanTravel={handleAdvanceCaravanTravel}
+          handleCompleteCaravanTravel={handleCompleteCaravanTravel}
+        />
       )}
     >
 
@@ -9409,100 +7728,14 @@ export default function App() {
           <div className={`${activeMobileView ? 'col-span-12' : 'lg:col-span-9 col-span-12'} flex flex-col gap-4 overflow-hidden order-1 lg:order-none`}>
             
             {/* Nav tabs controls */}
-            <div className="relative w-full flex items-center">
-              <button 
-                onClick={() => scrollTabBar('left')}
-                className="absolute left-1.5 z-10 bg-slate-950/95 hover:bg-slate-900 text-amber-500 hover:text-amber-400 border border-slate-800/80 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold cursor-pointer transition-all shadow-lg active:scale-95"
-                title="Scroll Tabs Left"
-              >
-                ◀
-              </button>
-
-              <div ref={tabBarRef} className="bg-slate-900 border border-slate-800 rounded-xl p-1 flex gap-1.5 w-full select-none shadow overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-950/40 px-8">
-                <button
-                  id="tab-btn-dungeon"
-                  onClick={() => { playSound('click'); setActiveTab('dungeon'); }}
-                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                    activeTab === 'dungeon'
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                      : 'text-slate-400 hover:text-slate-100'
-                  }`}
-                >
-                  <Swords className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>{activeMobileView ? 'Expedition' : 'DUNGEON EXPEDITION'}</span>
-                </button>
-              <button
-                id="tab-btn-forge"
-                onClick={() => { playSound('click'); setActiveTab('forge'); }}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                  activeTab === 'forge'
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow animate-pulse'
-                    : 'text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
-                <span>{activeMobileView ? 'Forge' : 'ARCANUM BLACKSMITH'}</span>
-              </button>
-              <button
-                id="tab-btn-bestiary"
-                onClick={() => { playSound('click'); setActiveTab('bestiary'); }}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                  activeTab === 'bestiary'
-                    ? 'bg-rose-950 text-rose-400 font-bold border border-rose-500/30 shadow'
-                    : 'text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                <Skull className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-500 animate-pulse" />
-                <span>{activeMobileView ? 'Bestiary' : 'WILDERNESS BESTIARY'}</span>
-              </button>
-              <button
-                id="tab-btn-inventory"
-                onClick={() => { playSound('click'); setActiveTab('inventory'); }}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                  activeTab === 'inventory'
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                    : 'text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
-                <span>{activeMobileView ? 'Hero & Party' : 'HERO PROFILE, PARTY & BACKPACK'}</span>
-              </button>
-              <button
-                id="tab-btn-guild"
-                onClick={() => { playSound('click'); setActiveTab('guild'); }}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                  activeTab === 'guild'
-                    ? 'bg-purple-600 text-white font-bold shadow-lg border border-purple-500'
-                    : 'text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                <span className="text-xs">🏰</span>
-                <span>{activeMobileView ? 'Guild' : 'GUILD & FACTIONS'}</span>
-              </button>
-              {gameState.activeTradeNpcId && (
-                <button
-                  id="tab-btn-market"
-                  onClick={() => { playSound('click'); setActiveTab('market'); }}
-                  className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-amber-500/30 shrink-0 ${
-                    activeTab === 'market'
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow animate-bounce'
-                      : 'text-amber-400 hover:text-amber-100 bg-amber-500/10'
-                  }`}
-                >
-                  <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>{activeMobileView ? 'Trade' : `TRADE BOOTH (${gameState.npcs?.find(n => n.id === gameState.activeTradeNpcId)?.name || 'Merchant'})`}</span>
-                </button>
-              )}
-            </div>
-
-            <button 
-              onClick={() => scrollTabBar('right')}
-              className="absolute right-1.5 z-10 bg-slate-950/95 hover:bg-slate-900 text-amber-500 hover:text-amber-400 border border-slate-800/80 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold cursor-pointer transition-all shadow-lg active:scale-95"
-              title="Scroll Tabs Right"
-            >
-              ▶
-            </button>
-          </div>
+            <AppNavigationTabs
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              activeMobileView={activeMobileView}
+              gameState={gameState}
+              playSound={playSound}
+              scrollTabBar={scrollTabBar}
+            />
 
             {/* Render Tab Viewports */}
             <div className="flex-1 min-h-0 flex flex-col gap-4">
@@ -10037,7 +8270,8 @@ export default function App() {
                     ].some(d => {
                       const nx = gameState.playerX + d.dx;
                       const ny = gameState.playerY + d.dy;
-                      return nx >= 0 && nx < LEVEL_WIDTH && ny >= 0 && ny < LEVEL_HEIGHT && gameState.map[ny]?.[nx] === TileType.Anvil;
+                      const tileAt = gameState.map[ny]?.[nx];
+                      return nx >= 0 && nx < LEVEL_WIDTH && ny >= 0 && ny < LEVEL_HEIGHT && (tileAt === TileType.Anvil || tileAt === TileType.Fireplace);
                     });
                     return (
                       <CraftingPanel
@@ -10158,6 +8392,17 @@ export default function App() {
                   playSound={playSound}
                 />
               )}
+
+              {activeTab === 'chronicles' && (
+                <div className="flex-1 flex flex-col min-h-0">
+                  <HistoryBookOverlay
+                    unlockedChapters={gameState.unlockedChapters || []}
+                    poisCount={gameState.poisCount || 0}
+                    onClose={() => setActiveTab('dungeon')}
+                    inline={true}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Bottom Log Area (Hidden on Dungeon tab in desktop view since we render it side-by-side) */}
@@ -10178,8 +8423,6 @@ export default function App() {
         setIsGmPanelOpen={setIsGmPanelOpen}
         isSleepOpen={isSleepOpen}
         setIsSleepOpen={setIsSleepOpen}
-        isHistoryBookOpen={isHistoryBookOpen}
-        setIsHistoryBookOpen={setIsHistoryBookOpen}
         isBestiaryOpen={isBestiaryOpen}
         setIsBestiaryOpen={setIsBestiaryOpen}
         isFishingOpen={isFishingOpen}
@@ -10194,6 +8437,9 @@ export default function App() {
         setActiveDrunkNpc={setActiveDrunkNpc}
         activeTravelerNpc={activeTravelerNpc}
         setActiveTravelerNpc={setActiveTravelerNpc}
+        activeDialogueNpc={activeDialogueNpc}
+        setActiveDialogueNpc={setActiveDialogueNpc}
+        onOpenNpcTrade={handleOpenNpcTrade}
         unlawfulGuardTarget={unlawfulGuardTarget}
         setUnlawfulGuardTarget={setUnlawfulGuardTarget}
         activeRelicDraft={activeRelicDraft}
@@ -10232,315 +8478,19 @@ export default function App() {
       )}
 
       {/* Caravan Travel & Escort Active Journey Overlay */}
-      {gameState.caravanTravel?.active && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 sm:p-6 overflow-y-auto font-sans text-slate-100">
-          <div className="relative w-full max-w-4xl bg-slate-900 border-2 border-blue-500/30 rounded-2xl shadow-2xl flex flex-col min-h-[550px] max-h-[90vh] overflow-hidden">
-            
-            {/* Header Banner */}
-            <div className={`p-4 ${gameState.caravanTravel.currentEncounter && !gameState.caravanTravel.currentEncounter.resolved ? 'bg-red-950/40 border-b border-red-500/20' : 'bg-blue-950/40 border-b border-blue-500/20'} flex justify-between items-center transition-colors duration-300`}>
-              <div className="flex items-center gap-3">
-                <span className="text-3xl animate-bounce">🛡️</span>
-                <div className="text-left">
-                  <h2 className="text-[10px] font-black uppercase tracking-widest text-blue-400">ACTIVE OVERWORLD ESCORT MISSION</h2>
-                  <div className="text-sm font-black text-slate-100 flex items-center gap-1.5 mt-0.5">
-                    <span>Region Chunk ({gameState.caravanTravel.originX}, {gameState.caravanTravel.originY})</span>
-                    <span className="text-blue-500">➔</span>
-                    <span className="text-emerald-400 font-bold">{gameState.caravanTravel.destName}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="px-3 py-1 bg-blue-950/80 border border-blue-800 rounded-lg text-xs font-mono font-bold text-blue-300">
-                💰 Payout: {gameState.caravanTravel.rewardGold}g
-              </div>
-            </div>
+      <CaravanEscortModal
+        gameState={gameState}
+        setGameState={setGameState}
+        handleResolveCaravanEncounterOption={handleResolveCaravanEncounterOption}
+        handleAdvanceCaravanTravel={handleAdvanceCaravanTravel}
+        handleCompleteCaravanTravel={handleCompleteCaravanTravel}
+      />
 
-            {/* Main Content Splitted Grid */}
-            <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-12 gap-5 min-h-0">
-              
-              {/* Left Column: Visual Map / Progress / Player Stats */}
-              <div className="md:col-span-5 flex flex-col gap-4">
-                
-                {/* Parallax Traveling Wagon Carriage Animation */}
-                <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl flex flex-col items-center justify-center min-h-[140px] relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-blue-950/10 via-transparent to-slate-950/50 pointer-events-none" />
-                  
-                  <div className="absolute top-2 right-4 text-xl">🌅</div>
-                  
-                  <div className="text-slate-800 text-3xl font-bold opacity-30 select-none tracking-tight absolute bottom-8">
-                    ▲▲▲▲▲▲▲▲▲▲▲
-                  </div>
-                  
-                  <div className="relative z-10 flex flex-col items-center gap-2">
-                    <div className="flex items-center gap-3 animate-pulse">
-                      <span className="text-3xl filter drop-shadow">🐎</span>
-                      <span className="text-3xl filter drop-shadow relative animate-bounce" style={{ animationDelay: '0.2s' }}>🛒</span>
-                      <span className="text-xs text-blue-400 font-mono font-black animate-pulse">💨 ROLLING...</span>
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-1">"Clack-clack! Giddyup!"</div>
-                  </div>
-                  
-                  <div className="w-full h-1 border-t-2 border-dashed border-slate-700 mt-2 absolute bottom-6" />
-                </div>
-
-                {/* Progress Tracks */}
-                <div className="bg-slate-950/50 border border-slate-850 p-4 rounded-xl text-left">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-2.5">
-                    Journey Milestones
-                  </h4>
-                  
-                  <div className="flex items-center justify-between gap-1 mt-4 px-2">
-                    <span className="text-[10px] text-slate-400 font-bold truncate max-w-[80px]">Start</span>
-                    <div className="flex-1 flex items-center justify-between relative px-2">
-                      <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-800" />
-                      <div 
-                        className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-500 transition-all duration-500" 
-                        style={{ width: `${(gameState.caravanTravel.currentStep / gameState.caravanTravel.totalSteps) * 100}%` }}
-                      />
-                      {Array.from({ length: gameState.caravanTravel.totalSteps + 1 }).map((_, i) => {
-                        const isCleared = i <= gameState.caravanTravel.currentStep;
-                        const isCurrent = i === gameState.caravanTravel.currentStep;
-                        return (
-                          <div 
-                            key={i} 
-                            className={`w-3.5 h-3.5 rounded-full border-2 z-10 flex items-center justify-center transition-all duration-300 ${
-                              isCurrent 
-                                ? 'bg-blue-500 border-slate-900 scale-125 ring-2 ring-blue-500/40 shadow-blue-500/50 shadow-md' 
-                                : isCleared 
-                                  ? 'bg-blue-800 border-blue-500' 
-                                  : 'bg-slate-950 border-slate-800'
-                            }`}
-                          >
-                            {isCleared && <span className="text-[6px] text-white">✓</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-bold truncate max-w-[80px] text-right">{gameState.caravanTravel.destName}</span>
-                  </div>
-
-                  <div className="mt-4 flex justify-between items-center text-[11px] font-mono border-t border-slate-850 pt-3">
-                    <span className="text-slate-400">Escort Progress:</span>
-                    <span className="text-slate-100 font-bold">
-                      {gameState.caravanTravel.currentStep} / {gameState.caravanTravel.totalSteps} Regions
-                    </span>
-                  </div>
-                </div>
-
-                {/* Guard Vital Stats */}
-                <div className="bg-slate-950/50 border border-slate-850 p-4 rounded-xl text-left">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-2.5">
-                    Guard Vitality
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                      <span className="text-lg">❤️</span>
-                      <div>
-                        <div className="text-[10px] text-slate-400 uppercase">HP</div>
-                        <div className="font-bold font-mono text-rose-400">{gameState.playerStats.hp} / {gameState.playerStats.maxHp}</div>
-                      </div>
-                    </div>
-                    <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                      <span className="text-lg">⚡</span>
-                      <div>
-                        <div className="text-[10px] text-slate-400 uppercase">Exhaustion</div>
-                        <div className="font-bold font-mono text-amber-400">{gameState.playerStats.exhaustion}%</div>
-                      </div>
-                    </div>
-                    <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                      <span className="text-lg">🪙</span>
-                      <div>
-                        <div className="text-[10px] text-slate-400 uppercase">Gold</div>
-                        <div className="font-bold font-mono text-yellow-400">{gameState.playerStats.gold}g</div>
-                      </div>
-                    </div>
-                    <div className="bg-slate-950/80 p-2.5 border border-slate-850 rounded-lg flex items-center gap-2 text-left">
-                      <span className="text-lg">⭐</span>
-                      <div>
-                        <div className="text-[10px] text-slate-400 uppercase">Lvl</div>
-                        <div className="font-bold font-mono text-emerald-400">Level {gameState.playerStats.level}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Right Column: History Narrative Log & Active Encounters */}
-              <div className="md:col-span-7 flex flex-col gap-4 min-h-0">
-                
-                {/* Journey Logs narrative scroll */}
-                <div className="flex-1 bg-slate-950 border border-slate-850 rounded-xl p-4 flex flex-col min-h-[180px] max-h-[260px] overflow-hidden text-left shadow-inner">
-                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-2 flex items-center gap-1 text-left">
-                    <span>📖</span> JOURNEY CHRONICLE
-                  </h4>
-                  <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 font-mono text-[10.5px] leading-relaxed scroll-smooth text-left">
-                    {gameState.caravanTravel.stepsHistory.map((stepMsg, i) => (
-                      <div 
-                        key={i} 
-                        className={`p-2 rounded-lg text-left ${
-                          stepMsg.includes('🚨') 
-                            ? 'bg-red-950/30 border border-red-500/20 text-red-300' 
-                            : stepMsg.includes('🎲') 
-                              ? 'bg-amber-950/30 border border-amber-500/20 text-amber-300 font-bold' 
-                              : stepMsg.includes('🏆') 
-                                ? 'bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 font-bold' 
-                                : 'bg-slate-900/40 border border-slate-850 text-slate-300'
-                        }`}
-                      >
-                        {stepMsg}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Active Wilderness Encounter Panel */}
-                <div className="flex-grow flex flex-col">
-                  {gameState.caravanTravel.currentEncounter ? (
-                    <div className={`p-4 border rounded-xl flex flex-col gap-3 text-left transition-all shadow-lg ${
-                      gameState.caravanTravel.currentEncounter.resolved 
-                        ? 'bg-slate-950/40 border-slate-800' 
-                        : 'bg-red-950/10 border-red-500/30 ring-2 ring-red-500/5'
-                    }`}>
-                      <div className="flex justify-between items-center border-b border-slate-850 pb-1.5 text-left">
-                        <div className="flex items-center gap-1.5 text-left">
-                          <span className="animate-pulse">🚨</span>
-                          <h4 className="text-xs font-black uppercase tracking-wider text-rose-400 text-left">
-                            {gameState.caravanTravel.currentEncounter.title}
-                          </h4>
-                        </div>
-                        {gameState.caravanTravel.currentEncounter.resolved && (
-                          <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-bold text-emerald-400 uppercase tracking-wider">
-                            RESOLVED
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-[11px] text-slate-300 leading-relaxed font-sans text-left">
-                        {gameState.caravanTravel.currentEncounter.desc}
-                      </p>
-
-                      {/* Display outcome if resolved, else option buttons */}
-                      {gameState.caravanTravel.currentEncounter.resolved ? (
-                        <div className="mt-2 p-3 bg-slate-950 border border-slate-850 rounded-lg text-[10px] font-mono text-emerald-300 leading-normal text-left">
-                          <div className="font-bold text-slate-400 uppercase mb-1 flex items-center gap-1 text-left">
-                            <span>🎲</span> RESOLVED ENCOUNTER RESULT:
-                          </div>
-                          {gameState.caravanTravel.currentEncounter.resultLog}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2 mt-2">
-                          {gameState.caravanTravel.currentEncounter.options.map((option, oIdx) => {
-                            const hasGold = option.costGold ? gameState.playerStats.gold >= option.costGold : true;
-                            let hasItems = true;
-                            if (option.costItems) {
-                              option.costItems.forEach(itemCost => {
-                                const cnt = gameState.inventoryMaterials[itemCost.id] || 0;
-                                if (cnt < itemCost.count) hasItems = false;
-                              });
-                            }
-
-                            const isAffordable = hasGold && hasItems;
-
-                            return (
-                              <button
-                                key={oIdx}
-                                disabled={!isAffordable}
-                                onClick={() => handleResolveCaravanEncounterOption(option.id)}
-                                className={`w-full py-2 px-3 text-left text-xs font-bold rounded-lg transition-all border flex flex-col gap-1 ${
-                                  isAffordable 
-                                    ? 'bg-slate-950 hover:bg-slate-850 hover:border-blue-500/50 border-slate-800 text-slate-200 cursor-pointer' 
-                                    : 'bg-slate-950/50 border-slate-900 text-slate-500 opacity-60 cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="font-sans text-left">{option.text}</span>
-                                {option.statCheck && (
-                                  <span className="text-[9px] font-mono text-blue-400 font-semibold uppercase text-left">
-                                    Your {option.statCheck.toUpperCase()}: {getEffectiveAttribute(gameState, option.statCheck)} (+{Math.floor(((getEffectiveAttribute(gameState, option.statCheck)) - 10) / 2)} modifier)
-                                  </span>
-                                )}
-                                {option.costItems && (
-                                  <span className="text-[9px] font-mono text-red-400 font-semibold flex items-center gap-1.5 text-left">
-                                    <span>⚠️ Cost:</span>
-                                    {option.costItems.map((ic, iIdx) => {
-                                      const have = gameState.inventoryMaterials[ic.id] || 0;
-                                      return (
-                                        <span key={iIdx} className={have >= ic.count ? 'text-slate-400' : 'text-red-500 font-bold'}>
-                                          {ic.count}x {ic.label} (You have: {have})
-                                        </span>
-                                      );
-                                    })}
-                                  </span>
-                                )}
-                                {option.costGold && (
-                                  <span className={`text-[9px] font-mono font-semibold text-left ${gameState.playerStats.gold >= option.costGold ? 'text-amber-400' : 'text-red-500 font-bold'}`}>
-                                    ⚠️ Cost: {option.costGold} Gold (You have: {gameState.playerStats.gold}g)
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                    </div>
-                  ) : (
-                    <div className="flex-grow flex flex-col justify-center items-center border border-dashed border-slate-800 rounded-xl p-5 bg-slate-950/20">
-                      <span className="text-3xl animate-pulse">🛣️</span>
-                      <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wide mt-2">Wilderness is Calm</h4>
-                      <p className="text-[10px] text-slate-500 text-center mt-1 max-w-[280px]">
-                        The carriage draft horses trot along a smooth pathway. Ready the next stage of the voyage!
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Bottom Action bar */}
-            <div className="p-4 bg-slate-950 border-t border-slate-850 flex justify-end items-center gap-3">
-              {gameState.caravanTravel.currentEncounter && !gameState.caravanTravel.currentEncounter.resolved ? (
-                <div className="text-[11px] font-bold text-red-400 flex items-center gap-1.5 animate-pulse">
-                  <span>⚠️</span> MUST RESOLVE THE WILDERNESS ENCOUNTER FIRST!
-                </div>
-              ) : gameState.caravanTravel.currentEncounter && gameState.caravanTravel.currentEncounter.resolved ? (
-                <button
-                  onClick={() => setGameState(prev => {
-                    const travel = prev.caravanTravel;
-                    if (!travel) return prev;
-                    return {
-                      ...prev,
-                      caravanTravel: {
-                        ...travel,
-                        currentEncounter: null
-                      }
-                    };
-                  })}
-                  className="px-5 py-2 bg-slate-800 hover:bg-slate-700 hover:scale-[1.01] border border-slate-700 text-slate-200 font-bold text-xs rounded-xl transition-all shadow cursor-pointer text-center"
-                >
-                  Clear Path & Roll Onward ➔
-                </button>
-              ) : gameState.caravanTravel.currentStep < gameState.caravanTravel.totalSteps ? (
-                <button
-                  onClick={handleAdvanceCaravanTravel}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 hover:scale-[1.01] text-slate-50 font-black text-xs rounded-xl transition-all shadow-lg flex items-center gap-1.5 cursor-pointer ring-2 ring-blue-500/20 text-center"
-                >
-                  <span>Proceed Onward (Step {gameState.caravanTravel.currentStep + 1} of {gameState.caravanTravel.totalSteps}) ➔</span>
-                </button>
-              ) : (
-                <button
-                  onClick={handleCompleteCaravanTravel}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] text-slate-50 font-black text-xs rounded-xl transition-all shadow-lg flex items-center gap-1.5 cursor-pointer ring-2 ring-emerald-500/20 animate-pulse text-center"
-                >
-                  <span>🎉 Arrive in {gameState.caravanTravel.destName} & Collect Reward! ➔</span>
-                </button>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
+      {/* Procedural Audio & Soundscape Controls Modal */}
+      <AudioSettingsModal
+        isOpen={isAudioSettingsOpen}
+        onClose={() => setIsAudioSettingsOpen(false)}
+      />
     </MainAppLayout>
   );
 }

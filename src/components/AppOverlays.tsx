@@ -4,17 +4,18 @@ import HelpOverlay from './HelpOverlay';
 import GodPanelOverlay from './GodPanelOverlay';
 import GmPanelOverlay from './GmPanelOverlay';
 import SleepOverlay from './SleepOverlay';
-import HistoryBookOverlay from './HistoryBookOverlay';
 import BestiaryOverlay from './BestiaryOverlay';
 import FishingMiniGame from './FishingMiniGame';
 import LockpickingMiniGame from './LockpickingMiniGame';
 import PoiInteractionOverlay, { PoiType } from './PoiInteractionOverlay';
 import DrunkInteractionOverlay from './DrunkInteractionOverlay';
 import TravelerInteractionOverlay from './TravelerInteractionOverlay';
+import DialogueModal from './modals/DialogueModal';
 import SanctumRelicsDraftOverlay from './SanctumRelicsDraftOverlay';
 import RecallScrollOverlay from './RecallScrollOverlay';
 import FollowerInspectOverlay from './FollowerInspectOverlay';
 import QuestBoardOverlay from './QuestBoardOverlay';
+import UnlawfulAssaultModal from './modals/UnlawfulAssaultModal';
 import { SanctumRelic } from '../utils/relics';
 
 export interface AppOverlaysProps {
@@ -30,9 +31,6 @@ export interface AppOverlaysProps {
 
   isSleepOpen: boolean;
   setIsSleepOpen: (val: boolean) => void;
-
-  isHistoryBookOpen: boolean;
-  setIsHistoryBookOpen: (val: boolean) => void;
 
   isBestiaryOpen: boolean;
   setIsBestiaryOpen: (val: boolean) => void;
@@ -54,6 +52,10 @@ export interface AppOverlaysProps {
 
   activeTravelerNpc: NPC | null;
   setActiveTravelerNpc: (val: NPC | null) => void;
+
+  activeDialogueNpc?: NPC | null;
+  setActiveDialogueNpc?: (val: NPC | null) => void;
+  onOpenNpcTrade?: (npcId: string) => void;
 
   unlawfulGuardTarget: { enemy: Enemy; index: number; pathPoints: any[] } | null;
   setUnlawfulGuardTarget: (val: { enemy: Enemy; index: number; pathPoints: any[] } | null) => void;
@@ -97,8 +99,6 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
   setIsGmPanelOpen,
   isSleepOpen,
   setIsSleepOpen,
-  isHistoryBookOpen,
-  setIsHistoryBookOpen,
   isBestiaryOpen,
   setIsBestiaryOpen,
   isFishingOpen,
@@ -113,6 +113,9 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
   setActiveDrunkNpc,
   activeTravelerNpc,
   setActiveTravelerNpc,
+  activeDialogueNpc,
+  setActiveDialogueNpc,
+  onOpenNpcTrade,
   unlawfulGuardTarget,
   setUnlawfulGuardTarget,
   activeRelicDraft,
@@ -203,14 +206,6 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
           currentGameTime={gameState.gameTime}
           onClose={() => setIsSleepOpen(false)}
           onConfirmSleep={handleConfirmSleep}
-        />
-      )}
-
-      {isHistoryBookOpen && (
-        <HistoryBookOverlay
-          unlockedChapters={gameState.unlockedChapters || []}
-          poisCount={0}
-          onClose={() => setIsHistoryBookOpen(false)}
         />
       )}
 
@@ -323,40 +318,49 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
         />
       )}
 
-      {unlawfulGuardTarget && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 select-none animate-fade-in">
-          <div className="bg-slate-900 border border-rose-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 text-center animate-scale-up">
-            <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center mx-auto text-3xl">
-              ⚖️
-            </div>
-            <div>
-              <h3 className="text-base font-extrabold uppercase tracking-wide text-rose-500 font-sans">
-                Unlawful Offense Warned
-              </h3>
-              <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                You are about to assault <span className="font-bold text-slate-100">{unlawfulGuardTarget.enemy.name}</span>, a peacekeeper of the crown!
-              </p>
-              <p className="text-[11px] text-slate-400 mt-2 bg-slate-950/40 p-2.5 rounded border border-slate-800">
-                ⚠️ <span className="font-bold text-rose-400">CRITICAL CONSEQUENCE:</span> Attacking a town guard will make <strong className="text-slate-100">ALL TOWN GUARDS hostile</strong> to you and your companions permanently!
-              </p>
-            </div>
-            <div className="flex gap-3 justify-center mt-2">
-              <button
-                onClick={() => setUnlawfulGuardTarget(null)}
-                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-lg transition-colors cursor-pointer border border-slate-700"
-              >
-                Withdraw Assault
-              </button>
-              <button
-                onClick={handleConfirmUnlawfulAttack}
-                className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-lg shadow-rose-950/50"
-              >
-                Attack Anyway
-              </button>
-            </div>
-          </div>
-        </div>
+      {activeDialogueNpc && (
+        <DialogueModal
+          npc={activeDialogueNpc}
+          playerStats={gameState.playerStats}
+          townReputation={gameState.townReputation ?? 100}
+          quests={gameState.quests}
+          inventoryMaterials={gameState.inventoryMaterials}
+          weather={gameState.weather}
+          gameTime={gameState.gameTime}
+          biome={gameState.biome}
+          season={gameState.season}
+          onClose={() => setActiveDialogueNpc?.(null)}
+          onBuyTavernDrink={() => {
+            if (setGameState && addLogMessage) {
+              setGameState((prev) => {
+                if (prev.playerStats.gold < 5) return prev;
+                return {
+                  ...prev,
+                  playerStats: {
+                    ...prev.playerStats,
+                    gold: prev.playerStats.gold - 5,
+                    hp: Math.min(prev.playerStats.maxHp, prev.playerStats.hp + 15),
+                    mp: Math.min(prev.playerStats.maxMp, prev.playerStats.mp + 15),
+                  }
+                };
+              });
+              addLogMessage(`🍻 Shared a tavern toast! Restored +15 HP & +15 MP (-5 Gold)`, 'loot');
+            }
+          }}
+          onOpenTrade={() => {
+            if (onOpenNpcTrade && activeDialogueNpc) {
+              onOpenNpcTrade(activeDialogueNpc.id);
+            }
+          }}
+          addLogMessage={addLogMessage}
+        />
       )}
+
+      <UnlawfulAssaultModal
+        unlawfulGuardTarget={unlawfulGuardTarget}
+        onCancel={() => setUnlawfulGuardTarget(null)}
+        onConfirm={handleConfirmUnlawfulAttack}
+      />
 
       {activeRelicDraft && (
         <SanctumRelicsDraftOverlay

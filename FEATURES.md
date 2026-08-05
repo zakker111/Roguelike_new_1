@@ -918,6 +918,29 @@ Centralized game balance formulas, settlement economy matrices, and NPC dialogue
 - **Equipment Management Hook (`useEquipmentHandlers.ts`)**: Decoupled equipment slot assignment, paperdoll updates, stat recalculations, and durability decay tracking into a dedicated custom hook.
 - **Equipment Crash Null-Safety Guard**: Fixed runtime `TypeError: Cannot read properties of undefined (reading 'name')` crashes when equipping weapons or armor missing explicit `materialUsed` or `catalystUsed` objects by automatically injecting safe default fallback objects (`Forged Alloy` material and `Physical` catalyst) during item equipping and UI rendering.
 
+---
+
+## 48. Phase 21 WebAudio Spatial Sound Engine & Accent Ambiance (v4.3.5)
+
+Implemented a pure procedural WebAudio synthesis engine (`src/utils/audio.ts`) with zero external audio dependencies:
+
+- **Spatial Distance Attenuation & Stereo Panning**: Positional sound effects automatically calculate relative distance and panning relative to the player's tile coordinates ($x, y, \text{playerX}, \text{playerY}$), dropping off with quadratic falloff $(1 - \text{dist}/\text{maxDist})^{1.5}$ and filtering frequencies at distance.
+- **Dynamic Accent Soundscapes**: Procedurally generates complex biome soundscapes including rain noise, blizzard howl, sandstorms, dungeon low-frequency sub-drones, and periodic biome accents (`owl_hoot`, `cricket_chirp`, `frog_croak`, `cave_echo`, `lute_pluck`, `ocean_wave`, `fire_crackle`, `water_drip`).
+- **HUD Quick Mute & Preferences Persistence**: Features a 1-click **`🔊 Mute` / `🔇 Muted`** toggle in the main HUD header bar and saves user volume choices in `localStorage` (`cosmic_abyss_audio_settings_v1`).
+- **Full Developer Guide**: Complete sound graph specs, node routing, and custom sound creation guide available in [`AUDIO.md`](/AUDIO.md).
+
+---
+
+## 49. Realistic Indoor Building Acoustic Soundscape & Acoustic Attenuation (v4.3.6)
+
+Implemented realistic building interior acoustic detection, lowpass atmospheric wind muffling inside buildings, door opening/closing creaks and latches, indoor timber and clock accents, and surface-aware footstep audio:
+
+- **Building Interior Acoustic Detection (`src/utils/buildingAudio.ts`)**: Automatically identifies when the player is inside houses, taverns, shops, keeps, watchtowers, 2nd floors, or subterranean levels.
+- **Lowpass Atmospheric Wind Muffling**: Dynamically adjusts ambient audio lowpass filters (~650 Hz cutoff frequency when indoors) so outdoor rain, blizzards, wind, and storm soundscapes are muffled realistically behind wooden walls and stone roofs.
+- **Indoor Building Accent Soundscapes**: Triggers indoor atmospheric background soundscapes (`fire_crackle`, `wood_creak`, `lute_pluck`, `clock_tick`) at soft gain levels (`0.06`–`0.09`) inside buildings.
+- **Surface-Aware Footsteps & Door SFX**: Synthesizes procedural `door_open` creaks, `door_close` thuds, `wood_footstep` (warm plank step), `stone_footstep` (crisp tile step), and `grass_step` (outdoor rustle), dynamically switching sound effects as the player steps across different floor materials or threshold doors.
+- **Acoustic Wall Occlusion**: Filters positional sound effects heard through building walls, low-pass filtering higher frequencies to simulate sound passing through solid barriers.
+
 
 
 

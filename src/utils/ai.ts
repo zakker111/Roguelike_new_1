@@ -67,15 +67,20 @@ function getBoxHash(px: number, py: number, map: TileType[][], radius: number): 
   const minY = Math.max(0, py - radius);
   const maxY = Math.min(height - 1, py + radius);
 
-  let hash = `${px},${py},${radius}:${width}x${height}:`;
+  let h = 2166136261;
+  h = Math.imul(h ^ px, 16777619);
+  h = Math.imul(h ^ py, 16777619);
+  h = Math.imul(h ^ radius, 16777619);
+
   for (let y = minY; y <= maxY; y++) {
     const row = map[y];
     if (!row) continue;
     for (let x = minX; x <= maxX; x++) {
-      hash += row[x] || '0';
+      const charCode = (row[x] || '0').charCodeAt(0);
+      h = Math.imul(h ^ charCode, 16777619);
     }
   }
-  return hash;
+  return `${px},${py},${radius}:${h >>> 0}`;
 }
 
 export function computeFOV(
@@ -187,13 +192,20 @@ export function getNextStepTowards(
     return null;
   }
 
+  // Pre-build O(1) occupied lookup Set
+  const occupiedSet = new Set<number>();
+  if (otherEnemies && otherEnemies.length > 0) {
+    for (let i = 0; i < otherEnemies.length; i++) {
+      const e = otherEnemies[i];
+      if (e) occupiedSet.add(e.y * width + e.x);
+    }
+  }
+
   const queue: { x: number; y: number; firstStep: { x: number; y: number } | null }[] = [];
-  const visited = Array(height)
-    .fill(null)
-    .map(() => Array(width).fill(false));
+  const visited = new Uint8Array(width * height);
 
   queue.push({ x: clampedStartX, y: clampedStartY, firstStep: null });
-  visited[clampedStartY][clampedStartX] = true;
+  visited[clampedStartY * width + clampedStartX] = 1;
 
   const dirs = [
     { dx: 0, dy: -1 },
@@ -202,8 +214,11 @@ export function getNextStepTowards(
     { dx: 1, dy: 0 },
   ];
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  const targetIdx = clampedTargetY * width + clampedTargetX;
+  let head = 0;
+
+  while (head < queue.length) {
+    const current = queue[head++];
     const { x, y, firstStep } = current;
 
     if (x === clampedTargetX && y === clampedTargetY) {
@@ -215,7 +230,10 @@ export function getNextStepTowards(
       const nx = x + dir.dx;
       const ny = y + dir.dy;
 
-      if (nx >= 0 && nx < width && ny >= 0 && ny < height && !visited[ny][nx]) {
+      if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+        const idx = ny * width + nx;
+        if (visited[idx] === 1) continue;
+
         // Accessibility conditions
         const tile = map[ny][nx];
         const isTileBlocked =
@@ -242,12 +260,11 @@ export function getNextStepTowards(
         }
 
         // Avoid stepping on other monsters unless it is the final target cell (e.g. combat strike)
-        const isOccupiedByEnemy = otherEnemies.some((e) => e.x === nx && e.y === ny);
-        if (isOccupiedByEnemy && !(nx === clampedTargetX && ny === clampedTargetY)) {
+        if (occupiedSet.has(idx) && idx !== targetIdx) {
           continue;
         }
 
-        visited[ny][nx] = true;
+        visited[idx] = 1;
         const nextFirstStep = firstStep || { x: nx, y: ny };
         queue.push({ x: nx, y: ny, firstStep: nextFirstStep });
       }
@@ -284,7 +301,7 @@ export function getNextStepTowards(
         tile === TileType.Empty ||
         (tile === TileType.Door && !canOpenDoors);
       if (isTileBlocked) return false;
-      return !otherEnemies.some((e) => e.x === step.nx && e.y === step.ny);
+      return !occupiedSet.has(step.ny * width + step.nx);
     })
     .sort((a, b) => a.dist - b.dist)[0];
 

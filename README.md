@@ -152,6 +152,20 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - **Centralized Settlement Economy (`src/data/economy.json`)**: Externalized reputation discounts, charisma scaling, caravan payouts, and regional biome pricing tables.
    - **Centralized Dialogue Trees (`src/data/dialogues.json`)**: Externalized NPC shop dialogues, tavern rumors, and quest objective matrices.
    - **Equipment Management Hook (`src/hooks/useEquipmentHandlers.ts`)**: Decoupled equipment paperdoll actions and durability tracking into a custom hook with safe default fallbacks (`Forged Alloy` material and `Physical` catalyst) preventing equipment crashes.
+33. **Phase 17-21 Systems, Spatial Audio Engine & HUD Mute Button (v4.3.5)**:
+   - **Procedural WebAudio Synthesizer**: Spatial attenuation with $(1 - \text{dist}/\text{maxDist})^{1.5}$ decay, stereo panning, dynamic biome/weather soundscapes, companion cross-chunk tethering, and instant 1-click **`🔊 Mute` / `🔇 Muted`** HUD toggle button.
+34. **Realistic Indoor Building Acoustic Soundscape & Acoustic Attenuation (v4.3.6)**:
+   - **Building Interior Acoustic Engine (`src/utils/buildingAudio.ts`)**: Automatically detects houses, taverns, shops, keeps, watchtowers, 2nd floors, and subterranean levels.
+   - **Lowpass Atmospheric Weather Muffling**: Applies ~650Hz acoustic lowpass filtering inside buildings so outdoor wind, rain, and blizzards sound muffled behind wooden walls and stone roofs.
+   - **Indoor Accents & Door/Step SFX**: Plays synthesized hearth crackles (`fire_crackle`), timber creaks (`wood_creak`), lute strums (`lute_pluck`), pendulum clocks (`clock_tick`), door creaks (`door_open`, `door_close`), and surface-aware footsteps (`wood_footstep`, `stone_footstep`, `grass_step`).
+35. **Deconstructed Codebase Architecture & Data Isolation (v4.5.0)**:
+   - **JSON Preset Isolation**: Extracted structure blueprints (`structures.json`), town templates (`townTemplates.json`), and enemy blueprints (`enemyBlueprints.json`) into `/src/data/`.
+   - **God Panel Overlay Deconstruction**: Extracted modular tools into `/src/components/god/` (`GodEnemyBlueprintEditor`, `GodReplaySimulator`, `GodCheatsTab`, `GodAdminEditor`).
+   - **App Layout Shell Modularization**: Extracted header and navigation bar into `AppHeaderBar.tsx` and `AppNavigationTabs.tsx`.
+36. **Tile-Based Spritesheet Atlas & Animation Engine Architecture (v4.6.0)**:
+   - **Tileset Atlas Manager (`TilesetAtlasManager.ts`)**: Supports 16-variant 4-neighbor cardinal autotiling bitmask rules (North=1, East=2, South=4, West=8) for walls, paths, and biomes.
+   - **Multi-Frame Sprite State Machine (`spriteAnimationManager.ts`)**: Controls 4-directional sprite states (`idle`, `walk`, `attack`, `hurt`, `cast`, `death`) for player and monsters.
+   - **Visual FX Particle System (`visualFxParticleSystem.ts`)**: Emitters render dynamic spell bursts, magic circles, campfire embers, and atmospheric particles into the 60 FPS HTML5 Canvas loop.
 
 
 
@@ -336,6 +350,23 @@ export const COMPANION_QUEST_BOARD: CompanionQuest[] = [
   }
 ];
 ```
+
+### How to Add a New Procedural Sound Effect
+The audio engine uses pure **WebAudio procedural synthesis** (`src/utils/audio.ts`). No audio assets are required!
+1. Add your sound key to the `playSound` type in `src/utils/audio.ts`.
+2. Add a `switch (type)` case using oscillator/noise nodes and gain envelopes:
+   ```typescript
+   case 'chest_open': {
+     const osc = ctx.createOscillator();
+     osc.type = 'sawtooth';
+     osc.frequency.setValueAtTime(140 * pitch, now);
+     osc.frequency.linearRampToValueAtTime(280 * pitch, now + 0.18);
+     // ...
+     break;
+   }
+   ```
+3. Call `playSound('chest_open', { x, y, playerX, playerY })` anywhere in the codebase for spatial attenuation and stereo panning!
+4. For full documentation, node routing diagrams, and the full catalog of sounds, read [`AUDIO.md`](/AUDIO.md).
 
 ### 🛠️ Developer & Game Master Toolkits (In-Game Console)
 The game includes comprehensive built-in developer instruments designed for live-session playtesting:

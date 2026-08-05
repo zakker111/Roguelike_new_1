@@ -266,10 +266,28 @@ export const getBiomePriceMultiplier = (itemId: string, biome: 'forest' | 'deser
     return 1.0;
   }
 
-  // 3. Raw or cooked fish sells for massive gold in Deserts (2.5x) due to scarcity
-  if (itemId === 'mat_raw_fish' || itemId === 'mat_cooked_fish') {
-    if (biome === 'desert') return 2.4;
+  // 3. Raw or cooked fish and harbor catches sell for massive gold in Deserts (2.5x) due to scarcity
+  if (itemId === 'mat_raw_fish' || itemId === 'mat_cooked_fish' || itemId === 'mat_fresh_catch' || itemId === 'mat_salted_cod') {
+    if (biome === 'desert') return 2.5;
+    if (biome === 'tundra') return 1.6;
     if (biome === 'swamp') return 0.7; // extremely common in swamps
+    return 1.0;
+  }
+
+  // 3.5 Harbor Whale Oil, Sea Charts, and Ship Pitch
+  if (itemId === 'mat_whale_oil') {
+    if (biome === 'tundra') return 2.8; // arctic lantern fuel & warmth
+    if (biome === 'swamp') return 1.8;
+    return 1.0;
+  }
+  if (itemId === 'mat_nautical_chart') {
+    if (biome === 'desert') return 2.2; // arid inland navigators pay premium
+    if (biome === 'forest') return 1.6;
+    return 1.0;
+  }
+  if (itemId === 'mat_ship_pitch') {
+    if (biome === 'swamp') return 2.0; // waterproofing swamp boats & boots
+    if (biome === 'tundra') return 1.5;
     return 1.0;
   }
 

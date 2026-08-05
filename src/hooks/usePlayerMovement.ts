@@ -13,7 +13,7 @@ export interface UsePlayerMovementParams {
   executeEnemiesTurn: (px: number, py: number) => void;
   setActiveTab: Dispatch<SetStateAction<'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary'>>;
   hasEquippedTrait: (gs: GameState, traitKey: string) => boolean;
-  spawnFollowersOnLevelLoadByReset: (enemies: Enemy[], followers: Follower[], targetX: number, targetY: number, map: TileType[][]) => Enemy[];
+  spawnFollowersOnLevelLoadByReset: (enemies: Enemy[], followers: Follower[], targetX: number, targetY: number, map: TileType[][], activeCompanionQuestsList?: any[]) => Enemy[];
   generateDungeonProps: (map: TileType[][], depth: number) => DungeonProp[];
 }
 
@@ -105,7 +105,7 @@ export function usePlayerMovement({
         map: targetChunk.map,
         discovered: discovered,
         visible: fov,
-        enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, exPlayerX, exPlayerY, targetChunk.map),
+        enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, exPlayerX, exPlayerY, targetChunk.map, prev.activeCompanionQuests),
         traps: targetChunk.traps,
         chests: targetChunk.chests,
         npcs: targetChunk.npcs,
@@ -181,7 +181,8 @@ export function usePlayerMovement({
           prev.followers,
           stairsDownX,
           stairsDownY,
-          existing.map
+          existing.map,
+          prev.activeCompanionQuests
         );
 
         const fov = computeFOV(stairsDownX, stairsDownY, existing.map, 6);
@@ -302,7 +303,8 @@ export function usePlayerMovement({
           prev.followers,
           stairsUpX,
           stairsUpY,
-          existing.map
+          existing.map,
+          prev.activeCompanionQuests
         );
 
         const fov = computeFOV(stairsUpX, stairsUpY, existing.map, 6);
@@ -361,7 +363,7 @@ export function usePlayerMovement({
           map: nextLvl.map,
           visible: fov,
           discovered: discovered,
-          enemies: spawnFollowersOnLevelLoadByReset(nextLvl.enemies, prev.followers, nextLvl.playerX, nextLvl.playerY, nextLvl.map),
+          enemies: spawnFollowersOnLevelLoadByReset(nextLvl.enemies, prev.followers, nextLvl.playerX, nextLvl.playerY, nextLvl.map, prev.activeCompanionQuests),
           traps: nextLvl.traps,
           chests: nextLvl.chests,
           lootPiles: [],
@@ -420,7 +422,8 @@ export function usePlayerMovement({
           prev.followers,
           stairsUpX,
           stairsUpY,
-          existing.map
+          existing.map,
+          prev.activeCompanionQuests
         );
 
         const fov = computeFOV(stairsUpX, stairsUpY, existing.map, 6);
@@ -505,7 +508,7 @@ export function usePlayerMovement({
           map: nextLvl.map,
           visible: fov,
           discovered: discovered,
-          enemies: spawnFollowersOnLevelLoadByReset(nextLvl.enemies, prev.followers, nextLvl.playerX, nextLvl.playerY, nextLvl.map),
+          enemies: spawnFollowersOnLevelLoadByReset(nextLvl.enemies, prev.followers, nextLvl.playerX, nextLvl.playerY, nextLvl.map, prev.activeCompanionQuests),
           traps: nextLvl.traps,
           chests: nextLvl.chests,
           npcs: [],

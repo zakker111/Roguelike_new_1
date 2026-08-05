@@ -8,19 +8,26 @@ export interface UseKeyboardInputParams {
   isGameOver: boolean;
   isVictory: boolean;
   isLockpickingOpen: boolean;
+  setIsLockpickingOpen?: Dispatch<SetStateAction<boolean>>;
   isFishingOpen: boolean;
+  setIsFishingOpen?: Dispatch<SetStateAction<boolean>>;
   isHelpOpen: boolean;
   setIsHelpOpen: Dispatch<SetStateAction<boolean>>;
   isGodPanelOpen: boolean;
   setIsGodPanelOpen: Dispatch<SetStateAction<boolean>>;
   isGmPanelOpen: boolean;
   setIsGmPanelOpen: Dispatch<SetStateAction<boolean>>;
-  isHistoryBookOpen: boolean;
-  setIsHistoryBookOpen: Dispatch<SetStateAction<boolean>>;
   isBestiaryOpen: boolean;
   setIsBestiaryOpen: Dispatch<SetStateAction<boolean>>;
-  activeTab: 'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary';
-  setActiveTab: Dispatch<SetStateAction<'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary'>>;
+  isAudioSettingsOpen?: boolean;
+  setIsAudioSettingsOpen?: Dispatch<SetStateAction<boolean>>;
+  isSleepOpen?: boolean;
+  setIsSleepOpen?: Dispatch<SetStateAction<boolean>>;
+  isWeatherControlOpen?: boolean;
+  setIsWeatherControlOpen?: Dispatch<SetStateAction<boolean>>;
+  activeTab: 'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary' | 'chronicles';
+  setActiveTab: Dispatch<SetStateAction<'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary' | 'chronicles'>>;
+  setActiveDialogueNpc?: Dispatch<SetStateAction<any>>;
   handleBraceDefense: () => void;
   climbStairsUpToOverworld: () => void;
   climbToPreviousDepth: () => void;
@@ -38,19 +45,26 @@ export function useKeyboardInput({
   isGameOver,
   isVictory,
   isLockpickingOpen,
+  setIsLockpickingOpen,
   isFishingOpen,
+  setIsFishingOpen,
   isHelpOpen,
   setIsHelpOpen,
   isGodPanelOpen,
   setIsGodPanelOpen,
   isGmPanelOpen,
   setIsGmPanelOpen,
-  isHistoryBookOpen,
-  setIsHistoryBookOpen,
   isBestiaryOpen,
   setIsBestiaryOpen,
+  isAudioSettingsOpen,
+  setIsAudioSettingsOpen,
+  isSleepOpen,
+  setIsSleepOpen,
+  isWeatherControlOpen,
+  setIsWeatherControlOpen,
   activeTab,
   setActiveTab,
+  setActiveDialogueNpc,
   handleBraceDefense,
   climbStairsUpToOverworld,
   climbToPreviousDepth,
@@ -70,24 +84,62 @@ export function useKeyboardInput({
         document.activeElement.tagName === 'TEXTAREA' ||
         document.activeElement.getAttribute('contenteditable') === 'true')
     ) {
+      if (e.key === 'Escape') {
+        (document.activeElement as HTMLElement).blur();
+      }
       return;
     }
 
     const key = e.key.toLowerCase();
 
-    // Handle Escape globally to close all modals and panels
+    // Handle Escape globally to cancel/close all modals, gumps, overlays, and trade windows
     if (e.key === 'Escape') {
       e.preventDefault();
       setIsHelpOpen(false);
       setIsGodPanelOpen(false);
       setIsGmPanelOpen(false);
-      setIsHistoryBookOpen(false);
       setIsBestiaryOpen(false);
-      setGameState((prev) => ({
-        ...prev,
-        activeQuestBoardOpen: false,
-        activeFollowerIdForInspect: null,
-      }));
+      if (setIsAudioSettingsOpen) setIsAudioSettingsOpen(false);
+      if (setIsSleepOpen) setIsSleepOpen(false);
+      if (setIsFishingOpen) setIsFishingOpen(false);
+      if (setIsLockpickingOpen) setIsLockpickingOpen(false);
+      if (setIsWeatherControlOpen) setIsWeatherControlOpen(false);
+
+      const gs = gameStateRef.current;
+      const hasOpenModalState =
+        gs.activeQuestBoardOpen ||
+        gs.activeFollowerIdForInspect ||
+        gs.activeTradeNpcId ||
+        gs.inspectingItem ||
+        gs.inspectingSkill ||
+        gs.houseDesigner ||
+        gs.customHouseBuilder ||
+        gs.npcRoutePlanner ||
+        gs.structureCarver ||
+        gs.historyBookOpen ||
+        gs.poiInteraction ||
+        gs.activeTravelerNpc;
+
+      if (hasOpenModalState) {
+        if (setActiveDialogueNpc) setActiveDialogueNpc(null);
+        setGameState((prev) => ({
+          ...prev,
+          activeQuestBoardOpen: false,
+          activeFollowerIdForInspect: null,
+          activeTradeNpcId: null,
+          inspectingItem: null,
+          inspectingSkill: null,
+          houseDesigner: null,
+          customHouseBuilder: null,
+          npcRoutePlanner: null,
+          structureCarver: null,
+          historyBookOpen: false,
+          poiInteraction: null,
+          activeTravelerNpc: null,
+        }));
+      } else if (activeTab !== 'dungeon') {
+        setActiveTab('dungeon');
+      }
       return;
     }
 
@@ -117,7 +169,7 @@ export function useKeyboardInput({
         return;
       case 'h':
         e.preventDefault();
-        setIsHistoryBookOpen((p) => !p);
+        setActiveTab((prev) => (prev === 'chronicles' ? 'dungeon' : 'chronicles'));
         return;
       case 'v':
       case 'k':
@@ -131,7 +183,6 @@ export function useKeyboardInput({
       isHelpOpen ||
       isGodPanelOpen ||
       isGmPanelOpen ||
-      isHistoryBookOpen ||
       isBestiaryOpen;
 
     if (isAnyOverlayOpen || activeTab !== 'dungeon') {

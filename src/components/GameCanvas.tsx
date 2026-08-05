@@ -8,6 +8,7 @@ import { TileType, Enemy, Trap, Chest, GameState } from '../types';
 import { renderTileMap } from '../canvas/tileMapRenderer';
 import { renderEntityLayer, GameVisualEffect } from '../canvas/entityLayerRenderer';
 import { renderWeatherAndLighting } from '../canvas/weatherLightingRenderer';
+import { hybridGraphicsEngine } from '../canvas/HybridGraphicsEngine';
 
 export interface SpriteSheetTileMapping {
   /** Column index on the sprite sheet (0-indexed) */
@@ -122,15 +123,23 @@ interface GameCanvasProps {
   gameState: GameState;
   onTileClick: (x: number, y: number) => void;
   shakeTrigger: number; // increments on damage to trigger screen shake
+  graphicsMode?: 'text' | 'tileset';
 }
 
 const TILE_SIZE = 28;
 
-function GameCanvasComponent({ gameState, onTileClick, shakeTrigger }: GameCanvasProps) {
+function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMode }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
   const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 });
+
+  // Synchronize graphics mode with HybridGraphicsEngine
+  useEffect(() => {
+    if (graphicsMode) {
+      hybridGraphicsEngine.setMode(graphicsMode);
+    }
+  }, [graphicsMode]);
 
   // --- Future-Proof Tileset & Animation System Body hooks ---
   const [tilesetImage, setTilesetImage] = useState<HTMLImageElement | null>(null);
@@ -345,6 +354,7 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger }: GameCanva
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
 
     let animId: number;
 
@@ -585,6 +595,7 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger }: GameCanva
         gameState,
         camX,
         camY,
+        dimensions,
         tileSize: TILE_SIZE,
         tilesetConfig,
         tilesetImage,

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import recipesData from './recipes.json';
+
 export interface CookingRecipe {
   id: string;
   name: string;
@@ -40,116 +42,5 @@ export interface BrewingRecipe {
   };
 }
 
-export const COOKING_RECIPES: CookingRecipe[] = [
-  {
-    id: 'lightning_grilled_salmon',
-    name: 'Lightning Grilled Salmon ⚡',
-    description: 'Crackling with voltage. Instantly restores 40 HP and boosts critical strike chance by +15% for 25 turns.',
-    restoringHp: 40,
-    restoringMp: 0,
-    materials: { 'mat_raw_fish': 1, 'mat_berry': 1 },
-    catalysts: { 'cat_lightning': 1 },
-    buff: {
-      name: 'Sparking Reflexes ⚡',
-      description: 'Critical strike chance increased by +15% from Lightning Salmon juices.',
-      atkBonus: 0,
-      defBonus: 0,
-      critBonus: 0.15,
-      speedBonus: 1,
-      turnsRemaining: 25
-    }
-  },
-  {
-    id: 'spicy_crimson_salmon',
-    name: 'Spicy Crimson Salmon 🔥',
-    description: 'Combusts with spicy, savory magma oils. Instantly restores 50 HP and grants a robust +3 Attack bonus for 25 turns.',
-    restoringHp: 50,
-    restoringMp: 0,
-    materials: { 'mat_raw_fish': 1, 'mat_berry': 1 },
-    catalysts: { 'cat_fire': 1 },
-    buff: {
-      name: 'Magma Aggression 🔥',
-      description: 'Physical Attack increased by +3 from fiery Crimson spices.',
-      atkBonus: 3,
-      defBonus: 0,
-      critBonus: 0,
-      speedBonus: 0,
-      turnsRemaining: 25
-    }
-  },
-  {
-    id: 'glacial_frost_ribs',
-    name: 'Glacial Frost Ribs ❄️',
-    description: 'Chilled deep in everfrost powder. Instantly restores 50 HP and grants a resilient +3 Defense bonus for 25 turns.',
-    restoringHp: 50,
-    restoringMp: 0,
-    materials: { 'mat_raw_meat': 1, 'mat_berry': 1 },
-    catalysts: { 'cat_frost': 1 },
-    buff: {
-      name: 'Everfrost Bulwark ❄️',
-      description: 'Defensive damage block increased by +3 from glacial frost juices.',
-      atkBonus: 0,
-      defBonus: 3,
-      critBonus: 0,
-      speedBonus: 0,
-      turnsRemaining: 25
-    }
-  },
-  {
-    id: 'shadow_smoked_jerky',
-    name: 'Shadow Smoked Jerky 🌙',
-    description: 'Smoked in ambient twilight fumes. Instantly restores 35 HP and completely purges player physical exhaustion to 0%!',
-    restoringHp: 35,
-    restoringMp: 0,
-    materials: { 'mat_raw_meat': 1, 'mat_wood': 1 },
-    catalysts: { 'cat_shadow': 1 },
-    buff: null
-  }
-];
-
-export const BREWING_RECIPES: BrewingRecipe[] = [
-  {
-    id: 'regenerative_dew_oakhaven',
-    name: 'Regenerative Dew of Oakhaven 🌸',
-    description: 'Distilled with high-purity birch tree essences. Restores 80 HP and permanently grants +1 Strength (STR).',
-    requiredTier: 1,
-    restoringHp: 80,
-    restoringMp: 0,
-    materials: { 'mat_birch_log': 1, 'mat_berry': 3 },
-    catalysts: { 'cat_fire': 1 },
-    permanentStats: { str: 1 }
-  },
-  {
-    id: 'hyper_focus_elixir',
-    name: 'Hyper Focus Elixir 🧪',
-    description: 'Synthesized using concentrated pine sap crystals. Restores 30 Mana and permanently grants +1 Intelligence (INT).',
-    requiredTier: 1,
-    restoringHp: 0,
-    restoringMp: 30,
-    materials: { 'mat_pine_log': 2 },
-    catalysts: { 'cat_lightning': 1 },
-    permanentStats: { int: 1 }
-  },
-  {
-    id: 'ironheart_fortitude_draught',
-    name: 'Ironheart Fortitude Draught 🛡️',
-    description: 'Infused with powdered raw iron minerals. Restores 60 HP, cleanses 20 Exhaustion fatigue, and permanently grants +2 Defense (DEF).',
-    requiredTier: 2,
-    restoringHp: 60,
-    restoringMp: 0,
-    materials: { 'mat_iron_ore': 3 },
-    catalysts: { 'cat_frost': 2 },
-    permanentStats: { def: 2, exhaustionReduction: 20 }
-  },
-  {
-    id: 'shadow_warp_elixir',
-    name: 'Shadow-Warp Void Elixir 🌌',
-    description: 'Deep void fermentation using rich overworld copper. Restores 50 HP and 50 Mana, and permanently grants +1 Luck (LCK).',
-    requiredTier: 3,
-    restoringHp: 50,
-    restoringMp: 50,
-    materials: { 'mat_copper_ore': 3, 'mat_birch_log': 3 },
-    catalysts: { 'cat_shadow': 2 },
-    permanentStats: { lck: 1 }
-  }
-];
+export const COOKING_RECIPES: CookingRecipe[] = recipesData.cookingRecipes as CookingRecipe[];
+export const BREWING_RECIPES: BrewingRecipe[] = recipesData.brewingRecipes as BrewingRecipe[];

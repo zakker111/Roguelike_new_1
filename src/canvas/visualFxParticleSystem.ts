@@ -1,0 +1,111 @@
+export interface Particle {
+  id: string;
+  x: number; // canvas or world coordinate
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  color: string;
+  alpha: number;
+  decay: number;
+  life: number;
+  maxLife: number;
+  shape?: 'circle' | 'spark' | 'ring' | 'snowflake' | 'ember';
+}
+
+export class VisualFxParticleSystem {
+  private static instance: VisualFxParticleSystem;
+  private particles: Particle[] = [];
+
+  public static getInstance(): VisualFxParticleSystem {
+    if (!VisualFxParticleSystem.instance) {
+      VisualFxParticleSystem.instance = new VisualFxParticleSystem();
+    }
+    return VisualFxParticleSystem.instance;
+  }
+
+  public spawnSpellBurst(x: number, y: number, color: string = '#f59e0b', count: number = 12) {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+      const speed = 1.5 + Math.random() * 2.5;
+      this.particles.push({
+        id: `p_${Math.random()}`,
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 2 + Math.random() * 3,
+        color,
+        alpha: 1.0,
+        decay: 0.03 + Math.random() * 0.02,
+        life: 0,
+        maxLife: 30 + Math.random() * 20,
+        shape: Math.random() > 0.4 ? 'spark' : 'circle'
+      });
+    }
+  }
+
+  public spawnEmber(x: number, y: number) {
+    this.particles.push({
+      id: `ember_${Math.random()}`,
+      x: x + (Math.random() - 0.5) * 16,
+      y,
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: -0.8 - Math.random() * 1.2,
+      size: 1.5 + Math.random() * 2,
+      color: '#ef4444',
+      alpha: 0.9,
+      decay: 0.02,
+      life: 0,
+      maxLife: 40,
+      shape: 'ember'
+    });
+  }
+
+  public updateAndRender(ctx: CanvasRenderingContext2D, dt: number) {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha -= p.decay;
+      p.life++;
+
+      if (p.alpha <= 0 || p.life >= p.maxLife) {
+        this.particles.splice(i, 1);
+        continue;
+      }
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.alpha);
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = p.color;
+
+      if (p.shape === 'spark') {
+        ctx.beginPath();
+        ctx.moveTo(p.x - p.size, p.y);
+        ctx.lineTo(p.x + p.size, p.y);
+        ctx.moveTo(p.x, p.y - p.size);
+        ctx.lineTo(p.x, p.y + p.size);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      } else if (p.shape === 'ember') {
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+  }
+
+  public clear() {
+    this.particles = [];
+  }
+}
+
+export const visualFxParticleSystem = VisualFxParticleSystem.getInstance();

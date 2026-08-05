@@ -1,4 +1,5 @@
 import { GameState, getMoonPhase } from '../types';
+import { visualFxParticleSystem } from './visualFxParticleSystem';
 
 export interface RenderWeatherAndLightingParams {
   ctx: CanvasRenderingContext2D;
@@ -200,4 +201,7 @@ export function renderWeatherAndLighting({
       ctx.fill();
     }
   }
+
+  // Render Visual FX Particle System Overlay (Sparks, Embers, Spell Bursts)
+  visualFxParticleSystem.updateAndRender(ctx, 16);
 }

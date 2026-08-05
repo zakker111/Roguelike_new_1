@@ -10,6 +10,20 @@ export interface UseSaveLoadParams {
   autoSaveIntervalMs?: number;
 }
 
+export function validateSaveData(data: unknown): boolean {
+  if (!data || typeof data !== 'object') {
+    throw new Error('[useSaveLoad] Save data is null or not a valid JSON object.');
+  }
+  const obj = data as Record<string, unknown>;
+  if (typeof obj.playerX !== 'number' || typeof obj.playerY !== 'number') {
+    throw new Error('[useSaveLoad] Save data missing valid player coordinate numbers (playerX, playerY).');
+  }
+  if (!obj.playerStats || typeof obj.playerStats !== 'object') {
+    throw new Error('[useSaveLoad] Save data missing playerStats object.');
+  }
+  return true;
+}
+
 export function useSaveLoad({
   gameStateRef,
   setGameState,
@@ -66,7 +80,9 @@ export function useSaveLoad({
       const raw = localStorage.getItem(slotKey);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== 'object') return null;
+      
+      // Validate save integrity before applying
+      validateSaveData(parsed);
 
       setGameState((prev) => ({
         ...prev,
@@ -96,7 +112,10 @@ export function useSaveLoad({
       }
       return parsed;
     } catch (err) {
-      console.warn('Failed to load game state from LocalStorage:', err);
+      console.error('[DEV ERROR] Failed to load game state from LocalStorage due to corruption or validation failure:', err);
+      if (addLogMessage) {
+        addLogMessage('⚠️ Failed to load save file: save data is corrupted or invalid.', 'danger');
+      }
       return null;
     }
   }, [setGameState, addLogMessage]);

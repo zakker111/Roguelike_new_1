@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { validateSaveData } from '../hooks/useSaveLoad';
 
 describe('12.4 Save File Serialization & Backward Compatibility Suite', () => {
   it('serializes game state payload into valid JSON', () => {
@@ -74,5 +75,12 @@ describe('12.4 Save File Serialization & Backward Compatibility Suite', () => {
 
     expect(parseError).toBe(true);
     expect(parseResult).toBeNull();
+  });
+
+  it('throws diagnostic error when validateSaveData receives corrupted save payload', () => {
+    expect(() => validateSaveData(null)).toThrow('[useSaveLoad] Save data is null or not a valid JSON object.');
+    expect(() => validateSaveData({ playerX: 'invalid' })).toThrow('[useSaveLoad] Save data missing valid player coordinate numbers');
+    expect(() => validateSaveData({ playerX: 10, playerY: 10 })).toThrow('[useSaveLoad] Save data missing playerStats object.');
+    expect(validateSaveData({ playerX: 10, playerY: 10, playerStats: { hp: 30 } })).toBe(true);
   });
 });

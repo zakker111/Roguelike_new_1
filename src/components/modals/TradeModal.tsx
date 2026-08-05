@@ -9,10 +9,10 @@ import {
   SEPPO_SHOP_ITEMS,
   SEPPO_RESOURCES,
   BASIC_MATERIALS,
-  ELEMENTAL_CATALYSTS,
-  getBiomePriceMultiplier,
-  getCharismaDiscountMultiplier
+  ELEMENTAL_CATALYSTS
 } from '../../utils/shopData';
+import { getBiomePriceMultiplier } from '../../utils/tradeEconomy';
+import { getCharismaDiscountMultiplier } from '../../utils/gameUtils';
 import { hasTownAtChunk, getDeterministicTownName } from '../../utils/overworld';
 import { AlertCircle, ShoppingBag, X } from 'lucide-react';
 
@@ -105,11 +105,11 @@ export const TradeModal: React.FC<TradeModalProps> = ({
           activeTradeNpcId?.includes('caravan') ||
           activeTradeNpcId?.includes('wandering_merchant') ||
           activeNpc?.role === 'merchant_caravan' ||
+          activeNpc?.role === ('merchant_caravan_ambushed' as any) ||
           activeNpc?.name?.toLowerCase().includes('caravan') ||
           activeNpc?.name?.toLowerCase().includes('sledger') ||
           activeNpc?.name?.toLowerCase().includes('barger') ||
-          activeNpc?.name?.toLowerCase().includes('caravaneer') ||
-          activeNpc?.name?.toLowerCase().includes('merchant');
+          activeNpc?.name?.toLowerCase().includes('caravaneer');
         if (!isCaravanMerchant) return null;
         return (
           <div className="mb-4 bg-blue-950/20 border border-blue-500/30 rounded-xl p-4 flex flex-col gap-3">
@@ -521,7 +521,7 @@ export const TradeModal: React.FC<TradeModalProps> = ({
           </h4>
           <div className="flex-grow flex flex-col gap-2.5 text-[11px]">
             {/* Enchanted Artificer & Exotic Gear Shop */}
-            {(activeTradeNpcId === 'npc_caravan_merchant' || activeTradeNpcId?.includes('caravan') || activeTradeNpcId?.includes('merchant') || activeTradeNpcId?.includes('wandering_merchant_')) && (
+            {(activeTradeNpcId === 'npc_caravan_merchant' || activeTradeNpcId?.includes('caravan') || activeTradeNpcId?.includes('wandering_merchant') || activeNpc?.role === 'merchant_caravan' || activeNpc?.role === ('merchant_caravan_ambushed' as any)) && (
               <div className="flex flex-col gap-2.5 w-full border border-teal-500/20 bg-teal-950/10 p-3 rounded-xl mb-3">
                 <h5 className="text-[10px] font-black uppercase text-teal-400 tracking-wider flex items-center gap-1.5 border-b border-teal-950/40 pb-1.5">
                   <span>🛡️</span> ENCHANTED ARTIFICER & EXOTIC GEAR

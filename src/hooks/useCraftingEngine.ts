@@ -304,10 +304,15 @@ export function useCraftingEngine({
 
   const handlePlaceAnvil = useCallback(() => {
     setGameState((prev) => {
-      const ironCount = prev.inventoryMaterials['mat_iron'] || 0;
+      const metalKeys = ['mat_iron', 'mat_iron_ore', 'mat_steel', 'mat_royal_iron', 'mat_copper_ore', 'mat_mithril', 'mat_obsidian'];
+      let totalMetalCount = 0;
+      for (const key of metalKeys) {
+        totalMetalCount += prev.inventoryMaterials[key] || 0;
+      }
       const woodCount = prev.inventoryMaterials['mat_wood'] || 0;
-      if (ironCount < 5 || woodCount < 2) {
-        addLogMessage("❌ You need 5x Tempered Iron and 2x Scrap Wood to assemble a Portable Anvil!", "system");
+
+      if (totalMetalCount < 5 || woodCount < 2) {
+        addLogMessage("❌ You need 5x Iron/Metal (any Iron Ore, Tempered Iron, Steel, Mithril, or Obsidian) and 2x Scrap Wood to assemble a Portable Anvil!", "system");
         return prev;
       }
 
@@ -353,11 +358,19 @@ export function useCraftingEngine({
       const nextMap = prev.map.map((row) => [...row]);
       nextMap[targetY][targetX] = TileType.Anvil;
 
-      const nextMats = {
-        ...prev.inventoryMaterials,
-        'mat_iron': ironCount - 5,
-        'mat_wood': woodCount - 2
-      };
+      const nextMats = { ...prev.inventoryMaterials };
+      nextMats['mat_wood'] = Math.max(0, woodCount - 2);
+
+      let remainingDeduct = 5;
+      for (const key of metalKeys) {
+        const cur = nextMats[key] || 0;
+        if (cur > 0) {
+          const take = Math.min(cur, remainingDeduct);
+          nextMats[key] = cur - take;
+          remainingDeduct -= take;
+          if (remainingDeduct <= 0) break;
+        }
+      }
 
       playSound('equip');
       addLogMessage(`⚒️ You successfully assembled a heavy Portable Blacksmith Anvil at [X:${targetX}, Y:${targetY}]. Stand adjacent to it to forge, mutate, and upgrade equipment!`, 'craft');

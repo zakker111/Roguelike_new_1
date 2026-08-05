@@ -65,6 +65,14 @@ export const SPELLS: Spell[] = [
   }
 ];
 
+export function getSpellById(id: string): Spell {
+  const spell = SPELLS.find((s) => s.id === id);
+  if (!spell) {
+    throw new Error(`[spellsAndEquipment] Invalid spell ID requested: "${id}". Available spells: ${SPELLS.map((s) => s.id).join(', ')}`);
+  }
+  return spell;
+}
+
 // High contrast default starting weapon
 export const STARTING_WEAPON: CraftedWeapon = {
   id: 'starter_weapon',

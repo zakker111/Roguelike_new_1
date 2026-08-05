@@ -209,12 +209,12 @@ export function useWorldInteraction({
    * Opening doors in corridors/buildings.
    */
   const handleOpenDoor = useCallback((targetX: number, targetY: number, gameState: GameState) => {
-    playSound('bump');
+    playSound('door_open', { x: targetX, y: targetY, playerX: gameState.playerX, playerY: gameState.playerY });
     const nextMap = gameState.map.map((row, y) =>
       row.map((cell, x) => (x === targetX && y === targetY ? TileType.Floor : cell))
     );
     setGameState((prev) => ({ ...prev, map: nextMap }));
-    addLogMessage('🚪 You opened a heavy corridor door.', 'system');
+    addLogMessage('🚪 You opened a heavy building door with a creak and latch release.', 'system');
     executeEnemiesTurn(gameState.playerX, gameState.playerY);
   }, [setGameState, addLogMessage, executeEnemiesTurn]);
 

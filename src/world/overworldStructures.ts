@@ -87,6 +87,26 @@ export function isCastleTownAtChunk(
   return val < 0.25;
 }
 
+export type SettlementTier = 'hamlet' | 'village' | 'town' | 'citadel';
+
+export function getSettlementTier(
+  cx: number,
+  cy: number,
+  prngFn?: (x: number, y: number, seed?: number) => number
+): SettlementTier {
+  if (cx === 0 && cy === 0) return 'village';
+  if (cx === 3 && cy === -2) return 'town'; // Vanguard Harbor Port
+
+  if (prngFn && isCastleTownAtChunk(cx, cy, prngFn)) {
+    return 'citadel';
+  }
+
+  const val = prngFn ? prngFn(cx, cy, 3317) : 0.5;
+  if (val < 0.35) return 'hamlet';
+  if (val < 0.8) return 'village';
+  return 'town';
+}
+
 export function getDeterministicTownName(
   cx: number,
   cy: number,

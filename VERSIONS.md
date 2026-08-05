@@ -6,6 +6,274 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v5.2.0] — Phase 29 & 30: Codebase Refactoring, Hook Modularization & QA Suite (August 5, 2026)
+*Deconstructed large monolith files (App.tsx, GodPanelOverlay.tsx, overworld.ts, audio.ts) into clean, specialized domain hooks and modules (`useGameLoop`, `siegeUtils`, `GodSmoketestTab`, `overworldNpcSpawning`, `overworldPoiGenerator`, `soundPresets`), achieving 100% test coverage (19 passing test suites, 77 tests) and zero-regression compilation.*
+
+- **Game Loop Hook Extraction (`src/hooks/useGameLoop.ts` & `src/utils/siegeUtils.ts`)**:
+  - Extracted real-time difficulty escalation, watchtower siege ticking, and countdown timers out of `App.tsx` into `useGameLoop.ts`.
+  - Moved siege combatant spawner logic into dedicated `siegeUtils.ts` module.
+- **God Panel Modularization (`src/components/god/GodSmoketestTab.tsx`)**:
+  - Separated the client-side virtual smoke test runner component out of `GodPanelOverlay.tsx` into `GodSmoketestTab.tsx`.
+- **World Generation Utility Splitting (`src/world/overworldNpcSpawning.ts` & `src/world/overworldPoiGenerator.ts`)**:
+  - Extracted NPC tile safety validator (`isTileSafeForNpc`) and coordinate locator (`findNearestSafeNpcTile`) into `overworldNpcSpawning.ts`.
+  - Extracted point-of-interest generator wrappers into `overworldPoiGenerator.ts`.
+- **Audio Synthesizer Preset Extraction (`src/audio/soundPresets.ts`)**:
+  - Isolated sound synthesizer preset configuration tables into `soundPresets.ts`.
+- **Quality Assurance & Test Suite Verification**:
+  - Verified all 19 Vitest test suites and 77 unit/integration tests pass with 0 failures.
+  - Validated clean linter (`tsc --noEmit`) and production applet build (`npm run build`).
+
+## [v5.1.1] — Phase 28: Living Towns, Cities, Harbors & Reactive NPC Life (August 4, 2026)
+*Implemented dynamic weather-reactive NPC dialogue and barks, harbor port towns with specialized nautical roles and trade goods, NPC daily schedules with shelter seeking during severe storms, tavern sitting and drinking behaviors, and settlement tier scaling (Hamlets to Citadel Capitals).*
+
+- **Dynamic Weather & Time Reactive Dialogue System (`src/utils/npcDialogue.ts`)**:
+  - Expanded NPC conversation system with weather-reactive, time-of-day-reactive, and biome-sensitive dialogue lines across all NPC roles.
+  - Implemented regional rumor and gossip generator incorporating local weather conditions, town reputation, and harbor lore.
+- **Harbor Towns, Ports & Nautical Population (`src/utils/overworld.ts` & `src/data/shops.json`)**:
+  - Generated harbor coastal town layouts featuring docks, anchorages, cranes, harbor master huts, fish markets, and moored ships.
+  - Introduced specialized nautical NPC roles: Dockworker, Harbor Master, Sailor, Fishmonger, and Ferried Navigator.
+  - Added harbor trade goods: Fresh Catch, Salted Cod, Whale Oil, Nautical Charts, and Ship Pitch.
+- **NPC Daily Schedules & Tavern Sitting/Drinking (`src/hooks/useEnemyAI.ts` & `src/data/townTemplates.json`)**:
+  - Implemented NPC AI daily routines with outdoor work during the day, tavern leisure visits in the evening, and bed rest at night.
+  - Added shelter seeking during blizzards, heavy rain, and sandstorms with weather barks.
+  - Populated tavern interiors with bar counter tables, chairs, and stools; NPCs sit at tavern bars/tables and drink ale/mead with custom barks.
+- **Settlement Scaling & Modular Catalog (`src/world/overworldStructures.ts` & `src/data/recipes.json`)**:
+  - Scaled settlement tiers dynamically from Hamlets, Villages, and Port Towns to Citadel Capitals.
+  - Extracted cooking and brewing recipe catalogs into modular `./recipes.json` data structure.
+
+## [v5.1.0] — Phase 28: Pathfinding Optimization, NPC Routines & Companion Follower Verification (August 3, 2026)
+*Optimized BFS pathfinding memory buffers with Uint8Array, expanded town NPC day/night routines & building bed sleep states, linked God Mode to unlimited carry capacity, and verified companion follower systems.*
+
+- **Pathfinding & AI Spatial Optimization (`src/utils/ai.ts` & `src/hooks/useEnemyAI.ts`)**:
+  - Replaced high-allocation nested 2D arrays in BFS pathfinding with a flat `Uint8Array` memory buffer for instant visited lookups.
+  - Replaced array queue `.shift()` calls with pointer head increments and converted `otherEnemies` spatial collision scans into O(1) index sets.
+  - Optimized NPC schedule movement loops in `useEnemyAI.ts` with cached spatial coordinate lookup sets.
+- **NPC Routines & Building Beds (`src/hooks/useEnemyAI.ts`)**:
+  - Structured town NPC schedules to navigate to building beds during nighttime (`20:00 - 07:00`) or inclement weather (rain/snow).
+  - Applied sleeping status indicators (`😴`) when NPCs reach home beds, resuming work/shop routines upon sunrise.
+- **Sovereign God Mode Unlimited Carry Weight (`src/utils/itemWeight.ts` & `src/components/GodPanelOverlay.tsx`)**:
+  - Integrated `godModeActive` check into `getMaxWeight()` so enabling Developer God Mode automatically grants an unlimited carry weight capacity (`9999.0` kg).
+- **Merchant & Caravan Interface Separation (`src/components/modals/TradeModal.tsx`)**:
+  - Cleanly distinguished town shopkeepers from traveling caravan merchants, ensuring independent stock, guard recruitment, and trade headers.
+- **Follower Companion System Verification**:
+  - Verified active follower spawning (`spawnFollowersOnLevelLoadByReset`), tactical battle positioning, companion quest dispatches on Guild boards, and follower guard safehouse assignments.
+
+## [v5.0.0] — Phase 27: Canvas Viewport Rendering & Hybrid Engine Integration (August 3, 2026)
+*Unified multi-layered canvas viewport rendering engine across TileMap, EntityLayer, and WeatherLighting layers, integrated HybridGraphicsEngine mode switching, and optimized viewport culling and particle physics.*
+
+- **Canvas Viewport Rendering Engine (`/src/components/GameCanvas.tsx` & `/src/canvas/`)**:
+  - Modularized canvas viewport rendering pipeline into dedicated layer modules (`tileMapRenderer`, `entityLayerRenderer`, `weatherLightingRenderer`).
+  - Integrated `HybridGraphicsEngine` singleton with `graphicsMode` prop in `GameCanvas.tsx` to allow real-time toggling between symbolic text/ASCII glyphs and texture-mapped tileset rendering.
+  - Optimized viewport culling logic with safety tile padding for smooth high-FPS scrolling and camera interpolation.
+  - Synchronized real-time projectile trajectories, blood splatters, screen shakes, floating damage numbers, and weather/seasonal particle overlays on canvas coordinates.
+
+## [v4.9.0] — Phase 26: App.tsx Monolith Reduction & Domain Custom Hooks Expansion (August 3, 2026)
+*Extracted caravan travel & encounter state engine and town services logic out of App.tsx into specialized domain hooks (`useCaravanTravel`, `useTownServices`, `caravanEncounters`), reducing App.tsx size by over 1,000 lines.*
+
+- **Caravan Travel & Encounter Subsystem (`/src/hooks/useCaravanTravel.ts` & `/src/utils/caravanEncounters.ts`)**:
+  - Extracted caravan encounter generation into modular factory utility `caravanEncounters.ts`.
+  - Encapsulated caravan travel initialization, turn advancement, D20 stat check encounter resolution, and arrival rewards into `useCaravanTravel.ts`.
+- **Town Services Engine Hook (`/src/hooks/useTownServices.ts`)**:
+  - Encapsulated Blacksmith forge upgrades, Apothecary lab upgrades, Bartender rumor gossip purchasing, Inn rests, and Mercenary party recruitment into `useTownServices.ts`.
+- **App.tsx Monolith Deconstruction**:
+  - Reduced `App.tsx` from 10,127 lines to 9,089 lines while preserving zero-regression state flow and clean type safety.
+
+## [v4.8.0] — Hybrid Graphic Engine & Animation System Architecture (August 3, 2026)
+*Established polymorphic graphics rendering provider architecture, asynchronous asset preloading fallback manager, and decoupled real-time VFX particle emitter queue.*
+
+- **Abstract Graphics Provider Interface (`IGraphicsRenderer.ts`)**:
+  - Unified tile, entity, and VFX rendering methods across standard unicode text glyphs and texture-mapped tile atlases.
+  - Implemented `TextRenderer.ts` for fast, lightweight unicode/emoji vector fallback.
+  - Implemented `TilesetRenderer.ts` using `TilesetAtlasManager` to slice texture atlas coordinates with automatic fallback to text rendering if assets are absent or disabled.
+  - Built `HybridGraphicsEngine.ts` singleton for dynamic rendering mode switching.
+- **Asynchronous Asset Preloader (`AssetPreloader.ts`)**:
+  - Built singleton image caching and status tracking pipeline to load external `.png` texture atlases asynchronously with safe error boundaries and fallback handlers.
+- **Decoupled Real-time VFX Emitter (`VFXEmitter.ts`)**:
+  - Decoupled turn-based game loop ticks from continuous `requestAnimationFrame` render ticks.
+  - Enqueued combat slashes, spell bursts, and ambient embers through a global particle emitter queue.
+
+## [v4.7.0] — Phase 24 & 25: Domain Custom Hooks Partitioning & Organic Ambient Synthesizer Polish (August 3, 2026)
+*Partitioned core game subsystems out of App.tsx into modular custom hooks (`useOverworldEvents`, `useTradeEconomy`, `useQuestsAndGuild`) and enriched WebAudio ambient synthesizers.*
+
+- **Domain Custom Hooks Partitioning (`/src/hooks/`)**:
+  - `useOverworldEvents.ts`: Isolated overworld time-of-day progression, 7-day seasonal rotations, and weather state transition triggers.
+  - `useTradeEconomy.ts`: Isolated merchant transaction handlers, item purchasing/selling logic, and gold balance state updates.
+  - `useQuestsAndGuild.ts`: Isolated guild contract acceptance, reward calculations, and active quest status management.
+  - `useKeyboardInput.ts`: Added global `Escape` key handling to cancel/close open modals, gumps, overlays, trade windows, and audio panels while blurring active text inputs.
+- **Organic Ambient Synthesizer Polish (`/src/utils/audio.ts` & `/src/data/soundCatalog.ts`)**:
+  - Synthesized realistic songbird chirps (`bird_chirp`) featuring pitch trills and frequency sweeps for forest and plains biomes.
+  - Synthesized night cricket calls (`cricket_chirp`) and hollow owl hoots (`owl_hoot`).
+  - Implemented multi-layer organic rain audio swells combining low-pass soil impact patter with band-pass LFO-modulated droplet chatter.
+
+## [v4.6.0] — Phase 18: Tile-Based Spritesheet & Animation Engine Architecture (August 2, 2026)
+*Integrated a high-performance tileset atlas manager, multi-frame sprite state machine, and real-time visual FX particle emitter engine into the 60 FPS HTML5 Canvas pipeline.*
+
+- **Tileset Atlas Manager (`src/canvas/TilesetAtlasManager.ts`)**:
+  - Implemented 4-neighbor cardinal autotiling bitmask calculator (North=1, East=2, South=4, West=8) for 16 seamless wall, path, and biome border transition variants.
+- **Sprite Animation State Controller (`src/canvas/spriteAnimationManager.ts`)**:
+  - Created delta-time-driven animation state machine supporting `idle`, `walk`, `attack`, `hurt`, `cast`, and `death` multi-frame sprite sequences across 4 cardinal directions (North, South, East, West).
+- **Visual FX Particle System (`src/canvas/visualFxParticleSystem.ts`)**:
+  - Built real-time particle emitter engine rendering animated spell bursts, campfire embers, weather sparks, and magic circle glows directly into the canvas context render pass.
+
+## [v4.5.0] — Phase 23: Codebase Health, Data Isolation & Monolith Deconstruction (August 2, 2026)
+*Deconstructed large application components and extracted static data blueprints into isolated data modules to optimize memory footprint and codebase maintainability.*
+
+- **Data-Driven Preset Isolation (`/src/data/`)**:
+  - Isolated structure blueprints into `/src/data/structures.json`.
+  - Isolated town templates and urban layouts into `/src/data/townTemplates.json`.
+  - Isolated enemy blueprints and combat templates into `/src/data/enemyBlueprints.json`.
+- **God Panel Overlay Deconstruction (`/src/components/god/`)**:
+  - Extracted `GodEnemyBlueprintEditor.tsx` for custom mob creation.
+  - Extracted `GodReplaySimulator.tsx` for turn-by-turn action replay scrubbing and smoke test suite verification.
+  - Extracted `GodCheatsTab.tsx` for developer state overrides.
+  - Extracted `GodAdminEditor.tsx` for raw state JSON snapshot imports and exports.
+- **App.tsx Layout Modularization (`/src/components/`)**:
+  - Extracted top application header into `AppHeaderBar.tsx`.
+  - Extracted bottom tab navigation into `AppNavigationTabs.tsx`.
+
+*Isolated all static game data, monster drop tables, item definitions, and sound catalog metadata into pure data modules under `/src/data/` while maintaining 100% backward compatibility.*
+
+- **Monster Catalog Isolation (`/src/data/monsters.ts`)**:
+  - Extracted standard, wildlife, and boss definitions into pure `MONSTER_ENTRIES` array with `getMonsterDefinitionByKey` and `getMonstersByCategory` helpers.
+- **Items & Materials Catalog Isolation (`/src/data/items.ts`)**:
+  - Consolidated basic materials, elemental catalysts, weapon templates, relics, and spell scrolls into single-source data exports with typed accessor helpers (`getMaterialById`, `getCatalystById`, `getRelicById`).
+- **Sound Effect Catalog (`/src/data/soundCatalog.ts`)**:
+  - Extracted `SoundType` union and structured `SOUND_CATALOG` list with categorized metadata for soundboard & oscilloscope preview.
+- **Backward Compatibility Preserved**:
+  - Re-exported all legacy symbols in `src/utils/bestiary.ts`, `src/utils/itemsData.ts`, and `src/utils/audio.ts` with zero breaking changes or runtime regressions.
+
+
+## [v4.3.9] — Standalone Chronicles Link Removal & Main Panel Exclusive Layout (August 1, 2026)
+*Removed duplicate secondary header buttons and external modal triggers so Chronicles of Oakhaven is exclusively accessed and rendered within the primary Main Panel tab navigation.*
+
+- **Header Bar & Navigation Cleanup (`src/App.tsx`)**:
+  - Removed secondary top header button for Chronicles.
+  - Retained `CHRONICLES & LORE` (`chronicles`) exclusively in the primary Main Panel tab bar next to Expedition, Forge, Bestiary, Inventory, and Guild.
+- **AppOverlays Cleanup (`src/components/AppOverlays.tsx`)**:
+  - Removed modal backdrop instance from `AppOverlays` to maintain a single source of truth for lore exploration inside the Main Panel.
+
+## [v4.3.8] — Main Panel Chronicles & Lore Tab Integration (August 1, 2026)
+*Relocated the Chronicles of Oakhaven history book directly into the primary main panel tab navigation bar alongside Expedition, Guild, Bestiary, Arcanum Blacksmith, and Hero Profile.*
+
+- **Main Panel Tab Navigation (`src/App.tsx`)**:
+  - Added `CHRONICLES & LORE` (`chronicles`) to the primary tab bar with `BookOpen` icon badge and responsive mobile tab label.
+  - Added full tab switching logic rendering `HistoryBookOverlay` inline in the main panel content pane.
+- **Inline Tab & Standalone Modal Dual-Mode Engine (`src/components/HistoryBookOverlay.tsx`)**:
+  - Added `inline` prop support to render embedded inside tab layouts without fixed modal backdrops while preserving standalone modal fallback options.
+  - Provided direct `"← Back to Expedition"` return navigation when viewing Chronicles inline.
+- **Global Hotkey Integration (`src/hooks/useKeyboardInput.ts`)**:
+  - Updated key `H` hotkey to seamlessly toggle between the `'chronicles'` tab and `'dungeon'` expedition tab.
+*Integrated a 60 FPS real-time WebAudio vector oscilloscope waveform trace, FFT frequency spectrum visualizer, procedural soundboard trigger studio, and live custom synthesizer patch generator.*
+
+- **Real-Time WebAudio Analyser Engine (`src/utils/audio.ts`)**:
+  - Connected `AnalyserNode` (`fftSize = 1024`) downstream of `masterGainNode` to capture raw time-domain waveforms and frequency spectrum arrays.
+  - Exported `getAudioAnalyser()`, `getAudioWaveformData()`, `getAudioFrequencyData()`, and `playCustomSynthesizer()`.
+- **Live Oscilloscope & Visualizer Studio (`src/components/AudioOscilloscopeStudio.tsx`)**:
+  - Built 60 FPS Canvas visualizer supporting **Waveform Trace** (green phosphor trace with cyan glow), **FFT Spectrum** (frequency energy bars with peak hold indicators), and **Dual Split View**.
+  - Integrated real-time peak level monitoring in **dBFS VU meter** display.
+- **Soundboard & Spatial Test Matrix**:
+  - Embedded instant preview triggers for all 35+ synthesized sound effects.
+  - Included interactive **Pitch Multiplier** (0.5x - 2.0x), **Stereo Panning** (Left/Right), and **Distance Attenuation** sliders for developer testing.
+- **Interactive Synthesizer Patch Workbench**:
+  - Provides controls for Oscillator Waveform (`sine`, `square`, `sawtooth`, `triangle`, `white noise`), Frequency Sweeps (Hz), Envelope ADSR (Attack, Decay, Sustain, Release), and Biquad Filters (Lowpass, Highpass, Bandpass, Cutoff, Q resonance).
+  - Includes **"Play Custom Patch"** and **"Copy TypeScript Code"** generator button.
+- **HUD & Settings Modal Integration (`src/components/AudioSettingsModal.tsx`)**:
+  - Added tab switcher `[ 🎛️ Volume Controls ] [ 🎵 Studio & Oscilloscope ]` with auto-expanding canvas layout.
+
+## [v4.3.6] — Realistic Indoor Building Acoustic Soundscape & Acoustic Attenuation (August 1, 2026)
+*Implemented realistic building interior acoustic detection, lowpass atmospheric wind muffling inside buildings, door opening/closing creaks and latches, indoor timber and clock accents, and surface-aware footstep audio.*
+
+- **Realistic Building Acoustic Engine (`src/utils/buildingAudio.ts`, `src/utils/audio.ts`)**:
+  - Created `isPlayerIndoors` utility to detect when the player is inside houses, taverns, shops, keeps, watchtowers, 2nd floors, or dungeon levels.
+  - Dynamically modulates the lowpass muffle filter (~650 Hz cutoff) when indoors so outdoor weather, wind, rain, and blizzards sound realistically dampened behind wooden walls and stone roofs.
+  - Added building interior accent soundscapes: hearth fire crackles (`fire_crackle`), timber creaks (`wood_creak`), acoustic lute strums (`lute_pluck`), and indoor pendulum clocks (`clock_tick`).
+- **Door Creaks & Surface Footstep Audio**:
+  - Implemented procedural WebAudio synthesizers for `door_open` (wooden creak + metal latch click), `door_close` (heavy wood thud + latch snap), `wood_footstep` (warm plank resonance), `stone_footstep` (crisp tile step), and `grass_step` (soft grass rustle).
+  - Automatically plays door entry/exit sounds when stepping through doorways or opening building doors.
+  - Dynamically switches footstep sounds depending on whether the player is stepping on indoor wood planks, stone floor tiles, or outdoor terrain.
+  - Applied wall occlusion lowpass filtering to spatial positional sound effects heard across building walls.
+- **Documentation & Test Verification**:
+  - Updated `DEVELOPERS.md`, `AUDIO.md`, `README.md`, `FEATURES.md`, `VERSIONS.md`, and `todo.md`.
+
+## [v4.3.5] — Phase 21 WebAudio Spatial Sound Engine & Developer Documentation (August 1, 2026)
+*Expanded procedural sound synthesis, added spatial attenuation math and biome soundscapes, implemented 1-click HUD mute toggle with preferences persistence, and published comprehensive developer audio documentation.*
+
+- **WebAudio Spatial Sound Engine Expansion (`src/utils/audio.ts`)**:
+  - Expanded procedural sound synthesizers with new audio recipes: `chest_open`, `boss_roar`, `lightning_strike`, `critical_hit`, `equip`, `tab_click`, `potion_drink`, `owl_hoot`, `cricket_chirp`, `frog_croak`, `cave_echo`, `lute_pluck`, `ocean_wave`, `fire_crackle`.
+  - Tuned default ambient gain and layer levels (`0.04`–`0.08`) so environmental soundscapes sit softly in the background without overpowering gameplay.
+  - Implemented spatial distance attenuation $(1 - \text{dist}/\text{maxDist})^{1.5}$, stereo panning ($\Delta x/8$), and low-pass frequency filtering for positional sound events.
+- **HUD Quick Mute & Preferences Persistence**:
+  - Added 1-click **`🔊 Mute` / `🔇 Muted`** toggle button directly on the main header bar next to Audio settings.
+  - Auto-persists master volume, SFX volume, ambient volume, and mute status to `localStorage` (`cosmic_abyss_audio_settings_v1`).
+- **Comprehensive Developer Audio Guide (`/AUDIO.md`)**:
+  - Created [`AUDIO.md`](/AUDIO.md) detailing WebAudio routing graphs, distance attenuation math, complete sound catalog, and a 3-step guide on adding custom sound effects.
+  - Updated `DEVELOPERS.md`, `README.md`, `FEATURES.md`, and `todo.md`.
+
+## [v4.3.3] — Phase 7 Dead Code Elimination & Comprehensive Verification (July 31, 2026)
+*Completed code quality overhaul across Phases 5-7: pruned dead code paths, hardened diagnostic error assertions, expanded unit test suites to 57 passing tests, and updated architecture documentation.*
+
+- **Dead Code Audit & Clean Pruning**:
+  - Scanned and verified all procedural generation re-exports, component paths, and utility imports.
+  - Confirmed 0 lint errors, 0 compilation warnings, and clean tree-shakable import paths across `/src/`.
+- **Systematic Verification**:
+  - Created `src/tests/endToEndGameplaySimulation.test.ts` to simulate full 50-turn dungeon exploration, town commerce, guild HQ upgrades, scar acquisition, and save integrity validation.
+  - Created `src/tests/weatherAndMutations.test.ts` to validate weather movement penalties, catalyst damage multipliers, and dual-element mutation synergies.
+  - Ran `npm run test` (13 test files, 57 unit tests passing 100% green).
+  - Executed `lint_applet` and `compile_applet` to guarantee complete build integrity.
+- **Documentation Synchronization**:
+  - Updated `todo.md`, `DEVELOPERS.md`, `VERSIONS.md`, and project status logs.
+
+## [v4.3.2] — Phase 6 Test Suite Expansion & Sub-System Coverage (July 31, 2026)
+*Expanded Vitest unit test suites from 8 test files (37 tests) to 11 test files (47 tests), covering crafting, alchemy, Storyteller GM state dynamics, and spell scroll systems.*
+
+- **Crafting & Alchemy Test Suite (`src/tests/craftingAndAlchemy.test.ts`)**:
+  - Tested cooking and brewing recipe schemas, material costs, permanent stat increases, catalyst definitions, and over-forge heat shatter risk formulas.
+- **Storyteller AI Test Suite (`src/tests/storytellerAI.test.ts`)**:
+  - Tested autonomous GM state management, personality shifts, boredom/tension thresholds, and encounter trigger evaluations (e.g. Healing Breeze).
+- **Spells & Mana Test Suite (`src/tests/spellsAndMana.test.ts`)**:
+  - Tested active spell catalog, `getSpellById` error assertions, spell scroll templates, combo effects, and scroll-to-equipment conversions.
+- **Automated Verification**: Vitest test suite passing 11 test files and 47 unit tests; zero TypeScript/linter errors (`lint_applet` & `compile_applet`).
+
+## [v4.3.1] — Phase 5 Deep Quality Assurance & Error Assertion Hardening (July 31, 2026)
+*Replaced silent null fallbacks with explicit error assertions, save data integrity validators, and catalog lookup assertions across core hooks and utilities.*
+
+- **Save Data Integrity & Diagnostic Assertions (`src/hooks/useSaveLoad.ts`)**:
+  - Implemented `validateSaveData(data)` function to explicitly throw descriptive error assertions if save files contain corrupted structures or invalid coordinates.
+  - Hardened `loadGame` to log diagnostic error details and alert players gracefully via the system log when loading damaged save files.
+- **Spell & Catalog Error Assertions (`src/utils/spellsAndEquipment.ts` & `src/utils/shopData.ts`)**:
+  - Added `getSpellById(id)` with explicit error assertions when requesting unregistered or mistyped spell IDs.
+  - Added `getShopItemById(itemId)` with strict diagnostic checks across all shop data catalogs.
+- **Unit Test Coverage**: Added `validateSaveData` assertion tests into `saveLoad.test.ts` (37 tests passing green across 8 test suites).
+
+## [v4.2.0] — v4.2 Architecture Refactoring & Modular Consolidation (July 31, 2026)
+*Executed complete 4-phase architectural refactoring plan: partitioned layout viewports, extracted overlay sub-panels, consolidated type definitions, and isolated static data catalogs.*
+
+- **Phase 1: App Layout & View Partitioning (`src/components/MainAppLayout.tsx`)**:
+  - Extracted top-level header navigation, HUD status bar, main viewport grid, combat log viewport, and active overlay routing into `MainAppLayout.tsx`.
+  - Moved global keyboard shortcut event dispatchers and input suppression handlers into `src/hooks/useKeyboardInput.ts`.
+- **Phase 2: Remaining Sub-Component Extractions (`src/components/god/` & `src/components/crafting/`)**:
+  - Extracted `GodStorytellerPanel.tsx` (Autonomous GM console, personality selector, dynamic boredom/tension gauges & encounter triggers) and `GodItemSpawner.tsx` into `/src/components/god/`.
+  - Extracted `CookingTab.tsx` (campfire cooking recipes) and `AlchemyTab.tsx` (apothecary brewing & tier upgrades) into `/src/components/crafting/`.
+- **Phase 3: Type Hierarchy Consolidation (`src/types/`)**:
+  - Unified legacy type definitions into modular files: `game.ts`, `entities.ts`, `map.ts`, and `items.ts`.
+  - Re-exported all types seamlessly through `src/types.ts` for backward compatibility, eliminating legacy `any` casts in test suites.
+- **Phase 4: Data Catalog Isolation (`src/data/shops.json`)**:
+  - Extracted Blacksmith shop inventory, Merchant resources, Tavern rations, and Apothecary catalysts/potions into `/src/data/shops.json`.
+  - Updated `/src/utils/shopData.ts` to consume declarative JSON catalog data while maintaining pure computation helper functions.
+- **Automated Verification**: Vitest test suite passing 8 test files and 36 unit tests; verified zero linter warnings and clean production compilation (`lint_applet` & `compile_applet`).
+
+## [v4.1.1] — Phase 4 Guild & Crafting UI Extraction & Component Modularization (July 30, 2026)
+*Deconstructed large monolithic UI files (GuildOverlay.tsx and CraftingPanel.tsx) into dedicated, highly maintainable sub-components in /src/components/guild/ and /src/components/crafting/.*
+
+- **Guild Headquarters Extraction (`src/components/guild/`)**:
+  - `GuildTreasuryPanel.tsx`: Isolated Guild House purchasing, research upgrades, sanctuary decor, and faction conquest map/war treasury tax coffers into a dedicated component.
+  - `GuildMissionBoard.tsx`: Extracted companion follower dispatch, active expedition tracking, quest assignment, and mission resolution views into an isolated component.
+- **Crafting & Alchemy Extraction (`src/components/crafting/`)**:
+  - `CampAndToolsTab.tsx`: Modularized camp gear crafting (tents, torches, repair kits, skinning knives) into a dedicated tab component.
+  - `ScrollScriptoriumTab.tsx`: Modularized spell scroll inscription (Recall, Teleport, Fireball, Identify, Mass Heal) into a dedicated scriptorium tab component.
+- **Legacy UI Cleanup**: Removed deprecated legacy views (Sanctuary Decor View 2 and Factions View 4) from `GuildOverlay.tsx`, shrinking component size and improving render efficiency.
+- **Verification & Test Coverage**: Updated test suite to 7 test files and 31 unit tests passing (`npm run test`); validated zero linter or compilation errors (`lint_applet` & `compile_applet`).
+
 ## [v4.1.0] — Phase 12 Automated Verification & Unit Testing Framework (July 29, 2026)
 *Implemented comprehensive automated unit testing suite across AI pathfinding, combat damage formulas, scar stats, overworld & dungeon generation, save state serialization, economy pricing, and renderer string safety.*
 

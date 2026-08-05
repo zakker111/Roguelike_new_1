@@ -30,6 +30,7 @@ export interface RenderEntityLayerParams {
   gameState: GameState;
   camX: number;
   camY: number;
+  dimensions?: { width: number; height: number };
   tileSize: number;
   tilesetConfig: SpriteSheetConfig;
   tilesetImage: HTMLImageElement | null;
@@ -43,6 +44,7 @@ export function renderEntityLayer({
   gameState,
   camX,
   camY,
+  dimensions,
   tileSize,
   tilesetConfig,
   tilesetImage,
@@ -50,11 +52,22 @@ export function renderEntityLayer({
   effects,
   shakersMap,
 }: RenderEntityLayerParams) {
+  // Viewport culling boundaries (with 2-tile margin padding)
+  const minTileX = dimensions ? Math.floor(camX / tileSize) - 2 : -Infinity;
+  const maxTileX = dimensions ? Math.ceil((camX + dimensions.width) / tileSize) + 2 : Infinity;
+  const minTileY = dimensions ? Math.floor(camY / tileSize) - 2 : -Infinity;
+  const maxTileY = dimensions ? Math.ceil((camY + dimensions.height) / tileSize) + 2 : Infinity;
+
+  const isTileInViewport = (tx: number, ty: number) => {
+    return tx >= minTileX && tx <= maxTileX && ty >= minTileY && ty <= maxTileY;
+  };
+
   // 4b. Render Corpses (on top of blood, under living units/traps)
   if (gameState.corpses) {
     gameState.corpses.forEach((corpse) => {
       const x = corpse.x;
       const y = corpse.y;
+      if (!isTileInViewport(x, y)) return;
       if (!gameState.discovered[y]?.[x]) return;
 
       const rx = x * tileSize - camX;
@@ -90,6 +103,7 @@ export function renderEntityLayer({
     gameState.dungeonProps.forEach((prop) => {
       const x = prop.x;
       const y = prop.y;
+      if (!isTileInViewport(x, y)) return;
       if (!gameState.discovered[y]?.[x]) return;
 
       const rx = x * tileSize - camX;
@@ -111,6 +125,7 @@ export function renderEntityLayer({
   gameState.traps.forEach((trap) => {
     const x = trap.x;
     const y = trap.y;
+    if (!isTileInViewport(x, y)) return;
     if (!gameState.discovered[y]?.[x]) return;
 
     if (trap.hidden && !trap.detected) return;
@@ -145,6 +160,7 @@ export function renderEntityLayer({
   gameState.chests.forEach((chest) => {
     const x = chest.x;
     const y = chest.y;
+    if (!isTileInViewport(x, y)) return;
     if (!gameState.discovered[y]?.[x]) return;
 
     const rx = x * tileSize - camX;
@@ -169,6 +185,7 @@ export function renderEntityLayer({
     pois.forEach((poi) => {
       const x = poi.x;
       const y = poi.y;
+      if (!isTileInViewport(x, y)) return;
       if (!gameState.discovered[y]?.[x]) return;
 
       const rx = x * tileSize - camX;
@@ -204,6 +221,7 @@ export function renderEntityLayer({
     gameState.lootPiles.forEach((loot) => {
       const x = loot.x;
       const y = loot.y;
+      if (!isTileInViewport(x, y)) return;
       if (!gameState.discovered[y]?.[x]) return;
 
       const rx = x * tileSize - camX;
@@ -223,6 +241,7 @@ export function renderEntityLayer({
     gameState.npcs.forEach((npc) => {
       const x = npc.x;
       const y = npc.y;
+      if (!isTileInViewport(x, y)) return;
       const npcZ = npc.z !== undefined ? npc.z : 0;
       if (gameState.isOverworld && npcZ !== (gameState.overworldZ || 0)) return;
       if (!gameState.visible[y]?.[x]) return;
@@ -266,6 +285,7 @@ export function renderEntityLayer({
   gameState.enemies.forEach((enemy) => {
     const x = enemy.x;
     const y = enemy.y;
+    if (!isTileInViewport(x, y)) return;
     if (!gameState.visible[y]?.[x]) return;
 
     const rx = x * tileSize - camX;
@@ -401,6 +421,10 @@ export function renderEntityLayer({
 
   // 9. Render Floating Particle Effects / Damage numbers / Projectiles
   effects.forEach((fx) => {
+    const tileX = Math.floor(fx.x);
+    const tileY = Math.floor(fx.y);
+    if (!gameState.visible[tileY]?.[tileX]) return;
+
     const frx = fx.x * tileSize - camX;
     const fry = fx.y * tileSize - camY;
 

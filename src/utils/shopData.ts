@@ -1,42 +1,13 @@
 import { EquipmentItem, WeaponBaseType, CatalystType } from '../types';
 import { SPELL_SCROLLS, getSpellScrollAsEquipmentItem } from './spellScrolls';
+import shopsJson from '../data/shops.json';
 export { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';
 
-export const BLACKSMITH_SHOP_ITEMS: EquipmentItem[] = [
-  { id: 'shop_steel_broadsword', name: 'Alloy Broadsword', type: 'weapon', subType: WeaponBaseType.Sword, defense: 0, damage: 9, critChance: 0.12, range: 1, color: '#38bdf8', description: 'Finely-forged steel with edge sharpness.', value: 95 },
-  { id: 'shop_titanium_mace', name: 'Granite heavy Hammer', type: 'weapon', subType: WeaponBaseType.Hammer, defense: 0, damage: 13, critChance: 0.05, range: 1, color: '#34d399', description: 'Extremely blunt and causes knocks away targets.', value: 140 },
-  { id: 'shop_arcane_wand', name: 'Ancient Staff', type: 'weapon', subType: WeaponBaseType.Staff, defense: 0, damage: 8, critChance: 0.15, range: 4, color: '#a78bfa', description: 'Requires 4 MP to project arcane bullets.', value: 120 },
-  { id: 'shop_hunter_bow', name: 'Rangers Longbow', type: 'weapon', subType: WeaponBaseType.Bow, defense: 0, damage: 7, critChance: 0.18, range: 4, color: '#22c55e', description: 'Graceful flexible wood with rapid flight arrow string.', value: 110 },
-  { id: 'shop_apprentice_wand', name: 'Spark Electric Wand', type: 'weapon', subType: WeaponBaseType.Wand, defense: 0, damage: 6, critChance: 0.10, range: 3, color: '#f59e0b', description: 'Requires 3 MP to cast voltage crackles.', value: 85 },
-  { id: 'shop_steel_cuirass', name: 'Steel Plate Chest', type: 'armor', subType: 'HeavyArmor', defense: 6, damage: 0, critChance: 0, range: 0, color: '#f43f5e', description: 'Forged solid plate lining.', value: 130 },
-  { id: 'shop_iron_helm', name: 'Iron Winged Helm', type: 'armor', subType: 'Helmet', defense: 3, damage: 0, critChance: 0, range: 0, color: '#f43f5e', description: 'Heavy iron helm with side reinforcement flaps.', value: 65 },
-  { id: 'shop_leather_gloves', name: 'Gauntlets of Might', type: 'armor', subType: 'Gloves', defense: 2, damage: 0, critChance: 0, range: 0, color: '#38bdf8', description: 'Boiled leather and iron plated hand protection.', value: 45 },
-  { id: 'shop_stone_pendant', name: 'Amulet of Might', type: 'armor', subType: 'Amulet', defense: 2, damage: 0, critChance: 0, range: 0, color: '#a78bfa', description: 'Engraved stone necklace boosting the wearer\'s fortitude.', value: 50 },
-  { id: 'shop_heavy_boots', name: 'Sturdy Steel Soles', type: 'armor', subType: 'Boots', defense: 2, damage: 0, critChance: 0, range: 0, color: '#34d399', description: 'Reinforced knee-high leg protection.', value: 55 },
-  { id: 'shop_heater_shield', name: 'Kite Guard Shield', type: 'armor', subType: 'Shield', defense: 4, damage: 0, critChance: 0, range: 0, color: '#eab308', description: 'Reinforced heater guard shield.', value: 75 }
-];
+export const BLACKSMITH_SHOP_ITEMS: EquipmentItem[] = shopsJson.blacksmithItems as unknown as EquipmentItem[];
 
-export const MERCHANT_RESOURCES = [
-  { id: 'mat_wood', name: 'Oakhaven Timber 🪵', price: 18, color: '#b45309', desc: 'Sturdy harvested forest timber. High desert demand.' },
-  { id: 'mat_iron', name: 'Scrap Iron Iron', price: 32, color: '#4d5569', desc: 'Base alloy metal material.' },
-  { id: 'mat_mithril', name: 'Glimmering Mithril', price: 75, color: '#38bdf8', desc: 'Rare light arcane metal.' },
-  { id: 'mat_obsidian', name: 'Dark Volcanic Obsidian', price: 110, color: '#334155', desc: 'Highly brittle volcanic stone.' },
-  { id: 'mat_dragonscale', name: 'Crimson Dragonscale', price: 160, color: '#f43f5e', desc: 'Fire-resistant protective shell.' },
-  { id: 'mat_feybone', name: 'Ancient Feybone Scaffold', price: 195, color: '#10b981', desc: 'Enchanted fossil structure.' },
-  { id: 'mat_thick_hide', name: 'Thick Wild Hide 🟤', price: 20, color: '#78350f', desc: 'Tough, insulated leather hide. Ideal for armor reinforcement.' },
-  { id: 'mat_lockpick', name: 'Tension Lockpick 🔑', price: 15, color: '#eab308', desc: 'Used to crack open locked treasure chests.' },
-  { id: 'mat_skeleton_key', name: 'Grim Skeleton Key 💀', price: 250, color: '#c084fc', desc: 'A rare single-use skull-headed key. Instantly opens any locked chest.' }
-];
+export const MERCHANT_RESOURCES = shopsJson.merchantResources;
 
-export const TAVERN_SHOP_ITEMS = [
-  { id: 'mat_beer', name: 'Frothy Beer Mug 🍺', price: 15, color: '#fbbf24', desc: 'Satisfies and heals you! Restores 15 HP and 5 MP.' },
-  { id: 'mat_bread', name: 'Fresh Hearth Bread 🍞', price: 10, color: '#f59e0b', desc: 'Warm village core loaf. Restores 20 HP.' },
-  { id: 'mat_berry', name: 'Wild Berries 🍓', price: 8, color: '#f43f5e', desc: 'Sweet, harvested forest berries.' },
-  { id: 'mat_berry_pie', name: 'Baked Berry Pie 🥧', price: 22, color: '#ec4899', desc: 'Enriched berry pie! Restores 40 HP and 15 MP.' },
-  { id: 'mat_fishing_pole', name: 'Solid Fishing Pole 🎣', price: 35, color: '#06b6d4', desc: 'A resilient flexible rod. Cast into flowing river waters to catch wild fish!' },
-  { id: 'mat_cooked_fish', name: 'Salt-Baked Fish 🐟', price: 20, color: '#38bdf8', desc: 'Deliciously cured over smoke. Restores 30 HP.' },
-  { id: 'mat_lockpick', name: 'Tension Lockpick 🔑', price: 15, color: '#eab308', desc: 'Used to crack open locked treasure chests.' }
-];
+export const TAVERN_SHOP_ITEMS = shopsJson.tavernItems;
 
 export const SEPPO_SHOP_ITEMS: EquipmentItem[] = [
   {
@@ -105,16 +76,7 @@ export const SEPPO_RESOURCES = [
   }
 ];
 
-export const APOTHECARY_ITEMS = [
-  { id: 'cat_fire', name: 'Pyrotactile Fire Catalyst', price: 20, color: '#ef4444', desc: 'Infuses burn fire afflictions.' },
-  { id: 'cat_frost', name: 'Cryo-forged Ice Catalyst', price: 20, color: '#3b82f6', desc: 'Infuses freeze ice ralentiss.' },
-  { id: 'cat_poison', name: 'Venom-stung Gas Catalyst', price: 20, color: '#10b981', desc: 'Infuses poison damage over turns.' },
-  { id: 'cat_lightning', name: 'Super-charged Spark Catalyst', price: 20, color: '#eab308', desc: 'Infuses chain electro sparks.' },
-  { id: 'cat_shadow', name: 'Void-gazing Dark Catalyst', price: 20, color: '#8b5cf6', desc: 'Infuses deep decay debuffs.' },
-  { id: 'potion_hp', name: 'Apothecary Elixir (HP)', price: 15, color: '#ec4899', desc: 'Restores 35 HP on instant intake.' },
-  { id: 'potion_mp', name: 'Aether Beverage (MP)', price: 12, color: '#3b82f6', desc: 'Restores 15 MP on instant intake.' },
-  { id: 'scroll_recall', name: 'Scroll of Escape', price: 25, color: '#f43f5e', desc: 'Teleports you instantly out of any dungeon and returns you to the surface entrance!' }
-];
+export const APOTHECARY_ITEMS = shopsJson.apothecaryItems;
 
 export const MERCHANT_INITIALS: { [role: string]: { gold: number, stock: { [itemId: string]: number } } } = {
   'npc_blacksmith': {
@@ -199,6 +161,52 @@ export const MERCHANT_INITIALS: { [role: string]: { gold: number, stock: { [item
       'scroll_spell_tide_wave': 2,
       'scroll_spell_noxious_swarm': 2
     }
+  },
+  'fishmonger': {
+    gold: 480,
+    stock: {
+      'mat_fresh_catch': 18,
+      'mat_salted_cod': 25,
+      'mat_cooked_fish': 14,
+      'mat_fishing_pole': 8
+    }
+  },
+  'harbor_master': {
+    gold: 750,
+    stock: {
+      'mat_nautical_chart': 8,
+      'mat_ship_pitch': 12,
+      'mat_whale_oil': 10,
+      'scroll_recall': 6,
+      'mat_salted_cod': 15
+    }
+  },
+  'sailor': {
+    gold: 320,
+    stock: {
+      'mat_salted_cod': 12,
+      'mat_beer': 15,
+      'mat_fresh_catch': 8,
+      'mat_thick_hide': 6
+    }
+  },
+  'dockworker': {
+    gold: 280,
+    stock: {
+      'mat_ship_pitch': 10,
+      'mat_wood': 20,
+      'mat_iron': 10,
+      'mat_beer': 10
+    }
+  },
+  'ferried_navigator': {
+    gold: 600,
+    stock: {
+      'mat_nautical_chart': 10,
+      'scroll_recall': 8,
+      'mat_whale_oil': 6,
+      'mat_salted_cod': 10
+    }
   }
 };
 
@@ -260,6 +268,7 @@ export const getMerchantConfig = (role: string, id: string): { maxGold: number, 
   else if (role === 'merchant_seppo') mappedRole = 'merchant_seppo';
   else if (role === 'traveler_herbalist') mappedRole = 'npc_apothecary';
   else if (role === 'traveler_hunter' || role === 'traveler_pilgrim') mappedRole = 'npc_merchant';
+  else if (role === 'fishmonger' || role === 'harbor_master' || role === 'sailor' || role === 'dockworker' || role === 'ferried_navigator') mappedRole = role;
 
   const config = MERCHANT_INITIALS[mappedRole] || MERCHANT_INITIALS['tavern_master'];
   return {
@@ -268,23 +277,3 @@ export const getMerchantConfig = (role: string, id: string): { maxGold: number, 
   };
 };
 
-export const getCharismaDiscountMultiplier = (gameState: any): number => {
-  const charisma = gameState.attributes?.CHA ?? 10;
-  const discount = Math.min(0.25, Math.max(0, (charisma - 10) * 0.01));
-  return 1.0 - discount;
-};
-
-export const getBiomePriceMultiplier = (itemId: string, biome?: string): number => {
-  if (!biome) return 1.0;
-  if (biome === 'desert' || biome === 'volcano') {
-    if (itemId === 'mat_wood' || itemId === 'cat_frost') return 1.4;
-    if (itemId === 'mat_obsidian' || itemId === 'cat_fire') return 0.8;
-  } else if (biome === 'snow' || biome === 'glacier') {
-    if (itemId === 'cat_fire' || itemId === 'mat_wood') return 1.4;
-    if (itemId === 'cat_frost') return 0.8;
-  } else if (biome === 'swamp' || biome === 'forest') {
-    if (itemId === 'mat_iron' || itemId === 'mat_mithril') return 1.3;
-    if (itemId === 'mat_wood') return 0.8;
-  }
-  return 1.0;
-};

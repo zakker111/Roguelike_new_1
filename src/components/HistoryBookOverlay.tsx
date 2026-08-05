@@ -9,14 +9,16 @@ import { WORLD_HISTORY_CHAPTERS, LoreChapter } from '../data/worldHistory';
 
 interface HistoryBookOverlayProps {
   unlockedChapters: string[];
-  poisCount: number;
-  onClose: () => void;
+  poisCount?: number;
+  onClose?: () => void;
+  inline?: boolean;
 }
 
 export default function HistoryBookOverlay({
   unlockedChapters = [],
   poisCount = 0,
-  onClose
+  onClose,
+  inline = false,
 }: HistoryBookOverlayProps) {
   const [activeChapterId, setActiveChapterId] = useState<string>('sunder_oakhaven');
 
@@ -28,26 +30,38 @@ export default function HistoryBookOverlay({
 
   const unlockedCount = chaptersArray.filter(c => c.isUnlocked).length;
 
-  return (
-    <div id="history-book-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
-      <div 
-        id="history-book-modal"
-        className="bg-slate-900 border border-slate-800 rounded-xl max-w-4xl w-full max-h-[85vh] h-[650px] flex flex-col overflow-hidden shadow-2xl animate-in fade-in-50 zoom-in-95 duration-150"
-      >
-        {/* Header */}
-        <div className="border-b border-slate-800 p-4 flex items-center justify-between bg-slate-950/50">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-400" />
-            <span className="text-sm font-bold uppercase tracking-wider text-slate-200">📖 Chronicles of Oakhaven</span>
-          </div>
+  const content = (
+    <div 
+      id="history-book-modal"
+      className={`bg-slate-900 border border-slate-800 rounded-xl w-full flex flex-col overflow-hidden shadow-2xl ${
+        inline ? 'h-full flex-1 min-h-[550px]' : 'max-w-4xl max-h-[85vh] h-[650px] animate-in fade-in-50 zoom-in-95 duration-150'
+      }`}
+    >
+      {/* Header */}
+      <div className="border-b border-slate-800 p-4 flex items-center justify-between bg-slate-950/50">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-indigo-400" />
+          <span className="text-sm font-bold uppercase tracking-wider text-slate-200">📖 Chronicles of Oakhaven</span>
+          {inline && (
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30">
+              Main Panel Tab
+            </span>
+          )}
+        </div>
+        {onClose && (
           <button 
             id="close-history-book-btn"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/50 cursor-pointer transition-all"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/50 cursor-pointer transition-all text-xs flex items-center gap-1"
           >
-            <X className="w-5 h-5" />
+            {inline ? (
+              <span className="px-2 py-0.5 bg-slate-800 text-slate-300 rounded hover:bg-slate-700">← Back to Expedition</span>
+            ) : (
+              <X className="w-5 h-5" />
+            )}
           </button>
-        </div>
+        )}
+      </div>
 
         {/* Top summary cards */}
         <div className="grid grid-cols-3 gap-2 p-3 bg-slate-950/30 border-b border-slate-800/70 text-left">
@@ -183,6 +197,15 @@ export default function HistoryBookOverlay({
           <span>© Scribbled in the Chronicles of Oakhaven</span>
         </div>
       </div>
+  );
+
+  if (inline) {
+    return content;
+  }
+
+  return (
+    <div id="history-book-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xs">
+      {content}
     </div>
   );
 }

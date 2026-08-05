@@ -1,0 +1,81 @@
+{
+  "bossTemplates": [
+    {
+      "id": "boss_morgath",
+      "name": "Morgath the Voidbringer",
+      "type": "SkeletonMage",
+      "char": "☠",
+      "color": "#c084fc",
+      "hpMultiplier": 4.8,
+      "atkMultiplier": 1.8,
+      "defBonus": 4,
+      "speed": 0.9,
+      "description": "A terrifying giant skeleton mage channeling dark necrotic energies."
+    },
+    {
+      "id": "boss_grommash",
+      "name": "Grommash the Undying Troll",
+      "type": "Troll",
+      "char": "👹",
+      "color": "#f43f5e",
+      "hpMultiplier": 5.6,
+      "atkMultiplier": 2.1,
+      "defBonus": 5,
+      "speed": 1.2,
+      "description": "A colossal cave beast with unfathomable stamina and brutal physical weight."
+    },
+    {
+      "id": "boss_krosh",
+      "name": "Warlord Krosh Skullbreaker",
+      "type": "OrcBrute",
+      "char": "🧌",
+      "color": "#ea580c",
+      "hpMultiplier": 5.0,
+      "atkMultiplier": 2.3,
+      "defBonus": 5,
+      "speed": 1.1,
+      "description": "A heavily plated orc carrying a massive stone hammer that shatters skulls."
+    },
+    {
+      "id": "boss_scurry",
+      "name": "King Scurry the Plague Swarm",
+      "type": "Rat",
+      "char": "🐀",
+      "color": "#a3e635",
+      "hpMultiplier": 4.2,
+      "atkMultiplier": 1.6,
+      "defBonus": 3,
+      "speed": 0.7,
+      "description": "A grotesque rodent sovereign leading endless sewer infestations."
+    }
+  ],
+  "squadBlueprints": [
+    {
+      "id": "goblin_ambush",
+      "name": "Goblin Highwaymen",
+      "difficulty": "Easy",
+      "members": [
+        { "type": "Goblin", "count": 2, "isElite": false },
+        { "type": "Trapmaster", "count": 1, "isElite": false }
+      ]
+    },
+    {
+      "id": "orc_raiding_party",
+      "name": "Orc Vanguard Raiders",
+      "difficulty": "Medium",
+      "members": [
+        { "type": "OrcBrute", "count": 2, "isElite": true },
+        { "type": "SkeletonMage", "count": 1, "isElite": false }
+      ]
+    },
+    {
+      "id": "undead_legion",
+      "name": "Necromantic Vanguard",
+      "difficulty": "Hard",
+      "members": [
+        { "type": "SkeletonMage", "count": 2, "isElite": true },
+        { "type": "Troll", "count": 1, "isElite": true }
+      ]
+    }
+  ]
+}

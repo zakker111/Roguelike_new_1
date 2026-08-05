@@ -191,5 +191,55 @@
     "baseDamageMod": 3,
     "critMod": 0.05,
     "speedMod": 0.9
+  },
+  {
+    "id": "mat_fresh_catch",
+    "name": "Fresh Harbor Catch 🐟",
+    "description": "Ocean fish landed fresh at the harbor docks. High trade demand in inland desert towns.",
+    "category": "Tier1",
+    "color": "#06b6d4",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_salted_cod",
+    "name": "Salted Ocean Cod 🧂🐟",
+    "description": "Cured salted cod preserved in wooden ocean barrels. Long shelf-life nautical provisions.",
+    "category": "Tier1",
+    "color": "#38bdf8",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_whale_oil",
+    "name": "Refined Whale Oil 🛢️",
+    "description": "Heavy, highly flammable marine oil. Burns bright in blizzard lanterns and naval incendiaries.",
+    "category": "Tier2",
+    "color": "#eab308",
+    "baseDamageMod": 2,
+    "critMod": 0.05,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_nautical_chart",
+    "name": "Nautical Sea Chart 🗺️",
+    "description": "Intricate parchment map detailing harbor anchorages, coastal tides, and shallow reefs.",
+    "category": "Tier2",
+    "color": "#a855f7",
+    "baseDamageMod": 1,
+    "critMod": 0.02,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_ship_pitch",
+    "name": "Waterproof Ship Pitch 🪵",
+    "description": "Sticky pine tar resin used for sealing vessel hulls, waterproofing gear, and boat repairs.",
+    "category": "Tier1",
+    "color": "#b45309",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
   }
 ]

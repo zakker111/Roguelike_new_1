@@ -12,7 +12,18 @@ import {
   getDeterministicTownName as getDeterministicTownNameModule,
   buildModularTownSquare as buildModularTownSquareModule,
   buildCastleKeep as buildCastleKeepModule,
+  getSettlementTier as getSettlementTierModule,
 } from '../world/overworldStructures';
+import {
+  generateWatchtowerPOI,
+  generateRuinsPOI,
+  generatePointsOfInterest,
+} from '../world/poiGenerators';
+import {
+  buildHouse,
+  decorateBuildingFromJSON,
+  parseCoord,
+} from '../world/structureGenerators';
 
 let currentWorldSeed = 8675309;
 
@@ -85,6 +96,10 @@ export function isCastleTownAtChunk(chunkX: number, chunkY: number): boolean {
   return isCastleTownAtChunkModule(chunkX, chunkY, prng);
 }
 
+export function getSettlementTier(chunkX: number, chunkY: number) {
+  return getSettlementTierModule(chunkX, chunkY, prng);
+}
+
 export function getDeterministicTownName(cx: number, cy: number): string {
   return getDeterministicTownNameModule(cx, cy, currentWorldSeed, prng);
 }
@@ -147,13 +162,12 @@ export function generateOverworldChunk(
   let secondFloorVisible: boolean[][] | undefined = undefined;
 
   const hasTown = hasTownAtChunk(chunkX, chunkY);
-  const isPortTown = hasTown && (chunkX === 3 && chunkY === -2);
-  
-    const isCastleTown = isCastleTownAtChunk(chunkX, chunkY);
+  const townName = hasTown ? getDeterministicTownName(chunkX, chunkY) : '';
+  const isPortTown = hasTown && (chunkX === 3 && chunkY === -2 || townName.toLowerCase().includes('port') || townName.toLowerCase().includes('harbor') || townName.toLowerCase().includes('bay'));
+  const isCastleTown = isCastleTownAtChunk(chunkX, chunkY);
 
-    if (hasTown) {
+  if (hasTown) {
     // GENERATE A TOWN CHUNK
-    const townName = getDeterministicTownName(chunkX, chunkY);
     towns.push({ x: Math.floor(width / 2), y: Math.floor(height / 2), name: townName });
 
     // Lay down paths/roads (horizontal and vertical crossroad in the town center)
@@ -307,21 +321,120 @@ export function generateOverworldChunk(
       map[midY + 2][midX + 2] = TileType.Torch;
     }
 
-    // If Vanguard Harbor Port, sculpt harbor water and pier tiles
+    // If Harbor Port Town, sculpt detailed harbor basin, wooden piers, moored vessels, Harbor Master Hut, Fish Market & Crane staging
     if (isPortTown) {
+      // 1. Sculpt Coastal Harbor Water Basin
       for (let y = 0; y < height; y++) {
-        for (let x = width - 7; x < width; x++) {
+        for (let x = width - 12; x < width; x++) {
           map[y][x] = TileType.Water;
         }
       }
-      for (let x = width - 8; x < width - 1; x++) {
+
+      // 2. Main Central Pier & Quay Promenade
+      for (let x = width - 15; x < width - 1; x++) {
         map[midY - 2][x] = TileType.Path;
         map[midY - 1][x] = TileType.Path;
       }
+      // Pier head quay
       for (let y = midY - 3; y <= midY; y++) {
-        for (let x = width - 4; x <= width - 2; x++) {
+        for (let x = width - 5; x <= width - 2; x++) {
           map[y][x] = TileType.Path;
         }
+      }
+      map[midY - 2][width - 2] = TileType.Torch; // Pier head beacon lantern
+
+      // 3. North Pier & Moored Vessel ("HMS Tidebreaker")
+      for (let x = width - 12; x <= width - 3; x++) {
+        map[midY - 7][x] = TileType.Path;
+      }
+      map[midY - 7][width - 3] = TileType.Sign; // Mooring Sign
+
+      // Vessel 1 hull/deck (HMS Tidebreaker)
+      for (let vx = width - 6; vx <= width - 2; vx++) {
+        for (let vy = midY - 10; vy <= midY - 8; vy++) {
+          if (vy >= 0 && vy < height && vx >= 0 && vx < width) {
+            map[vy][vx] = TileType.Floor; // Wooden Ship Deck
+          }
+        }
+        if (midY - 11 >= 0) map[midY - 11][vx] = TileType.Wall; // Vessel Bow/Stern railing
+      }
+      if (midY - 9 >= 0) {
+        map[midY - 9][width - 4] = TileType.Torch; // Ship Mast lantern
+        map[midY - 9][width - 5] = TileType.Table; // Deck Cargo crate
+      }
+      if (midY - 8 >= 0) map[midY - 8][width - 3] = TileType.Sign; // HMS Tidebreaker Banner
+
+      // 4. South Pier & Moored Vessel ("The Salty Siren")
+      for (let x = width - 12; x <= width - 3; x++) {
+        if (midY + 5 < height) map[midY + 5][x] = TileType.Path;
+      }
+      if (midY + 5 < height) map[midY + 5][width - 3] = TileType.Sign; // Mooring Sign
+
+      // Vessel 2 hull/deck (The Salty Siren)
+      for (let vx = width - 6; vx <= width - 2; vx++) {
+        for (let vy = midY + 7; vy <= midY + 9; vy++) {
+          if (vy >= 0 && vy < height && vx >= 0 && vx < width) {
+            map[vy][vx] = TileType.Floor;
+          }
+        }
+        if (midY + 10 < height) map[midY + 10][vx] = TileType.Wall;
+      }
+      if (midY + 8 < height) {
+        map[midY + 8][width - 4] = TileType.Campfire; // Ship Stove / Deck Fire
+        map[midY + 8][width - 5] = TileType.Table; // Fish Barrel crate
+      }
+      if (midY + 7 < height) map[midY + 7][width - 3] = TileType.Sign; // The Salty Siren Banner
+
+      // 5. Harbor Master Hut (x: width - 18 to width - 13, y: midY - 8 to midY - 4)
+      const hmX = width - 18;
+      const hmY = midY - 8;
+      const hmW = 6;
+      const hmH = 5;
+      for (let hy = hmY; hy < hmY + hmH; hy++) {
+        for (let hx = hmX; hx < hmX + hmW; hx++) {
+          if (hy >= 0 && hy < height && hx >= 0 && hx < width) {
+            if (hy === hmY || hy === hmY + hmH - 1 || hx === hmX || hx === hmX + hmW - 1) {
+              map[hy][hx] = TileType.Wall;
+            } else {
+              map[hy][hx] = TileType.Floor;
+            }
+          }
+        }
+      }
+      if (hmY + 2 < height && hmX + hmW - 1 < width) map[hmY + 2][hmX + hmW - 1] = TileType.Door; // Door facing east towards docks
+      if (hmY + 1 < height) {
+        map[hmY + 1][hmX + 2] = TileType.Table; // Harbor Master Desk
+        map[hmY + 1][hmX + 1] = TileType.Chair;
+      }
+      if (hmY + 3 < height) {
+        map[hmY + 3][hmX + 1] = TileType.Bed;
+        map[hmY + 3][hmX + 3] = TileType.Torch;
+      }
+      if (hmY + 2 < height) map[hmY + 2][hmX + hmW] = TileType.Sign; // "⚓ Harbor Master Command Hut"
+
+      // 6. Fish Market & Fishmonger Stalls (x: width - 18 to width - 13, y: midY + 2 to midY + 6)
+      const fmX = width - 18;
+      const fmY = midY + 2;
+      for (let fy = fmY; fy < fmY + 4; fy++) {
+        for (let fx = fmX; fx < fmX + 5; fx++) {
+          if (fy >= 0 && fy < height && fx >= 0 && fx < width) {
+            map[fy][fx] = TileType.Floor;
+          }
+        }
+      }
+      if (fmY + 1 < height) map[fmY + 1][fmX + 1] = TileType.Table; // Fresh Fish Display Stall
+      if (fmY + 2 < height) map[fmY + 2][fmX + 1] = TileType.Table; // Salted Cod Barrel Counter
+      if (fmY + 1 < height) map[fmY + 1][fmX + 3] = TileType.Campfire; // Fish Smokehouse
+      if (fmY < height) map[fmY][fmX + 2] = TileType.Sign; // "🐟 Harbor Fresh Catch & Salted Fish Market"
+
+      // 7. Harbor Loading Crane & Cargo Staging Area
+      if (midY - 4 >= 0) {
+        map[midY - 4][width - 11] = TileType.Table; // Cargo Box 1
+        map[midY - 4][width - 10] = TileType.Table; // Cargo Box 2
+      }
+      if (midY - 3 >= 0) {
+        map[midY - 3][width - 11] = TileType.Anvil; // Dock Crane Mooring Winch
+        map[midY - 3][width - 10] = TileType.Torch; // Loading Beacon
       }
     }
 
@@ -877,23 +990,115 @@ export function generateOverworldChunk(
       });
     }
 
-    // 7. Harbor Captain Jack
+    // 7. Nautical Population & Harbor Master Command Force
     if (isPortTown) {
+      // 7.1 Harbor Master Captain Jack
       npcs.push({
         id: `npc_captain_${chunkX}_${chunkY}`,
-        name: 'Captain Jack (Harbor Captain)',
-        role: 'harbor_captain' as any,
-        char: '⛵',
+        name: 'Captain Jack (Harbor Master)',
+        role: 'harbor_master' as any,
+        char: '⚓',
         color: '#2dd4bf', // teal
-        x: width - 9,
-        y: midY - 1,
-        homeX: width - 9,
-        homeY: midY - 1,
-        workX: width - 9,
-        workY: midY - 1,
+        x: width - 16,
+        y: midY - 6,
+        homeX: width - 17,
+        homeY: midY - 5,
+        workX: width - 16,
+        workY: midY - 6,
         scheduleState: 'work',
         dialogue: [
-          "Ahoy matey! I can sail your party to East Port Town for 200 Gold. Care to depart?"
+          "Ahoy, traveler! I oversee vessel registrations, nautical charts, and sea port logistics.",
+          "Looking for fresh salted cod, whale oil, or coastal sea charts? Check our harbor inventory!",
+          "I can also arrange ferried passage across the coastal bays for 200 Gold.",
+          "Zzz... Restful sleep after a day at the harbor desk..."
+        ]
+      });
+
+      // 7.2 Fishmonger Finnegan
+      npcs.push({
+        id: `npc_fishmonger_${chunkX}_${chunkY}`,
+        name: 'Finnegan (Fishmonger)',
+        role: 'fishmonger' as any,
+        char: '🐟',
+        color: '#38bdf8', // cyan
+        x: width - 16,
+        y: midY + 3,
+        homeX: width - 16,
+        homeY: midY + 3,
+        workX: width - 16,
+        workY: midY + 3,
+        scheduleState: 'work',
+        dialogue: [
+          "Fresh harbor catch and salted ocean cod! Direct from the fishing trawlers!",
+          "Inland desert merchants pay massive gold for salted cod. Stock up before you travel!",
+          "Smell that fresh ocean breeze? Nothing better than a early morning catch.",
+          "Zzz... The fish stop biting at night..."
+        ]
+      });
+
+      // 7.3 Dockworker Bram
+      npcs.push({
+        id: `npc_dockworker_${chunkX}_${chunkY}`,
+        name: 'Bram (Dockworker)',
+        role: 'dockworker' as any,
+        char: '📦',
+        color: '#f59e0b', // amber
+        x: width - 11,
+        y: midY - 3,
+        homeX: width - 11,
+        homeY: midY - 3,
+        workX: width - 11,
+        workY: midY - 3,
+        scheduleState: 'work',
+        dialogue: [
+          "Heave-ho! Heavy barrels of ship pitch and refined whale oil coming off the ships!",
+          "We operate the harbor cranes day and night to keep international trade moving.",
+          "Watch your step on the wet wooden pier planks—they're slick with ocean spray!",
+          "Zzz... My shoulders ache from carrying iron anchors..."
+        ]
+      });
+
+      // 7.4 Old Sailor Seabert
+      npcs.push({
+        id: `npc_sailor_${chunkX}_${chunkY}`,
+        name: 'Seabert (Old Sailor)',
+        role: 'sailor' as any,
+        char: '⛵',
+        color: '#a78bfa', // purple
+        x: width - 4,
+        y: midY - 9,
+        homeX: width - 4,
+        homeY: midY - 9,
+        workX: width - 4,
+        workY: midY - 9,
+        scheduleState: 'work',
+        dialogue: [
+          "Ahoy! The HMS Tidebreaker is tied up at the north pier after battling heavy fog.",
+          "I've sailed from glacial northern tundras to scorching desert reef bays. Sunder's waters are wild!",
+          "Need waterproof ship pitch for your boots or gear? I've got spare jars.",
+          "Zzz... Rocked to sleep by gentle ocean waves..."
+        ]
+      });
+
+      // 7.5 Ferried Navigator Corin
+      npcs.push({
+        id: `npc_ferried_nav_${chunkX}_${chunkY}`,
+        name: 'Corin (Ferried Navigator)',
+        role: 'ferried_navigator' as any,
+        char: '🧭',
+        color: '#10b981', // emerald
+        x: width - 3,
+        y: midY - 2,
+        homeX: width - 3,
+        homeY: midY - 2,
+        workX: width - 3,
+        workY: midY - 2,
+        scheduleState: 'work',
+        dialogue: [
+          "Greetings, traveler! I pilot the ferried passage between Vanguard Harbor and East Port for 200 Gold.",
+          "My nautical sea charts plot every safe channel around coastal reefs and whirlpools.",
+          "Speak to me whenever you are ready to set sail!",
+          "Zzz... Anchored until daybreak..."
         ]
       });
     }
@@ -1184,180 +1389,7 @@ export function generateOverworldChunk(
     const isWatchtowerChunk = !hasTown && !isCastleTown && (Math.abs(chunkX) + Math.abs(chunkY)) % 3 === 2 && !(chunkX === 0 && chunkY === 0);
 
     if (isWatchtowerChunk) {
-      // Spawn our custom Faction Watchtower
-      const wtX = 20;
-      const wtY = 10;
-      const wtW = 9;
-      const wtH = 9;
-
-      const grid = [
-        "WWSWWSWWW",
-        "WKKKKKKKW",
-        "SK.X.X.KS",
-        "WK.....KW",
-        "WK..F..KW",
-        "WK.....KW",
-        "SK.X.X.KS",
-        "WKKKKKKKW",
-        "WWWW+WWWW"
-      ];
-
-      const legend: Record<string, TileType> = {
-        "W": TileType.WatchtowerWall,
-        "S": TileType.WatchtowerSlit,
-        "K": TileType.WatchtowerDeck,
-        "F": TileType.WatchtowerFlag,
-        "X": TileType.WatchtowerBarricade,
-        ".": TileType.Floor,
-        "+": TileType.Door
-      };
-
-      // Carve onto map!
-      for (let y = 0; y < wtH; y++) {
-        const rowStr = grid[y];
-        for (let x = 0; x < wtW; x++) {
-          const char = rowStr[x];
-          const tileType = legend[char];
-          if (tileType) {
-            map[wtY + y][wtX + x] = tileType;
-          }
-        }
-      }
-
-      // Initial Faction Owner
-      const initialFaction = chunkX > 0 ? 'vanguard' : (chunkX < 0 ? 'syndicate' : 'neutral');
-
-      // Populate Watchtower State
-      watchtower = {
-        id: `watchtower_${chunkX}_${chunkY}`,
-        chunkX,
-        chunkY,
-        x: wtX,
-        y: wtY,
-        width: wtW,
-        height: wtH,
-        controller: initialFaction,
-        isClaimed: false,
-        claimPercent: 0,
-        garrisonDefeated: false,
-        taxGoldAccumulated: 0,
-        lastTaxTimeMinutes: 0
-      };
-
-      // Faction Tribute Chest inside the tower at (wtX + 4, wtY + 5)
-      chests.push({
-        id: `tribute_chest_${chunkX}_${chunkY}`,
-        x: wtX + 4,
-        y: wtY + 5,
-        isOpened: false,
-        materials: ['mat_mithril', 'mat_steel', 'mat_obsidian'],
-        catalysts: ['cat_fire', 'cat_frost', 'cat_poison', 'cat_lightning', 'cat_shadow'],
-        gold: 250,
-        isLocked: true,
-        keyRequired: 'mat_watchtower_key'
-      });
-
-      // Spawn Sentinel Garrison
-      const commanderId = `wt_commander_${chunkX}_${chunkY}`;
-      enemies.push({
-        id: commanderId,
-        x: wtX + 4,
-        y: wtY + 3,
-        type: EnemyType.DreadKnight,
-        name: initialFaction === 'vanguard' ? '👑 Vanguard Watchtower Commander' : (initialFaction === 'syndicate' ? '👑 Syndicate Watchtower Overlord' : '👑 Renegade Outpost Commander'),
-        hp: 240,
-        maxHp: 240,
-        atk: 15,
-        def: 7,
-        range: 1,
-        speed: 1.0,
-        color: initialFaction === 'vanguard' ? '#38bdf8' : (initialFaction === 'syndicate' ? '#c084fc' : '#cbd5e1'),
-        char: '👑',
-        state: EnemyState.Patrolling,
-        isBoss: true,
-        isElite: true,
-        patrolPath: [{ x: wtX + 4, y: wtY + 3 }],
-        patrolIndex: 0,
-        debuffs: []
-      });
-
-      const guardType = initialFaction === 'vanguard' ? 'Vanguard Watchtower Knight' : (initialFaction === 'syndicate' ? 'Syndicate Watchtower Enforcer' : 'Renegade Raider');
-      const guardColor = initialFaction === 'vanguard' ? '#60a5fa' : (initialFaction === 'syndicate' ? '#a78bfa' : '#94a3b8');
-
-      enemies.push({
-        id: `wt_knight1_${chunkX}_${chunkY}`,
-        x: wtX + 2,
-        y: wtY + 4,
-        type: EnemyType.OrcBrute,
-        name: guardType,
-        hp: 110,
-        maxHp: 110,
-        atk: 9,
-        def: 4,
-        range: 1,
-        speed: 1.0,
-        color: guardColor,
-        char: '🛡',
-        state: EnemyState.Patrolling,
-        isElite: true,
-        patrolPath: [{ x: wtX + 2, y: wtY + 4 }],
-        patrolIndex: 0,
-        debuffs: []
-      });
-
-      enemies.push({
-        id: `wt_knight2_${chunkX}_${chunkY}`,
-        x: wtX + 6,
-        y: wtY + 4,
-        type: EnemyType.OrcBrute,
-        name: guardType,
-        hp: 110,
-        maxHp: 110,
-        atk: 9,
-        def: 4,
-        range: 1,
-        speed: 1.0,
-        color: guardColor,
-        char: '🛡',
-        state: EnemyState.Patrolling,
-        isElite: true,
-        patrolPath: [{ x: wtX + 6, y: wtY + 4 }],
-        patrolIndex: 0,
-        debuffs: []
-      });
-
-      const rangerType = initialFaction === 'vanguard' ? 'Vanguard Sentinel Archer' : (initialFaction === 'syndicate' ? 'Syndicate Sentinel Ranger' : 'Renegade Ranger');
-      const rangerColor = initialFaction === 'vanguard' ? '#93c5fd' : (initialFaction === 'syndicate' ? '#c4b5fd' : '#cbd5e1');
-
-      const rangerSpots = [
-        { x: wtX + 2, y: wtY + 1 },
-        { x: wtX + 6, y: wtY + 1 },
-        { x: wtX + 4, y: wtY + 2 }
-      ];
-
-      rangerSpots.forEach((spot, index) => {
-        enemies.push({
-          id: `wt_ranger_${index}_${chunkX}_${chunkY}`,
-          x: spot.x,
-          y: spot.y,
-          type: EnemyType.SkeletonMage,
-          name: rangerType,
-          hp: 65,
-          maxHp: 65,
-          atk: 6,
-          def: 1,
-          range: 5,
-          speed: 1.0,
-          color: rangerColor,
-          char: '🏹',
-          state: EnemyState.Patrolling,
-          isElite: false,
-          patrolPath: [spot],
-          patrolIndex: 0,
-          debuffs: []
-        });
-      });
-
+      watchtower = generateWatchtowerPOI(map, chunkX, chunkY, prng, chests, enemies);
     } else {
       // Spawn a Dungeon Entrance inside a small 3x3 stone building with random entrance door position
       const dungX = Math.floor(prng(chunkX, chunkY, 3) * (width - 10)) + 5;
@@ -1421,128 +1453,7 @@ export function generateOverworldChunk(
       // Spawn some atmospheric ruined buildings in the wild with premium loot chest!
       const spawnRuins = prng(chunkX, chunkY, 150) > 0.55;
       if (spawnRuins) {
-        const ruinsX = Math.floor(prng(chunkX, chunkY, 151) * (width - 15)) + 4;
-        const ruinsY = Math.floor(prng(chunkX, chunkY, 152) * (height - 11)) + 3;
-        const ruinsW = 5;
-        const ruinsH = 4;
-
-        let canPlaceRuins = true;
-        for (let dy = 0; dy < ruinsH; dy++) {
-          for (let dx = 0; dx < ruinsW; dx++) {
-            const tx = ruinsX + dx;
-            const ty = ruinsY + dy;
-            if (tx >= 0 && tx < width && ty >= 0 && ty < height) {
-              if (map[ty][tx] === TileType.Water || map[ty][tx] === TileType.Path || map[ty][tx] === TileType.DungeonEntrance || map[ty][tx] === TileType.Door) {
-                canPlaceRuins = false;
-              }
-            } else {
-              canPlaceRuins = false;
-            }
-          }
-        }
-
-        if (canPlaceRuins) {
-          for (let ry = ruinsY; ry < ruinsY + ruinsH; ry++) {
-            for (let rx = ruinsX; rx < ruinsX + ruinsW; rx++) {
-              if (ry === ruinsY || ry === ruinsY + ruinsH - 1 || rx === ruinsX || rx === ruinsX + ruinsW - 1) {
-                // Create gaps for broken bricks/ruins look!
-                if (prng(rx, ry, 153) > 0.35) {
-                  map[ry][rx] = TileType.Wall;
-                } else {
-                  map[ry][rx] = TileType.Floor;
-                }
-              } else {
-                map[ry][rx] = TileType.Floor;
-              }
-            }
-          }
-
-          // Put Table & Chair in ruins for extreme environmental detailing!
-          map[ruinsY + 1][ruinsX + 1] = TileType.Table;
-          map[ruinsY + 2][ruinsX + 1] = TileType.Chair;
-
-          // Place a high-value chest in the ruins center!
-          const luxX = ruinsX + Math.floor(ruinsW / 2);
-          const luxY = ruinsY + Math.floor(ruinsH / 2);
-          map[luxY][luxX] = TileType.Floor; // clear wall path if any
-
-          chests.push({
-            id: `ruined_chest_${chunkX}_${chunkY}`,
-            x: luxX,
-            y: luxY,
-            isOpened: false,
-            materials: [BASIC_MATERIALS[0].id, BASIC_MATERIALS[1].id, BASIC_MATERIALS[Math.floor(prng(chunkX, chunkY, 154) * BASIC_MATERIALS.length)].id],
-            catalysts: [ELEMENTAL_CATALYSTS[Math.floor(prng(chunkX, chunkY, 155) * ELEMENTAL_CATALYSTS.length)].id],
-            gold: Math.floor(prng(chunkX, chunkY, 156) * 50) + 50
-          });
-
-          // Spawn the legendary biome boss guarding this ruin!
-          let bossName = "Sylvanus, the Verdant Behemoth";
-          let bossChar = "🌳";
-          let bossColor = "#22c55e";
-          let bossHp = 350;
-          let bossAtk = 18;
-          let bossDef = 8;
-          let bossRange = 1;
-          let bossType = EnemyType.OrcBrute;
-
-          if (biome === 'desert') {
-            bossName = "Sekhmet, the Searing Dune Sovereign";
-            bossChar = "🦂";
-            bossColor = "#eab308";
-            bossHp = 400;
-            bossAtk = 20;
-            bossDef = 10;
-            bossType = EnemyType.DreadKnight;
-          } else if (biome === 'tundra') {
-            bossName = "Ymir, the Frost-Weaver Titan";
-            bossChar = "⛄";
-            bossColor = "#cbd5e1";
-            bossHp = 450;
-            bossAtk = 22;
-            bossDef = 12;
-            bossRange = 2;
-            bossType = EnemyType.Troll;
-          } else if (biome === 'swamp') {
-            bossName = "Charybdis, the Slime-Feaster";
-            bossChar = "🦠";
-            bossColor = "#10b981";
-            bossHp = 380;
-            bossAtk = 16;
-            bossDef = 14;
-            bossType = EnemyType.Slime;
-          }
-
-          const bx = ruinsX + Math.floor(ruinsW / 2);
-          const by = ruinsY + Math.floor(ruinsH / 2) + 1;
-
-          enemies.push({
-            id: `ruin_boss_${chunkX}_${chunkY}`,
-            x: bx,
-            y: by,
-            type: bossType,
-            name: `👑 ${bossName}`,
-            hp: bossHp,
-            maxHp: bossHp,
-            atk: bossAtk,
-            def: bossDef,
-            range: bossRange,
-            speed: 0.9,
-            color: bossColor,
-            char: bossChar,
-            state: EnemyState.Patrolling,
-            isElite: true,
-            isBoss: true, // Mark it as boss
-            eliteEffect: 'Titan',
-            patrolPath: [
-              { x: bx, y: by },
-              { x: Math.max(1, bx - 2), y: by },
-              { x: Math.min(width - 2, bx + 2), y: by }
-            ],
-            patrolIndex: 0,
-            debuffs: []
-          });
-        }
+        generateRuinsPOI(map, chunkX, chunkY, biome, width, height, prng, chests, enemies);
       }
     }
 
@@ -2347,134 +2258,7 @@ export function generateOverworldChunk(
   // Generate immersive Points of Interest (POIs) with World History/Lore snippets
   const poisList: any[] = [];
   if (!hasTown) {
-    const poiRoll = prng(chunkX, chunkY, 1234);
-    let pType: 'monolith' | 'shrine' | 'hearth' | 'sunken_keep' | 'fossil' = 'monolith';
-    if (biome === 'desert') {
-      pType = poiRoll > 0.5 ? 'hearth' : 'fossil';
-    } else if (biome === 'tundra') {
-      pType = poiRoll > 0.7 ? 'monolith' : 'fossil';
-    } else if (biome === 'swamp') {
-      pType = poiRoll > 0.45 ? 'sunken_keep' : 'shrine';
-    } else { // forest
-      pType = poiRoll > 0.6 ? 'shrine' : 'monolith';
-    }
-
-    // Find custom grass tile center away from borders and paths
-    let poiX = -1;
-    let poiY = -1;
-    for (let attempts = 0; attempts < 100; attempts++) {
-      const rx = 10 + Math.floor(prng(chunkX * 13, chunkY * 17, attempts + 1) * (width - 20));
-      const ry = 6 + Math.floor(prng(chunkX * 19, chunkY * 11, attempts + 2) * (height - 12));
-      
-      if (map[ry]?.[rx] === TileType.Grass) {
-        let isSafe = true;
-        for (let dy = -2; dy <= 2; dy++) {
-          for (let dx = -2; dx <= 2; dx++) {
-            const tile = map[ry + dy]?.[rx + dx];
-            if (tile && (tile === TileType.Water || tile === TileType.Path || tile === TileType.DungeonEntrance || tile === TileType.Wall || tile === TileType.Door)) {
-              isSafe = false;
-            }
-          }
-        }
-        if (isSafe) {
-          poiX = rx;
-          poiY = ry;
-          break;
-        }
-      }
-    }
-
-    // Fallback search if no highly safe spot found
-    if (poiX === -1) {
-      for (let y = 6; y < height - 6; y++) {
-        for (let x = 6; x < width - 6; x++) {
-          if (map[y]?.[x] === TileType.Grass) {
-            poiX = x;
-            poiY = y;
-            break;
-          }
-        }
-        if (poiX !== -1) break;
-      }
-    }
-
-    if (poiX !== -1 && poiY !== -1) {
-      // Sculpt scenery around POIs
-      if (pType === 'shrine') {
-        // Lay beautiful cross path circle
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            if (dy === 0 && dx === 0) continue;
-            if (map[poiY + dy]?.[poiX + dx] === TileType.Grass) {
-              map[poiY + dy][poiX + dx] = TileType.Path;
-            }
-          }
-        }
-        if (map[poiY - 2]?.[poiX] === TileType.Grass) map[poiY - 2][poiX] = TileType.Bush;
-        if (map[poiY + 2]?.[poiX] === TileType.Grass) map[poiY + 2][poiX] = TileType.Bush;
-        if (map[poiY]?.[poiX - 2] === TileType.Grass) map[poiY][poiX - 2] = TileType.Tree;
-        if (map[poiY]?.[poiX + 2] === TileType.Grass) map[poiY][poiX + 2] = TileType.Tree;
-      } else if (pType === 'monolith') {
-        // Clean surrounding grass structures and place torch stands
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            if (map[poiY + dy]?.[poiX + dx] === TileType.Tree || map[poiY + dy]?.[poiX + dx] === TileType.Bush) {
-              map[poiY + dy][poiX + dx] = TileType.Grass;
-            }
-          }
-        }
-        if (map[poiY - 1]?.[poiX] === TileType.Grass) map[poiY - 1][poiX] = TileType.Torch;
-        if (map[poiY + 1]?.[poiX] === TileType.Grass) map[poiY + 1][poiX] = TileType.Torch;
-      } else if (pType === 'hearth') {
-        // Slate brick altar surroundings
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            map[poiY + dy][poiX + dx] = TileType.Floor;
-          }
-        }
-        if (map[poiY - 2]?.[poiX - 1] === TileType.Grass) map[poiY - 2][poiX - 1] = TileType.Campfire;
-        if (map[poiY + 2]?.[poiX + 1] === TileType.Grass) map[poiY + 2][poiX + 1] = TileType.Campfire;
-      } else if (pType === 'sunken_keep') {
-        // Circular pool surrounding a single central brick pedestal
-        for (let dy = -2; dy <= 2; dy++) {
-          for (let dx = -2; dx <= 2; dx++) {
-            if (dy === 0 && dx === 0) {
-              map[poiY][poiX] = TileType.Floor;
-            } else {
-              if (map[poiY + dy]?.[poiX + dx] !== undefined) {
-                map[poiY + dy][poiX + dx] = TileType.Water;
-              }
-            }
-          }
-        }
-        // Small stone bridge path
-        if (poiX + 1 < width) map[poiY][poiX + 1] = TileType.Path;
-        if (poiX + 2 < width) map[poiY][poiX + 2] = TileType.Path;
-      } else if (pType === 'fossil') {
-        // Draw crescent shaped ancient titan bones using limestone walls
-        if (map[poiY - 1]?.[poiX - 1] === TileType.Grass) map[poiY - 1][poiX - 1] = TileType.Wall;
-        if (map[poiY - 2]?.[poiX + 1] === TileType.Grass) map[poiY - 2][poiX + 1] = TileType.Wall;
-        if (map[poiY + 1]?.[poiX - 1] === TileType.Grass) map[poiY + 1][poiX - 1] = TileType.Wall;
-        if (map[poiY + 2]?.[poiX + 1] === TileType.Grass) map[poiY + 2][poiX + 1] = TileType.Wall;
-      }
-
-      const blueprint = getPOIBlueprint(pType, biome, poiRoll);
-      if (blueprint) {
-        poisList.push({
-          id: `poi_${chunkX}_${chunkY}_${pType}`,
-          x: poiX,
-          y: poiY,
-          name: blueprint.name,
-          type: pType,
-          description: blueprint.description,
-          historySnippet: blueprint.historySnippet,
-          chapterId: blueprint.chapterId,
-          isInteracted: false,
-          char: blueprint.char,
-          color: blueprint.color
-        });
-      }
-    }
+    generatePointsOfInterest(map, chunkX, chunkY, biome, width, height, prng, poisList);
   }
 
   // Generate immersive Traveling NPCs in chunks where there is no town/city/castle
@@ -2606,179 +2390,6 @@ export function generateOverworldChunk(
     secondFloorDiscovered,
     secondFloorVisible
   };
-}
-
-function parseCoord(val: string | number, maxVal: number): number {
-  if (typeof val === 'number') return val;
-  const str = String(val).trim();
-  if (str.includes('w')) {
-    const parts = str.split('/');
-    if (parts.length > 1) {
-      const denom = parseInt(parts[1]?.trim() || '2', 10);
-      return Math.floor(maxVal / denom);
-    }
-    const offset = parseInt(str.replace('w', '').replace('-', '').replace('+', '').trim() || '0', 10);
-    return str.includes('-') ? maxVal - offset : maxVal + offset;
-  }
-  if (str.includes('h')) {
-    const parts = str.split('/');
-    if (parts.length > 1) {
-      const denom = parseInt(parts[1]?.trim() || '2', 10);
-      return Math.floor(maxVal / denom);
-    }
-    const offset = parseInt(str.replace('h', '').replace('-', '').replace('+', '').trim() || '0', 10);
-    return str.includes('-') ? maxVal - offset : maxVal + offset;
-  }
-  return parseInt(str, 10);
-}
-
-function decorateBuildingFromJSON(
-  map: TileType[][],
-  buildingId: string,
-  startX: number,
-  startY: number,
-  w: number,
-  h: number
-) {
-  // Normalize buildingId (e.g., villager1, villager2 -> villager)
-  let normId = buildingId.toLowerCase();
-  if (normId.startsWith('villager')) normId = 'villager';
-
-  if (normId === 'empty_guild_house') {
-    // Place a table in the center and a chair
-    const midX = startX + Math.floor(w / 2);
-    const midY = startY + Math.floor(h / 2);
-    if (midY >= 0 && midY < map.length && midX >= 0 && midX < map[0].length) {
-      map[midY][midX] = TileType.Table;
-      map[midY][midX - 1] = TileType.Chair;
-    }
-    return;
-  }
-
-  const interiors: Record<string, any[]> = townTemplates.buildingInteriors;
-  const props = interiors[normId] || interiors['villager'];
-
-  props.forEach((prop: any) => {
-    if (prop.minWidth && w < prop.minWidth) return;
-    if (prop.minHeight && h < prop.minHeight) return;
-
-    const rx = parseCoord(prop.x, w);
-    const ry = parseCoord(prop.y, h);
-
-    const tx = startX + rx;
-    const ty = startY + ry;
-
-    // Inside bounds safety (must be strictly inside walls, i.e., > startX, < startX + w - 1, and same for Y)
-    if (tx > startX && tx < startX + w - 1 && ty > startY && ty < startY + h - 1) {
-      if (ty >= 0 && ty < map.length && tx >= 0 && tx < map[0].length) {
-        const tileVal = (TileType as any)[prop.tile];
-        if (tileVal) {
-          map[ty][tx] = tileVal;
-        }
-      }
-    }
-  });
-}
-
-// Inner helper to carve out stone houses
-function buildHouse(
-  map: TileType[][],
-  startX: number,
-  startY: number,
-  w: number,
-  h: number,
-  crossroadY: number,
-  buildingId: string = 'villager',
-  secondFloorMap?: TileType[][]
-) {
-  for (let y = startY; y < startY + h; y++) {
-    for (let x = startX; x < startX + w; x++) {
-      // Outer border: wall
-      if (y === startY || y === startY + h - 1 || x === startX || x === startX + w - 1) {
-        map[y][x] = TileType.Wall;
-      } else {
-        map[y][x] = TileType.Floor; // Inside floor space
-      }
-    }
-  }
-
-  // Backwall / Side windows (⊞)
-  for (let x = startX + 1; x < startX + w - 1; x += 3) {
-    map[startY][x] = TileType.Window;
-  }
-  if (h >= 6) {
-    map[startY + 2][startX] = TileType.Window;
-    map[startY + 2][startX + w - 1] = TileType.Window;
-  }
-
-  // Carve door on the wall facing roads
-  const doorY = startY + h - 1;
-  const doorX = startX + Math.floor(w / 2);
-  map[doorY][doorX] = TileType.Door;
-
-  if (buildingId === 'empty_guild_house') {
-    // Put a Sign tile right next to the entrance door (outside the house, at doorY + 1, doorX + 1)
-    if (doorY + 1 < map.length && doorX + 1 < map[0].length) {
-      map[doorY + 1][doorX + 1] = TileType.Sign;
-    }
-  }
-
-  // Decorate using the appropriate building module dynamically loaded from JSON!
-  const innerW = w - 2;
-  const innerH = h - 2;
-  if (innerW >= 2 && innerH >= 2) {
-    decorateBuildingFromJSON(map, buildingId, startX, startY, w, h);
-  }
-
-  // Generate second floor layer!
-  if (secondFloorMap) {
-    for (let y = startY; y < startY + h; y++) {
-      for (let x = startX; x < startX + w; x++) {
-        if (y === startY || y === startY + h - 1 || x === startX || x === startX + w - 1) {
-          secondFloorMap[y][x] = TileType.Wall;
-        } else {
-          secondFloorMap[y][x] = TileType.Floor;
-        }
-      }
-    }
-
-    // Windows on second floor
-    for (let x = startX + 1; x < startX + w - 1; x += 3) {
-      secondFloorMap[startY][x] = TileType.Window;
-    }
-    if (h >= 6) {
-      secondFloorMap[startY + 2][startX] = TileType.Window;
-      secondFloorMap[startY + 2][startX + w - 1] = TileType.Window;
-    }
-
-    // Stairs linking ground floor and second floor inside top-left corner
-    const stairsX = startX + 1;
-    const stairsY = startY + 1;
-    map[stairsY][stairsX] = TileType.StairsUp;
-    secondFloorMap[stairsY][stairsX] = TileType.StairsDown;
-
-    // Decorate second floor based on building type
-    if (buildingId === 'tavern') {
-      // Tavern has private guest lodging rooms on 2nd floor (hotel suites)
-      secondFloorMap[startY + 1][startX + w - 2] = TileType.Bed; // Guest bed A
-      if (w >= 10) {
-        secondFloorMap[startY + 1][startX + w - 5] = TileType.Bed; // Guest bed B
-        secondFloorMap[startY + 2][startX + w - 4] = TileType.Table;
-        secondFloorMap[startY + 2][startX + w - 3] = TileType.Chair;
-      }
-      if (h >= 6) {
-        secondFloorMap[startY + h - 2][startX + w - 2] = TileType.Bed; // Guest bed C
-        secondFloorMap[startY + h - 2][startX + 2] = TileType.Fireplace; // cozy fireplace
-      }
-    } else {
-      // Standard cozy bedroom and storage upstairs
-      secondFloorMap[startY + 1][startX + w - 2] = TileType.Bed;
-      if (innerW >= 4) {
-        secondFloorMap[startY + 2][startX + w - 3] = TileType.Table;
-        secondFloorMap[startY + 2][startX + w - 4] = TileType.Chair;
-      }
-    }
-  }
 }
 
 // Translate 24h clock minutes to string

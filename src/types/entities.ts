@@ -40,19 +40,20 @@ export interface PlayerStats {
   maxMp: number;
   level: number;
   xp: number;
-  nextLevelXp: number;
+  nextLevelXp?: number;
   gold: number;
   atk: number;
   def: number;
-  depth: number;
+  depth?: number;
   turnsPlayed: number;
-  realTimeSeconds: number;
+  realTimeSeconds?: number;
   str: number;
   dex: number;
   int: number;
   cha: number;
   lck: number;
-  unspentPoints: number;
+  unspentPoints?: number;
+  enemiesDefeated?: number;
   scars?: Scar[];
   exhaustion?: number; // 0 to 100 representing percentage physical exhaustion
   activeEffects?: PlayerEffect[];
@@ -133,7 +134,7 @@ export interface Enemy {
 export interface NPC {
   id: string;
   name: string;
-  role: 'villager' | 'blacksmith' | 'merchant' | 'apothecary' | 'companion_hire' | 'quest_board' | 'harbor_captain' | 'special_cat' | 'merchant_seppo' | 'faction_syndicate' | 'faction_vanguard' | 'traveler_herbalist' | 'traveler_hunter' | 'traveler_pilgrim';
+  role: 'villager' | 'blacksmith' | 'merchant' | 'apothecary' | 'companion_hire' | 'quest_board' | 'harbor_captain' | 'special_cat' | 'merchant_seppo' | 'faction_syndicate' | 'faction_vanguard' | 'traveler_herbalist' | 'traveler_hunter' | 'traveler_pilgrim' | 'dockworker' | 'harbor_master' | 'sailor' | 'fishmonger' | 'ferried_navigator';
   char: string;
   color: string;
   x: number;
@@ -146,6 +147,8 @@ export interface NPC {
   scheduleState: 'home' | 'work' | 'leisure';
   isHomeSameAsShop?: boolean;
   isAsleep?: boolean;
+  isSitting?: boolean;
+  isDrinking?: boolean;
   originalChar?: string;
   z?: number;
   homeZ?: number;

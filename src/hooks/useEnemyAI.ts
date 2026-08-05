@@ -2,19 +2,22 @@ import { Dispatch, SetStateAction, useCallback } from 'react';
 import { TileType, Enemy, GameState, PlayerEffect, EnemyState, EnemyType, CatalystType } from '../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT, isLunarBlessingActive } from '../utils/gameUtils';
 import { getNextStepTowards } from '../utils/ai';
+import { findNearestSafeNpcTile } from '../utils/overworld';
 import { getEnemyTemplate } from '../utils/dungeon';
 import { syncCaravanState } from '../utils/caravanAndTerritory';
 import { getGMPointOfInterestNudge } from '../utils/gmNarrator';
+import { getEnemyFleeQuote } from '../utils/fleeQuotes';
 import { incrementDefeatedEnemyCount } from '../utils/bestiary';
 import { evaluateScarAcquisition, getEffectiveStats } from '../utils/scars';
 import { getItemDurabilityDecay } from '../utils/spellsAndEquipment';
 import { tickActiveGMStoryteller } from '../utils/gmStoryteller';
+import { getWeatherAmbientBark, getTavernDrinkingBark } from '../utils/npcDialogue';
 
 export interface UseEnemyAIParams {
   gameStateRef?: any;
   setGameState: Dispatch<SetStateAction<GameState>>;
   addLogMessage: (text: string, type?: string) => void;
-  playSound: (soundName: string) => void;
+  playSound: (soundName: string, options?: any) => void;
   hasEquippedTrait: (gs: GameState, traitKey: string) => boolean;
 }
 
@@ -471,11 +474,13 @@ export function useEnemyAI({
             } else if (dType === 'burn' || dType === 'poison' || dType === CatalystType.Fire || dType === CatalystType.Poison || dType === CatalystType.Lightning) {
               const tickVal = d.damagePerTurn || 3;
               e.hp -= tickVal;
-              staticLogs.push(`🔥 ${e.name} takes -${tickVal} damage from status affliction!`);
-              const eff = new CustomEvent('spawn-game-effect', {
-                detail: { x: e.x, y: e.y, text: `-${tickVal}`, type: 'dmg' },
-              });
-              window.dispatchEvent(eff);
+              if (prev.visible[e.y]?.[e.x]) {
+                staticLogs.push(`🔥 ${e.name} takes -${tickVal} damage from status affliction!`);
+                const eff = new CustomEvent('spawn-game-effect', {
+                  detail: { x: e.x, y: e.y, text: `-${tickVal}`, type: 'dmg' },
+                });
+                window.dispatchEvent(eff);
+              }
             }
             if (turns > 1) {
               nextDebuffs.push({ ...d, duration: turns - 1, turnsRemaining: turns - 1 });
@@ -485,13 +490,17 @@ export function useEnemyAI({
         }
 
         if (e.hp <= 0) {
-          staticLogs.push(`💀 ${e.name} succumbed to status ailments!`);
+          if (prev.visible[e.y]?.[e.x]) {
+            staticLogs.push(`💀 ${e.name} succumbed to status ailments!`);
+          }
           nextDefeatedCounts = incrementDefeatedEnemyCount(nextDefeatedCounts, e.name, e.type, !!e.isBoss);
           continue;
         }
 
         if (isStunned) {
-          staticLogs.push(`💫 ${e.name} is stunned/frozen and skips their turn!`);
+          if (prev.visible[e.y]?.[e.x]) {
+            staticLogs.push(`💫 ${e.name} is stunned/frozen and skips their turn!`);
+          }
           updatedEnemiesList.push(e);
           continue;
         }
@@ -522,15 +531,20 @@ export function useEnemyAI({
               if (targetDist <= enemyRange) {
                 const followerDmg = Math.max(1, e.atk - target.def);
                 target.hp -= followerDmg;
-                staticLogs.push(`🛡️ [COMPANION]: ${e.name} strikes ${target.name} for ${followerDmg} damage!`);
-                playSound('slash');
-                const eff = new CustomEvent('spawn-game-effect', {
-                  detail: { x: target.x, y: target.y, text: `-${followerDmg}`, type: 'dmg' },
-                });
-                window.dispatchEvent(eff);
+                const isActionVisible = (prev.visible[target.y]?.[target.x] ?? false) || (prev.visible[e.y]?.[e.x] ?? false);
+                if (isActionVisible) {
+                  staticLogs.push(`🛡️ [COMPANION]: ${e.name} strikes ${target.name} for ${followerDmg} damage!`);
+                  playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
+                  const eff = new CustomEvent('spawn-game-effect', {
+                    detail: { x: target.x, y: target.y, text: `-${followerDmg}`, type: 'dmg' },
+                  });
+                  window.dispatchEvent(eff);
+                }
                 attackedEnemy = true;
                 if (target.hp <= 0) {
-                  staticLogs.push(`☠️ [COMPANION KILL]: ${e.name} defeated ${target.name}!`);
+                  if (isActionVisible) {
+                    staticLogs.push(`☠️ [COMPANION KILL]: ${e.name} defeated ${target.name}!`);
+                  }
                   nextDefeatedCounts = incrementDefeatedEnemyCount(nextDefeatedCounts, target.name, target.type, !!target.isBoss);
                 }
                 break;
@@ -539,7 +553,14 @@ export function useEnemyAI({
           }
 
           if (!attackedEnemy) {
-            if (distToPlayer > 1) {
+            if (distToPlayer > 8) {
+              const safeSpot = findNearestSafeNpcTile(px, py, prev.map);
+              const isOccupied = (safeSpot.x === px && safeSpot.y === py) || updatedEnemiesList.some(other => other.x === safeSpot.x && other.y === safeSpot.y);
+              if (!isOccupied) {
+                e.x = safeSpot.x;
+                e.y = safeSpot.y;
+              }
+            } else if (distToPlayer > 1) {
               const nextPos = getNextStepTowards(e.x, e.y, px, py, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
               if (nextPos && (nextPos.x !== px || nextPos.y !== py)) {
                 const blocked = updatedEnemiesList.some(other => other.x === nextPos.x && other.y === nextPos.y);
@@ -600,15 +621,20 @@ export function useEnemyAI({
                 }
                 const guardDmg = Math.max(1, e.atk - target.def);
                 target.hp -= guardDmg;
-                staticLogs.push(`🛡️ [TOWN GUARD]: ${e.name} strikes hostile ${target.name} for ${guardDmg} damage!`);
-                playSound('slash');
-                const eff = new CustomEvent('spawn-game-effect', {
-                  detail: { x: target.x, y: target.y, text: `-${guardDmg}`, type: 'dmg' },
-                });
-                window.dispatchEvent(eff);
+                const isGuardActionVisible = (prev.visible[target.y]?.[target.x] ?? false) || (prev.visible[e.y]?.[e.x] ?? false);
+                if (isGuardActionVisible) {
+                  staticLogs.push(`🛡️ [TOWN GUARD]: ${e.name} strikes hostile ${target.name} for ${guardDmg} damage!`);
+                  playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
+                  const eff = new CustomEvent('spawn-game-effect', {
+                    detail: { x: target.x, y: target.y, text: `-${guardDmg}`, type: 'dmg' },
+                  });
+                  window.dispatchEvent(eff);
+                }
                 attackedThreat = true;
                 if (target.hp <= 0) {
-                  staticLogs.push(`⚔️ [TOWN SECURED]: Town Guard defeated ${target.name}!`);
+                  if (isGuardActionVisible) {
+                    staticLogs.push(`⚔️ [TOWN SECURED]: Town Guard defeated ${target.name}!`);
+                  }
                   nextDefeatedCounts = incrementDefeatedEnemyCount(nextDefeatedCounts, target.name, target.type, !!target.isBoss);
                 }
                 break;
@@ -621,7 +647,9 @@ export function useEnemyAI({
             if (e.state === EnemyState.Sleeping) {
               e.state = EnemyState.Patrolling;
               if (e.originalChar) e.char = e.originalChar;
-              staticLogs.push(`🛡️ [TOWN GUARD ALARM]: ${e.name} wakes from barracks bed to intercept hostile ${nearestThreat.name}!`);
+              if (prev.visible[e.y]?.[e.x]) {
+                staticLogs.push(`🛡️ [TOWN GUARD ALARM]: ${e.name} wakes from barracks bed to intercept hostile ${nearestThreat.name}!`);
+              }
             }
             const nextPos = getNextStepTowards(e.x, e.y, nearestThreat.x, nearestThreat.y, prev.map, true, updatedEnemiesList, false);
             if (nextPos && (nextPos.x !== px || nextPos.y !== py)) {
@@ -818,6 +846,14 @@ export function useEnemyAI({
           continue;
         }
 
+        // Check if cowardly/wounded enemy should enter Retreating state
+        if (e.state === EnemyState.Chasing && !e.isBoss && (e.hp < e.maxHp * 0.25 || e.type === EnemyType.LootGoblin)) {
+          e.state = EnemyState.Retreating;
+          if (Math.random() < 0.35) {
+            staticLogs.push(getEnemyFleeQuote(e.name, e.type));
+          }
+        }
+
         // --- 3. MOVEMENT & PATHFINDING LOGIC ---
         if (e.state === EnemyState.Chasing && isHostile) {
           const nextStep = getNextStepTowards(e.x, e.y, px, py, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
@@ -829,6 +865,26 @@ export function useEnemyAI({
               e.x = nextStep.x;
               e.y = nextStep.y;
             }
+          }
+        } else if (e.state === EnemyState.Retreating) {
+          // Flee in opposite direction from player
+          const dirX = Math.sign(e.x - px) || (Math.random() < 0.5 ? 1 : -1);
+          const dirY = Math.sign(e.y - py) || (Math.random() < 0.5 ? 1 : -1);
+          const targetX = Math.max(0, Math.min(LEVEL_WIDTH - 1, e.x + dirX * 5));
+          const targetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + dirY * 5));
+          
+          const nextStep = getNextStepTowards(e.x, e.y, targetX, targetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+          if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
+            const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
+                                         nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
+            const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+            if (!isTileBlockedByEnemy && isTileWalkable) {
+              e.x = nextStep.x;
+              e.y = nextStep.y;
+            }
+          }
+          if (Math.random() < 0.10) {
+            staticLogs.push(getEnemyFleeQuote(e.name, e.type));
           }
         } else if (e.state === EnemyState.Patrolling && e.patrolPath && e.patrolPath.length > 0) {
           let currentPatrolIdx = e.patrolIndex || 0;
@@ -860,30 +916,197 @@ export function useEnemyAI({
 
       nextEnemies = updatedEnemiesList;
 
-      // --- 4. NPC & CAT WANDERING MOVEMENT ---
+      // --- 4. NPC & CAT ROUTINE & SCHEDULE MOVEMENT ---
       if (nextNpcs && nextNpcs.length > 0) {
         const moveDirs = [
           { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
         ];
+        const currentMinutes = prev.gameTime || 0;
+        const currentHour = Math.floor((currentMinutes % 1440) / 60);
+        const currentW = prev.weather || 'clear';
+
+        const tavernNpc = nextNpcs.find(n => n.id?.startsWith('npc_tavernmaster_'));
+
+        // Build fast spatial lookup sets for enemies and NPCs
+        const enemyPosSet = new Set<string>();
+        if (nextEnemies && nextEnemies.length > 0) {
+          for (let i = 0; i < nextEnemies.length; i++) {
+            const e = nextEnemies[i];
+            if (e) enemyPosSet.add(`${e.x},${e.y}`);
+          }
+        }
+
+        const npcPosSet = new Set<string>();
+        if (nextNpcs && nextNpcs.length > 0) {
+          for (let i = 0; i < nextNpcs.length; i++) {
+            const n = nextNpcs[i];
+            if (n) npcPosSet.add(`${n.id}:${n.x},${n.y}`);
+          }
+        }
+
         nextNpcs = nextNpcs.map((npc) => {
           if (!npc) return npc;
           const isCat = npc.id?.startsWith('npc_cat_') || npc.role === 'special_cat';
-          const isWanderingVillager = npc.role === 'villager' || npc.role === 'peasant' || npc.role === 'bard';
-          if ((isCat || isWanderingVillager) && Math.random() < (isCat ? 0.6 : 0.35)) {
-            const dir = moveDirs[Math.floor(Math.random() * moveDirs.length)];
-            const nx = npc.x + dir.dx;
-            const ny = npc.y + dir.dy;
-            if (nx >= 0 && nx < LEVEL_WIDTH && ny >= 0 && ny < LEVEL_HEIGHT) {
-              const tile = prev.map[ny]?.[nx];
-              const isWalkable = tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path;
-              const isOccupiedByPlayer = nx === px && ny === py;
-              const isOccupiedByEnemy = nextEnemies.some(e => e.x === nx && e.y === ny);
-              if (isWalkable && !isOccupiedByPlayer && !isOccupiedByEnemy) {
-                return { ...npc, x: nx, y: ny };
+
+          // Cats use playful random wandering
+          if (isCat) {
+            if (Math.random() < 0.6) {
+              const dir = moveDirs[Math.floor(Math.random() * moveDirs.length)];
+              const nx = npc.x + dir.dx;
+              const ny = npc.y + dir.dy;
+              if (nx >= 0 && nx < LEVEL_WIDTH && ny >= 0 && ny < LEVEL_HEIGHT) {
+                const tile = prev.map[ny]?.[nx];
+                const isWalkable = tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path;
+                const isOccupiedByPlayer = nx === px && ny === py;
+                const isOccupiedByEnemy = enemyPosSet.has(`${nx},${ny}`);
+                if (isWalkable && !isOccupiedByPlayer && !isOccupiedByEnemy) {
+                  return { ...npc, x: nx, y: ny };
+                }
               }
             }
+            return npc;
           }
-          return npc;
+
+          // Human Town NPCs follow structured day/night schedule routines
+          const origChar = npc.originalChar || npc.char;
+
+          // Short-circuit sleeping NPCs during nighttime hours
+          if (npc.isAsleep && (currentHour >= 20 || currentHour < 7) && npc.scheduleState === 'home') {
+            return npc;
+          }
+
+          // Occasional ambient weather reaction bark if outdoors near player
+          if (!npc.isAsleep && (currentW === 'rainy' || currentW === 'blizzard' || currentW === 'sandstorm' || currentW === 'foggy')) {
+            const dist = Math.abs(npc.x - px) + Math.abs(npc.y - py);
+            if (dist <= 6 && Math.random() < 0.03) {
+              const bark = getWeatherAmbientBark(npc, currentW, currentHour >= 20 || currentHour < 7 ? 'night' : 'day');
+              staticLogs.push(`🗣️ ${bark}`);
+            }
+          }
+
+          // Determine schedule state (work, leisure, home)
+          let targetSched: 'home' | 'work' | 'leisure' = 'work';
+          if (currentHour >= 20 || currentHour < 7) {
+            targetSched = 'home';
+          } else if (
+            currentW === 'rainy' ||
+            currentW === 'snowy' ||
+            currentW === 'blizzard' ||
+            (currentHour >= 12 && currentHour < 13) ||
+            (currentHour >= 16 && currentHour < 20)
+          ) {
+            const isTavernVisitor = [
+              'villager', 'apothecary', 'companion_hire', 'merchant',
+              'dockworker', 'sailor', 'patron', 'townsperson', 'guard', 'fishmonger', 'blacksmith'
+            ].includes(npc.role);
+            targetSched = isTavernVisitor ? 'leisure' : 'home';
+          }
+
+          // Resolve target coordinate (tx, ty)
+          let tx = npc.workX ?? npc.x;
+          let ty = npc.workY ?? npc.y;
+
+          if (targetSched === 'home') {
+            tx = npc.homeX ?? npc.x;
+            ty = npc.homeY ?? npc.y;
+          } else if (targetSched === 'leisure') {
+            if (tavernNpc) {
+              const offset = Math.abs(((npc.name || '').charCodeAt(0) * 3) % 4) - 2;
+              tx = tavernNpc.homeX + offset;
+              ty = tavernNpc.homeY + 2;
+            } else {
+              tx = npc.homeX ?? npc.x;
+              ty = npc.homeY ?? npc.y;
+            }
+          }
+
+          // Check if NPC has reached target coordinate
+          if (npc.x === tx && npc.y === ty) {
+            if (targetSched === 'home' && (currentHour >= 20 || currentHour < 7)) {
+              // Resting in building bed
+              return {
+                ...npc,
+                scheduleState: 'home',
+                isAsleep: true,
+                isSitting: false,
+                isDrinking: false,
+                originalChar: origChar,
+                char: '😴'
+              };
+            }
+            if (targetSched === 'leisure') {
+              // Sitting in tavern/bar drinking ale/mead
+              const dist = Math.abs(npc.x - px) + Math.abs(npc.y - py);
+              if (dist <= 6 && Math.random() < 0.04) {
+                staticLogs.push(`🗣️ ${getTavernDrinkingBark(npc)}`);
+              }
+              return {
+                ...npc,
+                scheduleState: 'leisure',
+                isAsleep: false,
+                isSitting: true,
+                isDrinking: true,
+                originalChar: origChar,
+                char: '🍻'
+              };
+            }
+            if (targetSched === 'home') {
+              // Resting sitting at home
+              return {
+                ...npc,
+                scheduleState: 'home',
+                isAsleep: false,
+                isSitting: true,
+                isDrinking: false,
+                originalChar: origChar,
+                char: '🪑'
+              };
+            }
+            return {
+              ...npc,
+              scheduleState: targetSched,
+              isAsleep: false,
+              isSitting: false,
+              isDrinking: false,
+              char: origChar
+            };
+          }
+
+          // NPC is traveling along path to building/workstation/bed
+          const nextStep = getNextStepTowards(npc.x, npc.y, tx, ty, prev.map, true, []);
+          if (nextStep) {
+            const posKey = `${nextStep.x},${nextStep.y}`;
+            const isBlockedByPlayer = nextStep.x === px && nextStep.y === py;
+            const isBlockedByEnemy = enemyPosSet.has(posKey);
+            let isBlockedByNpc = false;
+            for (let i = 0; i < nextNpcs.length; i++) {
+              const other = nextNpcs[i];
+              if (other && other.id !== npc.id && other.x === nextStep.x && other.y === nextStep.y) {
+                isBlockedByNpc = true;
+                break;
+              }
+            }
+
+            if (!isBlockedByPlayer && !isBlockedByEnemy && !isBlockedByNpc) {
+              return {
+                ...npc,
+                x: nextStep.x,
+                y: nextStep.y,
+                scheduleState: targetSched,
+                isAsleep: false,
+                originalChar: origChar,
+                char: origChar
+              };
+            }
+          }
+
+          return {
+            ...npc,
+            scheduleState: targetSched,
+            isAsleep: false,
+            originalChar: origChar,
+            char: origChar
+          };
         });
       }
 

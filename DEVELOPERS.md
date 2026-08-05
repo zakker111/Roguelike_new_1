@@ -8,15 +8,26 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
 
 ```bash
 /src
-  ├── App.tsx                    # Core Game Loop & Global State Machine (Turn Controller)
-  ├── types.ts                   # Unified Game Engine Type Definitions
+  ├── App.tsx                    # Core Game Loop & Orchestration State Engine
   ├── main.tsx                   # React Entry Point
-  ├── index.css                  # Tailwinds Styling Entry Point
+  ├── index.css                  # Tailwind Styling Entry Point
   │
-  ├── 📂 hooks                   # Custom Domain Engine Hooks (v4.0.5)
-  │   ├── useCraftingEngine.ts   # Forging, cooking, campfires, anvils, repairs & mutation forge (NEW)
-  │   ├── useSpellcasting.ts     # Spell casting, mana verification, projectile targeting & scroll consumption (NEW)
-  │   ├── useWorldInteraction.ts # Overworld stairs, resource harvesting (trees/ore), door opening (NEW)
+  ├── 📂 types                   # Modular Type Definitions (v4.2.3)
+  │   ├── game.ts                # Main GameState, UI & Navigation Enums
+  │   ├── entities.ts            # PlayerStats, Enemy, Companion, Scar & NPC Types
+  │   ├── map.ts                 # TileType, Chunk, POI & Map Coordinate Types
+  │   └── items.ts               # EquipmentItem, Recipe & Material Types
+  │
+  ├── 📂 hooks                   # Custom Domain Engine Hooks (v5.2.0)
+  │   ├── useGameLoop.ts         # Real-time difficulty escalation & watchtower siege ticker
+  │   ├── useCaravanTravel.ts    # Caravan travel initialization, step progression, D20 encounter resolution & rewards
+  │   ├── useTownServices.ts     # Forge upgrades, Apothecary labs, Bartender gossip, Inn rests & Mercenary recruitment
+  │   ├── useOverworldEvents.ts  # Weather ticks, dynamic daylight/night cycles, seasonal environmental events
+  │   ├── useTradeEconomy.ts     # Merchant transactions, town economy scaling, buy/sell haggling
+  │   ├── useQuestsAndGuild.ts   # Faction guild contracts, quest tracking & reward claims
+  │   ├── useCraftingEngine.ts   # Forging, cooking, campfires, anvils, repairs & mutation forge
+  │   ├── useSpellcasting.ts     # Spell casting, mana verification, projectile targeting & scroll consumption
+  │   ├── useWorldInteraction.ts # Overworld stairs, resource harvesting (trees/ore), door opening
   │   ├── useEnemyAI.ts          # Pathfinding, faction chase algorithms, and enemy turn solver
   │   ├── useCombatEngine.ts     # Attack calculations, scar triggers, overforge heat recoil
   │   ├── usePlayerMovement.ts   # Movement logic, tile collisions, stamina consumption
@@ -24,21 +35,49 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── useEquipmentHandlers.ts# Equipment equipping, unequipping, swapping, durability & stat hooks
   │   └── useSaveLoad.ts         # LocalStorage serialization, auto-save timers
   │
-  ├── 📂 world                   # Isolated World & Dungeon Generators (v4.0.4)
+  ├── 📂 canvas                  # Hybrid Graphics Engine & Animation System (v5.0.0)
+  │   ├── IGraphicsRenderer.ts   # Unified rendering controller interface
+  │   ├── TextRenderer.ts        # Fast, lightweight unicode text & emoji fallback renderer
+  │   ├── TilesetRenderer.ts     # Texture atlas sprite-slicing tile renderer
+  │   ├── HybridGraphicsEngine.ts# Singleton graphics engine for dynamic mode switching
+  │   ├── tileMapRenderer.ts     # Viewport-culled tile map grid renderer
+  │   ├── entityLayerRenderer.ts # Entities, enemies, player, projectiles & floating text layer
+  │   ├── weatherLightingRenderer.ts# Day-night lighting shaders & seasonal/weather particle systems
+  │   ├── AssetPreloader.ts      # Asynchronous tile-sheet & sprite image loader
+  │   ├── TilesetAtlasManager.ts # Sprite sheet grid & autotile coordinate mapper
+  │   └── VFXEmitter.ts          # Decoupled real-time particle VFX emitter queue
+  │
+  ├── 📂 world                   # Isolated World & Dungeon Generators (v5.2.0)
   │   ├── dungeonGen.ts          # Procedural Cave/Dungeon Generator
-  │   └── overworldGen.ts        # Overworld chunk generation & landmark placement
+  │   ├── overworldGen.ts        # Overworld chunk generation & landmark placement
+  │   ├── overworldNpcSpawning.ts# Safe tile locator & NPC coordinate validator
+  │   └── overworldPoiGenerator.ts# Chunk point-of-interest generator wrappers
   │
   ├── 📂 components              # Modular UI Components & Screens
+  │   ├── MainAppLayout.tsx      # Top-level shell layout, HUD & log viewports (v4.2.1)
+  │   ├── AppOverlays.tsx        # Central modal overlay router & manager
+  │   ├── 📂 god                 # Sovereign Developer Console Panels (v5.2.0)
+  │   │   ├── GodStorytellerPanel.tsx # GM Storyteller mood, boredom & encounter console
+  │   │   ├── GodItemSpawner.tsx      # Declarative item & equipment spawner
+  │   │   ├── GodEntitySpawner.tsx    # Enemy, boss & companion spawner
+  │   │   ├── GodWorldEditor.tsx      # Tile painter & map generator
+  │   │   └── GodSmoketestTab.tsx     # Client-side virtual smoke test suite panel
+  │   ├── 📂 crafting            # Crafting Arcanum Sub-Tabs (v4.2.2)
+  │   │   ├── CookingTab.tsx      # Hearth & campfire culinary recipes
+  │   │   ├── AlchemyTab.tsx      # Apothecary potion brewing & tier upgrades
+  │   │   ├── CampAndToolsTab.tsx # Survival tools & recall scroll scribing
+  │   │   └── ScrollScriptoriumTab.tsx # Spell scroll scribing arcanum
+  │   ├── 📂 guild               # Guild HQ Treasury & Mission Board Panels
   │   ├── GameCanvas.tsx         # Canvas-based Grid Rendering Engine
-  │   ├── CraftingPanel.tsx      # Alchemy, Forging & Cook Station Panel
-  │   ├── GodPanelOverlay.tsx    # Sovereign Developer Console (Toggles & Spawning)
-  │   ├── ChunkMinimap.tsx       # Overworld Map & Fog of War Visualizer
-  │   └── ...                    # Specific Modals & Interfaces
+  │   ├── CraftingPanel.tsx      # Modular Arcanum Workbench Panel
+  │   ├── GodPanelOverlay.tsx    # Sovereign Developer Console Tab Shell
+  │   └── ChunkMinimap.tsx       # Overworld Map & Fog of War Visualizer
   │
-  ├── 📂 data                    # Static Game Databases & JSON Schemas
-  │   ├── balance.ts             # Centralized XP leveling formulas, armor mitigation, & combat curves (NEW)
-  │   ├── economy.json           # Settlement trade tables, reputation tiers, & biome pricing (NEW)
-  │   ├── dialogues.json         # Externalized NPC dialogue trees & quest matrices (NEW)
+  ├── 📂 data                    # Static Game Databases & Declarative JSON Schemas (v4.2.4)
+  │   ├── shops.json             # Blacksmith, Merchant, Tavern & Apothecary items catalog (NEW)
+  │   ├── balance.ts             # Centralized XP leveling formulas, armor mitigation, & combat curves
+  │   ├── economy.json           # Settlement trade tables, reputation tiers, & biome pricing
+  │   ├── dialogues.json         # Externalized NPC dialogue trees & quest matrices
   │   ├── combatFlavors.ts       # Text generators for rich narrative combat
   │   ├── enemies.json           # Declarative base monster stats
   │   ├── gameConfig.json        # Engine tuning constants
@@ -49,18 +88,46 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   └── scars.json             # Externalized Scar definitions and severity tables
   │
   └── 📂 utils                   # Pure Functional Engine Sub-Systems
-      ├── weatherEngine.ts       # Data-driven weather effects & modifiers (NEW)
-      ├── spellsAndEquipment.ts  # Spell lists, starting gear, and magical spell structures (NEW)
-      ├── shopData.ts            # Merchant stock generators and trade config utilities (NEW)
-      ├── fleeQuotes.ts          # Procedural enemy fleeing dialogue quotes (NEW)
-      ├── caravanAndTerritory.ts # Caravan schedules, traveling guards, and territory conquest maps (NEW)
+      ├── weatherEngine.ts       # Data-driven weather effects & modifiers
+      ├── spellsAndEquipment.ts  # Spell lists, starting gear, and magical spell structures
+      ├── shopData.ts            # Merchant stock generators and trade config utilities
+      ├── fleeQuotes.ts          # Procedural enemy fleeing dialogue quotes
+      ├── caravanAndTerritory.ts # Caravan schedules, traveling guards, and territory conquest maps
       ├── itemsData.ts           # Item Templates, Catalysts, and Materials
       ├── dungeon.ts             # Procedural Cave/Dungeon Generator
       ├── overworld.ts           # Deterministic Chunk Generator with Seeds
       ├── ai.ts                  # Pathfinding (Bresenham, FOV, A*)
+      ├── audio.ts               # WebAudio procedural synthesizer, spatial attenuation & ambient soundscapes
+      ├── buildingAudio.ts       # Building interior detection & acoustic filtering rules (v4.3.6)
       ├── itemWeight.ts          # Encumbrance & Inventory Weight Calculator
       ├── scars.ts               # Permadeath "Scars of the Defeated" Generator
       └── tradeEconomy.ts        # Guild Upgrades, Commerce & Caravans
+
+  ├── 📂 tests                   # Automated Vitest Engine Test Suites (v4.3.3)
+      ├── ai.test.ts             # Pathfinding, Bresenham line of sight & enemy AI tests
+      ├── combat.test.ts         # Combat damage, armor mitigation & attack resolution
+      ├── craftingAndAlchemy.test.ts # Recipe matrix, brewing, catalysts & over-forge heat
+      ├── economyAndEvents.test.ts # Settlement trade, reputation & caravan event triggers
+      ├── endToEndGameplaySimulation.test.ts # End-to-end 50-turn gameplay, commerce, guild & save validation
+      ├── gameplaySimulation.test.ts # Simulated multi-turn dungeon crawls & turn solver
+      ├── itemsAndInventory.test.ts # Inventory stacking, weight encumbrance & item durability
+      ├── logAndDiagnostics.test.ts # Combat log formatting, diagnostic events & level scaling
+      ├── saveLoad.test.ts       # Serialization, save integrity validation & corruption handling
+      ├── spellsAndMana.test.ts  # Active spells catalog, mana costs & scroll conversions
+      ├── storytellerAI.test.ts  # GM state, personality shifts & encounter triggers
+      ├── weatherAndMutations.test.ts # Weather effects, catalyst multipliers & dual-element synergies
+      └── worldGen.test.ts       # Chunk generation, biomes & dungeon floor layouts
+```
+
+---
+
+## 🧪 Automated Unit & Engine Test Suite (Vitest)
+
+The engine features 13 test suites (57 unit tests passing 100% green) covering procedural generation, pathfinding AI, combat balance, save/load validation, crafting, weather mechanics, dual-element synergies, and GM storyteller state mechanics.
+
+Run all automated unit tests:
+```bash
+npm run test
 ```
 
 ---
@@ -251,7 +318,32 @@ Developers can easily customize, append, or re-style these HUD grids inside `src
 
 ---
 
-## 🛠️ Modding Cheat Sheet / Developer Toggles
+## 🎨 Hybrid Graphics Provider Architecture & Canvas Engine (`/src/canvas/`)
+
+The engine features a decoupled, polymorphic graphics provider interface (`IGraphicsRenderer`) that supports dual-representational rendering (rich sprite-sheet texture atlases alongside lightweight unicode text/emoji fallbacks):
+
+### 1. Abstract Renderer Interface (`IGraphicsRenderer.ts`)
+```typescript
+export interface IGraphicsRenderer {
+  mode: 'text' | 'tileset';
+  setMode(mode: 'text' | 'tileset'): void;
+  drawTile(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, details: TileRenderDetails): void;
+  drawEntity(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, details: EntityRenderDetails): void;
+  renderVFX(ctx: CanvasRenderingContext2D, dt: number): void;
+}
+```
+
+### 2. Dual-Representational Renderers
+- **`TextRenderer.ts`**: Crisp, vector-aligned ASCII/emoji renderer. Renders custom colored background rects, shroud fog overlays, and centered glyph symbols.
+- **`TilesetRenderer.ts`**: Reads texture maps through `AssetPreloader` and `TilesetAtlasManager`. If image assets fail to load, are missing, or graphics mode is switched to `'text'`, it gracefully falls back to `TextRenderer` without throwing errors.
+- **`HybridGraphicsEngine.ts`**: High-level singleton dispatcher allowing dynamic mode toggling at runtime (`hybridGraphicsEngine.setMode('tileset')`).
+
+### 3. Decoupled VFX Emitter Queue (`VFXEmitter.ts`)
+Decouples turn-based state updates (synchronous step movements) from continuous continuous `requestAnimationFrame` render ticks. Combat slashes, spell bursts, and atmospheric embers are queued via `vfxEmitter.emitSpellBurst(x, y)` and flushed during continuous frame ticks without stalling gameplay logic.
+
+---
+
+## 🛠️ Modding Cheat Sheet & Sovereign Developer Console Tooling
 
 Need to test features quickly?
 1. Open the game's **Dev Tools / God Panel Overlay** (press `Ctrl + Shift + G` or use the UI toggle).
@@ -598,6 +690,30 @@ The game includes a zero-lag log management and simulation replay architecture (
 ### 2. Zero-Lag Drag-and-Drop File Importer
 - **File Reader Stream Loading**: The Replay Simulation Dock in God Panel accepts large log `.txt` or `.json` file uploads via drag-and-drop or direct device file picker.
 - **Preview Truncation & Non-Allocating Parsing**: Text previews in state are truncated to 50,000 characters to ensure 60 FPS UI responsiveness, while the full file stream parses embedded JSON replay blocks (`--- COMPREHENSIVE SIMULATOR REPLAY DATA ---`) in background ticks.
+
+---
+
+## ⚡ Sovereign God Mode & Developer Cheats
+
+The Sovereign Developer Console and God Panel (`F12` or `~`) provide developer overrides for rapid balance testing and debugging:
+
+### God Mode & Weight Rules
+- **God Mode (`godModeActive`)**: Grants absolute invulnerability against all incoming enemy attack damage, sidetracks health loss, and **automatically grants an unlimited weight limit** (`getMaxWeight` returns `9999.0` kg).
+- **Unlimited Weight Bypass (`bypassWeightLimit`)**: Deactivates all inventory encumbrance checks and item weight calculations, allowing players to carry infinite equipment items, metals, timber, and catalysts without capacity restrictions.
+- **Custom Max Weight Slider**: Allows dynamically setting base carrying capacity in memory (from 10 kg to 1000 kg) for encumbrance tuning tests.
+
+---
+
+## 🔊 WebAudio Synthesizer & Sound Engine
+
+The engine relies on pure **procedural WebAudio synthesis** in `src/utils/audio.ts` without external static audio files.
+
+### Key Highlights:
+1. **Spatial Audio Panning & Attenuation**: Attenuates volume with $(1 - \text{dist}/\text{maxDist})^{1.5}$ and pans left/right dynamically based on tile coordinates ($x, y, \text{playerX}, \text{playerY}$).
+2. **Dynamic Biome Ambiance & Accent Timers**: Background ambient layers for rain, wind, blizzard howl, sandstorms, dungeon sub-bass, and periodic biome accents (`owl_hoot`, `cricket_chirp`, `frog_croak`, `cave_echo`, `lute_pluck`, `ocean_wave`, `fire_crackle`, `water_drip`).
+3. **Realistic Indoor Building Acoustic Soundscape (v4.3.6)**: Automatically detects when player enters a house, tavern, shop, keep, or watchtower (`src/utils/buildingAudio.ts`). Dynamically applies a lowpass acoustic muffle filter (~650 Hz cutoff) to outdoor weather/wind, triggers door creaks/latches (`door_open`, `door_close`), plays timber creaks and pendulum clocks (`wood_creak`, `clock_tick`), and switches footsteps between wooden planks (`wood_footstep`), stone tiles (`stone_footstep`), and outdoor grass (`grass_step`).
+4. **Quick 1-Click HUD Mute & Persistence**: Instant **`🔊 Mute` / `🔇 Muted`** toggle in the main header bar and volume controls auto-persisted in `localStorage` (`cosmic_abyss_audio_settings_v1`).
+5. **Developer Extension Guide**: See [`AUDIO.md`](/AUDIO.md) for full audio graph details, sound catalog, and a 3-step guide on adding custom synthesized sound effects.
 [diff_block_end]
 
 

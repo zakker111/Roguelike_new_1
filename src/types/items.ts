@@ -116,6 +116,8 @@ export interface CraftedWeapon {
   };
 }
 
+export type ArmorSubType = 'LightArmor' | 'HeavyArmor' | 'Shield' | 'Helmet' | 'Gloves' | 'Boots';
+
 export interface EquipmentItem {
   id: string;
   name: string;

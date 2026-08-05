@@ -84,10 +84,13 @@
   "buildingInteriors": {
     "blacksmith": [
       { "tile": "Fireplace", "x": 1, "y": 1 },
+      { "tile": "Anvil", "x": 2, "y": 1 },
+      { "tile": "Anvil", "x": 3, "y": 1, "minWidth": 7 },
       { "tile": "Table", "x": 1, "y": 2 },
+      { "tile": "Chair", "x": 2, "y": 2 },
       { "tile": "Table", "x": "w - 2", "y": 1, "minWidth": 7 },
       { "tile": "Chair", "x": "w - 2", "y": 2, "minWidth": 7 },
-      { "tile": "Bed", "x": 2, "y": "h - 2" }
+      { "tile": "Bed", "x": "w - 2", "y": "h - 2" }
     ],
     "apothecary": [
       { "tile": "Table", "x": 1, "y": 1 },
@@ -98,12 +101,25 @@
     "tavern": [
       { "tile": "Fireplace", "x": 1, "y": 1 },
       { "tile": "Fireplace", "x": "w - 2", "y": 1 },
+      { "tile": "Table", "x": 2, "y": 2 },
+      { "tile": "Table", "x": 3, "y": 2 },
+      { "tile": "Table", "x": 4, "y": 2 },
+      { "tile": "Table", "x": 5, "y": 2, "minWidth": 10 },
+      { "tile": "Table", "x": 6, "y": 2, "minWidth": 12 },
+      { "tile": "Chair", "x": 2, "y": 3 },
+      { "tile": "Chair", "x": 3, "y": 3 },
+      { "tile": "Chair", "x": 4, "y": 3 },
+      { "tile": "Chair", "x": 5, "y": 3, "minWidth": 10 },
+      { "tile": "Chair", "x": 6, "y": 3, "minWidth": 12 },
       { "tile": "Table", "x": 2, "y": "h - 3" },
+      { "tile": "Chair", "x": 1, "y": "h - 3" },
       { "tile": "Chair", "x": 3, "y": "h - 3" },
+      { "tile": "Chair", "x": 2, "y": "h - 4" },
       { "tile": "Table", "x": "w - 4", "y": "h - 3" },
+      { "tile": "Chair", "x": "w - 5", "y": "h - 3" },
       { "tile": "Chair", "x": "w - 3", "y": "h - 3" },
-      { "tile": "Bed", "x": 2, "y": 1 },
-      { "tile": "Bed", "x": 5, "y": 1 },
+      { "tile": "Chair", "x": "w - 4", "y": "h - 4" },
+      { "tile": "Bed", "x": "w - 3", "y": 1 },
       { "tile": "Bed", "x": "w - 5", "y": 1 }
     ],
     "barracks": [
