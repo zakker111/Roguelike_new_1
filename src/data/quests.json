@@ -1,0 +1,97 @@
+[
+  {
+    "id": "q_pest_control",
+    "townName": "Oakhaven Hamlet",
+    "type": "encounter",
+    "title": "🧹 Outskirt Sewer Rats Control",
+    "description": "A plague of weak Outskirt Sewer Rats is chewing through the village food stores. Accept this quest to locate and defeat 3 Sewer Rats in the village outskirts. (Click an adjacent enemy or use a ranged spell/weapon to strike!)",
+    "rewardGold": 30,
+    "status": "available"
+  },
+  {
+    "id": "q_iron_gather",
+    "townName": "Oakhaven Hamlet",
+    "type": "gather",
+    "title": "🪓 Blacksmith Alloy Supply",
+    "description": "Deliver 3 Tempered Iron alloys (Iron Materials) to Grom Garison at the Oakhaven anvil. He needs them to temper weapons. (You start with some in your bag!)",
+    "targetItem": "mat_iron",
+    "targetCount": 3,
+    "rewardGold": 40,
+    "status": "available"
+  },
+  {
+    "id": "q_bandit_raid",
+    "townName": "Oakhaven Hamlet",
+    "type": "encounter",
+    "title": "🚨 Raid on Westfold Farm",
+    "description": "A cohort of 3 Bandit Raiders have camp-fire circles in the town plaza borders. Find and defeat them to secure Oakhaven limits!",
+    "rewardGold": 50,
+    "status": "available"
+  },
+  {
+    "id": "q_apothecary_supply",
+    "townName": "Oakhaven Hamlet",
+    "type": "gather",
+    "title": "🧪 Apothecary Healing Wildflower",
+    "description": "Gather and supply 3x Wild Berries to the Apothecary station to brew high-grade healing mixtures. (You can pick these from bushes, or use your starting supply!)",
+    "targetItem": "mat_berry",
+    "targetCount": 3,
+    "rewardGold": 35,
+    "status": "available"
+  },
+  {
+    "id": "q_mithril_heist",
+    "townName": "Oakhaven Hamlet",
+    "type": "gather",
+    "title": "💎 Royal Mithril Delivery",
+    "description": "Supply 3x Glimmering Mithril alloys to Grom Garison to assist in forging high-renown vanguard heavy armor.",
+    "targetItem": "mat_mithril",
+    "targetCount": 3,
+    "rewardGold": 240,
+    "status": "available"
+  },
+  {
+    "id": "q_outlaw_pardon",
+    "townName": "Oakhaven Hamlet",
+    "type": "gather",
+    "title": "⚖️ Sunder Outlaw Pardon Poorbox",
+    "description": "Donate 200 Gold to the Church Poorbox to earn a royal pardon from Oakhaven Sunder. Clears Outlaw status and increases Town Reputation by +35!",
+    "targetItem": "gold",
+    "targetCount": 200,
+    "rewardGold": 0,
+    "status": "available"
+  },
+  {
+    "id": "q_traveler_herbalist_mushrooms",
+    "townName": "Wilderness",
+    "type": "gather",
+    "title": "🍄 Wilderness Exotic Spores",
+    "description": "Deliver 5x Wild Mushrooms to a Wilderness Herbalist to help brew restorative elixirs.",
+    "targetItem": "mat_mushroom",
+    "targetCount": 5,
+    "rewardGold": 90,
+    "status": "available"
+  },
+  {
+    "id": "q_traveler_hunter_pelts",
+    "townName": "Wilderness",
+    "type": "gather",
+    "title": "🐺 Wilderness Thick Pelts",
+    "description": "Deliver 3x Animal Hides (or Wolf Pelts) to a Wilderness Hunter resting in the wilderness.",
+    "targetItem": "mat_hide",
+    "targetCount": 3,
+    "rewardGold": 110,
+    "status": "available"
+  },
+  {
+    "id": "q_traveler_pilgrim_relic",
+    "townName": "Wilderness",
+    "type": "gather",
+    "title": "✨ Traveling Pilgrim Lost Relic",
+    "description": "Deliver 1x Saint Sunder Amulet (or Gold Material) to a Traveling Pilgrim delivering sacred texts.",
+    "targetItem": "mat_gold",
+    "targetCount": 1,
+    "rewardGold": 130,
+    "status": "available"
+  }
+]

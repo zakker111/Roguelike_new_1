@@ -1,6 +1,18 @@
 import { TileType } from '../types';
 import { SpriteSheetConfig, SpriteSheetTileMapping } from '../components/GameCanvas';
 
+const emojiCache = new Map<string, boolean>();
+const EMOJI_REGEX = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u;
+
+function isEmoji(char: string): boolean {
+  let cached = emojiCache.get(char);
+  if (cached === undefined) {
+    cached = EMOJI_REGEX.test(char) || char === '🐈' || char === '🐱';
+    emojiCache.set(char, cached);
+  }
+  return cached;
+}
+
 export function drawSpriteOrAscii(
   ctx: CanvasRenderingContext2D,
   rx: number,
@@ -93,8 +105,7 @@ export function drawSpriteOrAscii(
     ctx.fillRect(rx, ry, tileSize, tileSize);
   }
 
-  const isEmojiChar = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(char) || char === '🐈' || char === '🐱';
-  if (isEmojiChar) {
+  if (isEmoji(char)) {
     ctx.font = '15px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
   } else if (options.fontSize) {
     ctx.font = options.fontSize;

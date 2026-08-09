@@ -49,6 +49,28 @@ export function bresenhamLine(x0: number, y0: number, x1: number, y1: number): {
   return points;
 }
 
+export function hasLineOfSight(x0: number, y0: number, x1: number, y1: number, map: TileType[][]): boolean {
+  if (!map || map.length === 0 || !map[0]) return true;
+  const points = bresenhamLine(x0, y0, x1, y1);
+  for (let i = 1; i < points.length - 1; i++) {
+    const p = points[i];
+    const tile = map[p.y]?.[p.x];
+    if (
+      tile === TileType.Wall ||
+      tile === TileType.Door ||
+      tile === TileType.WatchtowerWall ||
+      tile === TileType.WatchtowerSlit ||
+      tile === TileType.WatchtowerBarricade ||
+      tile === TileType.Tree ||
+      tile === TileType.PineTree ||
+      tile === TileType.BirchTree
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Computes light visibility for raw raycasting grid.
  * Updates the visible boolean array up to a certain maximum light radius.

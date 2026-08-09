@@ -6,9 +6,9 @@
       "type": "SkeletonMage",
       "char": "☠",
       "color": "#c084fc",
-      "hpMultiplier": 4.8,
+      "hpMultiplier": 2.8,
       "atkMultiplier": 1.8,
-      "defBonus": 4,
+      "defBonus": 3,
       "speed": 0.9,
       "description": "A terrifying giant skeleton mage channeling dark necrotic energies."
     },
@@ -18,9 +18,9 @@
       "type": "Troll",
       "char": "👹",
       "color": "#f43f5e",
-      "hpMultiplier": 5.6,
+      "hpMultiplier": 3.2,
       "atkMultiplier": 2.1,
-      "defBonus": 5,
+      "defBonus": 3,
       "speed": 1.2,
       "description": "A colossal cave beast with unfathomable stamina and brutal physical weight."
     },
@@ -30,9 +30,9 @@
       "type": "OrcBrute",
       "char": "🧌",
       "color": "#ea580c",
-      "hpMultiplier": 5.0,
+      "hpMultiplier": 3.0,
       "atkMultiplier": 2.3,
-      "defBonus": 5,
+      "defBonus": 3,
       "speed": 1.1,
       "description": "A heavily plated orc carrying a massive stone hammer that shatters skulls."
     },
@@ -42,9 +42,9 @@
       "type": "Rat",
       "char": "🐀",
       "color": "#a3e635",
-      "hpMultiplier": 4.2,
+      "hpMultiplier": 2.5,
       "atkMultiplier": 1.6,
-      "defBonus": 3,
+      "defBonus": 2,
       "speed": 0.7,
       "description": "A grotesque rodent sovereign leading endless sewer infestations."
     }

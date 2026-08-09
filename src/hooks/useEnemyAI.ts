@@ -1,17 +1,19 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import { TileType, Enemy, GameState, PlayerEffect, EnemyState, EnemyType, CatalystType } from '../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT, isLunarBlessingActive } from '../utils/gameUtils';
-import { getNextStepTowards } from '../utils/ai';
+import { getNextStepTowards, hasLineOfSight } from '../utils/ai';
 import { findNearestSafeNpcTile } from '../utils/overworld';
 import { getEnemyTemplate } from '../utils/dungeon';
 import { syncCaravanState } from '../utils/caravanAndTerritory';
 import { getGMPointOfInterestNudge } from '../utils/gmNarrator';
+import { getCompanionAdvice } from '../utils/companionAdvice';
 import { getEnemyFleeQuote } from '../utils/fleeQuotes';
 import { incrementDefeatedEnemyCount } from '../utils/bestiary';
 import { evaluateScarAcquisition, getEffectiveStats } from '../utils/scars';
 import { getItemDurabilityDecay } from '../utils/spellsAndEquipment';
+import { calculateArchetypeDamageAdjustment } from '../utils/combatArchetypes';
 import { tickActiveGMStoryteller } from '../utils/gmStoryteller';
-import { getWeatherAmbientBark, getTavernDrinkingBark } from '../utils/npcDialogue';
+import { getWeatherAmbientBark, getTavernDrinkingBark, getCampfireDialogueBark, getBlizzardShelterBark } from '../utils/npcDialogue';
 
 export interface UseEnemyAIParams {
   gameStateRef?: any;
@@ -305,6 +307,16 @@ export function useEnemyAI({
         }
       }
 
+      // Periodic Companion Tactical Bark
+      if (prev.followers && prev.followers.length > 0 && updatedStats.turnsPlayed > 0 && updatedStats.turnsPlayed % 60 === 35) {
+        const activeFol = prev.followers[0];
+        const tempGs: GameState = { ...prev, playerStats: updatedStats };
+        const advice = getCompanionAdvice(tempGs, activeFol);
+        if (advice) {
+          staticLogs.push(advice);
+        }
+      }
+
       const pLevel = updatedStats.level || 1;
       const weaponVal = prev.currentWeapon ? Math.max(0, prev.currentWeapon.damage) : 0;
       const armorVal = (nextArmor?.defense || 0) + 
@@ -382,8 +394,8 @@ export function useEnemyAI({
 
           const enemyTemplate = getEnemyTemplate(spawnedType);
           const isBoss = spawnedType === EnemyType.Otso || spawnedType === EnemyType.Louhi || spawnedType === EnemyType.IkuTurso;
-          const hpMult = isBoss ? 5.0 : 1.0;
-          const atkMult = isBoss ? 2.0 : 1.0;
+          const hpMult = isBoss ? 2.8 : 1.0;
+          const atkMult = isBoss ? 1.8 : 1.0;
 
           const newRoamingEnemy: Enemy = {
             id: `gm_spawned_${Date.now()}_${Math.floor(Math.random() * 9999)}`,
@@ -394,7 +406,7 @@ export function useEnemyAI({
             hp: Math.round(enemyTemplate.baseHp * playerScaleCoeff * hpMult * ((window as any).arenaEnemyHpMultiplier || 1.0)),
             maxHp: Math.round(enemyTemplate.baseHp * playerScaleCoeff * hpMult * ((window as any).arenaEnemyHpMultiplier || 1.0)),
             atk: Math.round(enemyTemplate.baseAtk * atkScaleCoeff * atkMult * ((window as any).arenaEnemyDamageMultiplier || 1.0)),
-            def: Math.round((enemyTemplate.baseDef + (isBoss ? 5 : 0)) * atkScaleCoeff),
+            def: Math.round((enemyTemplate.baseDef + (isBoss ? 3 : 0)) * Math.min(1.4, atkScaleCoeff)),
             range: enemyTemplate.range || 1,
             speed: enemyTemplate.speed || 1,
             color: enemyTemplate.color,
@@ -505,89 +517,279 @@ export function useEnemyAI({
           continue;
         }
 
+        // PHASE 3: STAGGER / GUARD BAR RECOVERY & TURN SKIPPING
+        if (e.isStaggered) {
+          e.staggerTurns = (e.staggerTurns || 1) - 1;
+          if (e.staggerTurns <= 0) {
+            e.isStaggered = false;
+            e.staggerMeter = 0;
+            if (prev.visible[e.y]?.[e.x]) {
+              staticLogs.push(`🛡️ ${e.name} recovers their posture and stance!`);
+            }
+          } else {
+            if (prev.visible[e.y]?.[e.x]) {
+              staticLogs.push(`💫 ${e.name} is STAGGERED and helpless!`);
+            }
+            updatedEnemiesList.push(e);
+            continue;
+          }
+        }
+
+        // PHASE 3: TELEGRAPHED ATTACK RESOLUTION
+        if (e.telegraphedAttack) {
+          const attack = e.telegraphedAttack;
+          attack.turnsRemaining -= 1;
+          if (attack.turnsRemaining <= 0) {
+            const tx = attack.targetX;
+            const ty = attack.targetY;
+            const dmg = attack.damage;
+
+            if (px === tx && py === ty) {
+              if (prev.isBraced) {
+                const reducedDmg = Math.max(1, Math.floor(dmg * 0.25));
+                playerHp = Math.max(0, playerHp - reducedDmg);
+                const curStagger = e.staggerMeter || 0;
+                const maxStag = e.maxStaggerMeter || (e.isBoss ? 120 : e.isElite ? 75 : 45);
+                e.staggerMeter = Math.min(maxStag, curStagger + 35);
+                if (e.staggerMeter >= maxStag && !e.isStaggered) {
+                  e.isStaggered = true;
+                  e.staggerTurns = 2;
+                }
+                staticLogs.push(`🛡️ [PERFECT BRACE]: You braced firmly against ${e.name}'s ${attack.name}! Absorbed 75% of damage (-${reducedDmg} HP) and counter-staggered the attacker!`);
+                playSound('shield');
+                const eff = new CustomEvent('spawn-game-effect', {
+                  detail: { x: px, y: py, text: `🛡️ BRACED (-${reducedDmg})`, type: 'heal' },
+                });
+                window.dispatchEvent(eff);
+              } else {
+                playerHp = Math.max(0, playerHp - dmg);
+                staticLogs.push(`💥 [TELEGRAPHED IMPACT]: ${e.name}'s heavy ${attack.name} smashes you at (${tx}, ${ty}) for -${dmg} HP!`);
+                playSound('injury');
+                const eff = new CustomEvent('spawn-game-effect', {
+                  detail: { x: px, y: py, text: `💥 CRUSHED (-${dmg})`, type: 'dmg' },
+                });
+                window.dispatchEvent(eff);
+              }
+            } else {
+              staticLogs.push(`💨 [TACTICAL DODGE]: ${e.name}'s ${attack.name} smashes empty ground at (${tx}, ${ty}) as you dodged out of danger!`);
+              playSound('bump');
+              const eff = new CustomEvent('spawn-game-effect', {
+                detail: { x: tx, y: ty, text: `💨 DODGED!`, type: 'heal' },
+              });
+              window.dispatchEvent(eff);
+            }
+            e.telegraphedAttack = null;
+            updatedEnemiesList.push(e);
+            continue;
+          }
+        }
+
+        const sameZ = (e.z ?? 0) === (prev.playerZ ?? 0);
         const distToPlayer = Math.abs(e.x - px) + Math.abs(e.y - py);
         const enemyRange = e.range || 1;
         const dxToPlayer = Math.abs(e.x - px);
         const dyToPlayer = Math.abs(e.y - py);
-        const isWithinAttackRange = dxToPlayer <= enemyRange && dyToPlayer <= enemyRange && (dxToPlayer > 0 || dyToPlayer > 0);
+        const hasLOS = hasLineOfSight(e.x, e.y, px, py, prev.map);
+        const isWithinAttackRange = sameZ && dxToPlayer <= enemyRange && dyToPlayer <= enemyRange && (dxToPlayer > 0 || dyToPlayer > 0) && (enemyRange === 1 || hasLOS);
 
         const isHostile = !e.isFollower && (!e.isTownGuard || nextGuardsHostile);
 
         // FOV / Perception check (is enemy alert to player?)
         const isInPerceptionRange = distToPlayer <= 10;
-        if (isInPerceptionRange && isHostile) {
+        if (sameZ && isInPerceptionRange && isHostile && (enemyRange === 1 || hasLOS)) {
           e.state = EnemyState.Chasing;
+          if (!e.hasWarnedElite && (e.isBoss || e.maxHp >= 75 || e.name.toLowerCase().includes('commander') || e.name.toLowerCase().includes('elite')) && prev.followers && prev.followers.length > 0) {
+            e.hasWarnedElite = true;
+            const folName = prev.followers[0].name;
+            staticLogs.push(`🛡️ ${folName}: "Master, heads up! An elite foe (${e.name}) is bearing down on us!"`);
+          }
         }
 
         // --- 1. FOLLOWER LOGIC ---
         if (e.isFollower) {
           let attackedEnemy = false;
+          let nearestHostile: Enemy | null = null;
+          let minHostileDist = 999;
+
+          // Determine effective attack range & style for this follower
+          let followerRange = e.range || 1;
+          let rangedType: 'bow' | 'magic' | 'spear' | 'melee' = 'melee';
+
+          if (e.followerId) {
+            const linkedFol = prev.followers?.find(f => f.id === e.followerId);
+            if (linkedFol) {
+              const weapon = linkedFol.equipment?.weapon;
+              if (weapon?.range && weapon.range > 1) {
+                followerRange = weapon.range;
+              } else if (['Bow', 'Crossbow'].includes(weapon?.subType as string)) {
+                followerRange = 4;
+              } else if (['Staff', 'Wand'].includes(weapon?.subType as string)) {
+                followerRange = 3;
+              } else if (weapon?.subType === 'Spear') {
+                followerRange = 2;
+              } else if (['Mage', 'Archer', 'Ranger', 'Hunter', 'Crossbowman', 'Sorcerer'].includes(linkedFol.role)) {
+                followerRange = ['Archer', 'Ranger', 'Hunter', 'Crossbowman'].includes(linkedFol.role) ? 4 : 3;
+              }
+
+              if (weapon?.subType === 'Bow' || weapon?.subType === 'Crossbow' || ['Archer', 'Ranger', 'Hunter', 'Crossbowman'].includes(linkedFol.role)) {
+                rangedType = 'bow';
+              } else if (weapon?.subType === 'Staff' || weapon?.subType === 'Wand' || ['Mage', 'Sorcerer'].includes(linkedFol.role)) {
+                rangedType = 'magic';
+              } else if (weapon?.subType === 'Spear') {
+                rangedType = 'spear';
+              }
+            }
+          }
+
+          // 1. Identify nearest hostile target to follower
           for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
             if (targetIdx === i) continue;
             const target = nextEnemies[targetIdx];
             const isTargetHostileToPlayer = !target.isFollower && (!target.isTownGuard || nextGuardsHostile);
             if (target.hp > 0 && isTargetHostileToPlayer) {
               const targetDist = Math.abs(target.x - e.x) + Math.abs(target.y - e.y);
-              if (targetDist <= enemyRange) {
-                const followerDmg = Math.max(1, e.atk - target.def);
-                target.hp -= followerDmg;
-                const isActionVisible = (prev.visible[target.y]?.[target.x] ?? false) || (prev.visible[e.y]?.[e.x] ?? false);
-                if (isActionVisible) {
-                  staticLogs.push(`🛡️ [COMPANION]: ${e.name} strikes ${target.name} for ${followerDmg} damage!`);
-                  playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
-                  const eff = new CustomEvent('spawn-game-effect', {
-                    detail: { x: target.x, y: target.y, text: `-${followerDmg}`, type: 'dmg' },
-                  });
-                  window.dispatchEvent(eff);
-                }
-                attackedEnemy = true;
-                if (target.hp <= 0) {
-                  if (isActionVisible) {
-                    staticLogs.push(`☠️ [COMPANION KILL]: ${e.name} defeated ${target.name}!`);
-                  }
-                  nextDefeatedCounts = incrementDefeatedEnemyCount(nextDefeatedCounts, target.name, target.type, !!target.isBoss);
-                }
-                break;
+              if (targetDist < minHostileDist) {
+                minHostileDist = targetDist;
+                nearestHostile = target;
               }
             }
           }
 
-          if (!attackedEnemy) {
-            if (distToPlayer > 8) {
-              const safeSpot = findNearestSafeNpcTile(px, py, prev.map);
-              const isOccupied = (safeSpot.x === px && safeSpot.y === py) || updatedEnemiesList.some(other => other.x === safeSpot.x && other.y === safeSpot.y);
-              if (!isOccupied) {
-                e.x = safeSpot.x;
-                e.y = safeSpot.y;
+          // 2. Check if player is fleeing
+          let isPlayerFleeing = false;
+          if (nearestHostile) {
+            const playerDistToHostile = Math.abs(nearestHostile.x - px) + Math.abs(nearestHostile.y - py);
+            const playerDistToFollower = distToPlayer;
+            const playerHpPercent = updatedStats.hp / updatedStats.maxHp;
+
+            if (
+              playerDistToFollower >= 3 ||
+              playerDistToHostile >= 4 ||
+              (playerDistToHostile > minHostileDist && playerDistToFollower >= 2) ||
+              playerHpPercent <= 0.3
+            ) {
+              isPlayerFleeing = true;
+            }
+          }
+
+          // 3. Ranged / Melee Attack if hostile target is within followerRange
+          if (nearestHostile) {
+            const dx = Math.abs(nearestHostile.x - e.x);
+            const dy = Math.abs(nearestHostile.y - e.y);
+            const inAttackRange = followerRange === 1 ? (dx + dy <= 1) : (dx <= followerRange && dy <= followerRange && (dx > 0 || dy > 0));
+
+            if (inAttackRange) {
+              const target = nearestHostile;
+              const followerDmg = Math.max(1, e.atk - target.def);
+              target.hp -= followerDmg;
+              const isActionVisible = (prev.visible[target.y]?.[target.x] ?? false) || (prev.visible[e.y]?.[e.x] ?? false);
+
+              if (isActionVisible) {
+                if (rangedType === 'bow') {
+                  staticLogs.push(`🏹 [COMPANION RANGED]: ${e.name} shoots an arrow at ${target.name} for ${followerDmg} damage!`);
+                  playSound('arrow', { x: target.x, y: target.y, playerX: px, playerY: py });
+                } else if (rangedType === 'magic') {
+                  staticLogs.push(`✨ [COMPANION SPELL]: ${e.name} launches an elemental bolt at ${target.name} for ${followerDmg} damage!`);
+                  playSound('spell', { x: target.x, y: target.y, playerX: px, playerY: py });
+                } else if (rangedType === 'spear') {
+                  staticLogs.push(`🔱 [COMPANION REACH]: ${e.name} thrusts their spear at ${target.name} for ${followerDmg} damage!`);
+                  playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
+                } else {
+                  staticLogs.push(`🛡️ [COMPANION]: ${e.name} strikes ${target.name} for ${followerDmg} damage!`);
+                  playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
+                }
+
+                const eff = new CustomEvent('spawn-game-effect', {
+                  detail: { x: target.x, y: target.y, text: `-${followerDmg}`, type: 'dmg' },
+                });
+                window.dispatchEvent(eff);
               }
-            } else if (distToPlayer > 1) {
-              const nextPos = getNextStepTowards(e.x, e.y, px, py, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
-              if (nextPos && (nextPos.x !== px || nextPos.y !== py)) {
-                const blocked = updatedEnemiesList.some(other => other.x === nextPos.x && other.y === nextPos.y);
-                if (!blocked) {
-                  e.x = nextPos.x;
-                  e.y = nextPos.y;
+
+              attackedEnemy = true;
+              if (target.hp <= 0) {
+                if (isActionVisible) {
+                  staticLogs.push(`☠️ [COMPANION KILL]: ${e.name} defeated ${target.name}!`);
+                }
+                nextDefeatedCounts = incrementDefeatedEnemyCount(nextDefeatedCounts, target.name, target.type, !!target.isBoss);
+              }
+            }
+          }
+
+          // 4. Autonomous Movement: Engage nearby hostile, shoot from range, or Flee with Player
+          if (!attackedEnemy) {
+            if (isPlayerFleeing) {
+              // Player is fleeing! Follower flees towards the player to fall back together
+              if (distToPlayer > 8) {
+                const safeSpot = findNearestSafeNpcTile(px, py, prev.map);
+                const isOccupied = (safeSpot.x === px && safeSpot.y === py) || updatedEnemiesList.some(other => other.x === safeSpot.x && other.y === safeSpot.y);
+                if (!isOccupied) {
+                  e.x = safeSpot.x;
+                  e.y = safeSpot.y;
+                }
+              } else if (distToPlayer > 1) {
+                const nextPos = getNextStepTowards(e.x, e.y, px, py, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+                if (nextPos && (nextPos.x !== px || nextPos.y !== py)) {
+                  const blocked = updatedEnemiesList.some(other => other.x === nextPos.x && other.y === nextPos.y);
+                  if (!blocked) {
+                    e.x = nextPos.x;
+                    e.y = nextPos.y;
+                  }
                 }
               }
-            } else if (distToPlayer === 1 && Math.random() < 0.35) {
-              // Idle jitter: Followers step to adjacent open tiles to prevent trapping player in corners/doors
-              const dirs = [
-                { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
-                { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
-              ].sort(() => Math.random() - 0.5);
+            } else if (nearestHostile && minHostileDist <= 10) {
+              const dx = Math.abs(nearestHostile.x - e.x);
+              const dy = Math.abs(nearestHostile.y - e.y);
+              const alreadyInRange = dx <= followerRange && dy <= followerRange;
 
-              for (const d of dirs) {
-                const tx = e.x + d.dx;
-                const ty = e.y + d.dy;
-                if (tx >= 0 && tx < LEVEL_WIDTH && ty >= 0 && ty < LEVEL_HEIGHT) {
-                  const tile = prev.map[ty]?.[tx];
-                  const walkable = tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path;
-                  const blocked = (tx === px && ty === py) || updatedEnemiesList.some(other => other.x === tx && other.y === ty);
-                  const newDistToPlayer = Math.abs(tx - px) + Math.abs(ty - py);
-                  if (walkable && !blocked && newDistToPlayer <= 2) {
-                    e.x = tx;
-                    e.y = ty;
-                    break;
+              if (!alreadyInRange) {
+                // Player is standing ground! Move towards hostile until in shooting range
+                const nextPos = getNextStepTowards(e.x, e.y, nearestHostile.x, nearestHostile.y, prev.map, true, updatedEnemiesList, false);
+                if (nextPos && (nextPos.x !== px || nextPos.y !== py)) {
+                  const blocked = updatedEnemiesList.some(other => other.x === nextPos.x && other.y === nextPos.y);
+                  if (!blocked) {
+                    e.x = nextPos.x;
+                    e.y = nextPos.y;
+                  }
+                }
+              }
+            } else {
+              // Normal following or idle jitter
+              if (distToPlayer > 8) {
+                const safeSpot = findNearestSafeNpcTile(px, py, prev.map);
+                const isOccupied = (safeSpot.x === px && safeSpot.y === py) || updatedEnemiesList.some(other => other.x === safeSpot.x && other.y === safeSpot.y);
+                if (!isOccupied) {
+                  e.x = safeSpot.x;
+                  e.y = safeSpot.y;
+                }
+              } else if (distToPlayer > 1) {
+                const nextPos = getNextStepTowards(e.x, e.y, px, py, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+                if (nextPos && (nextPos.x !== px || nextPos.y !== py)) {
+                  const blocked = updatedEnemiesList.some(other => other.x === nextPos.x && other.y === nextPos.y);
+                  if (!blocked) {
+                    e.x = nextPos.x;
+                    e.y = nextPos.y;
+                  }
+                }
+              } else if (distToPlayer === 1 && Math.random() < 0.35) {
+                // Idle jitter: Followers step to adjacent open tiles to prevent trapping player in corners/doors
+                const dirs = [
+                  { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+                  { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
+                ].sort(() => Math.random() - 0.5);
+
+                for (const d of dirs) {
+                  const tx = e.x + d.dx;
+                  const ty = e.y + d.dy;
+                  if (tx >= 0 && tx < LEVEL_WIDTH && ty >= 0 && ty < LEVEL_HEIGHT) {
+                    const tile = prev.map[ty]?.[tx];
+                    const walkable = tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path;
+                    const blocked = (tx === px && ty === py) || updatedEnemiesList.some(other => other.x === tx && other.y === ty);
+                    const newDistToPlayer = Math.abs(tx - px) + Math.abs(ty - py);
+                    if (walkable && !blocked && newDistToPlayer <= 2) {
+                      e.x = tx;
+                      e.y = ty;
+                      break;
+                    }
                   }
                 }
               }
@@ -783,7 +985,66 @@ export function useEnemyAI({
         }
 
         // --- 2. HOSTILE ATTACK LOGIC ---
+        let targetFollower: Enemy | null = null;
+        if (isHostile) {
+          for (const fol of updatedEnemiesList) {
+            if (fol.isFollower && fol.hp > 0) {
+              const fDistX = Math.abs(fol.x - e.x);
+              const fDistY = Math.abs(fol.y - e.y);
+              const folRange = e.range || 1;
+              if (fDistX <= folRange && fDistY <= folRange && (fDistX > 0 || fDistY > 0)) {
+                if (folRange === 1 || hasLineOfSight(e.x, e.y, fol.x, fol.y, prev.map)) {
+                  targetFollower = fol;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (isHostile && targetFollower && (!isWithinAttackRange || Math.random() < 0.5)) {
+          const fDmg = Math.max(1, e.atk - (targetFollower.def || 0));
+          targetFollower.hp = Math.max(0, targetFollower.hp - fDmg);
+          const isVisible = (prev.visible[targetFollower.y]?.[targetFollower.x] ?? false) || (prev.visible[e.y]?.[e.x] ?? false);
+          if (isVisible) {
+            staticLogs.push(`⚔️ [HOSTILE ATTACK]: ${e.name} strikes companion ${targetFollower.name} for -${fDmg} HP! (${targetFollower.hp}/${targetFollower.maxHp} HP remaining)`);
+            playSound('injury');
+            const eff = new CustomEvent('spawn-game-effect', {
+              detail: { x: targetFollower.x, y: targetFollower.y, text: `-${fDmg} HP`, type: 'dmg' },
+            });
+            window.dispatchEvent(eff);
+          }
+          if (targetFollower.hp <= 0 && isVisible) {
+            staticLogs.push(`💔 [COMPANION FALLEN]: ${targetFollower.name} has been wounded and fell in combat!`);
+          }
+          updatedEnemiesList.push(e);
+          continue;
+        }
+
         if (isHostile && isWithinAttackRange) {
+          // Telegraphed Attack Wind-Up Initiation
+          const isHeavy = e.isBoss || e.isElite || e.type === EnemyType.OrcBrute || e.type === EnemyType.Dragon || e.type === EnemyType.DreadKnight || e.type === EnemyType.Louhi || e.type === EnemyType.IkuTurso;
+          const telegraphChance = isHeavy ? 0.35 : 0.18;
+
+          if (!e.telegraphedAttack && Math.random() < telegraphChance) {
+            const atkName = e.isBoss ? 'Sunder Titan Slam' : isHeavy ? 'Brutal Heavy Cleave' : 'Heavy Ground Strike';
+            e.telegraphedAttack = {
+              targetX: px,
+              targetY: py,
+              turnsRemaining: 1,
+              damage: Math.round(e.atk * 1.6),
+              name: atkName
+            };
+            staticLogs.push(`⚠️ [TELEGRAPH WARNING]: ${e.name} winds up ${atkName} targeting (${px}, ${py})! Move away or BRACE (B) to block!`);
+            playSound('alert');
+            const eff = new CustomEvent('spawn-game-effect', {
+              detail: { x: e.x, y: e.y, text: `⚠️ TELEGRAPHING!`, type: 'dmg' },
+            });
+            window.dispatchEvent(eff);
+            updatedEnemiesList.push(e);
+            continue; // Skip standard attack this turn as enemy winds up!
+          }
+
           let lunarDodgeBonus = 0;
           if (isLunarBlessingActive(prev, 'new_moon')) lunarDodgeBonus = 0.15;
           else if (isLunarBlessingActive(prev, 'waxing_crescent')) lunarDodgeBonus = 0.10;
@@ -806,7 +1067,18 @@ export function useEnemyAI({
             
             let braceMult = prev.isBraced ? 2.0 : 1.0;
             const absorbedDef = Math.floor(totalArmorDef * braceMult);
-            const strikeDmg = Math.max(1, baseAtk - absorbedDef);
+            let rawStrike = Math.max(1, baseAtk - absorbedDef);
+
+            const isCritHit = Math.random() < 0.15;
+            const archetypeAdj = calculateArchetypeDamageAdjustment(
+              { archetype: e.archetype, isCrit: isCritHit },
+              null,
+              rawStrike
+            );
+            const strikeDmg = archetypeAdj.damage;
+            if (archetypeAdj.logNote) {
+              staticLogs.push(archetypeAdj.logNote);
+            }
 
             playerHp = Math.max(0, playerHp - strikeDmg);
             staticLogs.push(`⚔️ ${e.name} attacks you for -${strikeDmg} HP!`);
@@ -856,7 +1128,49 @@ export function useEnemyAI({
 
         // --- 3. MOVEMENT & PATHFINDING LOGIC ---
         if (e.state === EnemyState.Chasing && isHostile) {
-          const nextStep = getNextStepTowards(e.x, e.y, px, py, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+          let chaseTargetX = px;
+          let chaseTargetY = py;
+
+          // Pack Flanking AI: Goblins, Wolves, Bandits, Orcs try to flank from orthogonal angles
+          const isPackUnit = [EnemyType.Goblin, EnemyType.Bandit, EnemyType.LootGoblin, EnemyType.OrcBrute, EnemyType.Hiisi].includes(e.type) ||
+                             /goblin|wolf|bandit|outlaw|raider|pack|beast|rogue|hiisi|orc/i.test(e.name);
+
+          if (isPackUnit) {
+            // Orthogonal & diagonal angles around player: N, E, S, W, NE, SE, SW, NW
+            const flankAngles = [
+              { x: px, y: py - 1 },
+              { x: px + 1, y: py },
+              { x: px, y: py + 1 },
+              { x: px - 1, y: py },
+              { x: px + 1, y: py - 1 },
+              { x: px + 1, y: py + 1 },
+              { x: px - 1, y: py + 1 },
+              { x: px - 1, y: py - 1 }
+            ];
+
+            let chosenFlank: { x: number; y: number } | null = null;
+            for (const pos of flankAngles) {
+              if (pos.x >= 0 && pos.x < LEVEL_WIDTH && pos.y >= 0 && pos.y < LEVEL_HEIGHT) {
+                const tile = prev.map[pos.y]?.[pos.x];
+                const isWall = tile === TileType.Wall || tile === TileType.Water;
+                if (!isWall) {
+                  const isOccupied = updatedEnemiesList.some(other => other.x === pos.x && other.y === pos.y) ||
+                                     nextEnemies.some((other, idx) => idx > i && other.x === pos.x && other.y === pos.y);
+                  if (!isOccupied) {
+                    chosenFlank = pos;
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (chosenFlank) {
+              chaseTargetX = chosenFlank.x;
+              chaseTargetY = chosenFlank.y;
+            }
+          }
+
+          const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
           if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
             const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                          nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
@@ -867,13 +1181,67 @@ export function useEnemyAI({
             }
           }
         } else if (e.state === EnemyState.Retreating) {
-          // Flee in opposite direction from player
-          const dirX = Math.sign(e.x - px) || (Math.random() < 0.5 ? 1 : -1);
-          const dirY = Math.sign(e.y - py) || (Math.random() < 0.5 ? 1 : -1);
-          const targetX = Math.max(0, Math.min(LEVEL_WIDTH - 1, e.x + dirX * 5));
-          const targetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + dirY * 5));
-          
-          const nextStep = getNextStepTowards(e.x, e.y, targetX, targetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+          // Call for Reinforcements: Cowardly/severely wounded enemies seek nearby dormant monster groups to alert them!
+          let nearestDormant: Enemy | null = null;
+          let minDormantDist = 999;
+
+          if (!e.hasAlertedBackup) {
+            for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
+              if (targetIdx === i) continue;
+              const target = nextEnemies[targetIdx];
+              if (target.hp > 0 && !target.isFollower && !target.isTownGuard) {
+                const isDormant = target.state === EnemyState.Sleeping || target.state === EnemyState.Patrolling || target.state !== EnemyState.Chasing;
+                if (isDormant) {
+                  const d = Math.abs(target.x - e.x) + Math.abs(target.y - e.y);
+                  if (d < minDormantDist) {
+                    minDormantDist = d;
+                    nearestDormant = target;
+                  }
+                }
+              }
+            }
+          }
+
+          let retreatTargetX = e.x;
+          let retreatTargetY = e.y;
+
+          if (nearestDormant && minDormantDist <= 18) {
+            // Move toward dormant monster group to call for backup
+            retreatTargetX = nearestDormant.x;
+            retreatTargetY = nearestDormant.y;
+
+            if (minDormantDist <= 2) {
+              e.hasAlertedBackup = true;
+              nearestDormant.state = EnemyState.Chasing;
+              if (nearestDormant.originalChar) nearestDormant.char = nearestDormant.originalChar;
+
+              // Alert all nearby dormant monsters in radius 6 of the dormant leader
+              for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
+                const nearby = nextEnemies[targetIdx];
+                if (nearby.hp > 0 && !nearby.isFollower && !nearby.isTownGuard) {
+                  const distToGroup = Math.abs(nearby.x - nearestDormant.x) + Math.abs(nearby.y - nearestDormant.y);
+                  if (distToGroup <= 6) {
+                    nearby.state = EnemyState.Chasing;
+                    if (nearby.originalChar) nearby.char = nearby.originalChar;
+                  }
+                }
+              }
+
+              const isActionVisible = (prev.visible[e.y]?.[e.x] ?? false) || (prev.visible[nearestDormant.y]?.[nearestDormant.x] ?? false);
+              if (isActionVisible) {
+                staticLogs.push(`📢 [REINFORCEMENTS]: Wounded ${e.name} yells for backup, alerting nearby ${nearestDormant.name} to attack!`);
+                playSound('bump', { x: e.x, y: e.y, playerX: px, playerY: py });
+              }
+            }
+          } else {
+            // Flee in opposite direction from player
+            const dirX = Math.sign(e.x - px) || (Math.random() < 0.5 ? 1 : -1);
+            const dirY = Math.sign(e.y - py) || (Math.random() < 0.5 ? 1 : -1);
+            retreatTargetX = Math.max(0, Math.min(LEVEL_WIDTH - 1, e.x + dirX * 5));
+            retreatTargetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + dirY * 5));
+          }
+
+          const nextStep = getNextStepTowards(e.x, e.y, retreatTargetX, retreatTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
           if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
             const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                          nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
@@ -927,6 +1295,20 @@ export function useEnemyAI({
 
         const tavernNpc = nextNpcs.find(n => n.id?.startsWith('npc_tavernmaster_'));
 
+        // Find outdoor Campfire tiles on map for dusk gathering
+        let mapCampfire: { x: number; y: number } | null = null;
+        if (prev.map) {
+          for (let ry = 0; ry < prev.map.length; ry++) {
+            for (let rx = 0; rx < prev.map[0].length; rx++) {
+              if (prev.map[ry]?.[rx] === TileType.Campfire) {
+                mapCampfire = { x: rx, y: ry };
+                break;
+              }
+            }
+            if (mapCampfire) break;
+          }
+        }
+
         // Build fast spatial lookup sets for enemies and NPCs
         const enemyPosSet = new Set<string>();
         if (nextEnemies && nextEnemies.length > 0) {
@@ -975,23 +1357,39 @@ export function useEnemyAI({
             return npc;
           }
 
-          // Occasional ambient weather reaction bark if outdoors near player
-          if (!npc.isAsleep && (currentW === 'rainy' || currentW === 'blizzard' || currentW === 'sandstorm' || currentW === 'foggy')) {
+          const isBlizzard = currentW === 'blizzard' || currentW === 'snowy';
+
+          // Occasional ambient weather or blizzard shelter reaction bark if outdoors near player
+          if (!npc.isAsleep) {
             const dist = Math.abs(npc.x - px) + Math.abs(npc.y - py);
-            if (dist <= 6 && Math.random() < 0.03) {
-              const bark = getWeatherAmbientBark(npc, currentW, currentHour >= 20 || currentHour < 7 ? 'night' : 'day');
-              staticLogs.push(`🗣️ ${bark}`);
+            if (dist <= 6) {
+              if (isBlizzard && Math.random() < 0.04) {
+                staticLogs.push(`🗣️ ${getBlizzardShelterBark(npc)}`);
+              } else if ((currentW === 'rainy' || currentW === 'sandstorm' || currentW === 'foggy') && Math.random() < 0.03) {
+                const bark = getWeatherAmbientBark(npc, currentW, currentHour >= 20 || currentHour < 7 ? 'night' : 'day');
+                staticLogs.push(`🗣️ ${bark}`);
+              }
             }
           }
 
-          // Determine schedule state (work, leisure, home)
-          let targetSched: 'home' | 'work' | 'leisure' = 'work';
+          // Determine schedule state (work, leisure, home, campfire)
+          let targetSched: 'home' | 'work' | 'leisure' | 'campfire' = 'work';
+          const isDusk = currentHour >= 17 && currentHour < 20;
+
           if (currentHour >= 20 || currentHour < 7) {
             targetSched = 'home';
+          } else if (isBlizzard) {
+            // Heavy blizzards force villagers into indoor house or tavern shelter!
+            const isTavernVisitor = [
+              'villager', 'apothecary', 'companion_hire', 'merchant',
+              'dockworker', 'sailor', 'patron', 'townsperson', 'guard', 'fishmonger', 'blacksmith'
+            ].includes(npc.role);
+            targetSched = isTavernVisitor ? 'leisure' : 'home';
+          } else if (isDusk && mapCampfire && currentW !== 'blizzard') {
+            // Gather around outdoor campfires at dusk for cozy socialization!
+            targetSched = 'campfire';
           } else if (
             currentW === 'rainy' ||
-            currentW === 'snowy' ||
-            currentW === 'blizzard' ||
             (currentHour >= 12 && currentHour < 13) ||
             (currentHour >= 16 && currentHour < 20)
           ) {
@@ -1018,6 +1416,15 @@ export function useEnemyAI({
               tx = npc.homeX ?? npc.x;
               ty = npc.homeY ?? npc.y;
             }
+          } else if (targetSched === 'campfire' && mapCampfire) {
+            const seed = Math.abs((npc.id || npc.name).charCodeAt(0));
+            const offsets = [
+              { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+              { dx: 1, dy: 1 }, { dx: -1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: -1 }
+            ];
+            const chosen = offsets[seed % offsets.length];
+            tx = Math.max(0, Math.min(LEVEL_WIDTH - 1, mapCampfire.x + chosen.dx));
+            ty = Math.max(0, Math.min(LEVEL_HEIGHT - 1, mapCampfire.y + chosen.dy));
           }
 
           // Check if NPC has reached target coordinate
@@ -1048,6 +1455,22 @@ export function useEnemyAI({
                 isDrinking: true,
                 originalChar: origChar,
                 char: '🍻'
+              };
+            }
+            if (targetSched === 'campfire') {
+              // Sitting around outdoor campfire at dusk
+              const dist = Math.abs(npc.x - px) + Math.abs(npc.y - py);
+              if (dist <= 6 && Math.random() < 0.05) {
+                staticLogs.push(`🗣️ ${getCampfireDialogueBark(npc)}`);
+              }
+              return {
+                ...npc,
+                scheduleState: 'campfire',
+                isAsleep: false,
+                isSitting: true,
+                isDrinking: false,
+                originalChar: origChar,
+                char: '🔥'
               };
             }
             if (targetSched === 'home') {

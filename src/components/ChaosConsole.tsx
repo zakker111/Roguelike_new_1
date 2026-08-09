@@ -124,7 +124,7 @@ export default function ChaosConsole({ gameState }: ChaosConsoleProps) {
           </div>
 
           <div className="border-t border-slate-850/60 pt-2 text-[9.5px] text-slate-400 leading-snug">
-            The Game Master operates with total tactical autonomy. In peaceful turns, Chaos automatically drifts down toward the <span className="text-emerald-400 font-bold font-mono">20% natural baseline</span>.
+            The Chaos Matrix is fully integrated with the GM Storyteller. Chaos does not rise passively; it responds directly to GM narrative interventions and player actions (shrine prayers, boss slaughters, volatile crafting).
           </div>
         </div>
 

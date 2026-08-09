@@ -382,3 +382,15 @@ To ensure seamless updates and zero-regression reliability, we have implemented 
 5. **AI Combat Tests**: Spawns hostiles, verifies line-of-sight chase targeting, combat damage logging, blood splatters, and floating indicators.
 6. **Dungeon Traps & Lockpicking**: Descends to floor depths, disarms trap-plates, crafts Tension Lockpicks, and cracks open locked Ancient Chests successfully.
 
+---
+
+### 🔍 Codebase Health & Import Audit Runner (`npm run audit`)
+
+Maintain codebase health with our automated import and catalog scanner:
+```bash
+# Run codebase import integrity check + TypeScript linter + Vitest suite
+npm run audit
+```
+This checks 200+ source files and 22 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 21 Vitest test suites (86 tests passing 100% green).
+
+

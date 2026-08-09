@@ -237,3 +237,5 @@ export const AudioSettingsModal: React.FC<AudioSettingsModalProps> = ({ isOpen, 
     </div>
   );
 };
+
+export default AudioSettingsModal;

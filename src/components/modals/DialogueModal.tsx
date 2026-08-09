@@ -151,15 +151,13 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
             <span>Ask for Regional Rumors & Weather Tips</span>
           </button>
 
-          {isTavernOrDrinking && (
-            <button
-              onClick={handleBuyDrink}
-              className="w-full py-2.5 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 border border-amber-800/60 shadow-md"
-            >
-              <CupSoda className="w-4 h-4 text-amber-400" />
-              <span>🍻 Buy a Round of Drinks (5 Gold)</span>
-            </button>
-          )}
+          <button
+            onClick={handleBuyDrink}
+            className="w-full py-2.5 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 border border-amber-800/60 shadow-md"
+          >
+            <CupSoda className="w-4 h-4 text-amber-400" />
+            <span>🍻 Buy a Round of Drinks (5 Gold)</span>
+          </button>
 
           {isMerchant && onOpenTrade && (
             <button

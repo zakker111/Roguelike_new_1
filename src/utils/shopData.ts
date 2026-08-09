@@ -149,6 +149,70 @@ export const MERCHANT_INITIALS: { [role: string]: { gold: number, stock: { [item
       'scroll_recall': 6
     }
   },
+  'traveler_herbalist': {
+    gold: 350,
+    stock: {
+      'potion_hp': 8,
+      'potion_mp': 8,
+      'cat_fire': 5,
+      'cat_frost': 5,
+      'cat_poison': 5,
+      'mat_berry': 15,
+      'mat_seppo_hooch': 4,
+      'scroll_recall': 4
+    }
+  },
+  'traveler_hunter': {
+    gold: 400,
+    stock: {
+      'mat_thick_hide': 12,
+      'mat_cooked_fish': 10,
+      'shop_hunter_bow': 2,
+      'shop_leather_gloves': 3,
+      'mat_lockpick': 12,
+      'mat_wood': 15
+    }
+  },
+  'traveler_pilgrim': {
+    gold: 300,
+    stock: {
+      'scroll_recall': 6,
+      'shop_stone_pendant': 2,
+      'mat_bread': 15,
+      'potion_hp': 6,
+      'cat_shadow': 4
+    }
+  },
+  'traveler_merchant': {
+    gold: 600,
+    stock: {
+      'potion_hp': 10,
+      'potion_mp': 8,
+      'scroll_recall': 5,
+      'mat_lockpick': 15,
+      'mat_bread': 15,
+      'mat_beer': 12,
+      'mat_iron': 10,
+      'mat_wood': 15,
+      'shop_steel_broadsword': 2,
+      'shop_heater_shield': 2
+    }
+  },
+  'merchant_caravan': {
+    gold: 750,
+    stock: {
+      'potion_hp': 10,
+      'potion_mp': 10,
+      'scroll_recall': 6,
+      'mat_lockpick': 15,
+      'mat_bread': 15,
+      'mat_beer': 12,
+      'mat_iron': 10,
+      'mat_wood': 15,
+      'shop_steel_broadsword': 3,
+      'shop_heater_shield': 3
+    }
+  },
   'merchant_seppo': {
     gold: 950,
     stock: {
@@ -254,23 +318,19 @@ export const getApothecaryItems = (tier: number, reputation: number) => {
 };
 
 export const getMerchantConfig = (role: string, id: string): { maxGold: number, defaultStock: { [itemId: string]: number } } => {
-  const isCaravan = id === 'npc_caravan_merchant' || id.includes('caravan');
-  if (isCaravan) {
-    return {
-      maxGold: 240,
-      defaultStock: MERCHANT_INITIALS['merchant'].stock
-    };
-  }
+  const isCaravan = id === 'npc_caravan_merchant' || id.includes('caravan') || role.includes('caravan');
   let mappedRole = role;
   if (role === 'blacksmith') mappedRole = 'npc_blacksmith';
   else if (role === 'merchant') mappedRole = 'npc_merchant';
   else if (role === 'apothecary') mappedRole = 'npc_apothecary';
   else if (role === 'merchant_seppo') mappedRole = 'merchant_seppo';
-  else if (role === 'traveler_herbalist') mappedRole = 'npc_apothecary';
-  else if (role === 'traveler_hunter' || role === 'traveler_pilgrim') mappedRole = 'npc_merchant';
+  else if (role === 'traveler_herbalist') mappedRole = 'traveler_herbalist';
+  else if (role === 'traveler_hunter') mappedRole = 'traveler_hunter';
+  else if (role === 'traveler_pilgrim') mappedRole = 'traveler_pilgrim';
+  else if (role.includes('traveler') || role.includes('wandering') || isCaravan) mappedRole = 'traveler_merchant';
   else if (role === 'fishmonger' || role === 'harbor_master' || role === 'sailor' || role === 'dockworker' || role === 'ferried_navigator') mappedRole = role;
 
-  const config = MERCHANT_INITIALS[mappedRole] || MERCHANT_INITIALS['tavern_master'];
+  const config = MERCHANT_INITIALS[mappedRole] || MERCHANT_INITIALS['merchant'];
   return {
     maxGold: config.gold,
     defaultStock: config.stock

@@ -7,6 +7,7 @@ import { TileType, Trap, TrapType, Chest, Enemy, EnemyType, EnemyState, Catalyst
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from './gameUtils';
 import enemyTemplates from '../data/enemies.json';
+import { applyCombatArchetypeAndChaosScaling, getEnemyArchetype } from './combatArchetypes';
 
 export function getEnemyTemplate(type: EnemyType | string) {
   if (type === 'captive') {
@@ -61,9 +62,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.SkeletonMage,
     char: '☠',
     color: '#c084fc', // Bright neon purple
-    hpMultiplier: 4.8,
+    hpMultiplier: 2.8,
     atkMultiplier: 1.8,
-    defBonus: 4,
+    defBonus: 3,
     speed: 0.9,
     description: 'A terrifying giant skeleton mage channeling dark necrotic energies.'
   },
@@ -72,9 +73,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Troll,
     char: '👹',
     color: '#f43f5e', // Vibrant rose-red
-    hpMultiplier: 5.6,
+    hpMultiplier: 3.2,
     atkMultiplier: 2.1,
-    defBonus: 5,
+    defBonus: 3,
     speed: 1.2, // Acts slower but stuns and regenerates hps
     description: 'A colossal cave beast with unfathomable stamina and brutal physical weight.'
   },
@@ -83,9 +84,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.OrcBrute,
     char: '🧌',
     color: '#ea580c', // Dark orange
-    hpMultiplier: 5.0,
+    hpMultiplier: 3.0,
     atkMultiplier: 2.3,
-    defBonus: 5,
+    defBonus: 3,
     speed: 1.1,
     description: 'A heavily plated orc carrying a massive stone hammer that shatters skulls.'
   },
@@ -94,9 +95,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Rat,
     char: '🐀',
     color: '#a3e635', // Poison green
-    hpMultiplier: 4.2,
+    hpMultiplier: 2.5,
     atkMultiplier: 1.6,
-    defBonus: 3,
+    defBonus: 2,
     speed: 0.7, // Extremely quick
     description: 'An infected giant rodent that runs at blistering speeds and bites with toxic fangs.'
   },
@@ -105,9 +106,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Trapmaster,
     char: '🥷',
     color: '#ec4899', // Sparkly hot-pink
-    hpMultiplier: 4.6,
+    hpMultiplier: 2.7,
     atkMultiplier: 1.9,
-    defBonus: 4,
+    defBonus: 2,
     speed: 0.8,
     description: 'A spectral rogue phantom weaving fires vents, darts, and spikes silently.'
   },
@@ -116,9 +117,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Vampire,
     char: '🦇',
     color: '#e11d48', // Crimson Red
-    hpMultiplier: 5.2,
+    hpMultiplier: 3.0,
     atkMultiplier: 2.0,
-    defBonus: 4,
+    defBonus: 3,
     speed: 0.8,
     description: 'The ancient sovereign of the crypts. He moves with dark velocity and siphons player vitality.'
   },
@@ -127,9 +128,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Slime,
     char: '🦠',
     color: '#10b981', // Acid green
-    hpMultiplier: 6.0,
+    hpMultiplier: 3.4,
     atkMultiplier: 1.5,
-    defBonus: 6,
+    defBonus: 4,
     speed: 1.3,
     description: 'A titanic, pulsating gelatinous mass that digests weapon armor and splits on heavy impacts.'
   },
@@ -138,9 +139,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Spider,
     char: '🕷️',
     color: '#f59e0b', // Amber yellow
-    hpMultiplier: 4.5,
+    hpMultiplier: 2.6,
     atkMultiplier: 1.9,
-    defBonus: 3,
+    defBonus: 2,
     speed: 0.8,
     description: 'A colossal multi-legged weaver that spews paralyzing web traps and injects necrotoxins.'
   },
@@ -149,9 +150,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Necromancer,
     char: '🔮',
     color: '#8b5cf6', // Indigo violet
-    hpMultiplier: 4.8,
+    hpMultiplier: 2.9,
     atkMultiplier: 2.2,
-    defBonus: 4,
+    defBonus: 3,
     speed: 1.0,
     description: 'The eternal lord of the undead who resurrects fallen skeletons and controls frost rituals.'
   },
@@ -160,9 +161,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.DreadKnight,
     char: '🛡️',
     color: '#475569', // Steel slate
-    hpMultiplier: 5.8,
+    hpMultiplier: 3.3,
     atkMultiplier: 1.8,
-    defBonus: 8,
+    defBonus: 5,
     speed: 1.2,
     description: 'A fallen, obsidian-plated guardian wielding a cursed broadsword and utilizing unbreakable iron guards.'
   },
@@ -171,9 +172,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Dragon,
     char: '🐉',
     color: '#f97316', // Fiery orange
-    hpMultiplier: 7.2,
+    hpMultiplier: 3.8,
     atkMultiplier: 2.6,
-    defBonus: 7,
+    defBonus: 5,
     speed: 1.1,
     description: 'An ancient volcanic dragon of legendary power. Its scales are harder than steel and its breath incinerates stone.'
   },
@@ -182,9 +183,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Ghost,
     char: '👻',
     color: '#6366f1', // Cool purple-blue
-    hpMultiplier: 4.0,
+    hpMultiplier: 2.4,
     atkMultiplier: 1.7,
-    defBonus: 7,
+    defBonus: 3,
     speed: 0.9,
     description: 'A weeping translucent apparition that drifts through solid barriers, phasing through standard armor.'
   },
@@ -193,9 +194,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.IkuTurso,
     char: '🦑',
     color: '#0ea5e9',
-    hpMultiplier: 6.8,
+    hpMultiplier: 3.6,
     atkMultiplier: 2.5,
-    defBonus: 7,
+    defBonus: 4,
     speed: 1.0,
     description: 'An ancient, terrifying kraken of Finnish lore rising from watery abysses.'
   },
@@ -204,9 +205,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Kalma,
     char: '💀',
     color: '#a855f7',
-    hpMultiplier: 5.0,
+    hpMultiplier: 3.0,
     atkMultiplier: 2.1,
-    defBonus: 5,
+    defBonus: 3,
     speed: 0.9,
     description: 'The Finnish goddess of death and sweet decay. Haunts graves and casts lethal curses.'
   },
@@ -215,9 +216,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Otso,
     char: '🐻',
     color: '#b45309',
-    hpMultiplier: 6.5,
+    hpMultiplier: 3.5,
     atkMultiplier: 2.3,
-    defBonus: 6,
+    defBonus: 4,
     speed: 1.1,
     description: 'The sacred, golden-clawed forest bear spirit of Finnish mythology.'
   },
@@ -226,9 +227,9 @@ export const BOSS_TEMPLATES = [
     type: EnemyType.Louhi,
     char: '🦅',
     color: '#c084fc',
-    hpMultiplier: 7.0,
+    hpMultiplier: 3.8,
     atkMultiplier: 2.7,
-    defBonus: 8,
+    defBonus: 5,
     speed: 0.8,
     description: 'The shape-shifting, blizzard-weaving ruler of the Northlands in Finnish mythology.'
   }
@@ -250,7 +251,8 @@ export function generateLevel(
   playerStats?: { level: number; str: number; dex: number; int: number; cha: number; lck: number },
   currentWeapon?: { damage: number; name?: string } | null,
   defeatedEnemiesCount?: { [key: string]: number },
-  clearedCampsCount?: number
+  clearedCampsCount?: number,
+  chaosScore?: number
 ): {
   map: TileType[][];
   playerX: number;
@@ -560,9 +562,9 @@ export function generateLevel(
         type: EnemyType.DreadKnight,
         char: '👿',
         color: '#ef4444', // Fiery Red
-        hpMultiplier: 8.5,
+        hpMultiplier: 4.2,
         atkMultiplier: 3.2,
-        defBonus: 10,
+        defBonus: 6,
         speed: 0.9,
         description: 'The ancient fire god ruling the molten core of the Underworld depths. His massive obsidian blade burns with infinite heat.'
       };
@@ -589,7 +591,7 @@ export function generateLevel(
       const bossAtk = Math.max(2, Math.floor(template.baseAtk * Math.sqrt(globalThreatFactor) * bossTemplate.atkMultiplier));
       const bossDef = Math.floor(template.baseDef + (depth / 2) + bossTemplate.defBonus);
 
-      const bossEnemy: Enemy = {
+      const bossEnemyRaw: Enemy = {
         id: `boss_${depth}_${Date.now()}`,
         x: bx,
         y: by,
@@ -606,11 +608,19 @@ export function generateLevel(
         state: EnemyState.Chasing,
         isElite: true,
         isBoss: true,
+        archetype: 'boss_apex',
         eliteEffect: 'Titan',
         patrolPath: [{ x: bx, y: by }],
         patrolIndex: 0,
         debuffs: []
       };
+
+      const bossEnemy = applyCombatArchetypeAndChaosScaling(
+        bossEnemyRaw,
+        chaosScore || 0,
+        playerStats ? { ...playerStats, hp: 100, maxHp: 100, mp: 20, maxMp: 20, turnsPlayed: 0, str: playerStats.str, dex: playerStats.dex, int: playerStats.int, cha: playerStats.cha, lck: playerStats.lck, level: playerStats.level, gold: 0, xp: 0, atk: 10, def: 5 } : undefined,
+        depth
+      );
 
       enemies.push(bossEnemy);
     }
@@ -725,7 +735,7 @@ export function generateLevel(
           { x: room.x, y: room.y + room.h - 1 },
         ];
 
-        enemies.push({
+        const baseEnemy: Enemy = {
           id: `enemy_${depth}_${enemyId++}`,
           x: ex,
           y: ey,
@@ -745,7 +755,16 @@ export function generateLevel(
           patrolPath: roomCorners,
           patrolIndex: 0,
           debuffs: [],
-        });
+        };
+
+        const scaledEnemy = applyCombatArchetypeAndChaosScaling(
+          baseEnemy,
+          chaosScore || 0,
+          playerStats ? { ...playerStats, hp: 100, maxHp: 100, mp: 20, maxMp: 20, turnsPlayed: 0, str: playerStats.str, dex: playerStats.dex, int: playerStats.int, cha: playerStats.cha, lck: playerStats.lck, level: playerStats.level, gold: 0, xp: 0, atk: 10, def: 5 } : undefined,
+          depth
+        );
+
+        enemies.push(scaledEnemy);
       }
     }
   });
@@ -902,6 +921,19 @@ export function spawnFollowersOnLevelLoadByReset(
     const folColor = isCat ? (fol.color || '#fb923c') : (fol.color || (fol.role === 'Knight' ? '#60a5fa' : fol.role === 'Mage' ? '#c084fc' : '#facc15'));
     const folName = isCat ? (fol.name.startsWith('🐈') ? fol.name : `🐈 ${fol.name}`) : (fol.name.startsWith('🛡️') ? fol.name : `🛡️ ${fol.name} (${fol.role || 'Companion'})`);
 
+    let folRange = 1;
+    if (fol.equipment?.weapon?.range && fol.equipment.weapon.range > 1) {
+      folRange = fol.equipment.weapon.range;
+    } else if (['Bow', 'Crossbow'].includes(fol.equipment?.weapon?.subType as string)) {
+      folRange = 4;
+    } else if (['Staff', 'Wand'].includes(fol.equipment?.weapon?.subType as string)) {
+      folRange = 3;
+    } else if (fol.equipment?.weapon?.subType === 'Spear') {
+      folRange = 2;
+    } else if (['Mage', 'Archer', 'Ranger', 'Hunter', 'Crossbowman', 'Sorcerer'].includes(fol.role) || fol.archetypeId === 'thief') {
+      folRange = (fol.role === 'Mage' || fol.role === 'Sorcerer') ? 3 : (['Archer', 'Ranger', 'Hunter', 'Crossbowman'].includes(fol.role) ? 4 : 2);
+    }
+
     nextEnemies.push({
       id: `fol_${fol.id}_${Date.now()}`,
       x: spotX,
@@ -912,7 +944,7 @@ export function spawnFollowersOnLevelLoadByReset(
       maxHp: fol.maxHp,
       atk: fol.atk,
       def: fol.def,
-      range: fol.role === 'Mage' ? 3 : 1,
+      range: folRange,
       speed: 1.0,
       char: folChar,
       color: folColor,

@@ -281,6 +281,33 @@ export function renderEntityLayer({
     });
   }
 
+  // 6.5 Render Telegraphed Attack Hazard Overlay Tiles
+  gameState.enemies.forEach((enemy) => {
+    if (enemy.telegraphedAttack) {
+      const tx = enemy.telegraphedAttack.targetX;
+      const ty = enemy.telegraphedAttack.targetY;
+      if (isTileInViewport(tx, ty) && gameState.visible[ty]?.[tx]) {
+        const trx = tx * tileSize - camX;
+        const tryY = ty * tileSize - camY;
+
+        ctx.save();
+        const pulse = (Math.sin(Date.now() / 150) + 1) / 2;
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.35 + pulse * 0.35})`;
+        ctx.fillRect(trx, tryY, tileSize, tileSize);
+
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(trx + 2, tryY + 2, tileSize - 4, tileSize - 4);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '900 8px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️HAZARD', trx + tileSize / 2, tryY + tileSize / 2);
+        ctx.restore();
+      }
+    }
+  });
+
   // 7. Render Enemies
   gameState.enemies.forEach((enemy) => {
     const x = enemy.x;
@@ -363,6 +390,26 @@ export function renderEntityLayer({
       : (healthPercent > 0.5 ? '#22c55e' : healthPercent > 0.25 ? '#eab308' : '#ef4444');
     ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
 
+    // Stagger / Guard Bar Rendering
+    const maxStagger = enemy.maxStaggerMeter || (enemy.isBoss ? 120 : enemy.isElite ? 75 : 45);
+    const currentStagger = enemy.staggerMeter || 0;
+    if (currentStagger > 0 || enemy.isStaggered) {
+      const staggerPercent = Math.min(1.0, currentStagger / maxStagger);
+      const staggerBarY = barY + barHeight + 1;
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(barX, staggerBarY, barWidth, 2);
+
+      ctx.fillStyle = enemy.isStaggered ? '#f97316' : '#f59e0b';
+      ctx.fillRect(barX, staggerBarY, barWidth * staggerPercent, 2);
+    }
+
+    if (enemy.isStaggered) {
+      ctx.font = 'bold 8px "Inter", sans-serif';
+      ctx.fillStyle = '#f97316';
+      ctx.textAlign = 'center';
+      ctx.fillText('💥 STAGGERED', rx + tileSize / 2, ry - 3);
+    }
+
     if (enemy.hp < enemy.maxHp) {
       ctx.fillStyle = '#94a3b8';
       ctx.font = '600 7px "Inter", sans-serif';
@@ -409,6 +456,21 @@ export function renderEntityLayer({
       entityChar: playerChar,
       fontSize: `900 16px "JetBrains Mono", Menlo, monospace`
     }, tilesetConfig, tilesetImage, animationTick, tileSize);
+  }
+
+  if (gameState.isBraced) {
+    ctx.save();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(prx + tileSize / 2, pry + tileSize / 2, tileSize * 0.65, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 8px "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🛡️ BRACED', prx + tileSize / 2, pry - 4);
+    ctx.restore();
   }
 
   if (gameState.playerStats.hp < gameState.playerStats.maxHp * 0.3) {

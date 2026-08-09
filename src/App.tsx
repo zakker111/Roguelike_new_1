@@ -28,6 +28,8 @@ import GameLog from './components/GameLog';
 import DifficultyTracker from './components/DifficultyTracker';
 import ChaosConsole from './components/ChaosConsole';
 import { COMBAT_FLAVOR_TEXTS, FALLBACK_FLAVORS } from './data/combatFlavors';
+import { calculateNetDamage } from './data/balance';
+import { calculateArchetypeDamageAdjustment, checkBossPhaseEnrage } from './utils/combatArchetypes';
 import gameConfig from './data/gameConfig.json';
 
 import { useAmbientAudio } from './hooks/useAmbientAudio';
@@ -41,6 +43,8 @@ import { useSpellcasting } from './hooks/useSpellcasting';
 import { useWorldInteraction } from './hooks/useWorldInteraction';
 import { useCraftingEngine } from './hooks/useCraftingEngine';
 import { useKeyboardInput } from './hooks/useKeyboardInput';
+import { useAppHotkeys } from './hooks/useAppHotkeys';
+import { useWorldEventHandlers } from './hooks/useWorldEventHandlers';
 import { useSaveLoad } from './hooks/useSaveLoad';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
 import { useCombatEngine } from './hooks/useCombatEngine';
@@ -368,111 +372,16 @@ export default function App() {
   // Reference for game time ticks
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Store all logs from the active playthrough for downloading when the player dies
-  const allSessionLogsRef = useRef<GameLogMessage[]>([]);
-  // Store all detailed state snapshots for in-game simulation replays
-  const allSessionStateSnapshotsRef = useRef<any[]>([]);
-  const lastCapturedTurnRef = useRef<number>(-1);
-  const lastCapturedFingerprintRef = useRef<string>("");
-
-  const getLightweightState = (state: GameState): Partial<GameState> => {
-    return {
-      playerX: state.playerX,
-      playerY: state.playerY,
-      levelWidth: state.levelWidth,
-      levelHeight: state.levelHeight,
-      isOverworld: state.isOverworld,
-      currentChunkX: state.currentChunkX,
-      currentChunkY: state.currentChunkY,
-      map: state.map,
-      visible: state.visible,
-      discovered: state.discovered,
-      enemies: state.enemies,
-      npcs: state.npcs,
-      dungeonProps: state.dungeonProps,
-      biome: state.biome,
-      weather: state.weather,
-      season: state.season,
-      playerStats: state.playerStats,
-      currentWeapon: state.currentWeapon,
-      equipmentInventory: state.equipmentInventory,
-      equippedArmor: state.equippedArmor,
-      equippedHelmet: state.equippedHelmet,
-      equippedGloves: state.equippedGloves,
-      equippedBoots: state.equippedBoots,
-      equippedShield: state.equippedShield,
-      equippedAmulet: state.equippedAmulet,
-      inventoryMaterials: state.inventoryMaterials,
-      inventoryCatalysts: state.inventoryCatalysts,
-      gameTime: state.gameTime,
-      isBraced: state.isBraced,
-      fishingPoleDurability: state.fishingPoleDurability,
-      areGuardsHostile: state.areGuardsHostile,
-      townReputation: state.townReputation,
-      blacksmithForgeLevel: state.blacksmithForgeLevel,
-      apothecaryTier: state.apothecaryTier,
-      purchasedRumors: state.purchasedRumors,
-    };
-  };
-
-  // Check for Cat Lover Trait
-  useEffect(() => {
-    if (!gameState.spawnedCats) return;
-    const cats = ['Jekku', 'Pulla', 'Alli', 'Leevi'];
-    const hasAll = cats.every(c => gameState.spawnedCats?.includes(c));
-    if (hasAll && !gameState.playerStats.hasCatLover) {
-      setGameState(prev => {
-        if (prev.playerStats.hasCatLover) return prev;
-        
-        console.log("%c🐈 [DEVELOPER MEMORIAL] In memory of my cats, you have met them all! You now have the special trait 'Cat Lover' (+10 Luck)!", "color: #ff2a5f; font-weight: bold; font-size: 14px;");
-        
-        return {
-          ...prev,
-          playerStats: {
-            ...prev.playerStats,
-            hasCatLover: true
-          },
-          logs: [
-            ...prev.logs,
-            {
-              id: `cat_lover_${Date.now()}`,
-              text: "🐈 [DEVELOPER MEMORIAL]: In memory of my cats, you have met them all! You have received the special trait 'Cat Lover' that grants +10 to Luck!",
-              type: 'loot' as any,
-              timestamp: 'TRAIT'
-            }
-          ]
-        };
-      });
-    }
-  }, [gameState.spawnedCats, gameState.playerStats.hasCatLover]);
-
-  useEffect(() => {
-    if (gameState.logs && gameState.logs.length > 0) {
-      const seenIds = new Set(allSessionLogsRef.current.map((l) => l.id));
-      const newLogs = gameState.logs.filter((l) => !seenIds.has(l.id));
-      if (newLogs.length > 0) {
-        allSessionLogsRef.current = [...allSessionLogsRef.current, ...newLogs];
-      }
-    }
-  }, [gameState.logs]);
-
-  useEffect(() => {
-    if (!isPlaying) return;
-    
-    const fingerprint = `${gameState.playerStats.turnsPlayed}_${gameState.playerX}_${gameState.playerY}_${gameState.playerStats.depth}_${gameState.playerStats.hp}_${gameState.playerStats.mp}_${gameState.playerStats.gold}_${gameState.playerStats.xp}_${gameState.playerStats.level}_${gameState.currentWeapon?.id || ''}_${gameState.equippedArmor?.id || ''}_${gameState.equippedHelmet?.id || ''}_${gameState.equippedGloves?.id || ''}_${gameState.equippedBoots?.id || ''}_${gameState.equippedShield?.id || ''}_${gameState.equippedAmulet?.id || ''}_${gameState.logs?.length || 0}_${gameState.isOverworld}_${gameState.currentChunkX}_${gameState.currentChunkY}_${gameState.quests?.length || 0}_${gameState.followers?.length || 0}_${gameState.activeTradeNpcId || ''}`;
-
-    if (fingerprint !== lastCapturedFingerprintRef.current) {
-      lastCapturedFingerprintRef.current = fingerprint;
-      const formatted = formatGameTime(gameState.gameTime);
-      const lightweightState = getLightweightState(gameState);
-      
-      allSessionStateSnapshotsRef.current.push({
-        turn: gameState.playerStats.turnsPlayed,
-        gameTimeStr: `${formatted.timeStr} (${formatted.period})`,
-        state: lightweightState
-      });
-    }
-  }, [gameState, isPlaying]);
+  // Hook for world background events, cat traits, and playthrough session snapshots
+  const { allSessionLogsRef, allSessionStateSnapshotsRef, resetSession } = useWorldEventHandlers({
+    gameState,
+    setGameState,
+    isPlaying,
+    formatGameTime: (m) => {
+      const res = formatGameTime(m);
+      return `${res.timeStr} (${res.period})`;
+    },
+  });
 
   const handleRegenerateCurrentLocation = () => {
     if (gameState.isOverworld) {
@@ -551,10 +460,7 @@ export default function App() {
 
   // Initialize a fresh new application run
   const handleStartNewGame = () => {
-    allSessionLogsRef.current = [];
-    allSessionStateSnapshotsRef.current = [];
-    lastCapturedTurnRef.current = -1;
-    lastCapturedFingerprintRef.current = "";
+    resetSession();
     // Generate randomized world seed for every run!
     const randomizedSeed = Math.floor(Math.random() * 999999) + 1;
     setWorldSeed(randomizedSeed);
@@ -1713,6 +1619,16 @@ export default function App() {
       addLogMessage(`🍂 [AUTUMN STEALTH]: Shadow critical strikes from the amber mists deal +40% extra damage!`, 'craft');
     }
 
+    if (rollCrit && gameState.followers && gameState.followers.length > 0 && Math.random() < 0.6) {
+      const folName = gameState.followers[0].name;
+      const cheers = [
+        `🛡️ ${folName}: "Sensational strike, master! Keep pressing!"`,
+        `🛡️ ${folName}: "A devastating critical hit! Their armor shattered!"`,
+        `🛡️ ${folName}: "By the Ancients, what a strike!"`
+      ];
+      addLogMessage(cheers[Math.floor(Math.random() * cheers.length)], 'loot');
+    }
+
     // Summer Catalyst Spark / Lightning Charge (+25% extra lightning damage during Summer)
     const catalyst = weapon.catalystUsed;
     if (gameState.season === 'summer' && catalyst && (catalyst.type === CatalystType.Lightning || catalyst.id?.includes('lightning') || catalyst.name?.includes('Lightning'))) {
@@ -1830,7 +1746,20 @@ export default function App() {
     if (comboTriggered && stats.relics?.includes('spell_weaver')) {
       finalComboBonus += 5;
     }
-    const finalDmg = Math.max(1, finalHit - enemy.def) + finalComboBonus;
+    // Calculate net physical/magical damage using diminishing armor formula (Crits penetrate 50% armor)
+    const effectiveArmor = rollCrit ? Math.floor(enemy.def * 0.5) : enemy.def;
+    const baseNetDamage = calculateNetDamage(finalHit, effectiveArmor);
+    let rawDmg = Math.max(1, baseNetDamage) + finalComboBonus;
+
+    const archetypeAdj = calculateArchetypeDamageAdjustment(
+      { archetype: 'glass_cannon', isCrit: rollCrit },
+      { archetype: enemy.archetype, def: effectiveArmor },
+      rawDmg
+    );
+    const finalDmg = archetypeAdj.damage;
+    if (archetypeAdj.logNote) {
+      addLogMessage(archetypeAdj.logNote, 'info');
+    }
 
     // Apply material specific property visual impact (e.g., Dragonforce circular ring explosion)
     if (rollCrit && weapon.materialUsed?.extraProperty === 'DRAGON_FORCE') {
@@ -1912,11 +1841,65 @@ export default function App() {
       }
     }
 
-    const updatedEnemy = {
+    // PHASE 3: WEAPON STAGGER / GUARD DAMAGE CALCULATION
+    let staggerImpact = 15;
+    const wSubType = weapon.subType || weapon.baseType;
+    if (wSubType === WeaponBaseType.Hammer || wSubType === ('Axe' as any) || wSubType === 'Shield' || (weapon.name && /hammer|mace|club|maul|axe|shield|pickaxe/i.test(weapon.name))) {
+      staggerImpact = 28;
+    } else if (wSubType === WeaponBaseType.Sword || wSubType === WeaponBaseType.Spear) {
+      staggerImpact = 18;
+    } else {
+      staggerImpact = 12;
+    }
+
+    if (rollCrit) {
+      staggerImpact = Math.round(staggerImpact * 1.8);
+    }
+
+    let staggerVulnerabilityMult = 1.0;
+    if (enemy.isStaggered) {
+      staggerVulnerabilityMult = 1.5;
+      addLogMessage(`💥 [STAGGER SHATTER]: Striking STAGGERED ${enemy.name} for +50% Vulnerability Damage!`, 'loot');
+    }
+
+    const netAdjustedDmg = Math.round(finalDmg * staggerVulnerabilityMult);
+
+    const curStag = enemy.staggerMeter || 0;
+    const maxStag = enemy.maxStaggerMeter || (enemy.isBoss ? 120 : enemy.isElite ? 75 : 45);
+    const newStag = Math.min(maxStag, curStag + staggerImpact);
+
+    let isTargetStaggered = enemy.isStaggered || false;
+    let stagTurns = enemy.staggerTurns || 0;
+
+    if (newStag >= maxStag && !isTargetStaggered) {
+      isTargetStaggered = true;
+      stagTurns = 2;
+      addLogMessage(`💥 [STAGGER BREAK]: You shattered ${enemy.name}'s stance and guard! Target is STAGGERED for 2 turns (+50% vulnerability damage)!`, 'danger');
+      const stagEv = new CustomEvent('spawn-game-effect', {
+        detail: { x: enemy.x, y: enemy.y, text: `💥 STAGGERED!`, type: 'crit' },
+      });
+      window.dispatchEvent(stagEv);
+    }
+
+    let enemyCandidate: Enemy = {
       ...enemy,
-      hp: enemy.hp - finalDmg,
+      hp: Math.max(0, enemy.hp - netAdjustedDmg),
       debuffs: nextDebuffs,
+      staggerMeter: newStag,
+      maxStaggerMeter: maxStag,
+      isStaggered: isTargetStaggered,
+      staggerTurns: stagTurns
     };
+
+    if (enemyCandidate.hp > 0) {
+      const enrageCheck = checkBossPhaseEnrage(enemyCandidate);
+      if (enrageCheck.isEnragedNow && enrageCheck.logMessage) {
+        addLogMessage(enrageCheck.logMessage, 'danger');
+      }
+      enemyCandidate = enrageCheck.updatedEnemy;
+    }
+
+    const updatedEnemy = enemyCandidate;
 
     // Vampirism material healing
     let healingDone = 0;
@@ -3315,8 +3298,11 @@ export default function App() {
       // Check if this chest requires a specific key
       if (chest.keyRequired) {
         const hasKeyCount = gameState.inventoryMaterials[chest.keyRequired] || 0;
+        const hasSkeletonKey = (gameState.inventoryMaterials['mat_skeleton_key'] || 0) > 0;
+        const hasLockpicks = (gameState.inventoryMaterials['mat_lockpick'] || 0) > 0;
+
         if (hasKeyCount > 0) {
-          // Consume 1 key
+          // Consume 1 specific key
           setGameState((prev) => {
             const nextMats = { ...prev.inventoryMaterials };
             nextMats[chest.keyRequired!] = Math.max(0, (nextMats[chest.keyRequired!] || 0) - 1);
@@ -3329,11 +3315,30 @@ export default function App() {
           addLogMessage(`🔑 [KEY USED]: You inserted the Faction Watchtower Key into the massive padlock! It turns with a heavy, satisfying metallic CLANK!`, 'loot');
           handleOpenChest(chestIndex, false);
           return;
+        } else if (hasSkeletonKey) {
+          // Consume 1 Grim Skeleton Key
+          setGameState((prev) => {
+            const nextMats = { ...prev.inventoryMaterials };
+            nextMats['mat_skeleton_key'] = Math.max(0, (nextMats['mat_skeleton_key'] || 0) - 1);
+            return {
+              ...prev,
+              inventoryMaterials: nextMats
+            };
+          });
+
+          addLogMessage(`💀 [SKELETON KEY USED]: You bypassed the Faction Padlock using a rare Grim Skeleton Key!`, 'loot');
+          handleOpenChest(chestIndex, false);
+          return;
+        } else if (hasLockpicks) {
+          addLogMessage(`🔒 You encountered a locked Faction Tribute Chest! Pulling out Tension Lockpicks...`, 'system');
+          setActiveLockpickingChestIndex(chestIndex);
+          setIsLockpickingOpen(true);
+          return;
         } else {
           playSound('deny');
-          addLogMessage(`🔒 [KEY REQUIRED]: The Faction Tribute Chest is sealed shut with an elite faction padlock! You need the Faction Watchtower Key to unlock it. Defeat the Watchtower Commander here to claim the key!`, 'danger');
+          addLogMessage(`🔒 [KEY OR LOCKPICKS REQUIRED]: The Faction Tribute Chest is sealed shut! Defeat the Watchtower Commander for the key, craft Tension Lockpicks, or use a Skeleton Key!`, 'danger');
           const ev = new CustomEvent('spawn-game-effect', {
-            detail: { x: targetX, y: targetY, text: `🔒 Key Required`, type: 'text' },
+            detail: { x: targetX, y: targetY, text: `🔒 Key or Lockpicks Required`, type: 'text' },
           });
           window.dispatchEvent(ev);
           return;
@@ -4803,8 +4808,8 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isAutoplayActive, isPlaying, isGameOver, isVictory, gameState.playerX, gameState.playerY, gameState.enemies, gameState.chests, gameState.lootPiles, gameState.map, gameState.playerStats]);
 
-  // Keyboard controls controller hook
-  useKeyboardInput({
+  // Global Hotkeys & Keyboard Controller Hook
+  useAppHotkeys({
     gameStateRef,
     setGameState,
     isPlaying,
@@ -4847,6 +4852,18 @@ export default function App() {
     setGameState,
     addLogMessage,
   });
+
+  // Auto-load existing save on startup if available
+  useEffect(() => {
+    const raw = localStorage.getItem('shadow_over_oakhaven_save_v1');
+    if (raw) {
+      try {
+        loadGame('shadow_over_oakhaven_save_v1');
+      } catch (err) {
+        console.warn('Auto-load failed:', err);
+      }
+    }
+  }, []);
 
   // Equipped Gear & Inventory Handlers Hook
   const {
@@ -7434,7 +7451,7 @@ export default function App() {
                 <div className="flex flex-col mt-1">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl bounce-subtle">
-                      {WEAPON_TEMPLATES[gameState.currentWeapon.baseType].icon}
+                      {WEAPON_TEMPLATES[gameState.currentWeapon.baseType]?.icon || '⚔️'}
                     </span>
                     <div>
                       <h4
@@ -8413,8 +8430,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Interactive Tactical Overlays */}
-      <AppOverlays
+      {/* Interactive Modal Router */}
+      <ModalRouter
         isHelpOpen={isHelpOpen}
         setIsHelpOpen={setIsHelpOpen}
         isGodPanelOpen={isGodPanelOpen}
@@ -8465,31 +8482,11 @@ export default function App() {
         handleTurnInQuest={handleTurnInQuest}
         handleConfirmUnlawfulAttack={handleConfirmUnlawfulAttack}
         handleRecallTeleport={handleRecallTeleport}
-      />
-
-      {gameState.activeQuestBoardOpen && (
-        <QuestBoardOverlay
-          gameState={gameState}
-          setGameState={setGameState}
-          onClose={() => setGameState(prev => ({ ...prev, activeQuestBoardOpen: false }))}
-          onAcceptQuest={handleAcceptQuest}
-          onTurnInQuest={handleTurnInQuest}
-        />
-      )}
-
-      {/* Caravan Travel & Escort Active Journey Overlay */}
-      <CaravanEscortModal
-        gameState={gameState}
-        setGameState={setGameState}
         handleResolveCaravanEncounterOption={handleResolveCaravanEncounterOption}
         handleAdvanceCaravanTravel={handleAdvanceCaravanTravel}
         handleCompleteCaravanTravel={handleCompleteCaravanTravel}
-      />
-
-      {/* Procedural Audio & Soundscape Controls Modal */}
-      <AudioSettingsModal
-        isOpen={isAudioSettingsOpen}
-        onClose={() => setIsAudioSettingsOpen(false)}
+        isAudioSettingsOpen={isAudioSettingsOpen}
+        setIsAudioSettingsOpen={setIsAudioSettingsOpen}
       />
     </MainAppLayout>
   );

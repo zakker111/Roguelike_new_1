@@ -1,6 +1,31 @@
 import { GameState, Enemy, EnemyState, EnemyType, TileType, EquipmentItem, GameLogMessage, CatalystType, Follower, TrapType, Trap } from '../types';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';
 import { findWalkableSpotNearPlayer, getDirectionString } from '../data/gmCommands';
+import { createGMTriangleCheaterEnemy } from './combatArchetypes';
+import storyEventsData from '../data/storyEvents.json';
+
+export interface StoryEventsCatalog {
+  chaosSurges: Array<{
+    roll: number;
+    effName: string;
+    effDesc: string;
+    effType: 'good' | 'bad' | 'neutral';
+    logText: string;
+    spawnText: string;
+  }>;
+  encounters: Array<{
+    id: string;
+    name: string;
+    description: string;
+    requiredMood?: string[];
+    minBoredom: number;
+    minTension?: number;
+    maxTension?: number;
+  }>;
+  narrativePrompts: Record<GMPersonality, string>;
+}
+
+export const STORY_EVENTS_CATALOG: StoryEventsCatalog = storyEventsData as StoryEventsCatalog;
 
 export type GMPersonality = 'Mischievous' | 'Sadistic' | 'Benevolent' | 'Intrigued' | 'Apathetic';
 
@@ -324,6 +349,44 @@ export const GM_ENCOUNTERS_DATABASE: GMEncounter[] = [
         mutatedState: { weather: chosenWeather },
         logText: `☁️ The wind turns sharply and the clouds shift. Overworld weather alters to [${chosenWeather.toUpperCase()}]!`,
         effectSpawn: { x: gameState.playerX, y: gameState.playerY, text: `Skies shift!`, type: 'heal' }
+      };
+    }
+  },
+  {
+    id: 'gm_triangle_cheater',
+    name: 'GM Triangle Anomaly Surge',
+    description: 'The GM Storyteller intentionally cheats Golden Triangle balance, corrupting a nearby enemy into an omnipotent Anomaly.',
+    requiredMood: ['Mischievous', 'Sadistic', 'Intrigued'],
+    minBoredom: 35,
+    trigger: (gameState, gmState) => {
+      const hostileEnemies = gameState.enemies.filter(
+        e => e.hp > 0 && !e.isFollower && !e.isTownGuard && !e.isAnimal && !e.isAnomaly
+      );
+
+      if (hostileEnemies.length === 0) return { success: false, mutatedState: {}, logText: "" };
+
+      // Select enemy closest to player
+      hostileEnemies.sort((a,b) => {
+        const distA = Math.abs(a.x - gameState.playerX) + Math.abs(a.y - gameState.playerY);
+        const distB = Math.abs(b.x - gameState.playerX) + Math.abs(b.y - gameState.playerY);
+        return distA - distB;
+      });
+
+      const target = hostileEnemies[0];
+      const targetIdx = gameState.enemies.findIndex(e => e.id === target.id);
+      if (targetIdx === -1) return { success: false, mutatedState: {}, logText: "" };
+
+      const corruptedEnemy = createGMTriangleCheaterEnemy(target, 'Abyssal Chaos Mutant');
+      const updatedEnemies = [...gameState.enemies];
+      updatedEnemies[targetIdx] = corruptedEnemy;
+
+      const direction = getDirectionString(gameState.playerX, gameState.playerY, target.x, target.y);
+
+      return {
+        success: true,
+        mutatedState: { enemies: updatedEnemies },
+        logText: `⚡ [GM TRIANGLE CHEATER]: The GM Storyteller bends reality! ${target.name} to the [${direction.toUpperCase()}] undergoes an Anomaly Mutation, transcending Golden Triangle limits!`,
+        effectSpawn: { x: target.x, y: target.y, text: `⚡ TRIANGLE CHEATER! [${direction}]`, type: 'dmg' }
       };
     }
   },
@@ -1049,15 +1112,12 @@ export function tickActiveGMStoryteller(
 
   // Log internal monologue occasionally
   if (turn % 7 === 0) {
-    let thought = "";
+    const promptTemplate = STORY_EVENTS_CATALOG.narrativePrompts[nextPersonality] || STORY_EVENTS_CATALOG.narrativePrompts.Intrigued;
+    let thought = `Turn ${turn}: "${promptTemplate}"`;
     if (nextPersonality === 'Sadistic') {
-      thought = `Turn ${turn}: "HP ratio is at ${(hpRatio*100).toFixed(0)}%. Should I introduce a poison gas hazard or let them crawl in blood?"`;
-    } else if (nextPersonality === 'Benevolent') {
-      thought = `Turn ${turn}: "Player is exerting valiant coordination on this grid. Perhaps a healing spark or alloy cluster falls near."`;
-    } else if (nextPersonality === 'Mischievous') {
-      thought = `Turn ${turn}: "Too quiet. Let's mutate the chunk configuration or drop a trap adjacent to their next footstep."`;
-    } else {
-      thought = `Turn ${turn}: "Watching coordinate vector (${px},${py}). Boredom coefficient is ${calculatedBoredom} pts."`;
+      thought = `Turn ${turn}: "HP ratio is at ${(hpRatio*100).toFixed(0)}%. ${promptTemplate}"`;
+    } else if (nextPersonality === 'Intrigued' || nextPersonality === 'Apathetic') {
+      thought = `Turn ${turn}: "Watching coordinate vector (${px},${py}). Boredom coefficient is ${calculatedBoredom} pts. ${promptTemplate}"`;
     }
     thoughts.unshift(thought);
     if (thoughts.length > 20) thoughts.pop();
@@ -1075,13 +1135,106 @@ export function tickActiveGMStoryteller(
     chaosHistory: currentGM.chaosHistory ? [...currentGM.chaosHistory] : []
   };
 
-  // Passive Chaos Surge logic (Toned down massively from 150 to 500 turns, and 40% to 5% chance)
-  let chaosStateUpdates: Partial<GameState> = {};
+  // --- GM Chaos Matrix Integration & Adaptive Combat Evaluation ---
+  // Chaos Matrix evaluates player performance dynamically.
+  let currentChaos = gameState.chaosScore ?? 20;
+  let chaosStateUpdates: Partial<GameState> = { chaosScore: currentChaos };
   let chaosLogMessage: GameLogMessage | undefined = undefined;
   let chaosEffectSpawn: any = undefined;
   let didChaosTrigger = false;
 
-  if (turn > 0 && turn % 500 === 0 && mem.lastChaosRollTurn !== turn && Math.random() < 0.05) {
+  // Track total monsters slain
+  const totalSlain = Object.values(gameState.defeatedEnemiesCount || {}).reduce((a, b) => a + b, 0);
+  const slainInInterval = Math.max(0, totalSlain - (mem.monstersSlain || 0));
+
+  // GM Steamroll / Effortless Slaughter Check:
+  // If player defeated 1+ enemies recently while keeping high HP (>= 60%), or if player is idling/steamrolling with zero resistance
+  const isEffortlessSlaughter = (slainInInterval > 0 && hpRatio >= 0.60) || (turn > 0 && turn % 25 === 0 && surroundingEnemies === 0 && hpRatio > 0.85 && calculatedBoredom > 50);
+
+  if (isEffortlessSlaughter && currentChaos < 95) {
+    const slainMultiplier = Math.max(1, slainInInterval);
+    const delta = Math.min(15, 6 + slainMultiplier * 2);
+    const oldScore = currentChaos;
+    currentChaos = Math.min(100, currentChaos + delta);
+    chaosStateUpdates.chaosScore = currentChaos;
+    mem.monstersSlain = totalSlain;
+
+    // Empower active enemies dynamically!
+    let mutatedEnemiesCount = 0;
+    const updatedEnemies = gameState.enemies.map(enemy => {
+      if (!enemy.isFollower && !enemy.isTownGuard && !enemy.isAnimal && enemy.hp > 0) {
+        mutatedEnemiesCount++;
+        const hpBoost = Math.max(6, Math.floor(enemy.maxHp * 0.30));
+        const newMaxHp = enemy.maxHp + hpBoost;
+        const newHp = enemy.hp + hpBoost;
+        const newAtk = enemy.atk + 2;
+        const newDef = enemy.def + 1;
+        const newChaosTier = Math.min(3, (enemy.chaosTier || 0) + 1);
+
+        let isNowElite = enemy.isElite;
+        let enemyName = enemy.name;
+        let eliteEffect = enemy.eliteEffect;
+
+        if (!enemy.isElite && !enemy.isBoss && Math.random() < 0.45) {
+          isNowElite = true;
+          if (!enemyName.includes('Chaos-Empowered')) {
+            enemyName = `Chaos-Empowered ${enemyName}`;
+          }
+          eliteEffect = '⚡ Abyssal Ferocity (+30% HP, +2 ATK, Heavy Stagger)';
+        }
+
+        return {
+          ...enemy,
+          hp: newHp,
+          maxHp: newMaxHp,
+          atk: newAtk,
+          def: newDef,
+          chaosTier: newChaosTier,
+          isElite: isNowElite,
+          name: enemyName,
+          eliteEffect
+        };
+      }
+      return enemy;
+    });
+
+    if (mutatedEnemiesCount > 0) {
+      chaosStateUpdates.enemies = updatedEnemies;
+    }
+
+    const logText = `🔮 [GM CHAOS ADAPTATION]: The Game Master evaluates your effortless slaughter! "${slainInInterval > 0 ? `Slain ${slainInInterval} foes without breaking a sweat?` : 'Experiencing zero resistance?'} Let us test your true steel!" Chaos Matrix +${delta} (${oldScore} → ${currentChaos})! Active monsters gain +30% HP, +2 ATK, and aggressive stances!`;
+    
+    thoughts.unshift(`Turn ${turn}: "Player steamrolling effortlessly (${slainInInterval} recent kills, HP ${(hpRatio*100).toFixed(0)}%). Escalating Chaos Matrix by +${delta} to ${currentChaos} pts and reinforcing ${mutatedEnemiesCount} active monsters."`);
+    
+    chaosLogMessage = {
+      id: `gm_chaos_steamroll_${Date.now()}_${Math.random()}`,
+      text: logText,
+      type: 'danger',
+      timestamp: 'CHAOS'
+    };
+    
+    chaosEffectSpawn = { x: px, y: py, text: `🔮 Chaos +${delta} (Effortless Slaughter)`, type: 'dmg' };
+    didChaosTrigger = true;
+  }
+  // GM Chaos Mercy:
+  // If player is in severe peril (HP < 25%, high tension) and Chaos > 15
+  else if (turn > 0 && turn % 20 === 0 && hpRatio < 0.25 && currentChaos > 15) {
+    const delta = 6;
+    const oldScore = currentChaos;
+    currentChaos = Math.max(0, currentChaos - delta);
+    chaosStateUpdates.chaosScore = currentChaos;
+    const logText = `✨ [GM CHAOS MATRIX]: ${oldScore} → ${currentChaos} (-${delta}) — GM Mercy: Providing atmospheric pressure relief during critical survival peril!`;
+    thoughts.unshift(`Turn ${turn}: "Player HP critical (${(hpRatio * 100).toFixed(0)}%). Lowering Chaos Matrix by -${delta} points."`);
+    chaosLogMessage = {
+      id: `gm_chaos_down_${Date.now()}`,
+      text: logText,
+      type: 'loot',
+      timestamp: 'CHAOS'
+    };
+    chaosEffectSpawn = { x: px, y: py, text: `✨ Chaos -${delta} (GM Mercy)`, type: 'heal' };
+  }
+
+  if (false) { // Passive surges disabled - GM now dynamically controls Chaos Matrix
     mem.lastChaosRollTurn = turn;
     didChaosTrigger = true;
     let roll = Math.floor(Math.random() * 20) + 1;
@@ -1694,4 +1847,48 @@ export function forceGMEncounter(encounterId: string, gameState: GameState) {
     setGMStorytellerState(currentGM);
   }
   return res;
+}
+
+/**
+ * Modifies the Chaos Score in GameState, enforcing 0-100 clamping,
+ * creating an explicit GameLogMessage formatted with [CHAOS MATRIX],
+ * and returning the updated GameState along with effectSpawn for visual feedback.
+ */
+export function modifyChaosScore(
+  gameState: GameState,
+  delta: number,
+  reason: string
+): {
+  nextState: GameState;
+  logMessage: GameLogMessage;
+  effectSpawn?: { x: number; y: number; text: string; type: 'heal' | 'dmg' | 'loot' };
+} {
+  const oldScore = gameState.chaosScore ?? 20;
+  const newScore = Math.max(0, Math.min(100, oldScore + delta));
+  const actualDelta = newScore - oldScore;
+
+  const icon = actualDelta > 0 ? '🔮' : actualDelta < 0 ? '✨' : '⚖️';
+  const sign = actualDelta > 0 ? '+' : '';
+  const logText = `${icon} [CHAOS MATRIX]: ${oldScore} → ${newScore} (${sign}${actualDelta}) — ${reason}`;
+
+  const nextState: GameState = {
+    ...gameState,
+    chaosScore: newScore,
+  };
+
+  const logMessage: GameLogMessage = {
+    id: `chaos_shift_${Date.now()}_${Math.random()}`,
+    text: logText,
+    type: actualDelta > 0 ? 'danger' : actualDelta < 0 ? 'loot' : 'info',
+    timestamp: 'CHAOS'
+  };
+
+  const effectSpawn = {
+    x: gameState.playerX,
+    y: gameState.playerY,
+    text: `Chaos ${sign}${actualDelta} (${reason})`,
+    type: (actualDelta > 0 ? 'dmg' : 'heal') as 'dmg' | 'heal' | 'loot'
+  };
+
+  return { nextState, logMessage, effectSpawn };
 }

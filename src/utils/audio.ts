@@ -4,8 +4,9 @@
  */
 
 import { SoundType, SOUND_CATALOG } from '../data/soundCatalog';
+import { SOUND_SYNTH_PRESETS } from '../audio/soundPresets';
 export type { SoundType };
-export { SOUND_CATALOG };
+export { SOUND_CATALOG, SOUND_SYNTH_PRESETS };
 
 // Master Audio Context and Master Gain Nodes
 let audioCtx: AudioContext | null = null;
@@ -1218,39 +1219,6 @@ export function playSound(
         osc.stop(t + 0.085);
         t += 0.085 + Math.random() * 0.035;
       }
-      break;
-    }
-    case 'cricket_chirp': {
-      // Gentle dual-pulse night cricket
-      for (let i = 0; i < 3; i++) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const t = now + i * 0.04;
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(4200 * pitch, t);
-        gain.gain.setValueAtTime(0.04 * finalVol, t);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
-        osc.connect(gain);
-        gain.connect(destNode);
-        osc.start(t);
-        osc.stop(t + 0.03);
-      }
-      break;
-    }
-    case 'owl_hoot': {
-      // Deep hollow owl hoot
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(320 * pitch, now);
-      osc.frequency.exponentialRampToValueAtTime(260 * pitch, now + 0.35);
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.12 * finalVol, now + 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-      osc.connect(gain);
-      gain.connect(destNode);
-      osc.start(now);
-      osc.stop(now + 0.42);
       break;
     }
     case 'indoor_entry': {

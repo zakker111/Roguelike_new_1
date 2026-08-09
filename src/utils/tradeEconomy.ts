@@ -1,4 +1,7 @@
 import { GameState, EquipmentItem, Quest } from '../types';
+import economyData from '../data/economy.json';
+
+export const ECONOMY_CONFIG = economyData;
 
 // Raw wood material definition
 export interface MaterialItem {

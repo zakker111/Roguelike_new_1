@@ -7,6 +7,7 @@ import { consumeItemFromInventory } from '../utils/scrollUtils';
 import { playSound } from '../utils/audio';
 import { formatGameTime } from '../utils/overworld';
 import { bresenhamLine } from '../utils/ai';
+import { calculateArchetypeDamageAdjustment, checkBossPhaseEnrage } from '../utils/combatArchetypes';
 
 export interface UseSpellcastingProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -203,8 +204,32 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
         }
       }
 
-      const totalDmg = baseDmg + comboDmgBonus;
-      const nextHp = Math.max(0, enemy.hp - totalDmg);
+      let rawSpellDmg = baseDmg + comboDmgBonus;
+      const archetypeAdj = calculateArchetypeDamageAdjustment(
+        null,
+        { archetype: enemy.archetype, def: enemy.def },
+        rawSpellDmg
+      );
+      const totalDmg = archetypeAdj.damage;
+      if (archetypeAdj.logNote) {
+        addLogMessage(archetypeAdj.logNote, 'info');
+      }
+
+      let targetEnemyState = {
+        ...enemy,
+        hp: Math.max(0, enemy.hp - totalDmg),
+        debuffs: nextDebuffs,
+      };
+
+      if (targetEnemyState.hp > 0) {
+        const enrageCheck = checkBossPhaseEnrage(targetEnemyState);
+        if (enrageCheck.isEnragedNow && enrageCheck.logMessage) {
+          addLogMessage(enrageCheck.logMessage, 'danger');
+        }
+        targetEnemyState = enrageCheck.updatedEnemy;
+      }
+
+      const nextHp = targetEnemyState.hp;
 
       playSound('spell');
 

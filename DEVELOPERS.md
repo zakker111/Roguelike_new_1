@@ -123,12 +123,26 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
 
 ## 🧪 Automated Unit & Engine Test Suite (Vitest)
 
-The engine features 13 test suites (57 unit tests passing 100% green) covering procedural generation, pathfinding AI, combat balance, save/load validation, crafting, weather mechanics, dual-element synergies, and GM storyteller state mechanics.
+The engine features 21 test suites (86 unit tests passing 100% green) covering procedural generation, pathfinding AI, combat balance, save/load validation, crafting, weather mechanics, dual-element synergies, GM Storyteller performance evaluation, and watchtower siege mechanics.
 
 Run all automated unit tests:
 ```bash
 npm run test
 ```
+
+---
+
+## 🔮 Central GM Storyteller & Adaptive Chaos Matrix
+
+The **GM Storyteller (`src/utils/gmStoryteller.ts`)** acts as an autonomous Game Master that evaluates player performance on every turn:
+
+1. **Adaptive Performance Tracking**:
+   - Monitors recent kills (`monstersSlain`), player health ratio (`hpRatio`), and combat efficiency.
+   - If the player slaughters enemies effortlessly with high HP, the GM triggers **Drastic Chaos Escalation (+8 to +15 Chaos Matrix)** with adaptive narrator dialogue ("Too easy? Let us test your true steel!").
+
+2. **Dynamic Enemy Mutators**:
+   - On GM Chaos adaptation, active monsters on the map dynamically mutate: gaining +30% HP, +2 ATK, +1 DEF, Chaos Tier upgrades, and elevated Elite / Anomaly modifiers.
+   - Spawns and encounters scale with the Golden Triangle framework (`src/utils/combatArchetypes.ts`), spawning Golden Triangle Cheater Anomalies when Chaos exceeds 60.
 
 ---
 
@@ -153,7 +167,7 @@ The engine is completely turn-based. Actions by the player trigger a cascade of 
 
 Weather is fully data-driven. To add a new weather type (e.g., `ashfall` or `acid_rain`):
 
-### Step 1: Add to `types.ts`
+### Step 1: Add to `src/types.ts`
 Add your new weather key to the `weather` union in `src/types.ts`:
 ```typescript
 export interface GameState {
@@ -251,7 +265,7 @@ When loading non-standard structure grids into the **Custom Structure Designer**
 - It dynamically maps custom characters (like `W` for WatchtowerWall or `X` for WatchtowerBarricade) back to standard, editable designer types before filling the visual grid. This allows rapid building, customization, and export.
 
 ### 3. Immediate Active Settlement Rebuilding
-The God Panel includes a layout applicator JSON input field (`handleApplyHousesJson` in `GodPanelOverlay.tsx`). Modders can import custom coordinate maps to instantly carve multiple modular structures across the active settlement overworld in real-time.
+The God Panel includes a layout applicator JSON input field (`handleApplyHousesJson` in `src/components/GodPanelOverlay.tsx`). Modders can import custom coordinate maps to instantly carve multiple modular structures across the active settlement overworld in real-time.
 
 ---
 
@@ -322,7 +336,7 @@ Developers can easily customize, append, or re-style these HUD grids inside `src
 
 The engine features a decoupled, polymorphic graphics provider interface (`IGraphicsRenderer`) that supports dual-representational rendering (rich sprite-sheet texture atlases alongside lightweight unicode text/emoji fallbacks):
 
-### 1. Abstract Renderer Interface (`IGraphicsRenderer.ts`)
+### 1. Abstract Renderer Interface (`src/canvas/IGraphicsRenderer.ts`)
 ```typescript
 export interface IGraphicsRenderer {
   mode: 'text' | 'tileset';
@@ -334,11 +348,11 @@ export interface IGraphicsRenderer {
 ```
 
 ### 2. Dual-Representational Renderers
-- **`TextRenderer.ts`**: Crisp, vector-aligned ASCII/emoji renderer. Renders custom colored background rects, shroud fog overlays, and centered glyph symbols.
-- **`TilesetRenderer.ts`**: Reads texture maps through `AssetPreloader` and `TilesetAtlasManager`. If image assets fail to load, are missing, or graphics mode is switched to `'text'`, it gracefully falls back to `TextRenderer` without throwing errors.
-- **`HybridGraphicsEngine.ts`**: High-level singleton dispatcher allowing dynamic mode toggling at runtime (`hybridGraphicsEngine.setMode('tileset')`).
+- **`src/canvas/TextRenderer.ts`**: Crisp, vector-aligned ASCII/emoji renderer. Renders custom colored background rects, shroud fog overlays, and centered glyph symbols.
+- **`src/canvas/TilesetRenderer.ts`**: Reads texture maps through `AssetPreloader` and `TilesetAtlasManager`. If image assets fail to load, are missing, or graphics mode is switched to `'text'`, it gracefully falls back to `TextRenderer` without throwing errors.
+- **`src/canvas/HybridGraphicsEngine.ts`**: High-level singleton dispatcher allowing dynamic mode toggling at runtime (`hybridGraphicsEngine.setMode('tileset')`).
 
-### 3. Decoupled VFX Emitter Queue (`VFXEmitter.ts`)
+### 3. Decoupled VFX Emitter Queue (`src/canvas/VFXEmitter.ts`)
 Decouples turn-based state updates (synchronous step movements) from continuous continuous `requestAnimationFrame` render ticks. Combat slashes, spell bursts, and atmospheric embers are queued via `vfxEmitter.emitSpellBurst(x, y)` and flushed during continuous frame ticks without stalling gameplay logic.
 
 ---
@@ -453,7 +467,7 @@ The base threat is clamped to a defensive floor of **0.70x** to maintain a minim
 
 The equipment management engine is encapsulated in `src/hooks/useEquipmentHandlers.ts` and handles equipping, swapping, and unequipping across all paperdoll slots (`equippedArmor`, `equippedHelmet`, `equippedGloves`, `equippedBoots`, `equippedShield`, `equippedAmulet`, and `currentWeapon`):
 
-1. **Modular Hook Abstraction (`useEquipmentHandlers.ts`)**: Encapsulates slot assignment, stat recalculations, and durability decay tracking into a dedicated custom hook.
+1. **Modular Hook Abstraction (`src/hooks/useEquipmentHandlers.ts`)**: Encapsulates slot assignment, stat recalculations, and durability decay tracking into a dedicated custom hook.
 2. **Defensive Object Null-Safeguards**: Standard equipment items or drop loot that lack explicit `materialUsed` or `catalystUsed` objects are automatically populated with safe default objects (`Scrap Iron` material and `Normal/Shadow` catalyst) upon equipping and rendering, preventing runtime `TypeError: Cannot read properties of undefined (reading 'name')` exceptions.
 3. **Instance Preservation**: When an item is equipped from `equipmentInventory`, only a single matching instance is removed from `equipmentInventory`, preventing duplicate item IDs from being accidentally purged.
 4. **Bi-directional Swapping**: When equipping a new item into a slot that already contains an equipped item (including main hand weapons, off-hand shields, or body armor), the currently worn item is returned directly to `equipmentInventory` with all its original stats, durability, mutation counts, and stat bonuses intact.
@@ -474,9 +488,9 @@ Resource gathering tools (e.g. Lumberjack Hatchets and Prospector Pickaxes) supp
 
 ---
 
-## ⚡ The Over-Forging Heat & Bellows Risk/Reward Engine (`OverforgeGauge.tsx`)
+## ⚡ The Over-Forging Heat & Bellows Risk/Reward Engine (`src/components/OverforgeGauge.tsx`)
 
-The Over-Forging Heat System is a modular risk-versus-reward mechanic integrated into `CraftingPanel.tsx` (Forge Equipment, Mutation Forge, and Upgrade Gear sub-tabs).
+The Over-Forging Heat System is a modular risk-versus-reward mechanic integrated into `src/components/CraftingPanel.tsx` (Forge Equipment, Mutation Forge, and Upgrade Gear sub-tabs).
 
 ### 1. Architectural Design
 - **Standalone Component**: Located in `src/components/OverforgeGauge.tsx`.
@@ -509,9 +523,9 @@ if (isShattered) {
 
 ---
 
-## 🗑️ Discard & Drop Item Gump Modal (`DiscardItemModal.tsx`)
+## 🗑️ Discard & Drop Item Gump Modal (`src/components/modals/DiscardItemModal.tsx`)
 
-When players select `[DISCARD]` on any item in the inventory (`UnifiedInventoryPanel.tsx`), the system opens an interactive fantasy-styled Gump modal.
+When players select `[DISCARD]` on any item in the inventory (`src/components/UnifiedInventoryPanel.tsx`), the system opens an interactive fantasy-styled Gump modal.
 
 ### 1. Key Features
 - **Visual Presentation**: Renders the item's icon, name, rarity border, description, and unit weight contribution.
@@ -521,11 +535,11 @@ When players select `[DISCARD]` on any item in the inventory (`UnifiedInventoryP
   - **Destroy / Vaporize**: Permanently purges the item/quantity from the game state.
 
 ### 2. Stackable Spell Scrolls
-All scrolls (Scroll of Recall, Fireball Scrolls, Teleport Scrolls) are configured with `stackable: true` and `isScroll: true` in `itemsData.ts`, ensuring multiple scrolls merge into single inventory stacks with quantity counts.
+All scrolls (Scroll of Recall, Fireball Scrolls, Teleport Scrolls) are configured with `stackable: true` and `isScroll: true` in `src/utils/itemsData.ts`, ensuring multiple scrolls merge into single inventory stacks with quantity counts.
 
 ---
 
-## 🌀 Unstable Mutation Synergy Chain Engine (`mutationSynergy.ts` & `MutationSynergyPanel.tsx`)
+## 🌀 Unstable Mutation Synergy Chain Engine (`src/utils/mutationSynergy.ts` & `src/components/MutationSynergyPanel.tsx`)
 
 The Unstable Mutation Synergy Chain Engine handles dual-element catalyst combinations, multi-tier chain levels, strain gauges, and trait perks during item mutations at the Blacksmith's Mutation Forge.
 
@@ -684,7 +698,7 @@ Developers can inspect and adjust the Autonomous GM Engine in real time through 
 The game includes a zero-lag log management and simulation replay architecture (`src/components/GameLog.tsx`, `src/components/GodPanelOverlay.tsx`):
 
 ### 1. High-Volume Log Stream Virtualization & Duplicate Collapsing
-- **Virtual DOM Slicing**: Rendered logs in `GameLog.tsx` are hard-capped at the latest **150 entries** (`maxRenderedLogs = 150`), preventing React DOM layout recalculation freezes even when 50,000+ combat actions are accumulated in memory.
+- **Virtual DOM Slicing**: Rendered logs in `src/components/GameLog.tsx` are hard-capped at the latest **150 entries** (`maxRenderedLogs = 150`), preventing React DOM layout recalculation freezes even when 50,000+ combat actions are accumulated in memory.
 - **Consecutive Message Aggregation**: Identical consecutive log events (e.g. repeated melee swings) are automatically collapsed into single rows with counter badges (`(x5)`), reducing visual clutter.
 
 ### 2. Zero-Lag Drag-and-Drop File Importer
@@ -714,6 +728,19 @@ The engine relies on pure **procedural WebAudio synthesis** in `src/utils/audio.
 3. **Realistic Indoor Building Acoustic Soundscape (v4.3.6)**: Automatically detects when player enters a house, tavern, shop, keep, or watchtower (`src/utils/buildingAudio.ts`). Dynamically applies a lowpass acoustic muffle filter (~650 Hz cutoff) to outdoor weather/wind, triggers door creaks/latches (`door_open`, `door_close`), plays timber creaks and pendulum clocks (`wood_creak`, `clock_tick`), and switches footsteps between wooden planks (`wood_footstep`), stone tiles (`stone_footstep`), and outdoor grass (`grass_step`).
 4. **Quick 1-Click HUD Mute & Persistence**: Instant **`🔊 Mute` / `🔇 Muted`** toggle in the main header bar and volume controls auto-persisted in `localStorage` (`cosmic_abyss_audio_settings_v1`).
 5. **Developer Extension Guide**: See [`AUDIO.md`](/AUDIO.md) for full audio graph details, sound catalog, and a 3-step guide on adding custom synthesized sound effects.
+
+---
+
+## 🧪 Automated QA, Import Health Audit & Testing Suite
+
+The codebase is protected by an automated QA & testing suite with 100% passing status across **20 Vitest test suites (80 total unit & end-to-end simulation tests)**.
+
+### 🛠️ Developer Scripts
+- **`npm run audit`**: Launches the comprehensive codebase auditor (`scripts/auditCodebase.cjs`), verifying 200+ source files, 22 JSON data catalog files, and relative import resolutions across all TypeScript files. It then runs TypeScript type checking (`tsc --noEmit`) and all 20 Vitest unit test suites.
+- **`npm test`**: Runs all 20 Vitest unit and integration test suites (`vitest run`).
+- **`npm run lint`**: Performs TypeScript type verification without emitting build artifacts (`tsc --noEmit`).
+- **`npm run build`**: Compiles the application for production deployment with Vite (`vite build`).
+
 [diff_block_end]
 
 

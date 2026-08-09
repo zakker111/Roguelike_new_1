@@ -37,7 +37,7 @@ describe('Phase 7: End-to-End Extended Gameplay & Sub-System Simulation Suite', 
 
     // Ensure dungeon has at least 5 enemies for combat simulation
     for (let i = 0; i < 5; i++) {
-      dungeon.enemies.push({
+      dungeon.enemies.unshift({
         id: `dummy_rat_${i}`,
         name: 'Cave Rat',
         type: 'rat',

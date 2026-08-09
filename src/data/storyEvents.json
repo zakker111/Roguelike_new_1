@@ -1,0 +1,317 @@
+{
+  "chaosSurges": [
+    {
+      "roll": 1,
+      "effName": "Dimensional Rupture (Critical Failure)",
+      "effDesc": "Unstable tectonic rift ruptures. -15 HP damage!",
+      "effType": "bad",
+      "logText": "⚠️ THE CHAOS CORE RUPTURED (Roll 1): Dynamic tectonic rifts snap directly under your coordinates! Spikes burst forth, inflicting -15 HP damage!",
+      "spawnText": "💥 Rupture!"
+    },
+    {
+      "roll": 2,
+      "effName": "Poison Spore Seepage",
+      "effDesc": "Toxic spore pods explode in the vicinity. Inflicts -12 HP damage and spawns an active hazard.",
+      "effType": "bad",
+      "logText": "⚠️ CHAOS SURGE (Roll 2): Ruptured toxic spore vents spray toxic fumes! Inflicted -12 HP damage and activated a volatile vent trap nearby!",
+      "spawnText": "🤢 Poison Gas!"
+    },
+    {
+      "roll": 3,
+      "effName": "Corrosive Acid Fog",
+      "effDesc": "Corrosive fog dissolves equipment. Weapons and equipped armor decay by -20 durability!",
+      "effType": "bad",
+      "logText": "⚠️ CHAOS SURGE (Roll 3): Heavy acid mist rolls through. Current weapon and armor decayed by -20 durability!",
+      "spawnText": "🧪 Acid Decay!"
+    },
+    {
+      "roll": 4,
+      "effName": "Void-Static Ambush",
+      "effDesc": "An unstable static discharge drains -15 Focus (MP) and summons a Void Rat.",
+      "effType": "bad",
+      "logText": "⚠️ CHAOS SURGE (Roll 4): Static discharge drains -15 Focus (MP) and conjures a Void-Crazed Static Rat!",
+      "spawnText": "👾 Void Portal!"
+    },
+    {
+      "roll": 5,
+      "effName": "Sunder Thief Raid",
+      "effDesc": "Sunder outlaws pickpocket your coinpurse. Drains up to -30 Gold directly!",
+      "effType": "bad",
+      "logText": "⚠️ CHAOS SURGE (Roll 5): Phantom bandits steal Gold from your pouch!",
+      "spawnText": "💸 Stolen!"
+    },
+    {
+      "roll": 6,
+      "effName": "Unstable Magic Bleed",
+      "effDesc": "Atmospheric friction backfires on your spell cells. Drains -25 Focus (MP)!",
+      "effType": "bad",
+      "logText": "⚠️ CHAOS SURGE (Roll 6): Magical feedback backfires in your core cells, burning away -25 Focus (MP)!",
+      "spawnText": "⚡ MP Burn!"
+    },
+    {
+      "roll": 7,
+      "effName": "Frostbite Chill",
+      "effDesc": "A localized freezing wind drains your stamina. -10 HP and -10 Focus (MP) damage.",
+      "effType": "bad",
+      "logText": "⚠️ CHAOS SURGE (Roll 7): Absolute zero cold drafts freeze your joints! Drained -10 HP and -10 Focus (MP) simultaneously.",
+      "spawnText": "❄️ Chill!"
+    },
+    {
+      "roll": 8,
+      "effName": "Tectonic Trap Shift",
+      "effDesc": "Vibrations in the ground move tectonic rifts, spawning 2 volatile active hazard traps nearby!",
+      "effType": "neutral",
+      "logText": "⚡ CHAOS SURGE (Roll 8): Tectonic stress shifts the ground beneath! Activated 2 volatile hazard traps adjacent to your position!",
+      "spawnText": "⚠️ Traps!"
+    },
+    {
+      "roll": 9,
+      "effName": "Prismatic Monster Mutation",
+      "effDesc": "Aetheric feedback triggers genetic advancement. Mutates an active monster to an Elite form!",
+      "effType": "neutral",
+      "logText": "⚡ CHAOS SURGE (Roll 9): Magical aether overflows! Mutant energy surges through monster!",
+      "spawnText": "⚡ Mutated!"
+    },
+    {
+      "roll": 10,
+      "effName": "Unstable Volatile Catalyst",
+      "effDesc": "A crystal catalyst reacts violently. Explodes for -6 HP, but drops raw wood/iron residue in your pack!",
+      "effType": "neutral",
+      "logText": "⚡ CHAOS SURGE (Roll 10): An unstable crystal catalyst detonates! Dealed -6 HP damage, but molecular fallout added +2 Wood and +1 Iron to your pack!",
+      "spawnText": "💥 Residue!"
+    },
+    {
+      "roll": 11,
+      "effName": "Alchemical Condensation",
+      "effDesc": "Pure elements condense directly into a rare Catalyst.",
+      "effType": "good",
+      "logText": "🔮 CHAOS SURGE (Roll 11): Rare elements condense out of thin air.",
+      "spawnText": "✨ Catalyst!"
+    },
+    {
+      "roll": 12,
+      "effName": "Alchemical Condensation",
+      "effDesc": "Pure elements condense directly into a rare Catalyst.",
+      "effType": "good",
+      "logText": "🔮 CHAOS SURGE (Roll 12): Rare elements condense out of thin air.",
+      "spawnText": "✨ Catalyst!"
+    },
+    {
+      "roll": 13,
+      "effName": "Mielikki's Forage",
+      "effDesc": "Sweet berries grow. Adds +3 Wild Berries and +1 Bread to your pack.",
+      "effType": "good",
+      "logText": "✨ CHAOS SURGE (Roll 13): Woodland elements condense. Added +3 Wild Berries and +1 Bread to your food inventory!",
+      "spawnText": "🍓 +3 Berries!"
+    },
+    {
+      "roll": 14,
+      "effName": "Gilded Spark",
+      "effDesc": "Atmospheric copper coins fuse together. Grants +45 Gold directly.",
+      "effType": "good",
+      "logText": "✨ CHAOS SURGE (Roll 14): Flashing aurum particles fuse! Added +45 Gold to your inventory.",
+      "spawnText": "🪙 +45 Gold!"
+    },
+    {
+      "roll": 15,
+      "effName": "Abyssal Treasure Shard",
+      "effDesc": "A localized spatial rift spawns wood and iron. Adds +2 Wood and +2 Iron to your materials.",
+      "effType": "good",
+      "logText": "✨ CHAOS SURGE (Roll 15): A minor spatial rift deposits crafting supplies. Gained +2 Wood and +2 Iron!",
+      "spawnText": "📦 +4 Mats!"
+    },
+    {
+      "roll": 16,
+      "effName": "Locksmith's Blessing",
+      "effDesc": "Aetheric particles solidify into lockpicks. Adds +2 Lockpicks to your inventory.",
+      "effType": "good",
+      "logText": "✨ CHAOS SURGE (Roll 16): Metallic static aligns into functional shapes. Gained +2 Lockpicks in your storage pack!",
+      "spawnText": "🔑 +2 Lockpicks!"
+    },
+    {
+      "roll": 17,
+      "effName": "Harmonic Abyssal Restoration",
+      "effDesc": "Heals +25 HP, restores +15 Mana, and disperses surrounding map fog.",
+      "effType": "good",
+      "logText": "✨ CHAOS SURGE (Roll 17): Peaceful dynamic waves wash over you. Restored +25 HP and +15 Focus, and fully charted nearby terrain!",
+      "spawnText": "💖 Rejuvenation!"
+    },
+    {
+      "roll": 18,
+      "effName": "Scout's Clairvoyance",
+      "effDesc": "A flash of pure light reveals hidden traps and grants +35 Scouting XP.",
+      "effType": "good",
+      "logText": "✨ CHAOS SURGE (Roll 18): Cosmic foresight floods your awareness. All hidden traps in the level have been detected, and gained +35 Scouting XP!",
+      "spawnText": "👁️ Insight!"
+    },
+    {
+      "roll": 19,
+      "effName": "Abyssal Forge Blessing",
+      "effDesc": "Dungeon static aligns with iron molecules, repairing equipped weapon and armor durability by +50!",
+      "effType": "good",
+      "logText": "✨ CHAOS SURGE (Roll 19): Tectonic forge light shines upon you. Repaired +50 durability on your equipped weapon, armor, and shield!",
+      "spawnText": "🔧 Repaired!"
+    },
+    {
+      "roll": 20,
+      "effName": "Cosmic Perfect Alignment",
+      "effDesc": "Full HP & MP restored, +100 Gold awarded, and a Glazed Boar spawned.",
+      "effType": "good",
+      "logText": "☄️ CHAOS SURGE (Roll 20 - PERFECT HARMONY): The cosmic matrix reaches absolute focus! Fully restored HP and MP, and added +100 Gold!",
+      "spawnText": "🌟 Perfect Alignment!"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "healing_breeze",
+      "name": "Seraphic Healing Breeze",
+      "description": "GM notices the player is in near-lethal danger and casts a protective divine aura.",
+      "requiredMood": ["Benevolent", "Intrigued"],
+      "minBoredom": 20,
+      "minTension": 60,
+      "maxTension": 100
+    },
+    {
+      "id": "void_ambush",
+      "name": "Sovereign Rift Ambush",
+      "description": "GM gets high irritation from idling or over-preparedness, tearing open a void rift spawning custom monsters.",
+      "requiredMood": ["Mischievous", "Sadistic", "Intrigued"],
+      "minBoredom": 50,
+      "maxTension": 60
+    },
+    {
+      "id": "alchemy_gift",
+      "name": "Alchemical Drop",
+      "description": "The storyteller summons a Volatile Alchemical Sprite near the player, loaded with premium alchemical catalysts.",
+      "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
+      "minBoredom": 35
+    },
+    {
+      "id": "smite_nearest",
+      "name": "Lightning Bolt Smite",
+      "description": "The storyteller strikes lightning on a hostile enemy when feeling charitable or seeking explosive balance.",
+      "requiredMood": ["Mischievous", "Benevolent", "Intrigued"],
+      "minBoredom": 40
+    },
+    {
+      "id": "trap_shower",
+      "name": "Acoustic Hazard Alarm",
+      "description": "Sadistic or mischievous storytelling spawns dynamic spike traps beneath the feet of neighboring spaces.",
+      "requiredMood": ["Mischievous", "Sadistic"],
+      "minBoredom": 60,
+      "maxTension": 50
+    },
+    {
+      "id": "weather_mutation",
+      "name": "Meteorological Climax",
+      "description": "GM rapidly forces an overworld environmental phase transition to high elemental tension.",
+      "requiredMood": ["Mischievous", "Intrigued", "Apathetic"],
+      "minBoredom": 10
+    },
+    {
+      "id": "arcane_torrent",
+      "name": "Arcane Gale Torrent",
+      "description": "When the player depletes their mana reservoir, the storyteller channels a dense stream of raw ether directly to them.",
+      "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
+      "minBoredom": 10
+    },
+    {
+      "id": "guardian_summon",
+      "name": "Sovereign Light-Guardian",
+      "description": "GM spawns an Ethereal Holy Paladin ally nearby to aid the player in moments of heavy battlefield stress or boss showdowns.",
+      "requiredMood": ["Benevolent"],
+      "minBoredom": 55
+    },
+    {
+      "id": "gilded_bounty",
+      "name": "Primal Resource Bounty",
+      "description": "The storyteller manifests Ilmarinen's rogue Ore Thief nearby, a fast goblin carrying premium metals and ores.",
+      "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
+      "minBoredom": 15
+    },
+    {
+      "id": "mana_leak",
+      "name": "Alchemical Mana Leak",
+      "description": "A mischievous GM causes the player to lose some Mana (MP) because of alchemical leakage.",
+      "requiredMood": ["Mischievous", "Sadistic"],
+      "minBoredom": 25
+    },
+    {
+      "id": "goblins_greed",
+      "name": "Goblin's Hidden Toll",
+      "description": "The GM directly drains some gold from the player's pockets because they are carrying too much treasure.",
+      "requiredMood": ["Sadistic", "Mischievous"],
+      "minBoredom": 30
+    },
+    {
+      "id": "acidic_smog",
+      "name": "Acidic Alloy Tarnish",
+      "description": "An acidic environmental smog causes the durability of the players equipped weapon or shields to decay.",
+      "requiredMood": ["Sadistic"],
+      "minBoredom": 40
+    },
+    {
+      "id": "earthquake_tremor",
+      "name": "Tectonic Earthquake Tremor",
+      "description": "A sudden seismic shockwave deals minor strain damage to both you and active hostile monsters.",
+      "requiredMood": ["Sadistic", "Mischievous", "Apathetic"],
+      "minBoredom": 25
+    },
+    {
+      "id": "dimensional_blur",
+      "name": "Dimensional Phase Blur",
+      "description": "A transient reality glitch blurs coordinate spaces, pushing nearby hostiles 1 tile away from the player.",
+      "requiredMood": ["Mischievous", "Intrigued", "Apathetic"],
+      "minBoredom": 20
+    },
+    {
+      "id": "mystical_resonance",
+      "name": "Leyline Acoustic Resonance",
+      "description": "An acoustic wave of ancient ley energy restores 15 focus mana points to the player.",
+      "requiredMood": ["Benevolent", "Intrigued"],
+      "minBoredom": 10
+    },
+    {
+      "id": "wild_beast_pack",
+      "name": "Wilderness Fauna Spawn",
+      "description": "A passive woodland beast wanders onto the active coordinate matrix.",
+      "requiredMood": ["Intrigued", "Benevolent", "Apathetic"],
+      "minBoredom": 15
+    },
+    {
+      "id": "ukko_thunder",
+      "name": "Ukko's Golden Bolt",
+      "description": "Ukko Ylijumala strikes a massive golden lightning bolt, purging nearest enemy and infusing player with sky-sparks.",
+      "requiredMood": ["Benevolent", "Intrigued"],
+      "minBoredom": 30
+    },
+    {
+      "id": "vainamoinen_song",
+      "name": "Väinämöinen's Rune-Song",
+      "description": "Väinämöinen sings the ancient runes of creation, putting all nearby enemies to sleep/calm and healing the player.",
+      "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
+      "minBoredom": 20
+    },
+    {
+      "id": "mielikki_gift",
+      "name": "Mielikki's Honey Drop",
+      "description": "Mielikki, Queen of the Forest, spawns a glowing Honey-Glazed Boar that flees from the player, dropping cooked meats and honey.",
+      "requiredMood": ["Benevolent", "Intrigued"],
+      "minBoredom": 10
+    },
+    {
+      "id": "story_bandit_camp",
+      "name": "Roaming Outlaw Camp",
+      "description": "The GM spawns a small camp of 2-3 Outlaw Bandits around a newly lit wood campfire nearby, accompanied by a dynamic lore announcement.",
+      "requiredMood": ["Mischievous", "Sadistic", "Intrigued"],
+      "minBoredom": 30
+    }
+  ],
+  "narrativePrompts": {
+    "Sadistic": "HP ratio is low. Should I introduce a poison gas hazard or let them crawl in blood?",
+    "Benevolent": "Player is exerting valiant coordination on this grid. Perhaps a healing spark or alloy cluster falls near.",
+    "Mischievous": "Too quiet. Let's mutate the chunk configuration or drop a trap adjacent to their next footstep.",
+    "Intrigued": "Watching coordinate vector. Autonomous GM active and monitoring...",
+    "Apathetic": "Observing silently as the mortal wanders the realm."
+  }
+}

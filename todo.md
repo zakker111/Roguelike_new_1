@@ -1193,6 +1193,129 @@ Systemic architectural refactoring plan to eliminate code duplication, decompose
 *   [x] **30.2 Type Safety & Compilation Check**:
     *   [x] Run `compile_applet` and `lint_applet` to confirm flawless build output without TypeScript or ESLint errors.
 
+#### **Phase 31: Combat Pacing & Enemy Health/Armor Scaling Rebalance**
+*   [x] **31.1 Armor Mitigation Formula Synchronization**:
+    *   [x] Replaced linear defense subtraction (`finalHit - enemy.def`) in `App.tsx` with the diminishing returns armor formula (`calculateNetDamage`) from `src/data/balance.ts`.
+    *   [x] Implemented 50% armor penetration on Critical Hits (`effectiveArmor = Math.floor(enemy.def * 0.5)`), allowing critical strikes to punch through heavily armored targets.
+*   [x] **31.2 Boss & High-Tier HP/DEF Scaling Rebalance**:
+    *   [x] Rebalanced inflated boss HP multipliers in `src/utils/dungeon.ts`, `src/hooks/useEnemyAI.ts`, and `src/data/enemyBlueprints.json` from extreme 5.0x–8.5x down to responsive 2.5x–3.8x multipliers.
+    *   [x] Adjusted boss `defBonus` values (2–5) and cap scaling coefficients to ensure bosses remain epic and tactical without becoming 100+ hit damage sponges.
+*   [x] **31.3 Safety Fallbacks & Build Verification**:
+    *   [x] Guaranteed non-null safety fallbacks on template icons (`WEAPON_TEMPLATES[gameState.currentWeapon.baseType]?.icon || '⚔️'`).
+    *   [x] Executed full test suite (`npm test`), linter (`lint_applet`), and compiler (`compile_applet`) to ensure 100% test pass rate.
+
+#### **Phase 32: Core Monolith Decomposition & Custom Hook Architecture (`App.tsx` & `GodPanelOverlay.tsx`)**
+*   [x] **32.1 Combat Engine Extraction (`useCombatEngine.ts`)**:
+    *   [x] Extract player attack resolution, weapon durability wear, critical hit multipliers, and material property effects from `App.tsx` into a custom `/src/hooks/useCombatEngine.ts` hook.
+*   [x] **32.2 Inventory & Gear Engine Extraction (`useInventoryEngine.ts`)**:
+    *   [x] Move item equipping, weapon swapping, inventory sorting/filtering, durability repair, and alchemy brewing handlers into `/src/hooks/useInventoryEngine.ts`.
+*   [x] **32.3 Overworld Exploration & Movement Extraction (`useOverworldEngine.ts`)**:
+    *   [x] Extract chunk movement, tile collision detection, POI structure interaction, and weather tick logic into `/src/hooks/useOverworldEngine.ts`.
+*   [x] **32.4 GodPanelOverlay Inline Sub-Tab Refactoring**:
+    *   [x] Deconstruct remaining inline modal tabs in `GodPanelOverlay.tsx` into dedicated sub-components in `src/components/god/` (`GodBestiaryTab.tsx`, `GodJSONDataTab.tsx`).
+
+#### **Phase 33: Engine Modularization & JSON Data Catalogs**
+*   [x] **33.1 Flee Quotes & Creature Dialogues Modularization (`src/data/fleeQuotes.json`)**:
+    *   [x] Extract hardcoded flee quotes and panic responses from `src/utils/fleeQuotes.ts` into structured `src/data/fleeQuotes.json` categorized by creature archetype.
+*   [x] **33.2 Quests & Bounty Contract Catalog Modularization (`src/data/quests.json`)**:
+    *   [x] Move main quests, guild contracts, and side objectives from `src/utils/questData.ts` into `src/data/quests.json` with prerequisites, targets, rewards, and faction reputation changes.
+*   [x] **33.3 Caravan Encounters & Roadside Events Data Catalog (`src/data/caravanEvents.json`)**:
+    *   [x] Extract trade ambushes, traveling merchant encounters, and roadside events from `src/utils/caravanEncounters.ts` into `src/data/caravanEvents.json`.
+*   [x] **33.4 Bestiary Entries & Lore Footnotes Data Catalog (`src/data/bestiary.json`)**:
+    *   [x] Move creature lore footnotes, weakness tags, drop tables, and entry metadata from `src/utils/bestiary.ts` into `src/data/bestiary.json`.
+*   [x] **33.5 AI Storyteller & GM Chaos Events Data Catalog (`src/data/storyEvents.json`)**:
+    *   [x] Extract disaster scenarios, chaos surge effects, weather triggers, and GM narrative prompts from `src/utils/gmStoryteller.ts` into `src/data/storyEvents.json`.
+
+#### **Phase 37: Codebase Health Audit, Canvas Performance & Particle Capping**
+*   [x] **37.1 Codebase Integrity & Import Health Audit (`scripts/auditCodebase.cjs`)**:
+    *   [x] Restored `src/types.ts` explicit module re-exports.
+    *   [x] Created automated codebase audit tool verifying 203 source files, 22 JSON catalogs, and relative import resolutions.
+    *   [x] Configured `npm run audit` script combining import integrity check, TypeScript type checks (`tsc --noEmit`), and Vitest test runner.
+*   [x] **37.2 Canvas Rendering Loop & Particle Optimizations (`src/canvas/`)**:
+    *   [x] Memoized regex font testing in `spriteRenderer.ts` using string lookup cache.
+    *   [x] Batched weather particle path draw operations (`rain`, `snow`, `dust storm`, `blizzard`, `embers`, `cherry blossoms`, `spores`) in `weatherLightingRenderer.ts`.
+    *   [x] Capped max active visual FX particles at 250 in `visualFxParticleSystem.ts` with early exit guard on empty particle queues.
+*   [x] **37.3 QA & Test Suite Validation**:
+    *   [x] Verified 100% pass rate across 20 Vitest test suites (80 total unit & end-to-end simulation tests).
+
+#### **Phase 34: Oceanic Archipelagos, Shipyards & Naval Warfare**
+*   [ ] **34.1 Shipyard Crafting & Vessel Blueprints**:
+    *   [ ] Add Shipyard building to coastal settlement chunks (`ShipyardTab.tsx`) with vessel blueprints (Longship, Brigantine, Ironclad Skiff).
+    *   [ ] Implement naval timber, sailcloth, and pitch crafting recipes.
+*   [ ] **34.2 Procedural Archipelago & Open Sea Navigation**:
+    *   [ ] Generate infinite oceanic water chunks with coral reefs, deep trenches, and hidden island settlements.
+    *   [ ] Implement wind vector mechanics affecting ship velocity and direction.
+*   [ ] **34.3 Aquatic Bestiary & Broadside Naval Combat**:
+    *   [ ] Add sea monsters: Kraken tentacles, Leviathans, Sirens, and Drowned Marauders.
+    *   [ ] Implement ship-to-ship cannon combat and broadside mechanics.
+
+#### **Phase 35: Dynamic Faction War, Reputation & Territory Siege Engine**
+*   [ ] **35.1 Faction Reputation Matrix & Alliance System**:
+    *   [ ] Implement 4 major factions: Pohjola Clan, Kalevala Guardians, Deep-Forge Guild, Sovereign Raiders.
+    *   [ ] Add dynamic alliance matrix, bounty contracts, and regional influence indicators.
+*   [ ] **35.2 Fortress Outpost Conquest & Territory Siege Engine**:
+    *   [ ] Enable player-constructed outposts and guard towers to claim surrounding territory nodes.
+    *   [ ] Implement siege weapons (catapults, ballistas) and automated faction raid defense events.
+
+#### **Phase 36: Mythic Spell Weaving, Environmental Hazards & Transmutation**
+*   [ ] **36.1 Multi-Catalyst Elemental Spell Weaving**:
+    *   [ ] Implement multi-catalyst spell weaving combining Fire, Frost, Lightning, Void, and Solar affinities.
+    *   [ ] Add lingering environmental hazards (electrified water, freezing miasma, burning oil trails).
+*   [ ] **36.2 Mythic Boss Relics & Divine Transformation Engine**:
+    *   [ ] Implement mythic avatar transformations (Form of Surtur, Avatar of Ukko, Ice Sovereign).
+    *   [ ] Add unique ultimate ability cooldowns and screen-shake combat visual feedback.
+
+#### **Phase 38: Ancient Monoliths & Biome Shrines (World Landmarks & Exploration Mechanics)**
+*   [ ] **38.1 Landmark Spawning & Procedural World Placement (`overworldLivelySpawners.ts` / `overworldChunkGen.ts`)**:
+    *   [ ] Spawn unique biome-tailored Monoliths & Shrines across overworld wilderness chunks (Sun Shrine in Deserts, Frost Obelisk in Tundras, Blood Monolith in Swamps, Storm Pillar in Mountains, Rune Altar in Forests).
+    *   [ ] Add visual tile icons/sprites and map legend markers to detect nearby landmarks on the minimap/overworld HUD.
+*   [ ] **38.2 Interactive Shrine Activation & Offering System (`ShrineModal.tsx` / `useOverworldEngine.ts`)**:
+    *   [ ] Add interactive modal/dialogue when player steps onto a Shrine tile.
+    *   [ ] Implement Offering mechanics: Player can offer materials, catalysts, gold, or blood (sacrificing max HP/stamina) to commune with the ancient monolith.
+    *   [ ] Implement Alignment & Blessing rewards: Temporary or permanent blessings (e.g., +15% Fire Damage, Health Regeneration, Critical Strike Aura, Resource Harvest Duplication).
+*   [ ] **38.3 Biome Guardian Encounters & Trial Battles**:
+    *   [ ] Trigger optional "Trial of the Ancients" when activating uncorrupted or trial-bound monoliths.
+    *   [ ] Spawn elite biome guardians (e.g., Stone Sentinel, Frost Drake Spirit, Ancient Rune Automaton) that drop rare Catalyst Shards, Ancient Relics, and Unique Crafting Blueprints upon defeat.
+*   [ ] **38.4 Monolith Waystone Fast Travel & World Resonance (`FastTravelModal.tsx`)**:
+    *   [ ] Attuning to a Monolith unlocks it as an Overworld Waystone network node.
+    *   [ ] Allow players to spend Leyline Dust / Mana to fast travel between attuned Monoliths across discovered chunks.
+
+#### **Phase 39: Tactical Combat Overhaul, Golden Triangle Enemy Spawns & GM Central Chaos Matrix (COMPLETED ✔)**
+*   [x] **39.1 Telegraphed Heavy Attacks & Wind-Up Highlights (`useEnemyAI.ts`, `entityLayerRenderer.ts`)**:
+    *   [x] Enemies wind up heavy attacks across turns with telegraphed highlight indicators, floating warning alerts ("💥 Heavy Slam WINDING UP!"), and directional impact zones.
+    *   [x] Telegraphed attacks deal 1.8x - 2.5x damage and apply heavy stagger build-up if unmitigated.
+*   [x] **39.2 Guard / Stagger Bar Mechanics & Player Bracing (`App.tsx`, `useEnemyAI.ts`)**:
+    *   [x] Added dynamic stagger meters for enemies and player. Taking heavy impacts, blunt weapon hits, or shield bashes builds stagger; breaking guard triggers a 1-turn stunned state with 1.5x incoming damage.
+    *   [x] Added tactical "Brace / Guard" stance for player to absorb 60% incoming damage, prevent guard breaks, and reflect stagger back onto attacking foes.
+*   [x] **39.3 Golden Triangle Enemy Placement & GM Flex Logic (`useEnemyAI.ts`, `dungeonGen.ts`)**:
+    *   [x] Encounters default to the tactical Golden Triangle spatial zone (3 key strategic points around the player: damage/resilience/speed archetype placement) to prevent unfair encirclement.
+    *   [x] Bosses and GM Storyteller events retain flexibility ("cheat" the triangle) to launch surprise ambushes, flank maneuvers, or specialized wave spawns.
+*   [x] **39.4 Integrated Central GM Chaos Matrix (`useGameLoop.ts`, `gmNarrator.ts`)**:
+    *   [x] Consolidated chaos tracking into a unified Central GM Chaos Matrix where the Game Master dynamically controls chaos escalation based on player activities, time spent in deep vaults, and environmental tension.
+    *   [x] Players can actively suppress and lower the Chaos Matrix through tactical choices: liberating bandit camps, slaying elite dungeon bosses, clearing watchtowers, and completing faction guild contracts.
+*   [x] **39.5 Traveling Merchant Wilderness Stock & Markup (`shopData.ts`, `TradeModal.tsx`)**:
+    *   [x] Configured merchant inventory profiles for all traveling NPCs (Herbalists, Hunters, Pilgrims, Wandering Merchants, Caravans) with specialized items (health potions, remedies, pelt supplies, survival gear, recall scrolls, alchemical catalysts, and weapons).
+    *   [x] Applied a 30% wilderness supply markup for merchants risking dangerous uncharted lands.
+
+#### **Phase 40: GM Adaptive Performance Evaluation, Drastic Chaos Matrix Escalation & Public Testing Release Candidate v1.0.0 (COMPLETED ✔)**
+*   [x] **40.1 GM Adaptive Combat Performance Tracking (`gmStoryteller.ts`, `useEnemyAI.ts`)**:
+    *   [x] GM Storyteller continuously monitors player combat performance, kill count velocity, and health ratio.
+    *   [x] Effortless slaughter triggers drastic Chaos Matrix escalation (+8 to +15 points) accompanied by GM narrator alerts ("Slain foes without breaking a sweat? Let us test your true steel!").
+*   [x] **40.2 Dynamic Enemy Stat Mutators & Reinforcement Upgrades (`gmStoryteller.ts`, `combatArchetypes.ts`)**:
+    *   [x] On GM Chaos adaptation, active monsters dynamically mutate: gaining +30% HP, +2 ATK, +1 DEF, higher Chaos Tiers, and elevated Elite / Anomaly modifiers.
+    *   [x] Spawner and Golden Triangle algorithms scale monster stats and spawn Triangle-Cheating Anomalies when Chaos exceeds 60.
+*   [x] **40.3 Public Testing Release Candidate Verification & Test Suite Validation**:
+    *   [x] Verified 100% test pass rate across 21 Vitest test suites (86 tests total) including new storyteller test cases.
+    *   [x] Verified zero TypeScript or linting errors (`tsc --noEmit`), zero dead code warnings, and bumped project version to 1.0.0 for GitHub push & public testing release.
+
+
+
+
+
+
+
+
+
 
 
 

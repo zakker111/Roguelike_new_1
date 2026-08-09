@@ -1,4 +1,29 @@
 import { NPC } from '../types';
+import dialoguesData from '../data/dialogues.json';
+
+export interface DialogueCatalog {
+  dialogues: Record<string, string[]>;
+  quests: Array<{
+    id: string;
+    title: string;
+    description: string;
+    objectiveCount: number;
+    rewardGold: number;
+    rewardXp: number;
+  }>;
+}
+
+export const DIALOGUES_CATALOG: DialogueCatalog = dialoguesData as DialogueCatalog;
+
+export function getRoleBaseDialogue(role: string): string[] {
+  const normalizedRole = role.toLowerCase();
+  for (const [key, lines] of Object.entries(DIALOGUES_CATALOG.dialogues)) {
+    if (normalizedRole.includes(key)) {
+      return lines;
+    }
+  }
+  return [];
+}
 
 export interface DialogueContext {
   weather?: string;
@@ -176,6 +201,37 @@ export function getTavernDrinkingBark(npc: NPC): string {
     `${name}: "The tavern hearth fire is roaring and the ale is flowing fast tonight!"`,
     `${name}: "*Sip...* Ah! The innkeeper brews the finest dwarven stout in Sunder."`,
     `${name}: "Pass the flagon! A tavern song and a dark ale fix any trouble."`
+  ];
+  const idx = Math.abs((npc.id || name).charCodeAt(0) + Date.now()) % barks.length;
+  return barks[idx];
+}
+
+/**
+ * Returns a cozy outdoor campfire gathering ambient bark at dusk.
+ */
+export function getCampfireDialogueBark(npc: NPC): string {
+  const name = npc.name.split(' (')[0];
+  const barks = [
+    `${name}: "Ah, huddling around the crackling campfire at dusk... warmth feels incredible after a long day!"`,
+    `${name}: "*Warms hands by the glowing coals* There's nothing like good company around the evening campfire."`,
+    `${name}: "Sharing tall tales and roasting spiced meats over the campfire embers..."`,
+    `${name}: "*Humming a soft folk melody* The night air is cool, but this campfire circle keeps us warm."`,
+    `${name}: "Watch the sparks fly up into the twilight sky! Rest well, traveler."`
+  ];
+  const idx = Math.abs((npc.id || name).charCodeAt(0) + Date.now()) % barks.length;
+  return barks[idx];
+}
+
+/**
+ * Returns an urgent blizzard / storm shelter seeking bark.
+ */
+export function getBlizzardShelterBark(npc: NPC): string {
+  const name = npc.name.split(' (')[0];
+  const barks = [
+    `${name}: "*Shivering uncontrollably* Brrr! This blizzard is freezing me to the bone! Heading straight indoors for the hearth!"`,
+    `${name}: "The howling gale is brutal! Get inside the tavern or house before frostbite sets in!"`,
+    `${name}: "I can't feel my fingers in this snowstorm! Seeking warmth by the indoor fireside!"`,
+    `${name}: "The wind is blinding! Hurry indoors before the blizzard seals the doors!"`
   ];
   const idx = Math.abs((npc.id || name).charCodeAt(0) + Date.now()) % barks.length;
   return barks[idx];

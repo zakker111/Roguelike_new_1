@@ -217,6 +217,7 @@ export interface GameState {
   hasTransmuter?: boolean;
   caravanTravel?: CaravanTravelState | null;
   defeatedEnemiesCount?: { [key: string]: number };
+  chaosScore?: number; // 0 to 100 GM Chaos Matrix score
 }
 
 export interface MoonPhase {

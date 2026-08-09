@@ -257,7 +257,7 @@ function CraftingPanelComponent({
 
   // Active armor details
   const activeArmorTemplate = ARMOR_TEMPLATES.find(t => t.subType === selectedArmorSubType) || ARMOR_TEMPLATES[0];
-  const baseTemplate = WEAPON_TEMPLATES[selectedBase];
+  const baseTemplate = WEAPON_TEMPLATES[selectedBase] || WEAPON_TEMPLATES[WeaponBaseType.Sword] || { baseDamage: 5, baseCrit: 0.05, range: 1, icon: '⚔️', name: 'Broadsword', baseType: WeaponBaseType.Sword, description: '' };
 
   const craftedName = craftCategory === 'weapon'
     ? `${getCatalystPrefix(selectedCatalyst)} ${getMaterialAdj(selectedMaterial)} ${selectedBase}`
@@ -500,6 +500,9 @@ function CraftingPanelComponent({
           getCatalystCount={getCatalystCount}
           hasIngredients={hasIngredients}
           handleCook={handleCook}
+          onCookMeat={onCookMeat}
+          onCookPrimeMeat={onCookPrimeMeat}
+          onCookFish={onCookFish}
         />
       )}
 

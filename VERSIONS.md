@@ -6,6 +6,62 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v1.0.0 / v6.0.0] — Public Testing Release & GM Adaptive Performance Evaluation (August 9, 2026)
+*Pristine Public Testing Release Candidate prepared for GitHub push. Features GM Adaptive Combat Performance Evaluation, Drastic Chaos Escalation on Effortless Slaughter, Dynamic Enemy Stat Mutators & Reinforcements, 100% Test Suite Pass Rate across 21 Test Suites (86 Tests), and Clean Codebase Verification.*
+
+- **GM Adaptive Performance Evaluation & Drastic Chaos Escalation (`src/utils/gmStoryteller.ts`, `src/tests/storytellerAI.test.ts`)**:
+  - The GM Storyteller continuously evaluates player combat efficiency, kill streaks, and health ratios.
+  - When the player effortlessly slaughters foes without taking damage, the GM triggers drastic Chaos Matrix escalation (+8 to +15 Chaos) and logs adaptive narrator dialogue ("Too easy? Let us test your true steel!").
+- **Dynamic Active Enemy Empowerment & Reinforcement (`src/utils/gmStoryteller.ts`, `src/utils/combatArchetypes.ts`)**:
+  - On GM Chaos adaptation, active monsters on the map dynamically mutate: gaining +30% HP, +2 ATK, +1 DEF, Chaos Tier upgrades, and elevated Elite / Anomaly modifiers.
+  - Golden Triangle enemy spawners scale dynamically with higher Chaos Scores, spawning Triangle-Cheating Anomalies when Chaos exceeds 60.
+- **Pristine Public Release Verification**:
+  - 100% test pass rate across 21 Vitest test suites (86 tests total).
+  - Clean build & linting output (`tsc --noEmit`) with zero errors, zero dead code warnings, and updated developer documentation.
+
+## [v5.5.0] — Phase 33 & 34: Tactical Combat Overhaul, Golden Triangle Spawns, GM Chaos Matrix & Merchant Inventories (August 9, 2026)
+*Implemented Telegraphed Heavy Attacks, Guard/Stagger Meter System, Player Bracing, Golden Triangle Enemy Spawning with GM Spawner Cheating, Integrated Central GM Chaos Matrix with Player Suppression, and Traveling Merchant Wilderness Stock with 30% Markup.*
+
+- **Telegraphed Heavy Attacks & Wind-Up System (`src/hooks/useEnemyAI.ts`, `src/canvas/entityLayerRenderer.ts`)**:
+  - Enemies wind up heavy attacks across turns with telegraphed highlight indicators, floating warning alerts ("💥 Heavy Slam WINDING UP!"), and directional impact zones.
+  - Telegraphed attacks deal 1.8x - 2.5x damage and apply massive stagger build-up if unmitigated.
+- **Guard / Stagger Bar Mechanics & Player Bracing (`src/App.tsx`, `src/hooks/useEnemyAI.ts`)**:
+  - Implemented dynamic stagger meters on enemies and player. Taking heavy impacts, blunt force weapon hits, or shield bashes builds stagger; breaking guard triggers a 1-turn stunned state with 1.5x incoming damage.
+  - Players can activate the "Brace / Guard" tactical stance to absorb 60% of incoming damage, prevent guard breaks, and reflect stagger back onto attacking enemies.
+- **Golden Triangle Enemy Placement & GM Flex Logic (`src/hooks/useEnemyAI.ts`, `src/world/dungeonGen.ts`)**:
+  - Encounters default to the tactical Golden Triangle spatial zone (3 key strategic points around the player) to prevent unfair encirclement or off-screen snipers.
+  - Bosses and GM Storyteller events retain flexibility ("cheat" the triangle) to launch surprise ambushes, flank maneuvers, or specialized wave spawns.
+- **Integrated Central GM Chaos Matrix (`src/hooks/useGameLoop.ts`, `src/utils/gmNarrator.ts`)**:
+  - Consolidated chaos tracking into a unified Central GM Chaos Matrix where the Game Master dynamically controls chaos escalation based on player activities, time spent in deep vaults, and environmental tension.
+  - Players can actively suppress and lower the Chaos Matrix through tactical choices: liberating bandit camps, slaying elite dungeon bosses, clearing watchtowers, and completing faction guild contracts.
+- **Traveling Merchant Wilderness Stock & Markup (`src/utils/shopData.ts`, `src/components/modals/TradeModal.tsx`)**:
+  - Configured merchant inventory profiles for all traveling NPCs (Herbalists, Hunters, Pilgrims, Wandering Merchants, Caravans) with specialized items (health potions, remedies, pelt supplies, survival gear, recall scrolls, alchemical catalysts, and weapons).
+  - Applied a 30% wilderness supply markup for merchants risking dangerous uncharted lands.
+
+## [v5.4.0] — Phase 32: Crafting Engine Sub-Hook Separation & Architecture Refactoring (August 7, 2026)
+*Modularized useCraftingEngine.ts into specialized sub-hooks (useEquipmentCrafting, useSurvivalCrafting, useUtilityCrafting) under src/hooks/crafting/. Verified full backward compatibility, 0 linter errors, and 100% test pass rate across 20 test suites (80 tests).*
+
+- **Crafting Sub-Engine Separation (src/hooks/crafting/)**:
+  - useEquipmentCrafting.ts: Weapon & armor forging, item upgrades, blacksmith repairs, and mutation alchemy.
+  - useSurvivalCrafting.ts: Deployable structures, campfire cooking recipes, resting, and fishing minigames.
+  - useUtilityCrafting.ts: Potion brewing and utility tool crafting (pickaxes, hatchets, fishing poles, lockpicks, recall scrolls).
+  - useCraftingEngine.ts: Aggregator hook delegating to sub-engines.
+- **Unified Master Documentation (all.md)**: Created single-source reference detailing engine sub-systems, test suite pass status, and project architecture.
+
+## [v5.3.0] — Phase 31: Rendering & Canvas Performance Optimizations, Codebase Audit & Health Suite (August 6, 2026)
+*Implemented comprehensive import & JSON catalog auditing script (`scripts/auditCodebase.cjs`), optimized canvas rendering loops in `spriteRenderer.ts`, `weatherLightingRenderer.ts`, and `visualFxParticleSystem.ts`, and verified 100% test pass rate across 20 test suites (80 tests).*
+
+- **Codebase Integrity & Import Health Audit (`scripts/auditCodebase.cjs` & `package.json`)**:
+  - Resolved `src/types.ts` type re-export exports.
+  - Built automated node audit runner checking 203 source files, 22 JSON data catalogs, and relative import paths across 181 TypeScript files.
+  - Added `npm run audit` script combining import integrity validation, TypeScript type checks (`tsc --noEmit`), and Vitest test suite runs.
+- **Canvas Rendering & Particle Optimizations (`src/canvas/`)**:
+  - Memoized regex evaluation for emoji font detection in `spriteRenderer.ts` using an LRU/Map cache.
+  - Batched weather particle path draw operations (`rain`, `snow`, `dust storm`, `blizzard`, `embers`, `cherry blossoms`, `spores`) in `weatherLightingRenderer.ts` to minimize canvas context state transitions.
+  - Applied particle capping (250 active particles limit) and early exit checks in `visualFxParticleSystem.ts` to reduce garbage collection overhead.
+- **Automated Test Suite Verification**:
+  - Validated 20 passed Vitest test suites (80 unit and end-to-end simulation tests).
+
 ## [v5.2.0] — Phase 29 & 30: Codebase Refactoring, Hook Modularization & QA Suite (August 5, 2026)
 *Deconstructed large monolith files (App.tsx, GodPanelOverlay.tsx, overworld.ts, audio.ts) into clean, specialized domain hooks and modules (`useGameLoop`, `siegeUtils`, `GodSmoketestTab`, `overworldNpcSpawning`, `overworldPoiGenerator`, `soundPresets`), achieving 100% test coverage (19 passing test suites, 77 tests) and zero-regression compilation.*
 

@@ -14,6 +14,9 @@ export interface CookingTabProps {
   getCatalystCount: (catId: string) => number;
   hasIngredients: (materials: { [matId: string]: number }, catalysts: { [catId: string]: number }) => boolean;
   handleCook: (recipe: CookingRecipe) => void;
+  onCookMeat?: () => void;
+  onCookPrimeMeat?: () => void;
+  onCookFish?: () => void;
 }
 
 export const CookingTab = React.memo<CookingTabProps>(({
@@ -23,7 +26,14 @@ export const CookingTab = React.memo<CookingTabProps>(({
   getCatalystCount,
   hasIngredients,
   handleCook,
+  onCookMeat,
+  onCookPrimeMeat,
+  onCookFish,
 }) => {
+  const rawMeatCount = getMaterialCount('mat_raw_meat');
+  const primeMeatCount = getMaterialCount('mat_prime_meat');
+  const rawFishCount = getMaterialCount('mat_raw_fish');
+
   return (
     <div className="flex-1 overflow-y-auto p-5 space-y-4" id="campfire_gourmet_cooking_subtab">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -33,7 +43,7 @@ export const CookingTab = React.memo<CookingTabProps>(({
             <Flame className={`w-4 h-4 ${isNextToCampfire ? 'text-amber-400 animate-pulse' : 'text-slate-500'}`} />
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Campfire Proximity</h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Cooking gourmet rations requires standing adjacent to a lit campfire</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Cooking gourmet rations & roasting raw food requires standing adjacent to a lit campfire</p>
             </div>
           </div>
 
@@ -62,7 +72,7 @@ export const CookingTab = React.memo<CookingTabProps>(({
               </span>
               <p className="text-[10.5px] text-slate-400 mt-1 leading-normal">
                 {isNextToCampfire
-                  ? 'Warmth radiates softly. Culinary recipes and stamina rests are fully unlocked!'
+                  ? 'Warmth radiates softly. Culinary recipes, raw meat grilling, and stamina rests are fully unlocked!'
                   : 'Locate or build a Campfire on adjacent ground to unlock culinary rations & rest buffs.'}
               </p>
             </div>
@@ -84,15 +94,106 @@ export const CookingTab = React.memo<CookingTabProps>(({
           </div>
         </div>
 
-        {/* Column 2: Campfire Gourmet Cooking (lg:col-span-7) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
-            <span className="text-xl">🍳</span>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Campfire Gourmet Cooking</h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Synthesize premium meals with powerful long-lasting status buffs</p>
+        {/* Column 2: Campfire Gourmet & Basic Roasting (lg:col-span-7) */}
+        <div className="lg:col-span-7 space-y-6">
+          
+          {/* Section A: Basic Wilderness Roasting */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-xl">🥩</span>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Wilderness Spit-Roasting & Grilling</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Roast raw meat and fresh fish over open embers for immediate health restoration</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Roast Raw Meat */}
+              <div className="p-3 bg-slate-950/50 rounded-xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-xs text-slate-100 flex items-center gap-1.5">
+                    <span>🍖</span>
+                    <span>Roast Raw Meat</span>
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-1 mb-2">Cooks 1x Raw Meat into Cooked Meat (+25 HP).</p>
+                  <div className="text-[9px] font-mono text-slate-400 mb-3">
+                    Raw Meat: <span className={rawMeatCount >= 1 ? 'text-emerald-400 font-bold' : 'text-rose-400'}>{rawMeatCount}/1</span>
+                  </div>
+                </div>
+                <button
+                  onClick={onCookMeat}
+                  disabled={!isNextToCampfire || rawMeatCount < 1}
+                  className={`w-full py-2 rounded text-[10px] font-bold uppercase font-mono border transition-all ${
+                    isNextToCampfire && rawMeatCount >= 1
+                      ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-400 cursor-pointer'
+                      : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'
+                  }`}
+                >
+                  Roast Meat
+                </button>
+              </div>
+
+              {/* Flame-Grill Prime Meat */}
+              <div className="p-3 bg-slate-950/50 rounded-xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-xs text-slate-100 flex items-center gap-1.5">
+                    <span>🥩</span>
+                    <span>Grill Prime Meat</span>
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-1 mb-2">Grills 1x Prime Meat into Flame-Grilled Steak (+45 HP).</p>
+                  <div className="text-[9px] font-mono text-slate-400 mb-3">
+                    Prime Meat: <span className={primeMeatCount >= 1 ? 'text-emerald-400 font-bold' : 'text-rose-400'}>{primeMeatCount}/1</span>
+                  </div>
+                </div>
+                <button
+                  onClick={onCookPrimeMeat}
+                  disabled={!isNextToCampfire || primeMeatCount < 1}
+                  className={`w-full py-2 rounded text-[10px] font-bold uppercase font-mono border transition-all ${
+                    isNextToCampfire && primeMeatCount >= 1
+                      ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400 cursor-pointer'
+                      : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'
+                  }`}
+                >
+                  Grill Steak
+                </button>
+              </div>
+
+              {/* Grill Raw Fish */}
+              <div className="p-3 bg-slate-950/50 rounded-xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                  <h4 className="font-bold text-xs text-slate-100 flex items-center gap-1.5">
+                    <span>🐟</span>
+                    <span>Grill Raw Fish</span>
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-1 mb-2">Grills 1x Raw Fish into Grilled Fish (+30 HP).</p>
+                  <div className="text-[9px] font-mono text-slate-400 mb-3">
+                    Raw Fish: <span className={rawFishCount >= 1 ? 'text-emerald-400 font-bold' : 'text-rose-400'}>{rawFishCount}/1</span>
+                  </div>
+                </div>
+                <button
+                  onClick={onCookFish}
+                  disabled={!isNextToCampfire || rawFishCount < 1}
+                  className={`w-full py-2 rounded text-[10px] font-bold uppercase font-mono border transition-all ${
+                    isNextToCampfire && rawFishCount >= 1
+                      ? 'bg-sky-600 hover:bg-sky-500 text-white border-sky-400 cursor-pointer'
+                      : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'
+                  }`}
+                >
+                  Grill Fish
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Section B: Campfire Gourmet Cooking */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <span className="text-xl">🍳</span>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Campfire Gourmet Cooking</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Synthesize premium meals with powerful long-lasting status buffs</p>
+              </div>
+            </div>
 
           {/* Recipes Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -184,7 +285,8 @@ export const CookingTab = React.memo<CookingTabProps>(({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 });
 
 export default CookingTab;

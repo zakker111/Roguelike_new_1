@@ -25,6 +25,7 @@ export class VisualFxParticleSystem {
   }
 
   public spawnSpellBurst(x: number, y: number, color: string = '#f59e0b', count: number = 12) {
+    if (this.particles.length > 250) return; // Cap max active particles
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
       const speed = 1.5 + Math.random() * 2.5;
@@ -46,6 +47,7 @@ export class VisualFxParticleSystem {
   }
 
   public spawnEmber(x: number, y: number) {
+    if (this.particles.length > 250) return; // Cap max active particles
     this.particles.push({
       id: `ember_${Math.random()}`,
       x: x + (Math.random() - 0.5) * 16,
@@ -63,6 +65,8 @@ export class VisualFxParticleSystem {
   }
 
   public updateAndRender(ctx: CanvasRenderingContext2D, dt: number) {
+    if (this.particles.length === 0) return;
+
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += p.vx;
@@ -75,7 +79,6 @@ export class VisualFxParticleSystem {
         continue;
       }
 
-      ctx.save();
       ctx.globalAlpha = Math.max(0, p.alpha);
       ctx.fillStyle = p.color;
       ctx.strokeStyle = p.color;
@@ -98,9 +101,9 @@ export class VisualFxParticleSystem {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
       }
-
-      ctx.restore();
     }
+
+    ctx.globalAlpha = 1.0;
   }
 
   public clear() {

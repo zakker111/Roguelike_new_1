@@ -4,6 +4,7 @@ import {
   setGMStorytellerState,
   GM_ENCOUNTERS_DATABASE,
   GMPersonality,
+  tickActiveGMStoryteller,
 } from '../utils/gmStoryteller';
 
 describe('Phase 6: Storyteller AI Engine Suite', () => {
@@ -73,5 +74,46 @@ describe('Phase 6: Storyteller AI Engine Suite', () => {
     const resLowHp = healingEncounter.trigger(dummyGameState, dummyGMState);
     expect(resLowHp.success).toBe(true);
     expect(resLowHp.mutatedState.playerStats?.hp).toBeGreaterThan(20);
+  });
+
+  it('evaluates player effortless slaughter and escalates Chaos Matrix with monster stat buffing', () => {
+    const dummyGameState: any = {
+      playerX: 10,
+      playerY: 10,
+      playerStats: {
+        hp: 90,
+        maxHp: 100,
+        mp: 50,
+        maxMp: 50,
+        turnsPlayed: 10,
+      },
+      chaosScore: 20,
+      defeatedEnemiesCount: {
+        'Goblin': 3
+      },
+      enemies: [
+        {
+          id: 'test_enemy_1',
+          name: 'Goblin Raider',
+          hp: 20,
+          maxHp: 20,
+          atk: 5,
+          def: 1,
+          x: 12,
+          y: 12,
+          isFollower: false,
+          isTownGuard: false,
+          isAnimal: false,
+        }
+      ]
+    };
+
+    const res = tickActiveGMStoryteller(dummyGameState);
+    expect(res.stateUpdates.chaosScore).toBeGreaterThan(20);
+    expect(res.logMessage?.text).toContain('[GM CHAOS ADAPTATION]');
+    expect(res.stateUpdates.enemies).toBeDefined();
+    const buffedEnemy = res.stateUpdates.enemies[0];
+    expect(buffedEnemy.maxHp).toBeGreaterThan(20);
+    expect(buffedEnemy.atk).toBeGreaterThan(5);
   });
 });

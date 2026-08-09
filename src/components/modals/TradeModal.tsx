@@ -57,13 +57,28 @@ export const TradeModal: React.FC<TradeModalProps> = ({
 }) => {
   const activeTradeNpcId = gameState.activeTradeNpcId;
   const activeNpc = gameState.npcs?.find(n => n.id === activeTradeNpcId);
-  const activeRole = activeNpc?.role || (activeTradeNpcId === 'npc_caravan_merchant' || activeTradeNpcId?.includes('caravan') ? 'merchant' : '');
+  const activeRole = activeNpc?.role || 
+    (activeTradeNpcId?.includes('herbalist') ? 'traveler_herbalist' :
+     activeTradeNpcId?.includes('hunter') ? 'traveler_hunter' :
+     activeTradeNpcId?.includes('pilgrim') ? 'traveler_pilgrim' :
+     activeTradeNpcId?.includes('caravan') || activeTradeNpcId?.includes('traveler') || activeTradeNpcId?.includes('wandering') ? 'traveler_merchant' :
+     activeTradeNpcId === 'npc_caravan_merchant' ? 'merchant_caravan' : '');
 
   const isBlacksmith = activeRole === 'npc_blacksmith' || activeRole.includes('blacksmith') || activeTradeNpcId === 'npc_shop_blacksmith';
-  const isMerchant = activeRole === 'npc_merchant' || activeRole.includes('merchant') || activeTradeNpcId === 'npc_shop_merchant';
-  const isApothecary = activeRole === 'npc_apothecary' || activeRole.includes('apothecary') || activeTradeNpcId === 'npc_shop_apothecary';
+  const isMerchant = activeRole === 'npc_merchant' || activeRole.includes('merchant') || activeTradeNpcId === 'npc_shop_merchant' || activeRole === 'traveler_hunter' || activeRole === 'traveler_pilgrim' || activeRole === 'traveler_merchant' || activeRole.includes('traveler') || activeRole.includes('wandering') || activeRole.includes('caravan');
+  const isApothecary = activeRole === 'npc_apothecary' || activeRole.includes('apothecary') || activeTradeNpcId === 'npc_shop_apothecary' || activeRole === 'traveler_herbalist';
   const isTavernMaster = activeRole === 'npc_innkeeper' || activeRole.includes('innkeeper') || activeTradeNpcId === 'npc_shop_innkeeper';
-  const isSeppo = activeTradeNpcId === 'npc_seppo' || activeNpc?.name === 'Seppo the Smith';
+  const isSeppo = activeTradeNpcId === 'npc_seppo' || activeNpc?.name === 'Seppo the Smith' || activeRole === 'merchant_seppo';
+
+  const isTraveler = 
+    activeRole.startsWith('traveler_') ||
+    activeRole.includes('caravan') ||
+    activeRole.includes('wandering') ||
+    activeRole === 'merchant_seppo' ||
+    (activeTradeNpcId ? (activeTradeNpcId.includes('traveler') || activeTradeNpcId.includes('wandering') || activeTradeNpcId.includes('caravan')) : false);
+
+  // Traveling merchants charge 30% wilderness markup for bringing supplies into dangerous lands
+  const travelerPriceMarkup = isTraveler ? 1.30 : 1.0;
 
   const getStock = (id: string, defaultVal: number = 3) => {
     const activeId = gameState.activeTradeNpcId || 'npc_shop';

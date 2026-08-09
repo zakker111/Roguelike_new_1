@@ -44,9 +44,16 @@ export function useSaveLoad({
         timestamp: Date.now(),
         playerX: gs.playerX,
         playerY: gs.playerY,
+        playerZ: gs.playerZ ?? 0,
+        isOverworld: gs.isOverworld ?? true,
+        overworldZ: gs.overworldZ ?? 0,
+        currentChunkX: gs.currentChunkX,
+        currentChunkY: gs.currentChunkY,
         playerStats: gs.playerStats,
-        equipmentInventory: gs.equipmentInventory,
-        materialsInventory: gs.materialsInventory,
+        equipmentInventory: gs.equipmentInventory || [],
+        inventoryMaterials: gs.inventoryMaterials || {},
+        materialsInventory: gs.materialsInventory || gs.inventoryMaterials || {},
+        inventoryCatalysts: gs.inventoryCatalysts || {},
         equippedWeapon: gs.currentWeapon,
         equippedArmor: gs.equippedArmor,
         equippedHelmet: gs.equippedHelmet,
@@ -54,11 +61,16 @@ export function useSaveLoad({
         equippedBoots: gs.equippedBoots,
         equippedShield: gs.equippedShield,
         equippedAmulet: gs.equippedAmulet,
-        currentChunkX: gs.currentChunkX,
-        currentChunkY: gs.currentChunkY,
+        followers: gs.followers || [],
+        quests: gs.quests || [],
         chaosScore: gs.chaosScore,
         townReputation: gs.townReputation,
         dungeonDepth: gs.playerStats?.depth ?? 0,
+        relics: gs.relics || [],
+        unlockedRecipes: gs.unlockedRecipes || [],
+        gameTime: gs.gameTime,
+        season: gs.season,
+        weather: gs.weather,
       });
 
       localStorage.setItem(slotKey, serialized);
@@ -84,16 +96,25 @@ export function useSaveLoad({
       // Validate save integrity before applying
       validateSaveData(parsed);
 
+      const mats = parsed.inventoryMaterials || parsed.materialsInventory || {};
+
       setGameState((prev) => ({
         ...prev,
         playerX: parsed.playerX ?? prev.playerX,
         playerY: parsed.playerY ?? prev.playerY,
+        playerZ: parsed.playerZ ?? prev.playerZ ?? 0,
+        isOverworld: parsed.isOverworld ?? prev.isOverworld ?? true,
+        overworldZ: parsed.overworldZ ?? prev.overworldZ ?? 0,
+        currentChunkX: parsed.currentChunkX ?? prev.currentChunkX,
+        currentChunkY: parsed.currentChunkY ?? prev.currentChunkY,
         playerStats: {
           ...prev.playerStats,
           ...(parsed.playerStats || {}),
         },
         equipmentInventory: parsed.equipmentInventory ?? prev.equipmentInventory,
-        materialsInventory: parsed.materialsInventory ?? prev.materialsInventory,
+        inventoryMaterials: mats,
+        materialsInventory: mats,
+        inventoryCatalysts: parsed.inventoryCatalysts ?? prev.inventoryCatalysts ?? {},
         currentWeapon: parsed.equippedWeapon ?? prev.currentWeapon,
         equippedArmor: parsed.equippedArmor ?? prev.equippedArmor,
         equippedHelmet: parsed.equippedHelmet ?? prev.equippedHelmet,
@@ -101,10 +122,15 @@ export function useSaveLoad({
         equippedBoots: parsed.equippedBoots ?? prev.equippedBoots,
         equippedShield: parsed.equippedShield ?? prev.equippedShield,
         equippedAmulet: parsed.equippedAmulet ?? prev.equippedAmulet,
-        currentChunkX: parsed.currentChunkX ?? prev.currentChunkX,
-        currentChunkY: parsed.currentChunkY ?? prev.currentChunkY,
+        followers: parsed.followers ?? prev.followers ?? [],
+        quests: parsed.quests ?? prev.quests ?? [],
         chaosScore: parsed.chaosScore ?? prev.chaosScore,
         townReputation: parsed.townReputation ?? prev.townReputation,
+        relics: parsed.relics ?? prev.relics ?? [],
+        unlockedRecipes: parsed.unlockedRecipes ?? prev.unlockedRecipes ?? [],
+        gameTime: parsed.gameTime ?? prev.gameTime,
+        season: parsed.season ?? prev.season,
+        weather: parsed.weather ?? prev.weather,
       }));
 
       if (addLogMessage) {

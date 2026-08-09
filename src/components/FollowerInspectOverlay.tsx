@@ -1,6 +1,7 @@
-import React from 'react';
-import { X, Shield, Swords, UserCheck, RefreshCw, Zap } from 'lucide-react';
-import { GameState, Follower, EquipmentItem } from '../types';
+import React, { useState } from 'react';
+import { X, Shield, Swords, UserCheck, RefreshCw, Zap, MessageSquare } from 'lucide-react';
+import { GameState, Follower, EquipmentItem, GameLogMessage } from '../types';
+import { getCompanionAdvice } from '../utils/companionAdvice';
 
 interface FollowerInspectOverlayProps {
   gameState: GameState;
@@ -11,7 +12,28 @@ interface FollowerInspectOverlayProps {
 
 export default function FollowerInspectOverlay({ gameState, setGameState, followerId, onClose }: FollowerInspectOverlayProps) {
   const f = gameState.followers.find((fol) => fol.id === followerId);
+  const [activeAdvice, setActiveAdvice] = useState<string | null>(null);
+
   if (!f) return null;
+
+  const handleAskAdvice = () => {
+    const advice = getCompanionAdvice(gameState, f);
+    setActiveAdvice(advice);
+
+    // Also push message to GameLog
+    setGameState((prev) => {
+      const logEntry: GameLogMessage = {
+        id: `log_companion_advice_${Date.now()}`,
+        text: advice,
+        type: 'info',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+      return {
+        ...prev,
+        logs: [logEntry, ...prev.logs].slice(0, 100)
+      };
+    });
+  };
 
   const handleToggleMode = () => {
     setGameState((prev) => {
@@ -237,19 +259,38 @@ export default function FollowerInspectOverlay({ gameState, setGameState, follow
               </div>
             </div>
 
-            {/* AI Command Stance */}
-            <div className="bg-slate-950/30 border border-slate-850 p-3 rounded-lg flex items-center justify-between text-xs">
-              <div className="flex flex-col">
-                <span className="font-bold text-slate-350 uppercase tracking-widest text-[9px]">Stance Directive:</span>
-                <span className="text-slate-400 text-[11px] capitalize">Companion is currently: <strong>{f.mode}ing</strong></span>
+            {/* AI Command Stance & Ask Guidance */}
+            <div className="bg-slate-950/30 border border-slate-850 p-3 rounded-lg space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="font-bold text-slate-350 uppercase tracking-widest text-[9px]">Stance Directive:</span>
+                  <span className="text-slate-400 text-[11px] capitalize">Companion is currently: <strong>{f.mode}ing</strong></span>
+                </div>
+                <button
+                  onClick={handleToggleMode}
+                  className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold uppercase rounded flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Toggle Stand</span>
+                </button>
               </div>
-              <button
-                onClick={handleToggleMode}
-                className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold uppercase rounded flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>Toggle Stand</span>
-              </button>
+
+              <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-2">
+                <button
+                  id="ask-companion-advice-btn"
+                  onClick={handleAskAdvice}
+                  className="w-full py-1.5 bg-indigo-900/40 hover:bg-indigo-800/50 border border-indigo-700/60 text-indigo-200 font-bold text-[10.5px] uppercase tracking-wide rounded flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Ask Tactical Advice</span>
+                </button>
+
+                {activeAdvice && (
+                  <div className="bg-indigo-950/60 border border-indigo-800/70 p-2.5 rounded-lg text-[11px] text-indigo-100 italic leading-relaxed animate-in fade-in duration-150">
+                    {activeAdvice}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Active Gear Slot card */}

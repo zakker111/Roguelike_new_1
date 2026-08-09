@@ -56,15 +56,23 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
                 </div>
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Move Diagonals:</span>
-                  <span className="text-slate-300">Numpad (7, 9, 1, 3)</span>
+                  <span className="text-slate-300">Numpad (7, 9, 1, 3) / Home, PgUp, End, PgDn</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Wait / Skip Turn:</span>
-                  <span className="text-amber-400 font-bold">Spacebar / Period (.)</span>
+                  <span className="text-amber-400 font-bold">Spacebar / Period (.) / Num 5</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Brace (+Block rate):</span>
                   <span className="text-amber-400 font-bold">B Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Stairs Up / Exit:</span>
+                  <span className="text-amber-400 font-bold">&lt; Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Stairs Down / Enter:</span>
+                  <span className="text-amber-400 font-bold">&gt; Key</span>
                 </div>
               </div>
             </div>
@@ -76,12 +84,24 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
               </h4>
               <div className="space-y-1.5 font-mono text-[10.5px]">
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Toggle Help Manual:</span>
+                  <span className="text-amber-400 font-bold">F1 Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Loot / Camp / Stairs / Interact:</span>
                   <span className="text-amber-400 font-bold">G Key</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
-                  <span className="text-slate-400">Character & Attribute Sheet:</span>
+                  <span className="text-slate-400">Character Sheet & Equipment:</span>
                   <span className="text-amber-400 font-bold">C Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Chronicles & Lore Book:</span>
+                  <span className="text-amber-400 font-bold">H Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Bestiary & Monsters Index:</span>
+                  <span className="text-amber-400 font-bold">V / K Key</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Open Game Master UI:</span>
@@ -90,6 +110,10 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Developer GOD Panel:</span>
                   <span className="text-red-400">P Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Close Window / Return:</span>
+                  <span className="text-slate-300 font-bold">Esc Key</span>
                 </div>
               </div>
             </div>

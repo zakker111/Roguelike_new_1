@@ -1,0 +1,83 @@
+{
+  "archetypes": [
+    {
+      "key": "deer",
+      "keywords": ["deer"],
+      "quotes": [
+        "*Snort!* (The deer leaps gracefully in a panic-bound flight!)"
+      ]
+    },
+    {
+      "key": "boar",
+      "keywords": ["boar"],
+      "quotes": [
+        "*Oink squeal!* (The boar snorts in alarm and crashes through the brush!)"
+      ]
+    },
+    {
+      "key": "goat",
+      "keywords": ["goat"],
+      "quotes": [
+        "*Maaah!* (The mountain goat kicks up dust, retreating into safety!)"
+      ]
+    },
+    {
+      "key": "rat",
+      "keywords": ["rat"],
+      "quotes": [
+        "*Squiiiieeeek!* (Scurries in pure terror!)",
+        "*Chirp chirp chitter* (Panic-scuttles away!)",
+        "*Eeeek* (Tail tucked in, running for the shadows!)"
+      ]
+    },
+    {
+      "key": "goblin",
+      "keywords": ["goblin"],
+      "quotes": [
+        "“Mercy, hero! Goblin too young to get squished!”",
+        "“Cowardly tactical retreat! Run away!”",
+        "“B-boss said you were weak! Boss lied!”",
+        "“Not the face! Not the goblin snout!”"
+      ]
+    },
+    {
+      "key": "undead_mage",
+      "keywords": ["mage", "skeleton"],
+      "quotes": [
+        "“My brittle bones are rattling! Spare me!”",
+        "“This fleshling is too strong! Aborting spell routine!”",
+        "“My phylactery isn't ready for this! Retreat!”"
+      ]
+    },
+    {
+      "key": "brute_orc",
+      "keywords": ["brute", "orc"],
+      "quotes": [
+        "“Arrrgh! Brute skin bleeding too much! Pulling back!”",
+        "“Me smash you... another day! Hurting too bad!”",
+        "“Heavy armor feels like tin foil! Retreating!”"
+      ]
+    },
+    {
+      "key": "troll",
+      "keywords": ["troll"],
+      "quotes": [
+        "“Troll hide splitting! Must run and regrow!”",
+        "“Nooo! Hard tiny person hurts too much!”"
+      ]
+    },
+    {
+      "key": "trapmaster",
+      "keywords": ["trapmaster"],
+      "quotes": [
+        "“My gadgets failed! Mission aborted!”",
+        "“Tactical smoke bomb! *cough* ...just running!”"
+      ]
+    }
+  ],
+  "general": [
+    "“Ouch! Spare me! I have gold in my pockets!”",
+    "“Retreat! Gathering reinforcements!”",
+    "“You win this round, mortal! Running away!”"
+  ]
+}

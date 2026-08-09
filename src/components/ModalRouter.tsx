@@ -3,11 +3,14 @@ import { GameState } from '../types';
 import AppOverlays, { AppOverlaysProps } from './AppOverlays';
 import QuestBoardOverlay from './QuestBoardOverlay';
 import CaravanActiveOverlay from './modals/CaravanActiveOverlay';
+import AudioSettingsModal from './AudioSettingsModal';
 
 export interface ModalRouterProps extends AppOverlaysProps {
   handleResolveCaravanEncounterOption: (optionId: string) => void;
   handleAdvanceCaravanTravel: () => void;
   handleCompleteCaravanTravel: () => void;
+  isAudioSettingsOpen?: boolean;
+  setIsAudioSettingsOpen?: (open: boolean) => void;
 }
 
 export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
@@ -19,6 +22,8 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
     handleResolveCaravanEncounterOption,
     handleAdvanceCaravanTravel,
     handleCompleteCaravanTravel,
+    isAudioSettingsOpen = false,
+    setIsAudioSettingsOpen,
   } = props;
 
   return (
@@ -45,6 +50,14 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
         handleAdvanceCaravanTravel={handleAdvanceCaravanTravel}
         handleCompleteCaravanTravel={handleCompleteCaravanTravel}
       />
+
+      {/* Procedural Audio & Soundscape Controls Modal */}
+      {setIsAudioSettingsOpen && (
+        <AudioSettingsModal
+          isOpen={isAudioSettingsOpen}
+          onClose={() => setIsAudioSettingsOpen(false)}
+        />
+      )}
     </>
   );
 };

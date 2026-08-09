@@ -326,7 +326,7 @@ export const WeaponForgingTab: React.FC<WeaponForgingTabProps> = ({
             {/* Render icon */}
             <div className="relative h-18 w-18 flex items-center justify-center bg-slate-900 border border-slate-800 rounded-full shadow-inner mb-4">
               <span className="text-5xl drop-shadow-lg scale-115 rotate-45">
-                {craftCategory === 'weapon' ? baseTemplate.icon : activeArmorTemplate.icon}
+                {craftCategory === 'weapon' ? (baseTemplate?.icon || '⚔️') : (activeArmorTemplate?.icon || '🛡️')}
               </span>
               <div
                 className="absolute inset-0 rounded-full animate-ping opacity-15"

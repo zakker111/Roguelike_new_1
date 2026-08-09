@@ -97,6 +97,8 @@ export enum EnemyType {
   Kalma = 'Kalma',             // Finnish mythological goddess of grave decay and sweet rot
 }
 
+export type CombatArchetype = 'juggernaut' | 'glass_cannon' | 'skirmisher' | 'boss_apex';
+
 export interface Enemy {
   id: string;
   x: number;
@@ -125,10 +127,29 @@ export interface Enemy {
   isFreed?: boolean;     // Freed flag
   animalType?: 'deer' | 'boar' | 'sheep'; // Type of animal
   isBoss?: boolean;      // Boss flag
+  isAnomaly?: boolean;   // GM Triangle Cheater / Anomaly override flag
+  archetype?: CombatArchetype; // Golden Triangle archetype
+  archetypeTrait?: string;      // Archetype specific passives/traits
+  chaosTier?: number;          // Dynamic Chaos Matrix tier modifier
+  isEnraged?: boolean;          // Boss Phase 2 Enrage state override
   faction?: 'syndicate' | 'vanguard' | 'outlaw' | 'goblin' | 'bandits';
   shift?: 'day' | 'night' | 'sentry'; // Guard duty shift schedule
   barracksBed?: { x: number; y: number; z?: number }; // Target bed tile in barracks
   originalChar?: string; // Original icon character before sleeping
+  hasAlertedBackup?: boolean; // Flag if wounded enemy has called for reinforcements
+  hasWarnedElite?: boolean;   // Companion warning trigger
+  z?: number;                 // Level elevation Z index
+  telegraphedAttack?: {
+    targetX: number;
+    targetY: number;
+    turnsRemaining: number;
+    damage: number;
+    name: string;
+  } | null;
+  staggerMeter?: number;       // Current Stagger/Guard buildup (0 to maxStaggerMeter)
+  maxStaggerMeter?: number;   // Max Stagger threshold before stance breaks
+  isStaggered?: boolean;      // True if guard/posture is currently shattered (vulnerable)
+  staggerTurns?: number;      // Remaining turns of stagger stun
 }
 
 export interface NPC {
@@ -144,7 +165,7 @@ export interface NPC {
   workX: number;
   workY: number;
   dialogue: string[];
-  scheduleState: 'home' | 'work' | 'leisure';
+  scheduleState: 'home' | 'work' | 'leisure' | 'campfire';
   isHomeSameAsShop?: boolean;
   isAsleep?: boolean;
   isSitting?: boolean;

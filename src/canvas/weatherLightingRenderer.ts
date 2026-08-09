@@ -69,24 +69,26 @@ export function renderWeatherAndLighting({
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
     ctx.lineWidth = 1;
     const now = Date.now() * 0.04;
+    ctx.beginPath();
     for (let i = 0; i < 28; i++) {
       const rx = (i * 47 + now * 2.2) % dimensions.width;
       const ry = (i * 83 + now * 5.4) % dimensions.height;
-      ctx.beginPath();
       ctx.moveTo(rx, ry);
       ctx.lineTo(rx - 2, ry + 12);
-      ctx.stroke();
     }
+    ctx.stroke();
   } else if (weather === 'snowy') {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
     const now = Date.now() * 0.012;
+    ctx.beginPath();
     for (let i = 0; i < 30; i++) {
       const rx = (i * 39 + Math.sin(now + i) * 15) % dimensions.width;
       const ry = (i * 73 + now * 0.9) % dimensions.height;
-      ctx.beginPath();
-      ctx.arc(rx, ry, Math.abs(i % 3) + 1.2, 0, Math.PI * 2);
-      ctx.fill();
+      const radius = Math.abs(i % 3) + 1.2;
+      ctx.moveTo(rx + radius, ry);
+      ctx.arc(rx, ry, radius, 0, Math.PI * 2);
     }
+    ctx.fill();
   } else if (weather === 'foggy') {
     const fogGrad = ctx.createLinearGradient(0, 0, 0, dimensions.height);
     fogGrad.addColorStop(0, 'rgba(148, 163, 184, 0.15)');
@@ -98,14 +100,14 @@ export function renderWeatherAndLighting({
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.22)';
     ctx.lineWidth = 1.5;
     const now = Date.now() * 0.08;
+    ctx.beginPath();
     for (let i = 0; i < 40; i++) {
       const rx = (i * 59 + now * 8.5) % dimensions.width;
       const ry = (i * 37 + Math.sin(now + i) * 8) % dimensions.height;
-      ctx.beginPath();
       ctx.moveTo(rx, ry);
       ctx.lineTo(rx + 20, ry + 2);
-      ctx.stroke();
     }
+    ctx.stroke();
     ctx.fillStyle = 'rgba(120, 53, 4, 0.08)';
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
   } else if (weather === 'blizzard') {
@@ -113,20 +115,25 @@ export function renderWeatherAndLighting({
     ctx.strokeStyle = 'rgba(186, 230, 253, 0.35)';
     ctx.lineWidth = 1;
     const now = Date.now() * 0.05;
+    ctx.beginPath();
     for (let i = 0; i < 50; i++) {
       const rx = (i * 41 + now * 12.0) % dimensions.width;
       const ry = (i * 61 + now * 5.0) % dimensions.height;
-      ctx.beginPath();
-      ctx.arc(rx, ry, Math.abs(i % 2) + 1.2, 0, Math.PI * 2);
-      ctx.fill();
-      
-      if (i % 5 === 0) {
-        ctx.beginPath();
-        ctx.moveTo(rx, ry);
-        ctx.lineTo(rx - 15, ry + 3);
-        ctx.stroke();
-      }
+      const radius = Math.abs(i % 2) + 1.2;
+      ctx.moveTo(rx + radius, ry);
+      ctx.arc(rx, ry, radius, 0, Math.PI * 2);
     }
+    ctx.fill();
+
+    ctx.beginPath();
+    for (let i = 0; i < 50; i += 5) {
+      const rx = (i * 41 + now * 12.0) % dimensions.width;
+      const ry = (i * 61 + now * 5.0) % dimensions.height;
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 15, ry + 3);
+    }
+    ctx.stroke();
+
     ctx.fillStyle = 'rgba(224, 242, 254, 0.12)';
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
   }
@@ -139,52 +146,58 @@ export function renderWeatherAndLighting({
 
     ctx.fillStyle = 'rgba(239, 68, 68, 0.72)';
     const now = Date.now() * 0.005;
+    ctx.beginPath();
     for (let i = 0; i < 25; i++) {
       const rx = (i * 61 + Math.sin(now * 0.4 + i) * 30) % dimensions.width;
       const ry = (dimensions.height - (i * 71 + now * 2.0) % dimensions.height);
-      ctx.beginPath();
-      ctx.arc(rx, ry, Math.sin(now + i) > 0.3 ? 2.0 : 1.1, 0, Math.PI * 2);
-      ctx.fill();
+      const radius = Math.sin(now + i) > 0.3 ? 2.0 : 1.1;
+      ctx.moveTo(rx + radius, ry);
+      ctx.arc(rx, ry, radius, 0, Math.PI * 2);
     }
+    ctx.fill();
   }
 
   const season = gameState.season || 'spring';
   if (season === 'spring') {
     ctx.fillStyle = 'rgba(244, 63, 94, 0.48)';
     const now = Date.now() * 0.005;
+    ctx.beginPath();
     for (let i = 0; i < 20; i++) {
       const rx = (i * 53 + Math.sin(now + i) * 35) % dimensions.width;
       const ry = (i * 89 + now * 1.6) % dimensions.height;
-      ctx.beginPath();
+      ctx.moveTo(rx + 3.8, ry);
       ctx.ellipse(rx, ry, 3.8, 2.2, Math.PI / 4 + Math.sin(now + i) * 0.35, 0, Math.PI * 2);
-      ctx.fill();
     }
+    ctx.fill();
   } else if (season === 'summer') {
     ctx.fillStyle = 'rgba(251, 191, 36, 0.035)';
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
     ctx.fillStyle = 'rgba(253, 224, 71, 0.48)';
     const now = Date.now() * 0.004;
+    ctx.beginPath();
     for (let i = 0; i < 16; i++) {
       const rx = (i * 61 + Math.sin(now * 0.5 + i) * 22) % dimensions.width;
       const ry = (dimensions.height - (i * 97 + now * 1.2) % dimensions.height);
-      ctx.beginPath();
+      ctx.moveTo(rx + 1.4, ry);
       ctx.arc(rx, ry, 1.4, 0, Math.PI * 2);
-      ctx.fill();
     }
+    ctx.fill();
   } else if (season === 'autumn') {
     const leafColors = ['rgba(217, 119, 6, 0.55)', 'rgba(239, 68, 68, 0.48)', 'rgba(245, 158, 11, 0.55)'];
     const now = Date.now() * 0.006;
-    for (let i = 0; i < 24; i++) {
-      ctx.fillStyle = leafColors[i % 3];
-      const rx = (i * 41 + Math.sin(now + i) * 48) % dimensions.width;
-      const ry = (i * 79 + now * 2.4) % dimensions.height;
+    for (let c = 0; c < 3; c++) {
+      ctx.fillStyle = leafColors[c];
       ctx.beginPath();
-      ctx.moveTo(rx, ry - 3.5);
-      ctx.lineTo(rx + 4.5, ry);
-      ctx.lineTo(rx, ry + 3.5);
-      ctx.lineTo(rx - 4.5, ry);
-      ctx.closePath();
+      for (let i = c; i < 24; i += 3) {
+        const rx = (i * 41 + Math.sin(now + i) * 48) % dimensions.width;
+        const ry = (i * 79 + now * 2.4) % dimensions.height;
+        ctx.moveTo(rx, ry - 3.5);
+        ctx.lineTo(rx + 4.5, ry);
+        ctx.lineTo(rx, ry + 3.5);
+        ctx.lineTo(rx - 4.5, ry);
+        ctx.closePath();
+      }
       ctx.fill();
     }
   } else if (season === 'winter') {
@@ -193,13 +206,14 @@ export function renderWeatherAndLighting({
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
     const now = Date.now() * 0.008;
+    ctx.beginPath();
     for (let i = 0; i < 20; i++) {
       const rx = (i * 59 + Math.cos(now + i) * 18) % dimensions.width;
       const ry = (i * 67 + now * 3.0) % dimensions.height;
-      ctx.beginPath();
-      ctx.arc(rx, ry, 0.9, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(rx + 1.5, ry);
+      ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
     }
+    ctx.fill();
   }
 
   // Render Visual FX Particle System Overlay (Sparks, Embers, Spell Bursts)
