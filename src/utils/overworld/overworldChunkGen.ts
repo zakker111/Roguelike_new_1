@@ -8,6 +8,7 @@ import {
   getDeterministicTownName,
   findNearestSafeNpcTile,
 } from './overworldCore';
+import { getValidWeatherForBiome, WeatherType } from '../weatherEngine';
 import { generateTownChunk } from './overworldTownGen';
 import { generateWildernessChunk } from './overworldWildernessGen';
 import { spawnLivelyOverworldEntities } from './overworldLivelySpawners';
@@ -30,14 +31,15 @@ export function generateOverworldChunk(
   const weatherFreqs = (worldConfig.weatherFrequencies as any)[biome] || { clear: 1.0 };
   const wRoll = prng(chunkX, chunkY, 442);
   let cumulative = 0;
-  let weather: 'clear' | 'rainy' | 'foggy' | 'snowy' = 'clear';
+  let weather: WeatherType = 'clear';
   for (const [wType, freq] of Object.entries(weatherFreqs)) {
     cumulative += freq as number;
     if (wRoll <= cumulative) {
-      weather = wType as any;
+      weather = wType as WeatherType;
       break;
     }
   }
+  weather = getValidWeatherForBiome(biome, weather);
 
   const map: TileType[][] = Array(height)
     .fill(null)

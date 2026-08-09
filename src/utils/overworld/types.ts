@@ -9,8 +9,8 @@ export interface OverworldGenContext {
   spawnedSeppo?: boolean;
   playerStats?: { level: number; str: number; dex: number; int: number; cha: number; lck: number };
   currentWeapon?: { damage: number; name?: string } | null;
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp';
-  weather: 'clear' | 'rainy' | 'foggy' | 'snowy';
+  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
+  weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
   map: TileType[][];
   npcs: NPC[];
   enemies: Enemy[];

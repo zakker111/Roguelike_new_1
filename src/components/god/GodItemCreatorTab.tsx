@@ -288,12 +288,13 @@ export const GodItemCreatorTab: React.FC<GodItemCreatorTabProps> = ({
 
           <div>
             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block mb-1.5">Shift Biome Environment:</span>
-            <div className="grid grid-cols-4 gap-1.5 font-mono">
+            <div className="grid grid-cols-5 gap-1.5 font-mono">
               {[
                 { val: 'forest', label: '🌲 Forest', color: 'border-emerald-950 text-emerald-400 hover:bg-emerald-950/10' },
                 { val: 'desert', label: '🏜️ Desert', color: 'border-orange-950 text-orange-400 hover:bg-orange-950/10' },
                 { val: 'tundra', label: '🏔️ Tundra', color: 'border-cyan-950 text-cyan-400 hover:bg-cyan-950/10' },
                 { val: 'swamp', label: '🐊 Swamp', color: 'border-lime-950 text-lime-400 hover:bg-lime-950/10' },
+                { val: 'town', label: '🏰 Town', color: 'border-amber-950 text-amber-400 hover:bg-amber-950/10' },
               ].map(b => (
                 <button
                   key={b.val}

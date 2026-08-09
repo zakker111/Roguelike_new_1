@@ -1,5 +1,5 @@
 import { TileType } from '../../types';
-import { getOrganicBiome as getOrganicBiomeModule, getOrganicNoise as getOrganicNoiseModule } from '../../world/overworldBiomes';
+import { getOrganicBiome as getOrganicBiomeModule, getOrganicNoise as getOrganicNoiseModule, BiomeType } from '../../world/overworldBiomes';
 import {
   getBuildingCoordinates as getBuildingCoordinatesModule,
   hasTownAtChunk as hasTownAtChunkModule,
@@ -65,7 +65,10 @@ export function getOrganicNoise(x: number, y: number, offset: number): number {
 }
 
 // Determine Biome using an organic, Whittaker-like temperature/moisture transition system
-export function getOrganicBiome(chunkX: number, chunkY: number): 'forest' | 'desert' | 'tundra' | 'swamp' {
+export function getOrganicBiome(chunkX: number, chunkY: number): BiomeType {
+  if (hasTownAtChunk(chunkX, chunkY)) {
+    return 'town';
+  }
   return getOrganicBiomeModule(chunkX, chunkY, currentWorldSeed);
 }
 

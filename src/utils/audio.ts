@@ -742,23 +742,74 @@ export function playSound(
     }
     case 'lightning_strike': {
       try {
-        const bufferSize = ctx.sampleRate * 0.35;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = Math.random() * 2 - 1;
+        // 1. Initial Sharp Electrical Crackle (Highpass Noise Snap)
+        const snapSize = ctx.sampleRate * 0.18;
+        const snapBuffer = ctx.createBuffer(1, snapSize, ctx.sampleRate);
+        const snapData = snapBuffer.getChannelData(0);
+        for (let i = 0; i < snapSize; i++) {
+          snapData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (snapSize * 0.25));
         }
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
+        const snapSource = ctx.createBufferSource();
+        snapSource.buffer = snapBuffer;
 
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        const snapFilter = ctx.createBiquadFilter();
+        snapFilter.type = 'highpass';
+        snapFilter.frequency.setValueAtTime(1400, now);
 
-        noise.connect(gain);
-        gain.connect(destNode);
-        noise.start(now);
-        noise.stop(now + 0.36);
+        const snapGain = ctx.createGain();
+        snapGain.gain.setValueAtTime(0.45 * vol, now);
+        snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        snapSource.connect(snapFilter);
+        snapFilter.connect(snapGain);
+        snapGain.connect(destNode);
+        snapSource.start(now);
+
+        // 2. Heavy Sub-Bass Thunder Boom (Pitch Swept Sawtooth)
+        const boomOsc = ctx.createOscillator();
+        const boomFilter = ctx.createBiquadFilter();
+        const boomGain = ctx.createGain();
+
+        boomOsc.type = 'sawtooth';
+        boomOsc.frequency.setValueAtTime(160 * pitch, now);
+        boomOsc.frequency.exponentialRampToValueAtTime(32 * pitch, now + 0.85);
+
+        boomFilter.type = 'lowpass';
+        boomFilter.frequency.setValueAtTime(450, now);
+        boomFilter.frequency.exponentialRampToValueAtTime(80, now + 0.85);
+
+        boomGain.gain.setValueAtTime(0.55 * vol, now + 0.02);
+        boomGain.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+
+        boomOsc.connect(boomFilter);
+        boomFilter.connect(boomGain);
+        boomGain.connect(destNode);
+        boomOsc.start(now + 0.01);
+        boomOsc.stop(now + 0.96);
+
+        // 3. Distant Rolling Thunder Echoes
+        const rollSize = ctx.sampleRate * 1.2;
+        const rollBuffer = ctx.createBuffer(1, rollSize, ctx.sampleRate);
+        const rollData = rollBuffer.getChannelData(0);
+        for (let i = 0; i < rollSize; i++) {
+          rollData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rollSize, 2);
+        }
+        const rollSource = ctx.createBufferSource();
+        rollSource.buffer = rollBuffer;
+
+        const rollFilter = ctx.createBiquadFilter();
+        rollFilter.type = 'lowpass';
+        rollFilter.frequency.setValueAtTime(220, now + 0.1);
+
+        const rollGain = ctx.createGain();
+        rollGain.gain.setValueAtTime(0.001, now);
+        rollGain.gain.linearRampToValueAtTime(0.28 * vol, now + 0.15);
+        rollGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+        rollSource.connect(rollFilter);
+        rollFilter.connect(rollGain);
+        rollGain.connect(destNode);
+        rollSource.start(now + 0.05);
       } catch (e) {
         // Fallback
       }

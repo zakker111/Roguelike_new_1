@@ -1,10 +1,92 @@
 import { GameState, getMoonPhase } from '../types';
 import { visualFxParticleSystem } from './visualFxParticleSystem';
+import { playSound } from '../utils/audio';
 
 export interface RenderWeatherAndLightingParams {
   ctx: CanvasRenderingContext2D;
   gameState: GameState;
   dimensions: { width: number; height: number };
+}
+
+interface LightningActiveState {
+  startTime: number;
+  duration: number;
+  targetX: number;
+  targetY: number;
+  mainSegments: { x1: number; y1: number; x2: number; y2: number }[];
+  branchSegments: { x1: number; y1: number; x2: number; y2: number }[];
+}
+
+let activeLightningStrike: LightningActiveState | null = null;
+let lastAmbientLightningTime = 0;
+
+export function triggerLightningStrike(options?: {
+  targetX?: number;
+  targetY?: number;
+  screenWidth?: number;
+  screenHeight?: number;
+  playAudio?: boolean;
+}) {
+  const width = options?.screenWidth || (typeof window !== 'undefined' ? window.innerWidth : 800);
+  const height = options?.screenHeight || (typeof window !== 'undefined' ? window.innerHeight : 600);
+
+  const targetX = options?.targetX !== undefined ? options.targetX : Math.random() * (width * 0.8) + width * 0.1;
+  const targetY = options?.targetY !== undefined ? options.targetY : Math.random() * (height * 0.5) + height * 0.25;
+
+  const startX = targetX + (Math.random() - 0.5) * 140;
+  const startY = 0;
+
+  const mainSegments: { x1: number; y1: number; x2: number; y2: number }[] = [];
+  const branchSegments: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+  let currX = startX;
+  let currY = startY;
+  const steps = 14 + Math.floor(Math.random() * 6);
+  const dy = (targetY - startY) / steps;
+
+  for (let i = 0; i < steps; i++) {
+    const nextY = currY + dy;
+    const progress = (i + 1) / steps;
+    const interpX = startX + (targetX - startX) * progress;
+    const jitter = (1 - progress) * 35 + 8;
+    const nextX = i === steps - 1 ? targetX : interpX + (Math.random() - 0.5) * jitter;
+
+    mainSegments.push({ x1: currX, y1: currY, x2: nextX, y2: nextY });
+
+    if (Math.random() < 0.35 && i > 2 && i < steps - 2) {
+      let bX = nextX;
+      let bY = nextY;
+      const branchAngle = (Math.random() > 0.5 ? 1 : -1) * (0.4 + Math.random() * 0.5);
+      const branchLen = 25 + Math.random() * 40;
+      const bSteps = 3 + Math.floor(Math.random() * 3);
+
+      for (let b = 0; b < bSteps; b++) {
+        const nbX = bX + Math.cos(branchAngle) * (branchLen / bSteps) + (Math.random() - 0.5) * 10;
+        const nbY = bY + Math.sin(branchAngle) * (branchLen / bSteps) + Math.random() * 12;
+        branchSegments.push({ x1: bX, y1: bY, x2: nbX, y2: nbY });
+        bX = nbX;
+        bY = nbY;
+      }
+    }
+
+    currX = nextX;
+    currY = nextY;
+  }
+
+  activeLightningStrike = {
+    startTime: Date.now(),
+    duration: 420,
+    targetX,
+    targetY,
+    mainSegments,
+    branchSegments,
+  };
+
+  visualFxParticleSystem.spawnLightningBurst(targetX, targetY, 24);
+
+  if (options?.playAudio !== false) {
+    playSound('lightning_strike', { volume: 0.95 });
+  }
 }
 
 export function renderWeatherAndLighting({
@@ -216,6 +298,99 @@ export function renderWeatherAndLighting({
     ctx.fill();
   }
 
+  // --- Rare Ambient Lightning Strike Trigger during Rainy Storm Weather ---
+  const nowTime = Date.now();
+  if (gameState.weather === 'rainy' && gameState.isOverworld && !activeLightningStrike) {
+    if (nowTime - lastAmbientLightningTime > 45000) { // At least 45s interval
+      if (Math.random() < 0.0008) { // Extra rare frame trigger chance
+        lastAmbientLightningTime = nowTime;
+        triggerLightningStrike({
+          screenWidth: dimensions.width,
+          screenHeight: dimensions.height,
+        });
+      }
+    }
+  }
+
+  // --- Render Active Lightning Strike Visual FX (Atmospheric Flash + Bolt + Impact) ---
+  if (activeLightningStrike) {
+    const elapsed = nowTime - activeLightningStrike.startTime;
+    if (elapsed > activeLightningStrike.duration) {
+      activeLightningStrike = null;
+    } else {
+      const progress = elapsed / activeLightningStrike.duration;
+      let flashAlpha = 0;
+      if (progress < 0.15) {
+        flashAlpha = (progress / 0.15) * 0.85;
+      } else if (progress < 0.30) {
+        flashAlpha = 0.85 - ((progress - 0.15) / 0.15) * 0.45;
+      } else if (progress < 0.45) {
+        flashAlpha = 0.40 + ((progress - 0.30) / 0.15) * 0.50;
+      } else {
+        flashAlpha = 0.90 * Math.pow(1 - (progress - 0.45) / 0.55, 2);
+      }
+
+      // 1. Fullscreen Sky & Viewport Atmospheric Flash
+      const flashGrad = ctx.createRadialGradient(
+        activeLightningStrike.targetX,
+        activeLightningStrike.targetY,
+        10,
+        activeLightningStrike.targetX,
+        activeLightningStrike.targetY,
+        Math.max(dimensions.width, dimensions.height) * 1.2
+      );
+      flashGrad.addColorStop(0, `rgba(255, 255, 255, ${Math.min(1.0, flashAlpha * 1.2)})`);
+      flashGrad.addColorStop(0.3, `rgba(186, 230, 253, ${flashAlpha * 0.85})`);
+      flashGrad.addColorStop(0.7, `rgba(168, 85, 247, ${flashAlpha * 0.45})`);
+      flashGrad.addColorStop(1, `rgba(15, 23, 42, ${flashAlpha * 0.25})`);
+
+      ctx.fillStyle = flashGrad;
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+
+      // 2. Render Main & Secondary Jagged Bolts with Electric Glow
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'miter';
+
+      // Outer Cyan Glow
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = '#06b6d4';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      for (const seg of activeLightningStrike.mainSegments) {
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+      }
+      for (const seg of activeLightningStrike.branchSegments) {
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+      }
+      ctx.stroke();
+
+      // Inner White Core Line
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#ffffff';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      for (const seg of activeLightningStrike.mainSegments) {
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+      }
+      ctx.stroke();
+
+      // 3. Render Impact Glow Ring at Target Base
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.beginPath();
+      ctx.arc(activeLightningStrike.targetX, activeLightningStrike.targetY, 8 + (1 - progress) * 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+  }
+
   // Render Visual FX Particle System Overlay (Sparks, Embers, Spell Bursts)
   visualFxParticleSystem.updateAndRender(ctx, 16);
 }
+

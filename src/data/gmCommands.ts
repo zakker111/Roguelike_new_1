@@ -4,6 +4,7 @@ import { isCastleTownAtChunk } from '../utils/overworld';
 import { generateLevel, generateDungeonProps } from '../utils/dungeon';
 import { computeFOV } from '../utils/ai';
 import { findStairsOrWalkablePosition } from '../utils/gameUtils';
+import { getValidWeatherForBiome, BIOME_VALID_WEATHERS } from '../utils/weatherEngine';
 
 export interface GmCommand {
   id: string;
@@ -125,13 +126,20 @@ export const GM_COMMANDS: GmCommand[] = [
   {
     id: 'weather_rainy',
     name: 'Summon Torrential Rains',
-    description: 'Force thick gray storm clouds onto Oakhaven, changing overworld weather to RAINY.',
+    description: 'Force thick gray storm clouds over the area, changing overworld weather to RAINY (if supported by biome).',
     category: 'Weather Control',
     iconName: 'CloudRain',
     costBoredom: -15,
     execute: (gameState, setGameState, addLog) => {
+      const currentBiome = gameState.biome || 'forest';
+      const validWeather = getValidWeatherForBiome(currentBiome, 'rainy');
+      if (validWeather !== 'rainy') {
+        addLog(`⚠️ GM Command Warning: The ${currentBiome.toUpperCase()} biome cannot sustain rain storm weather! Shifted to ${validWeather.toUpperCase()} instead.`, 'system');
+        setGameState(prev => ({ ...prev, weather: validWeather }));
+        return { success: false, message: `Rain is not supported in ${currentBiome.toUpperCase()} biome.` };
+      }
       setGameState(prev => ({ ...prev, weather: 'rainy' }));
-      addLog('🌧️ Dark storm clouds gather suddenly as Torrential Rains sweep across Oakhaven, pouring water droplets against the paths.', 'system');
+      addLog('🌧️ Dark storm clouds gather suddenly as Torrential Rains sweep across the area, pouring water droplets against the paths.', 'system');
       return { success: true, message: 'Fierce rainstorms activated.' };
     }
   },
@@ -143,7 +151,9 @@ export const GM_COMMANDS: GmCommand[] = [
     iconName: 'CloudFog',
     costBoredom: -12,
     execute: (gameState, setGameState, addLog) => {
-      setGameState(prev => ({ ...prev, weather: 'foggy' }));
+      const currentBiome = gameState.biome || 'forest';
+      const validWeather = getValidWeatherForBiome(currentBiome, 'foggy');
+      setGameState(prev => ({ ...prev, weather: validWeather }));
       addLog('😶‍🌫️ A heavy, chilled Nether Fog blankets the soil, limiting ambient light perception.', 'system');
       return { success: true, message: 'Low-visibility fog summoned.' };
     }
@@ -151,11 +161,18 @@ export const GM_COMMANDS: GmCommand[] = [
   {
     id: 'weather_snowy',
     name: 'Command Frost Storm',
-    description: 'Draw freezing sub-zero clouds over active chunk wilderness, changing weather to SNOWY.',
+    description: 'Draw freezing sub-zero clouds over active wilderness, changing weather to SNOWY (if supported by biome).',
     category: 'Weather Control',
     iconName: 'Snowflake',
     costBoredom: -18,
     execute: (gameState, setGameState, addLog) => {
+      const currentBiome = gameState.biome || 'forest';
+      const validWeather = getValidWeatherForBiome(currentBiome, 'snowy');
+      if (validWeather !== 'snowy') {
+        addLog(`⚠️ GM Command Warning: The ${currentBiome.toUpperCase()} biome cannot sustain snow storm weather! Shifted to ${validWeather.toUpperCase()} instead.`, 'system');
+        setGameState(prev => ({ ...prev, weather: validWeather }));
+        return { success: false, message: `Snow is not supported in ${currentBiome.toUpperCase()} biome.` };
+      }
       setGameState(prev => ({ ...prev, weather: 'snowy' }));
       addLog('❄️ Howling sub-zero winds initiate a fierce Frost Storm, scattering freezing mountain frost particles across the landscape.', 'system');
       return { success: true, message: 'Arctic white-out initiated!' };

@@ -9,9 +9,9 @@ Abyss Rogue is highly interactive, procedurally generated full-screen tactical r
 Abyss Rogue provides a classical grid-based turn-based adventure built with supreme visual fidelity and robust offline state simulation:
 
 1. **Procedural Infinite Overworld**:
-   - Scroll infinitely across distinct environmental biomes (Forests, Deserts, Swamps, and Glaciers) powered by jumbo-sized **64x40 grids** per chunk.
+   - Scroll infinitely across distinct environmental biomes (Forests, Deserts, Swamps, Glaciers, and Castle Towns) powered by jumbo-sized **64x40 grids** per chunk.
    - **Safe Player Spawning & Repositioning**: Incorporates a 20-tile scanning safety validator `findNearestSafePlayerTile` so that players never spawn or get stuck in walls, trees, water, or mountains during initial boots, chunk boundary crossings, caravan arrivals, and Recall Scroll teleports.
-   - Experience active daylight shading and climate overlays (falling rain, snowstorms, dense fog) that shift dynamically every 40 turns.
+   - **Biome-Aware Meteorological Engine**: Experience active daylight shading and single active climate overlays (falling rain, snowstorms, dense fog, sandstorms, blizzards) that shift dynamically and adhere strictly to biome climate rules (no rain in deserts, sandstorms exclusively in deserts, blizzards exclusively in tundras, and mild weather in towns). All Storyteller GM commands and God Panel controls enforce these biome weather constraints.
    - **Winter Frost Berry Freeze**: Sweet berry bushes are frozen in glacial tundra biomes. Attempting to harvest them displays an immersive winter freeze notice while swamp biomes feature custom purple wild elderberries (`🫐`).
    - **Modular Building Design**: Evaluates building IDs sequentially to spawn shop-specific furniture (anvils, warm hearths, glass vials, tables, counter blocks).
    - **Castle Fortresses**: Fortified keeps and citadels have a 25% chance of spawning in place of standard overworld villages, dynamically calculating stone wall perimeters, gates, courtyard paving and torch points using the full 64x40 chunk boundaries.

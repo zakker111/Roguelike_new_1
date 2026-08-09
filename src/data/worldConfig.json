@@ -2,6 +2,9 @@
   "creator_notes": "Welcome to the Sunder World Generation Database! You can configure biome thresholds, climate occurrences, and hazard values (monsters, chests, traps, lake shapes) per biome to customize the overworld generation.",
   
   "biomeThresholds": {
+    "town": {
+      "description": "Safe urban, citadel, and village settlement zone"
+    },
     "tundra": {
       "temperatureMax": 0.35,
       "description": "Cold and snowy environments"
@@ -22,19 +25,26 @@
   },
 
   "weatherFrequencies": {
+    "town": {
+      "clear": 0.70,
+      "foggy": 0.15,
+      "rainy": 0.15
+    },
     "forest": {
       "clear": 0.45,
       "foggy": 0.20,
       "rainy": 0.35
     },
     "desert": {
-      "clear": 1.00,
-      "foggy": 0.00,
-      "rainy": 0.00
+      "clear": 0.70,
+      "foggy": 0.10,
+      "sandstorm": 0.20
     },
     "tundra": {
-      "clear": 0.40,
-      "snowy": 0.60
+      "clear": 0.30,
+      "foggy": 0.10,
+      "snowy": 0.40,
+      "blizzard": 0.20
     },
     "swamp": {
       "clear": 0.20,
@@ -44,6 +54,16 @@
   },
 
   "environmentalHazards": {
+    "town": {
+      "lakeCount": 1,
+      "baseLakeRadiusMin": 2,
+      "baseLakeRadiusMax": 3,
+      "trapCount": 0,
+      "trapType": "none",
+      "chestCount": 1,
+      "monsterCountMin": 0,
+      "monsterCountMax": 1
+    },
     "forest": {
       "lakeCount": 2,
       "baseLakeRadiusMin": 2,

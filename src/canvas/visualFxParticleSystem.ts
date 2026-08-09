@@ -46,6 +46,29 @@ export class VisualFxParticleSystem {
     }
   }
 
+  public spawnLightningBurst(x: number, y: number, count: number = 20) {
+    if (this.particles.length > 250) return;
+    const colors = ['#ffffff', '#38bdf8', '#60a5fa', '#c084fc', '#a855f7'];
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.0 + Math.random() * 4.5;
+      this.particles.push({
+        id: `bolt_p_${Math.random()}`,
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.5,
+        size: 1.5 + Math.random() * 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: 1.0,
+        decay: 0.04 + Math.random() * 0.03,
+        life: 0,
+        maxLife: 20 + Math.random() * 15,
+        shape: Math.random() > 0.3 ? 'spark' : 'circle'
+      });
+    }
+  }
+
   public spawnEmber(x: number, y: number) {
     if (this.particles.length > 250) return; // Cap max active particles
     this.particles.push({

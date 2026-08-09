@@ -14,6 +14,7 @@ import { getItemDurabilityDecay } from '../utils/spellsAndEquipment';
 import { calculateArchetypeDamageAdjustment } from '../utils/combatArchetypes';
 import { tickActiveGMStoryteller } from '../utils/gmStoryteller';
 import { getWeatherAmbientBark, getTavernDrinkingBark, getCampfireDialogueBark, getBlizzardShelterBark } from '../utils/npcDialogue';
+import { BIOME_VALID_WEATHERS, getValidWeatherForBiome } from '../utils/weatherEngine';
 
 export interface UseEnemyAIParams {
   gameStateRef?: any;
@@ -198,10 +199,13 @@ export function useEnemyAI({
       }
 
       let nextWeather = prev.weather;
+      const currentBiome = prev.biome || 'forest';
       if (prev.isOverworld && (prev.gmAutonomousWeather ?? true) && updatedStats.turnsPlayed > 0 && updatedStats.turnsPlayed % (prev.gmWeatherInterval || 25) === 0) {
-        const weathers: ('clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard')[] = ['clear', 'rainy', 'foggy', 'snowy', 'sandstorm', 'blizzard'];
-        const candidates = weathers.filter(w => w !== prev.weather);
-        const randomWeather = candidates[Math.floor(Math.random() * candidates.length)];
+        const allowedWeathers = BIOME_VALID_WEATHERS[currentBiome] || BIOME_VALID_WEATHERS.forest;
+        const candidates = allowedWeathers.filter(w => w !== prev.weather);
+        const randomWeather = candidates.length > 0 
+          ? candidates[Math.floor(Math.random() * candidates.length)]
+          : allowedWeathers[0];
         nextWeather = randomWeather;
         
         const wLabel = nextWeather === 'clear' ? '☀️ Clear Skies'
@@ -221,18 +225,21 @@ export function useEnemyAI({
         };
         const rName = ritualNames[nextWeather] || 'Divine Weather Alteration';
 
-        staticLogs.push(`🌌 SOVEREIGN GM RITUAL: The autonomous Game Master has invoked "${rName}"! The global climate has transitioned to ${wLabel}.`);
+        staticLogs.push(`🌌 SOVEREIGN GM RITUAL: The autonomous Game Master has invoked "${rName}"! The regional ${currentBiome.toUpperCase()} climate transitioned to ${wLabel}.`);
       } else if (prev.isOverworld && !prev.gmAutonomousWeather && updatedStats.turnsPlayed % 40 === 0) {
         const roll = Math.random();
-        if (prev.biome === 'desert') {
+        if (currentBiome === 'desert') {
           nextWeather = roll > 0.70 ? 'sandstorm' : (roll > 0.50 ? 'foggy' : 'clear');
-        } else if (prev.biome === 'tundra') {
+        } else if (currentBiome === 'tundra') {
           nextWeather = roll > 0.75 ? 'blizzard' : (roll > 0.40 ? 'snowy' : 'clear');
-        } else if (prev.biome === 'swamp') {
+        } else if (currentBiome === 'swamp') {
           nextWeather = roll > 0.60 ? 'rainy' : (roll > 0.40 ? 'foggy' : 'clear');
+        } else if (currentBiome === 'town') {
+          nextWeather = roll > 0.70 ? 'rainy' : (roll > 0.45 ? 'foggy' : 'clear');
         } else {
           nextWeather = roll > 0.70 ? 'rainy' : (roll > 0.50 ? 'foggy' : 'clear');
         }
+        nextWeather = getValidWeatherForBiome(currentBiome, nextWeather);
 
         if (nextWeather !== prev.weather) {
           const wLabel = nextWeather === 'clear' ? '☀️ Clear Skies'

@@ -5,13 +5,14 @@
 
 import React from 'react';
 import { GameState } from '../../types';
+import { triggerLightningStrike } from '../../canvas/weatherLightingRenderer';
 
 export interface GodWeatherScarEditorProps {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   triggerSuccessLog: (msg: string) => void;
   playSound: (s: any) => void;
-  handleSetWeatherBiome: (weatherVal: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard', biomeVal?: 'forest' | 'desert' | 'tundra' | 'swamp') => void;
+  handleSetWeatherBiome: (weatherVal: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard', biomeVal?: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town') => void;
 }
 
 export const GodWeatherScarEditor: React.FC<GodWeatherScarEditorProps> = ({
@@ -125,6 +126,19 @@ export const GodWeatherScarEditor: React.FC<GodWeatherScarEditorProps> = ({
           }`}
         >
           🌨️ Glacial Blizzard
+        </button>
+      </div>
+
+      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+        <span className="text-[9px] text-slate-500 font-bold uppercase">⚡ Atmospheric Audio/Visual Test:</span>
+        <button
+          onClick={() => {
+            triggerLightningStrike();
+            triggerSuccessLog("⚡ Divine Lightning Strike summoned across the sky!");
+          }}
+          className="py-1 px-3 bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/60 text-cyan-200 font-bold rounded text-[10px] cursor-pointer transition-all shadow-sm flex items-center gap-1"
+        >
+          <span>⚡ Strike Lightning Bolt</span>
         </button>
       </div>
     </div>

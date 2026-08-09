@@ -121,7 +121,7 @@ export interface GameState {
   gameTime: number; // minutes from 0 to 1439 (representing 24 hours starting at 480 i.e., 8:00 AM)
   npcs: NPC[]; // active NPC lists
   activeTradeNpcId: string | null; // ID of NPC trading with, if any
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp';
+  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
   weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
   season: 'spring' | 'summer' | 'autumn' | 'winter';
   gmAutonomousWeather?: boolean;

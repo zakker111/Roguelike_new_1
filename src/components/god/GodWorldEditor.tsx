@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { GameState, TileType, TrapType } from '../../types';
 import { Hammer, Flame, ShieldAlert, CloudRain } from 'lucide-react';
+import { getValidWeatherForBiome } from '../../utils/weatherEngine';
 
 export interface GodWorldEditorProps {
   gameState: GameState;
@@ -126,20 +127,23 @@ export const GodWorldEditor: React.FC<GodWorldEditorProps> = ({
   };
 
   const handleWeatherChange = (w: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard') => {
-    setSelectedWeather(w);
-    setGameState((prev) => ({
-      ...prev,
-      weather: w,
-      logs: [
-        ...prev.logs,
-        {
-          id: `weather_${Date.now()}`,
-          text: `🌩️ REALM CLIMATE: Shifted atmospheric weather to "${w.toUpperCase()}"!`,
-          type: 'system',
-          timestamp: 'GOD',
-        },
-      ],
-    }));
+    setGameState((prev) => {
+      const validW = getValidWeatherForBiome(prev.biome, w);
+      setSelectedWeather(validW);
+      return {
+        ...prev,
+        weather: validW,
+        logs: [
+          ...prev.logs,
+          {
+            id: `weather_${Date.now()}`,
+            text: `🌩️ REALM CLIMATE: Shifted atmospheric weather to "${validW.toUpperCase()}"!`,
+            type: 'system',
+            timestamp: 'GOD',
+          },
+        ],
+      };
+    });
   };
 
   return (

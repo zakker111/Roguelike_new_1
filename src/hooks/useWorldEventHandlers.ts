@@ -76,11 +76,25 @@ export function useWorldEventHandlers({
       allSessionStateSnapshotsRef.current.push({
         turn: gameState.playerStats.turnsPlayed,
         timestamp: formatted,
+        gameTimeStr: formatted,
         playerHP: gameState.playerStats.hp,
         playerMaxHP: gameState.playerStats.maxHp,
         gold: gameState.playerStats.gold,
         depth: gameState.playerStats.depth,
         isOverworld: gameState.isOverworld,
+        state: {
+          playerX: gameState.playerX,
+          playerY: gameState.playerY,
+          playerStats: { ...gameState.playerStats },
+          isOverworld: gameState.isOverworld,
+          currentChunkX: gameState.currentChunkX,
+          currentChunkY: gameState.currentChunkY,
+          logs: gameState.logs ? [...gameState.logs] : [],
+          enemies: gameState.enemies ? [...gameState.enemies] : [],
+          map: gameState.map,
+          visible: gameState.visible,
+          discovered: gameState.discovered
+        }
       });
     }
   }, [isPlaying, gameState, formatGameTime]);

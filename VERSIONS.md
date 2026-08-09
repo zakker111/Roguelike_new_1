@@ -7,8 +7,12 @@ This document serves as the chronological history and version log of newly compl
 ### Game Roadmap & Upcoming Releases
 
 ## [v1.0.0 / v6.0.0] — Public Testing Release & GM Adaptive Performance Evaluation (August 9, 2026)
-*Pristine Public Testing Release Candidate prepared for GitHub push. Features GM Adaptive Combat Performance Evaluation, Drastic Chaos Escalation on Effortless Slaughter, Dynamic Enemy Stat Mutators & Reinforcements, 100% Test Suite Pass Rate across 21 Test Suites (86 Tests), and Clean Codebase Verification.*
+*Pristine Public Testing Release Candidate prepared for GitHub push. Features GM Adaptive Combat Performance Evaluation, Biome-Aware Weather System, Town Biome Expansion, Drastic Chaos Escalation on Effortless Slaughter, Dynamic Enemy Stat Mutators & Reinforcements, 100% Test Suite Pass Rate across 21 Test Suites (86 Tests), and Clean Codebase Verification.*
 
+- **Town Biome & Biome-Aware Weather Rules Engine (`src/utils/weatherEngine.ts`, `src/data/gmCommands.ts`, `src/components/god/GodWorldEditor.tsx`)**:
+  - Expanded overworld biome definitions with a dedicated 'town' biome.
+  - Implemented `getValidWeatherForBiome` ensuring weather is strictly biome-specific (no rain/snow in deserts; sandstorms restricted to deserts; blizzards restricted to tundras; mild weather in towns).
+  - Enforced single active weather effects across the engine and updated GM commands (`weather_rainy`, `weather_foggy`, `weather_snowy`), GM Storyteller interventions, and God Panel controls to respect biome weather constraints.
 - **GM Adaptive Performance Evaluation & Drastic Chaos Escalation (`src/utils/gmStoryteller.ts`, `src/tests/storytellerAI.test.ts`)**:
   - The GM Storyteller continuously evaluates player combat efficiency, kill streaks, and health ratios.
   - When the player effortlessly slaughters foes without taking damage, the GM triggers drastic Chaos Matrix escalation (+8 to +15 Chaos) and logs adaptive narrator dialogue ("Too easy? Let us test your true steel!").

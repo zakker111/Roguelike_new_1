@@ -1,6 +1,6 @@
 import worldConfig from '../data/worldConfig.json';
 
-export type BiomeType = 'forest' | 'desert' | 'tundra' | 'swamp';
+export type BiomeType = 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
 
 /**
  * Deterministic smooth organic noise based on low-frequency sine/cosine waves
@@ -18,7 +18,7 @@ export function getOrganicNoise(x: number, y: number, offset: number, worldSeed:
  */
 export function getOrganicBiome(chunkX: number, chunkY: number, worldSeed: number = 8675309): BiomeType {
   if (chunkX === 0 && chunkY === 0) {
-    return 'forest'; // spawn town is always lush forest
+    return 'town'; // spawn town has its own town biome
   }
 
   // Generate organic temperature and moisture

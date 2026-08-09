@@ -15,7 +15,7 @@ export interface WorldState {
   visitedTiles: { [coordString: string]: boolean };
   gameTime: number;
   gameDurationHours: number;
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp';
+  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
   weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
   season: 'spring' | 'summer' | 'autumn' | 'winter';
   gmAutonomousWeather?: boolean;

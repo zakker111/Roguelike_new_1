@@ -82,6 +82,10 @@ function resolveTileStyle(
         char = '▒';
         tileColor = isVisible ? '#021e14' : '#000f0a';
         glyphColor = isVisible ? '#10b981' : '#064e3b';
+      } else if (biome === 'town') {
+        char = '▪';
+        tileColor = isVisible ? '#1e2922' : '#0f1712';
+        glyphColor = isVisible ? '#4ade80' : '#166534';
       } else {
         char = '"';
         tileColor = isVisible ? '#09210e' : '#041207';

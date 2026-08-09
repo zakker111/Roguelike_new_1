@@ -325,7 +325,7 @@ export function generatePointsOfInterest(
   map: TileType[][],
   chunkX: number,
   chunkY: number,
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp',
+  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town',
   width: number,
   height: number,
   prng: (x: number, y: number, seed?: number) => number,

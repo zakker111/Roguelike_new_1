@@ -1,5 +1,25 @@
 import { CatalystType } from '../types';
 
+export type BiomeType = 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
+export type WeatherType = 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
+
+export const BIOME_VALID_WEATHERS: Record<BiomeType, WeatherType[]> = {
+  desert: ['clear', 'foggy', 'sandstorm'],
+  tundra: ['clear', 'foggy', 'snowy', 'blizzard'],
+  forest: ['clear', 'foggy', 'rainy'],
+  swamp: ['clear', 'foggy', 'rainy'],
+  town: ['clear', 'foggy', 'rainy']
+};
+
+export function getValidWeatherForBiome(biome?: string, desiredWeather?: string): WeatherType {
+  const normBiome = ((biome && BIOME_VALID_WEATHERS[biome as BiomeType]) ? biome : 'forest') as BiomeType;
+  const allowed = BIOME_VALID_WEATHERS[normBiome];
+  if (desiredWeather && allowed.includes(desiredWeather as WeatherType)) {
+    return desiredWeather as WeatherType;
+  }
+  return allowed[0]; // fallback to default 'clear'
+}
+
 export interface WeatherEffect {
   id: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
   name: string;

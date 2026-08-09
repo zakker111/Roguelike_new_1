@@ -253,7 +253,7 @@ export const BANDIT_GEAR: FactionGear[] = [
  * @param biome The current chunk biome ('forest', 'desert', 'tundra', 'swamp')
  * @returns A multiplier to be applied to the base value
  */
-export const getBiomePriceMultiplier = (itemId: string, biome: 'forest' | 'desert' | 'tundra' | 'swamp'): number => {
+export const getBiomePriceMultiplier = (itemId: string, biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town'): number => {
   // 1. Wood values skyrocket in Arid Deserts (3.5x) and Tundras (1.5x)
   if (itemId === 'mat_wood') {
     if (biome === 'desert') return 3.5;
@@ -331,7 +331,7 @@ export const getBiomePriceMultiplier = (itemId: string, biome: 'forest' | 'deser
 /**
  * Returns a list of active price reports for the current biome
  */
-export const getPriceReports = (biome: 'forest' | 'desert' | 'tundra' | 'swamp') => {
+export const getPriceReports = (biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town') => {
   const reports: { itemName: string; multiplier: number; direction: 'high' | 'low' | 'normal'; reason: string }[] = [];
 
   // Wood

@@ -77,7 +77,8 @@ import TradeModal from './components/modals/TradeModal';
 import CaravanEscortModal from './components/modals/CaravanEscortModal';
 import MainAppLayout from './components/MainAppLayout';
 import TravelerInteractionOverlay from './components/TravelerInteractionOverlay';
-import { WEATHER_EFFECTS } from './utils/weatherEngine';
+import { WEATHER_EFFECTS, BIOME_VALID_WEATHERS, getValidWeatherForBiome } from './utils/weatherEngine';
+import { triggerLightningStrike } from './canvas/weatherLightingRenderer';
 import { Spell, SPELLS, STARTING_WEAPON, STARTING_ARMOR, getItemDurabilityDecay } from './utils/spellsAndEquipment';
 import SanctumRelicsDraftOverlay from './components/SanctumRelicsDraftOverlay';
 import RecallScrollOverlay from './components/RecallScrollOverlay';
@@ -597,7 +598,7 @@ export default function App() {
       isBraced: false,
       defeatedEnemiesCount: {},
       biome: initialChunk.biome,
-      weather: initialChunk.weather,
+      weather: getValidWeatherForBiome(initialChunk.biome, initialChunk.weather),
       season: 'spring',
       corpses: [],
       bloodSplatters: [],
@@ -2977,7 +2978,7 @@ export default function App() {
             logs: [...truncatedLogs, ...newMsgs],
             visitedTiles: nextVisited,
             biome: targetChunk.biome,
-            weather: targetChunk.weather,
+            weather: getValidWeatherForBiome(targetChunk.biome, targetChunk.weather),
             activeEscapeAlarm: null,
             playerStats: {
               ...prev.playerStats,
@@ -5920,6 +5921,14 @@ export default function App() {
       return;
     }
 
+    const currentBiome = gameState.biome || 'forest';
+    const allowedWeathers = BIOME_VALID_WEATHERS[currentBiome] || BIOME_VALID_WEATHERS.forest;
+    if (!allowedWeathers.includes(targetWeather)) {
+      addLogMessage(`⚠️ Ritual Rejection: The ${currentBiome.toUpperCase()} biome climate cannot sustain ${targetWeather.toUpperCase()} weather! (Supported in ${currentBiome.toUpperCase()}: ${allowedWeathers.join(', ')})`, 'system');
+      playSound('bump');
+      return;
+    }
+
     // Determine the cost in catalysts or materials
     let requiredCatalyst: string | null = null;
     let requiredMaterial: string | null = null;
@@ -5988,7 +5997,11 @@ export default function App() {
                 : '🌨️ Frostbite Blizzard';
 
     addLogMessage(`🌌 RITUAL SUCCESS: You invoke an atmospheric climate transition to ${label}!`, 'craft');
-    playSound('spell');
+    if (targetWeather === 'rainy') {
+      triggerLightningStrike();
+    } else {
+      playSound('spell');
+    }
 
     // Dispatch game effect animation on the player
     const effectEv = new CustomEvent('spawn-game-effect', {

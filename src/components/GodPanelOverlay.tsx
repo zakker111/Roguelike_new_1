@@ -11,6 +11,7 @@ import { BESTIARY_ENTRIES } from '../utils/bestiary';
 import townTemplates from '../data/townTemplates.json';
 import { SPELL_SCROLLS, getSpellScrollAsEquipmentItem } from '../utils/spellScrolls';
 import { findStairsOrWalkablePosition } from '../utils/gameUtils';
+import { getValidWeatherForBiome } from '../utils/weatherEngine';
 import { getGMStorytellerState } from '../utils/gmStoryteller';
 import { GodStatEditor } from './god/GodStatEditor';
 import { GodWorldEditor } from './god/GodWorldEditor';
@@ -101,6 +102,7 @@ interface GodPanelOverlayProps {
   onTriggerLockpicking?: () => void;
   isAutoplayActive?: boolean;
   setIsAutoplayActive?: (active: boolean) => void;
+  addLogMessage?: (msg: string, type?: string) => void;
 }
 
 function GodPanelOverlayComponent({ 
@@ -110,7 +112,8 @@ function GodPanelOverlayComponent({
   onRegenerateCurrentLocation,
   onTriggerLockpicking,
   isAutoplayActive = false,
-  setIsAutoplayActive
+  setIsAutoplayActive,
+  addLogMessage
 }: GodPanelOverlayProps) {
   
   const [activeTab, setActiveTab] = useState<'sovereign' | 'arena' | 'structures' | 'struct_json' | 'enemies' | 'town' | 'creator' | 'admin_editor' | 'smoketest' | 'replay' | 'bestiary_test' | 'house_editor' | 'npc_planner'>('sovereign');
@@ -429,6 +432,22 @@ function GodPanelOverlayComponent({
 
     const log = (msg: string) => {
       setSmokeTestLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+      if (addLogMessage) {
+        addLogMessage(msg, 'system');
+      } else {
+        setGameState(prev => ({
+          ...prev,
+          logs: [
+            {
+              id: `sim_log_${Date.now()}_${Math.random()}`,
+              text: msg,
+              type: 'system',
+              timestamp: 'SIM'
+            },
+            ...(prev.logs || [])
+          ].slice(0, 200)
+        }));
+      }
     };
 
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -2535,21 +2554,23 @@ ${Object.entries(legendFiltered).map(([k, v]) => `      "${k}": "${v}"`).join(',
     triggerSuccessLog(`Adjusted ${attr.toUpperCase()} by ${value}!`);
   };
 
-  const handleSetWeatherBiome = (weatherVal: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard', biomeVal?: 'forest' | 'desert' | 'tundra' | 'swamp') => {
+  const handleSetWeatherBiome = (weatherVal: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard', biomeVal?: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town') => {
     setGameState((prev) => {
+      const nextBiome = biomeVal || prev.biome;
+      const validWeather = getValidWeatherForBiome(nextBiome, weatherVal);
       const nextLogs = [
         ...prev.logs,
         {
           id: `dev_weath_${Date.now()}`,
-          text: `⛈️ SOVEREIGN REALIGN: Overrode regional climate parameters to Weather=[${weatherVal.toUpperCase()}]${biomeVal ? ` Biome=[${biomeVal.toUpperCase()}]` : ''}!`,
+          text: `⛈️ SOVEREIGN REALIGN: Overrode regional climate parameters to Weather=[${validWeather.toUpperCase()}] Biome=[${nextBiome.toUpperCase()}]!`,
           type: 'system',
           timestamp: 'GOD'
         }
       ];
       return {
         ...prev,
-        weather: weatherVal,
-        biome: biomeVal || prev.biome,
+        weather: validWeather,
+        biome: nextBiome,
         logs: nextLogs
       };
     });

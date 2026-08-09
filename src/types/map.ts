@@ -104,7 +104,7 @@ export interface OverworldChunk {
   lootPiles: LootPile[];
   dungeons: { x: number; y: number; id: string; targetDepth: number }[];
   towns: { x: number; y: number; name: string }[];
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp';
+  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
   weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
   secondFloorMap?: TileType[][];
   secondFloorDiscovered?: boolean[][];

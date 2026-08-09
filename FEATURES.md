@@ -14,7 +14,13 @@ Welcome to **Sunder: Chronicles of the Forge** (Abyss Rogue), an advanced proced
   - 🏜️ **Arid Deserts**: Barren golden sand dunes, cacti clusters, dry tumbleweeds (`*`), and dry stony patches.
   - ❄️ **Tundra Glaciers**: Deep ice fields with frozen evergreens and snowdrifts. High-yield sweet berry bushes do not spawn under freezing weather circles. Any attempt to pluck barren winter shrubs generates frostbite warning reminders.
   - 🐊 **Soggy Swamps**: Dense mud pits, mossy floor tiles, stagnant water bodies, and custom purple wild elderberries (`🫐`) instead of toxic radioactive markers.
-- **Castle Towns & Bastions**: Upgraded overworld villages with a 25% chance of spawning as a fortified Keep, Citadel, Bastion, or Stronghold.
+  - 🏰 **Towns & Settlements**: Civilized sanctuaries with shopkeepers, taverns, inns, and municipal guards. Weather in town biomes remains mild and protected.
+- **Strict Biome-Aware Weather Rules Engine**: The weather simulation enforces biome climate rules—there is always strictly one active weather pattern played at a time, tailored to the current biome:
+  - *Deserts*: Only sunny/clear, foggy, or sandstorm conditions (rain, snow, or blizzards never occur in deserts).
+  - *Tundras*: Only clear, snowy, or blizzard whiteouts.
+  - *Forests & Swamps*: Clear, rainy, or foggy conditions.
+  - *Towns*: Clear or mild weather.
+  - *GM & God Panel Integration*: All Storyteller GM commands (`weather_rainy`, `weather_foggy`, `weather_snowy`) and God World Editor weather controls automatically validate and shift requested weather to valid biome equivalents using `getValidWeatherForBiome`.
 - **Absolute Cardinal Navigation**: Fixed overlay markers displaying NORTH, SOUTH, EAST, and WEST along the respective viewport margins for seamless coordinates tracking.
 - **High-Performance Chunk Minimap Component (`ChunkMinimap.tsx`)**: Refactored the inline coordinate-scanning mini-map into a decoupled React component. By employing `React.memo` and proper state isolation, the map avoids expensive parent re-renders during gameplay actions. It dynamically renders a 21x21 grid representing a 10-tile radius around the player, complete with custom color representations for walls, doors, stairs, water, trees, and special landmarks. Proper string-based `TileType[][]` enums are used to enforce type safety.
 

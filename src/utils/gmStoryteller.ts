@@ -1,4 +1,5 @@
 import { GameState, Enemy, EnemyState, EnemyType, TileType, EquipmentItem, GameLogMessage, CatalystType, Follower, TrapType, Trap } from '../types';
+import { BIOME_VALID_WEATHERS, getValidWeatherForBiome } from './weatherEngine';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';
 import { findWalkableSpotNearPlayer, getDirectionString } from '../data/gmCommands';
 import { createGMTriangleCheaterEnemy } from './combatArchetypes';
@@ -340,9 +341,11 @@ export const GM_ENCOUNTERS_DATABASE: GMEncounter[] = [
         return { success: false, mutatedState: {}, logText: "" };
       }
 
-      const stormWeathers: ('clear' | 'rainy' | 'foggy' | 'snowy')[] = ['rainy', 'foggy', 'snowy'];
-      const filteredWeathers = stormWeathers.filter(w => w !== gameState.weather);
-      const chosenWeather = filteredWeathers[Math.floor(Math.random() * filteredWeathers.length)];
+      const allowedWeathers = BIOME_VALID_WEATHERS[gameState.biome || 'forest'] || BIOME_VALID_WEATHERS.forest;
+      const filteredWeathers = allowedWeathers.filter(w => w !== gameState.weather);
+      const chosenWeather = filteredWeathers.length > 0
+        ? filteredWeathers[Math.floor(Math.random() * filteredWeathers.length)]
+        : allowedWeathers[0];
 
       return {
         success: true,
