@@ -11,7 +11,7 @@ import { SCAR_DATABASE } from '../../utils/scars';
 export interface GodStatEditorProps {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  scarDatabase?: Scar[];
+  scarDatabase?: any[];
 }
 
 export const GodStatEditor: React.FC<GodStatEditorProps> = ({
@@ -40,7 +40,11 @@ export const GodStatEditor: React.FC<GodStatEditorProps> = ({
 
     setGameState((prev) => {
       const currentScars = prev.playerStats.scars || [];
-      const newScar = { ...targetScar, acquiredTurn: prev.playerStats.turnsPlayed || 1 };
+      const newScar: Scar = {
+        ...targetScar,
+        id: targetScar.id || `scar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        acquiredTurn: prev.playerStats.turnsPlayed || 1
+      };
       return {
         ...prev,
         playerStats: {

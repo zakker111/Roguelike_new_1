@@ -3,7 +3,7 @@
     "id": "crimson_heart",
     "name": "Crimson Heart of the Sanctum",
     "description": "A pulsing ruby core that leaks rejuvenating blood magic into your veins.",
-    "details": "+15 Max HP, and automatically regenerates 2 HP at the end of every active game turn.",
+    "details": "+15 Max HP, and automatically pulses +20 HP of rejuvenating blood magic every 10 active game turns.",
     "icon": "❤️",
     "rarity": "Common",
     "color": "text-red-400",

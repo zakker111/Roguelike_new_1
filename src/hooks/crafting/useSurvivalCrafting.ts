@@ -5,6 +5,47 @@ import { LEVEL_WIDTH, LEVEL_HEIGHT } from "../../utils/gameUtils";
 import { formatGameTime } from "../../utils/overworld";
 import { CraftingSubEngineProps } from "./types";
 
+const WOOD_KEYS = ['mat_wood', 'mat_pine_log', 'mat_birch_log', 'mat_ship_pitch'];
+const METAL_KEYS = ['mat_iron', 'mat_iron_ore', 'mat_steel', 'mat_royal_iron', 'mat_copper_ore', 'mat_mithril', 'mat_obsidian'];
+
+function getTotalWoodCount(materials: Record<string, number>): number {
+  return WOOD_KEYS.reduce((sum, key) => sum + (materials[key] || 0), 0);
+}
+
+function deductWoodCount(materials: Record<string, number>, required: number): Record<string, number> {
+  const next = { ...materials };
+  let needed = required;
+  for (const key of WOOD_KEYS) {
+    if (needed <= 0) break;
+    const have = next[key] || 0;
+    if (have > 0) {
+      const take = Math.min(have, needed);
+      next[key] = have - take;
+      needed -= take;
+    }
+  }
+  return next;
+}
+
+function getTotalMetalCount(materials: Record<string, number>): number {
+  return METAL_KEYS.reduce((sum, key) => sum + (materials[key] || 0), 0);
+}
+
+function deductMetalCount(materials: Record<string, number>, required: number): Record<string, number> {
+  const next = { ...materials };
+  let needed = required;
+  for (const key of METAL_KEYS) {
+    if (needed <= 0) break;
+    const have = next[key] || 0;
+    if (have > 0) {
+      const take = Math.min(have, needed);
+      next[key] = have - take;
+      needed -= take;
+    }
+  }
+  return next;
+}
+
 export function useSurvivalCrafting({
   setGameState,
   addLogMessage,
@@ -13,9 +54,9 @@ export function useSurvivalCrafting({
 }: CraftingSubEngineProps) {
   const handlePlaceCampfire = useCallback(() => {
     setGameState((prev) => {
-      const woodCount = prev.inventoryMaterials['mat_wood'] || 0;
+      const woodCount = getTotalWoodCount(prev.inventoryMaterials);
       if (woodCount < 3) {
-        addLogMessage("❌ You do not have enough Scrap Wood (3 required) to place a campfire!", "system");
+        addLogMessage("❌ You do not have enough Wood or Timber (3 required) to place a campfire!", "system");
         return prev;
       }
 
@@ -61,10 +102,7 @@ export function useSurvivalCrafting({
       const nextMap = prev.map.map((row) => [...row]);
       nextMap[targetY][targetX] = TileType.Campfire;
 
-      const nextMats = {
-        ...prev.inventoryMaterials,
-        'mat_wood': woodCount - 3
-      };
+      const nextMats = deductWoodCount(prev.inventoryMaterials, 3);
 
       playSound('spell');
       addLogMessage(`🔥 You successfully assembled a warm, crackling Campfire at [X:${targetX}, Y:${targetY}]. Stand adjacent to it to cook!`, 'craft');
@@ -84,15 +122,11 @@ export function useSurvivalCrafting({
 
   const handlePlaceAnvil = useCallback(() => {
     setGameState((prev) => {
-      const metalKeys = ['mat_iron', 'mat_iron_ore', 'mat_steel', 'mat_royal_iron', 'mat_copper_ore', 'mat_mithril', 'mat_obsidian'];
-      let totalMetalCount = 0;
-      for (const key of metalKeys) {
-        totalMetalCount += prev.inventoryMaterials[key] || 0;
-      }
-      const woodCount = prev.inventoryMaterials['mat_wood'] || 0;
+      const totalMetalCount = getTotalMetalCount(prev.inventoryMaterials);
+      const woodCount = getTotalWoodCount(prev.inventoryMaterials);
 
       if (totalMetalCount < 5 || woodCount < 2) {
-        addLogMessage("❌ You need 5x Iron/Metal (any Iron Ore, Tempered Iron, Steel, Mithril, or Obsidian) and 2x Scrap Wood to assemble a Portable Anvil!", "system");
+        addLogMessage("❌ You need 5x Metal/Iron and 2x Wood to assemble a Portable Anvil!", "system");
         return prev;
       }
 
@@ -138,25 +172,154 @@ export function useSurvivalCrafting({
       const nextMap = prev.map.map((row) => [...row]);
       nextMap[targetY][targetX] = TileType.Anvil;
 
-      const nextMats = { ...prev.inventoryMaterials };
-      nextMats['mat_wood'] = Math.max(0, woodCount - 2);
-
-      let remainingDeduct = 5;
-      for (const key of metalKeys) {
-        const cur = nextMats[key] || 0;
-        if (cur > 0) {
-          const take = Math.min(cur, remainingDeduct);
-          nextMats[key] = cur - take;
-          remainingDeduct -= take;
-          if (remainingDeduct <= 0) break;
-        }
-      }
+      let nextMats = deductMetalCount(prev.inventoryMaterials, 5);
+      nextMats = deductWoodCount(nextMats, 2);
 
       playSound('equip');
       addLogMessage(`⚒️ You successfully assembled a heavy Portable Blacksmith Anvil at [X:${targetX}, Y:${targetY}]. Stand adjacent to it to forge, mutate, and upgrade equipment!`, 'craft');
 
       const cmdEv = new CustomEvent('spawn-game-effect', {
         detail: { x: targetX, y: targetY, text: `⚒️ ANVIL`, type: 'crit' },
+      });
+      window.dispatchEvent(cmdEv);
+
+      return {
+        ...prev,
+        map: nextMap,
+        inventoryMaterials: nextMats
+      };
+    });
+  }, [setGameState, addLogMessage]);
+
+  const handlePlaceBedroll = useCallback(() => {
+    setGameState((prev) => {
+      const woodCount = getTotalWoodCount(prev.inventoryMaterials);
+
+      if (woodCount < 2) {
+        addLogMessage("❌ You need at least 2x Wood or Timber to unroll and pitch a Survival Bedroll!", "system");
+        return prev;
+      }
+
+      const px = prev.playerX;
+      const py = prev.playerY;
+      const dirs = [
+        { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        { dx: -1, dy: -1 }, { dx: 1, dy: -1 },
+        { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
+      ];
+
+      let targetX = -1;
+      let targetY = -1;
+
+      for (const d of dirs) {
+        const nx = px + d.dx;
+        const ny = py + d.dy;
+        if (nx >= 0 && nx < LEVEL_WIDTH && ny >= 0 && ny < LEVEL_HEIGHT) {
+          const t = prev.map[ny][nx];
+          if (
+            t === TileType.Floor ||
+            t === TileType.Grass ||
+            t === TileType.Path
+          ) {
+            const hasEnemy = prev.enemies.some(e => e.x === nx && e.y === ny);
+            const hasNpc = prev.npcs.some(n => n.x === nx && n.y === ny);
+            const hasChest = prev.chests.some(c => c.x === nx && c.y === ny);
+            if (!hasEnemy && !hasNpc && !hasChest) {
+              targetX = nx;
+              targetY = ny;
+              break;
+            }
+          }
+        }
+      }
+
+      if (targetX === -1 || targetY === -1) {
+        addLogMessage("⚠️ Could not find an empty space adjacent to you to deploy a bedroll! Move to clear ground.", "system");
+        return prev;
+      }
+
+      const nextMap = prev.map.map((row) => [...row]);
+      nextMap[targetY][targetX] = TileType.Bedroll;
+
+      const nextMats = deductWoodCount(prev.inventoryMaterials, 2);
+
+      playSound('loot');
+      addLogMessage(`🛏️ You unrolled and staked a Traveler's Survival Bedroll at [X:${targetX}, Y:${targetY}]. Stand adjacent to it and press [G] or interact to rest and sleep!`, 'craft');
+
+      const cmdEv = new CustomEvent('spawn-game-effect', {
+        detail: { x: targetX, y: targetY, text: `🛏️ BEDROLL`, type: 'heal' },
+      });
+      window.dispatchEvent(cmdEv);
+
+      return {
+        ...prev,
+        map: nextMap,
+        inventoryMaterials: nextMats
+      };
+    });
+  }, [setGameState, addLogMessage]);
+
+  const handlePlaceFieldTent = useCallback(() => {
+    setGameState((prev) => {
+      const woodCount = getTotalWoodCount(prev.inventoryMaterials);
+      const metalCount = getTotalMetalCount(prev.inventoryMaterials);
+
+      if (woodCount < 4 || metalCount < 1) {
+        addLogMessage("❌ You need 4x Wood and 1x Metal/Iron to pitch an Expedition Field Tent!", "system");
+        return prev;
+      }
+
+      const px = prev.playerX;
+      const py = prev.playerY;
+      const dirs = [
+        { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 }, { dx: 1, dy: 0 },
+        { dx: -1, dy: -1 }, { dx: 1, dy: -1 },
+        { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
+      ];
+
+      let targetX = -1;
+      let targetY = -1;
+
+      for (const d of dirs) {
+        const nx = px + d.dx;
+        const ny = py + d.dy;
+        if (nx >= 0 && nx < LEVEL_WIDTH && ny >= 0 && ny < LEVEL_HEIGHT) {
+          const t = prev.map[ny][nx];
+          if (
+            t === TileType.Floor ||
+            t === TileType.Grass ||
+            t === TileType.Path
+          ) {
+            const hasEnemy = prev.enemies.some(e => e.x === nx && e.y === ny);
+            const hasNpc = prev.npcs.some(n => n.x === nx && n.y === ny);
+            const hasChest = prev.chests.some(c => c.x === nx && c.y === ny);
+            if (!hasEnemy && !hasNpc && !hasChest) {
+              targetX = nx;
+              targetY = ny;
+              break;
+            }
+          }
+        }
+      }
+
+      if (targetX === -1 || targetY === -1) {
+        addLogMessage("⚠️ Could not find an empty space adjacent to you to pitch a field tent! Move to clear ground.", "system");
+        return prev;
+      }
+
+      const nextMap = prev.map.map((row) => [...row]);
+      nextMap[targetY][targetX] = TileType.FieldTent;
+
+      let nextMats = deductWoodCount(prev.inventoryMaterials, 4);
+      nextMats = deductMetalCount(nextMats, 1);
+
+      playSound('equip');
+      addLogMessage(`⛺ You successfully pitched an insulated Expedition Field Tent at [X:${targetX}, Y:${targetY}]! Provides +25% rest recovery, 100% weather insulation, and cuts ambush risk by 50%!`, 'craft');
+
+      const cmdEv = new CustomEvent('spawn-game-effect', {
+        detail: { x: targetX, y: targetY, text: `⛺ EXPEDITION TENT`, type: 'heal' },
       });
       window.dispatchEvent(cmdEv);
 
@@ -614,6 +777,8 @@ export function useSurvivalCrafting({
   return {
     handlePlaceCampfire,
     handlePlaceAnvil,
+    handlePlaceBedroll,
+    handlePlaceFieldTent,
     handleCookMeat,
     handleCookPrimeMeat,
     handleRestCampfire,

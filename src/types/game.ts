@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { TileType, OverworldChunk, DungeonLevelState, DungeonProp, Trap } from './map';
+import type { TileType, OverworldChunk, DungeonLevelState, DungeonProp, Trap, BiomeType } from './map';
 import type { CraftedWeapon, EquipmentItem, LootPile, Chest } from './items';
 import type { PlayerStats, Enemy, NPC, Follower, Corpse, BloodSplatter } from './entities';
 
 export interface GameLogMessage {
   id: string;
   text: string;
-  type: 'combat' | 'loot' | 'trap' | 'craft' | 'system' | 'info' | 'danger';
+  type: 'combat' | 'loot' | 'trap' | 'craft' | 'system' | 'info' | 'danger' | 'quest' | 'event' | string;
   timestamp: string;
 }
 
@@ -27,6 +27,7 @@ export interface Quest {
   targetChunkX?: number;
   targetChunkY?: number;
   rewardGold: number;
+  rewardXp?: number;
   status: 'available' | 'active' | 'completed' | 'turned_in' | 'failed';
 }
 
@@ -61,7 +62,7 @@ export interface CaravanEncounterOption {
 
 export interface CaravanEncounter {
   id: string;
-  type: 'bandit_ambush' | 'beast_attack' | 'roadblock' | 'obstacle' | 'pilgrim' | 'wheel_break' | 'mana_storm' | 'bridge_collapse' | 'mysterious_merchant' | 'swamp_gas';
+  type: 'bandit_ambush' | 'beast_attack' | 'roadblock' | 'obstacle' | 'pilgrim' | 'wheel_break' | 'mana_storm' | 'bridge_collapse' | 'mysterious_merchant' | 'swamp_gas' | 'boss_ambush';
   title: string;
   desc: string;
   options: CaravanEncounterOption[];
@@ -69,6 +70,11 @@ export interface CaravanEncounter {
   selectedOptionId?: string;
   resultLog?: string;
   resolved: boolean;
+  wagonDamagePenalty?: number;
+  isTacticalCombat?: boolean;
+  isBossAmbush?: boolean;
+  bossName?: string;
+  bossAffixes?: string[];
 }
 
 export interface CaravanTravelState {
@@ -83,6 +89,10 @@ export interface CaravanTravelState {
   stepsHistory: string[];
   rewardGold: number;
   currentEncounter: CaravanEncounter | null;
+  wagonHp: number;
+  maxWagonHp: number;
+  isTacticalCombat?: boolean;
+  isBossAmbush?: boolean;
 }
 
 export interface GameState {
@@ -121,8 +131,8 @@ export interface GameState {
   gameTime: number; // minutes from 0 to 1439 (representing 24 hours starting at 480 i.e., 8:00 AM)
   npcs: NPC[]; // active NPC lists
   activeTradeNpcId: string | null; // ID of NPC trading with, if any
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
-  weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
+  biome: BiomeType;
+  weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard' | 'ashfall' | 'tidal_surge';
   season: 'spring' | 'summer' | 'autumn' | 'winter';
   gmAutonomousWeather?: boolean;
   gmWeatherInterval?: number;
@@ -145,7 +155,19 @@ export interface GameState {
   dungeonLevels: { [key: string]: DungeonLevelState };
   isArena?: boolean;
   unlockedChapters?: string[]; // Found chapter keys for history/lore mechanics
+  attunedWaystones?: string[]; // IDs of attuned waystones for fast travel
+  customMapPins?: Array<{
+    id: string;
+    chunkX: number;
+    chunkY: number;
+    label: string;
+    icon: string;
+    color: string;
+    notes?: string;
+    createdAtTurn?: number;
+  }>; // Custom player map pins
   activeHistoryBookOpen?: boolean; // Determines if the Chronicle Book overlay is open
+  activeWaystoneNetworkOpen?: boolean; // Determines if the Waystone Network fast travel overlay is open
 
   // Custom merchant wealth, stock, restock tracking and fishing pole durability
   fishingPoleDurability?: number;
@@ -164,6 +186,8 @@ export interface GameState {
   hasActiveCaravanLicense?: boolean; // Granted by defending caravan Tobias, gives discounts/sales boosts
   caravanAmbushState?: { [coordKey: string]: 'active' | 'success' | 'failed' }; // e.g. "2,1": "success"
   godMode?: boolean;
+  isInvincible?: boolean;
+  worldMapFullyRevealed?: boolean;
   isTown?: boolean;
   activeMount?: string;
 
@@ -218,6 +242,26 @@ export interface GameState {
   caravanTravel?: CaravanTravelState | null;
   defeatedEnemiesCount?: { [key: string]: number };
   chaosScore?: number; // 0 to 100 GM Chaos Matrix score
+  sanctumRelics?: string[];
+  inspectingItem?: any;
+  inspectingSkill?: any;
+  houseDesigner?: any;
+  customHouseBuilder?: any;
+  npcRoutePlanner?: any;
+  structureCarver?: any;
+  historyBookOpen?: boolean;
+  poiInteraction?: any;
+  activeTravelerNpc?: any;
+  discoveredChunks?: any;
+  visitedChunks?: any;
+  poisCount?: number;
+  currentDungeonDepth?: number;
+  dungeonLevel?: number;
+  isStairsModalOpen?: boolean;
+  pendingStairsAction?: any;
+  timeMinutes?: number;
+  timeHours?: number;
+  daysPassed?: number;
 }
 
 export interface MoonPhase {

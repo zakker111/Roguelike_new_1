@@ -16,12 +16,20 @@ import RecallScrollOverlay from './RecallScrollOverlay';
 import FollowerInspectOverlay from './FollowerInspectOverlay';
 import QuestBoardOverlay from './QuestBoardOverlay';
 import UnlawfulAssaultModal from './modals/UnlawfulAssaultModal';
+import WorldThreatModal from './modals/WorldThreatModal';
+import { WorldMapModal } from './worldmap/WorldMapModal';
 import { SanctumRelic } from '../utils/relics';
 
 export interface AppOverlaysProps {
   // States
   isHelpOpen: boolean;
   setIsHelpOpen: (val: boolean) => void;
+
+  isWorldThreatOpen?: boolean;
+  setIsWorldThreatOpen?: (val: boolean) => void;
+
+  isWorldMapOpen?: boolean;
+  setIsWorldMapOpen?: (val: boolean) => void;
 
   isGodPanelOpen: boolean;
   setIsGodPanelOpen: (val: boolean) => void;
@@ -75,24 +83,36 @@ export interface AppOverlaysProps {
   // Callbacks
   addLogMessage: (text: string, type?: string) => void;
   handleRegenerateCurrentLocation: () => void;
-  handleConfirmSleep: (hours: number) => void;
-  handleCatchFish: (fishType: string) => void;
+  handleConfirmSleep: (hours: number, hpHealed?: number, mpHealed?: number) => void;
+  handleCatchFish: (fishType: string, fishId?: string) => void;
   handleFailFish: () => void;
   handleOpenChest: (index: number, isPerfect: boolean) => void;
   handleConsumeLockpick: () => void;
-  handlePoiChoiceSelected: (optionId: string) => void;
+  handlePoiChoiceSelected: (poiId: string, choiceId?: string, effects?: any) => void;
   handleDrunkNpcEffects: (effects: any) => void;
-  handleTravelerTrade: (item: any) => void;
-  handleTravelerAttack: () => void;
+  handleTravelerTrade: (item?: any) => void;
+  handleTravelerAttack: (witnessed?: boolean) => void;
   handleAcceptQuest: (quest: any) => void;
   handleTurnInQuest: (questId: string) => void;
   handleConfirmUnlawfulAttack: () => void;
-  handleRecallTeleport: (target: any) => void;
+  handleRecallTeleport: (destX: any, destY?: any, destName?: any) => void;
+  onAttuneWaystone?: (poiId: string) => void;
+  onWaystoneFastTravel?: (targetChunkX: number, targetChunkY: number, targetX: number, targetY: number, targetName: string) => void;
+  onChallengeGuardian?: (poi: PoiType) => void;
+  handleResolveCaravanEncounterOption?: (choice: any) => void;
+  handleAdvanceCaravanTravel?: () => void;
+  handleCompleteCaravanTravel?: () => void;
+  isAudioSettingsOpen?: boolean;
+  setIsAudioSettingsOpen?: (val: boolean) => void;
 }
 
 export const AppOverlays = React.memo<AppOverlaysProps>(({
   isHelpOpen,
   setIsHelpOpen,
+  isWorldThreatOpen,
+  setIsWorldThreatOpen,
+  isWorldMapOpen,
+  setIsWorldMapOpen,
   isGodPanelOpen,
   setIsGodPanelOpen,
   isGmPanelOpen,
@@ -141,6 +161,9 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
   handleTurnInQuest,
   handleConfirmUnlawfulAttack,
   handleRecallTeleport,
+  onAttuneWaystone,
+  onWaystoneFastTravel,
+  onChallengeGuardian,
 }) => {
   return (
     <>
@@ -204,6 +227,7 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
         <SleepOverlay
           playerStats={gameState.playerStats}
           currentGameTime={gameState.gameTime}
+          gameState={gameState}
           onClose={() => setIsSleepOpen(false)}
           onConfirmSleep={handleConfirmSleep}
         />
@@ -288,8 +312,21 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
           poi={activePoi}
           playerStats={gameState.playerStats}
           townReputation={gameState.townReputation ?? 100}
+          inventoryMaterials={gameState.inventoryMaterials}
+          inventoryCatalysts={gameState.inventoryCatalysts}
+          attunedWaystones={gameState.attunedWaystones || []}
+          allKnownWaystones={(() => {
+            const list: PoiType[] = [];
+            Object.values(gameState.overworldChunks || {}).forEach((chunk: any) => {
+              if (chunk.pois) list.push(...chunk.pois);
+            });
+            return list;
+          })()}
           onClose={() => setActivePoi(null)}
           onSelectOption={handlePoiChoiceSelected}
+          onAttuneWaystone={onAttuneWaystone}
+          onFastTravel={onWaystoneFastTravel}
+          onChallengeGuardian={onChallengeGuardian}
         />
       )}
 
@@ -361,6 +398,49 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
         onCancel={() => setUnlawfulGuardTarget(null)}
         onConfirm={handleConfirmUnlawfulAttack}
       />
+
+      {isWorldThreatOpen && setIsWorldThreatOpen && (
+        <WorldThreatModal
+          gameState={gameState}
+          setGameState={setGameState}
+          onClose={() => setIsWorldThreatOpen(false)}
+          addLogMessage={addLogMessage}
+        />
+      )}
+
+      {isWorldMapOpen && setIsWorldMapOpen && (
+        <WorldMapModal
+          isOpen={isWorldMapOpen}
+          onClose={() => setIsWorldMapOpen(false)}
+          gameState={gameState}
+          onFastTravelToChunk={(targetChunkX, targetChunkY, name) => {
+            if (onWaystoneFastTravel) {
+              onWaystoneFastTravel(targetChunkX, targetChunkY, 15, 10, name || 'Leyline Waystone');
+            }
+          }}
+          onAddPin={(pin) => {
+            setGameState(prev => ({
+              ...prev,
+              customMapPins: [...(prev.customMapPins || []), pin]
+            }));
+            addLogMessage(`📍 [CARTOGRAPHY]: Placed map marker "${pin.label}" at chunk [${pin.chunkX}, ${pin.chunkY}]`, 'info');
+          }}
+          onUpdatePin={(pin) => {
+            setGameState(prev => ({
+              ...prev,
+              customMapPins: (prev.customMapPins || []).map(p => p.id === pin.id ? pin : p)
+            }));
+            addLogMessage(`✏️ [CARTOGRAPHY]: Updated map marker "${pin.label}"`, 'info');
+          }}
+          onDeletePin={(pinId) => {
+            setGameState(prev => ({
+              ...prev,
+              customMapPins: (prev.customMapPins || []).filter(p => p.id !== pinId)
+            }));
+            addLogMessage(`🗑️ [CARTOGRAPHY]: Removed map marker`, 'info');
+          }}
+        />
+      )}
 
       {activeRelicDraft && (
         <SanctumRelicsDraftOverlay

@@ -1,0 +1,107 @@
+[
+  {
+    "bossName": "Corrupted Road Baron Malakor",
+    "title": "👑 WORLD THREAT BOSS AMBUSH: Corrupted Road Baron Malakor",
+    "desc": "The infamous Highway Terror Malakor and his shadowy mercenaries surround the wagon, wielding dark-cursed broadswords and spiked chains!",
+    "bossAffixes": ["vampiric", "shieldbreaker", "thorns"],
+    "wagonDamagePenalty": 35,
+    "options": [
+      {
+        "id": "fight",
+        "text": "⚔️ Draw steel and engage the Road Baron! (Requires STR Check, Difficulty 22)",
+        "statCheck": "str",
+        "difficulty": 22
+      },
+      {
+        "id": "intimidate",
+        "text": "🗣️ Issue a blood-chilling challenge! (Requires CHA Check, Difficulty 21)",
+        "statCheck": "cha",
+        "difficulty": 21
+      },
+      {
+        "id": "pay",
+        "text": "🪙 Surrender 600 Gold to appease Malakor's bandits.",
+        "costGold": 600
+      }
+    ]
+  },
+  {
+    "bossName": "Gloomfang Alpha Werewolf",
+    "title": "🩸 WORLD THREAT BOSS AMBUSH: Gloomfang Alpha Werewolf",
+    "desc": "A hulking, crimson-furred Alpha Werewolf leaps atop the lead wagon with a bone-shattering roar, accompanied by a pack of shadowy dire wolves!",
+    "bossAffixes": ["vampiric", "berserker", "venomous"],
+    "wagonDamagePenalty": 30,
+    "options": [
+      {
+        "id": "fight",
+        "text": "⚔️ Strike down the Alpha before the carriage breaks! (Requires DEX Check, Difficulty 22)",
+        "statCheck": "dex",
+        "difficulty": 22
+      },
+      {
+        "id": "outsmart",
+        "text": "🔮 Cast a blinding illumination spell! (Requires INT Check, Difficulty 21)",
+        "statCheck": "int",
+        "difficulty": 21
+      },
+      {
+        "id": "feed",
+        "text": "🥩 Sacrifice 25 Wild Berries to lure the pack away.",
+        "costItems": [{ "id": "mat_berry", "count": 25, "label": "Wild Berries" }]
+      }
+    ]
+  },
+  {
+    "bossName": "Thunderlord Bandit Warlord Volkan",
+    "title": "⚡ WORLD THREAT BOSS AMBUSH: Thunderlord Bandit Warlord Volkan",
+    "desc": "Electrified lightning crackles across the armor of Warlord Volkan as his heavy crossbowmen lock iron sights onto the wagon's axles!",
+    "bossAffixes": ["shieldbreaker", "thorns", "ethereal"],
+    "wagonDamagePenalty": 30,
+    "options": [
+      {
+        "id": "fight",
+        "text": "⚔️ Charge through the lightning bolt volley! (Requires STR Check, Difficulty 21)",
+        "statCheck": "str",
+        "difficulty": 21
+      },
+      {
+        "id": "maneuver",
+        "text": "🛡️ Position your shield to deflect the lightning bolts! (Requires LCK Check, Difficulty 20)",
+        "statCheck": "lck",
+        "difficulty": 20
+      },
+      {
+        "id": "pay",
+        "text": "🪙 Pay 500 Gold tribute to clear the road.",
+        "costGold": 500
+      }
+    ]
+  },
+  {
+    "bossName": "Abyssal Void Harbinger",
+    "title": "💀 WORLD THREAT BOSS AMBUSH: Abyssal Void Harbinger",
+    "desc": "The fabric of reality tears as an Abyssal Void Harbinger emerges from a shadowy rift, summoning dark tentacles that wrap around the wagon!",
+    "bossAffixes": ["vampiric", "shieldbreaker", "berserker"],
+    "wagonDamagePenalty": 40,
+    "options": [
+      {
+        "id": "banish",
+        "text": "✨ Channel holy light to banish the void horror! (Requires INT Check, Difficulty 22)",
+        "statCheck": "int",
+        "difficulty": 22
+      },
+      {
+        "id": "sever",
+        "text": "⚔️ Sever the void tentacles with heavy slashes! (Requires STR Check, Difficulty 22)",
+        "statCheck": "str",
+        "difficulty": 22
+      },
+      {
+        "id": "flee",
+        "text": "🏃 Drive the horses through the tear! (Requires LCK Check, Difficulty 21)",
+        "statCheck": "lck",
+        "difficulty": 21
+      }
+    ]
+  }
+]

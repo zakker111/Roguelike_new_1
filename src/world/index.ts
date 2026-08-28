@@ -6,3 +6,4 @@ export * from './overworldPoiGenerator';
 export * from './overworldStructures';
 export * from './poiGenerators';
 export * from './structureGenerators';
+export * from './organic';

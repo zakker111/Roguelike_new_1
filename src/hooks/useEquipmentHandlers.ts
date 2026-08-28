@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameState, EquipmentItem, DungeonLevelState } from '../types';
+import { GameState, EquipmentItem, DungeonLevelState, isTwoHandedWeapon } from '../types';
 import { playSound } from '../utils/audio';
 import { SPELL_SCROLLS } from '../utils/spellScrolls';
 import { consumeItemFromInventory } from '../utils/scrollUtils';
@@ -218,9 +218,9 @@ export function useEquipmentHandlers({
         const targetHand = hand || (item.subType === 'Shield' ? 'left' : 'right');
 
         if (targetHand === 'left') {
-          // Equipping to Left Hand (offhand)
+          // Equipping to Left Hand (offhand / shield)
           // 1. If currently wielding a 2-handed weapon in Right Hand, unequip it
-          if (nextWeapon && (nextWeapon.baseType === ('Greatsword' as any) || nextWeapon.baseType === ('Greataxe' as any) || nextWeapon.baseType === ('Bow' as any) || nextWeapon.baseType === ('Staff' as any))) {
+          if (nextWeapon && isTwoHandedWeapon(nextWeapon)) {
             const returnedWeapon: EquipmentItem = {
               id: nextWeapon.id,
               name: nextWeapon.name,
@@ -245,9 +245,10 @@ export function useEquipmentHandlers({
             applyStatBonuses(returnedWeapon, false);
             if (nextWeapon.defense) updatedStats.def = Math.max(0, updatedStats.def - nextWeapon.defense);
             nextWeapon = null;
+            addLogMessage(`👐 Unequipped 2-handed ${returnedWeapon.name} to wield offhand shield.`, 'system');
           }
 
-          // 2. If Left Hand already has an item, unequip it to inventory
+          // 2. If Left Hand already has an item/shield, unequip it to inventory
           if (nextShield) {
             updatedInventory.push(nextShield);
             applyStatBonuses(nextShield, false);
@@ -258,14 +259,16 @@ export function useEquipmentHandlers({
           nextShield = item;
           applyStatBonuses(item, true);
           if (item.defense) updatedStats.def += item.defense;
+          addLogMessage(`🛡️ Equipped ${item.name} into Offhand / Shield slot (+${item.defense || 0} DEF).`, 'system');
 
         } else {
           // Equipping to Right Hand (main hand)
-          const is2Handed = (item.subType as string) === 'Greatsword' || (item.subType as string) === 'Greataxe' || (item.subType as string) === 'Bow' || (item.subType as string) === 'Staff';
+          const is2Handed = isTwoHandedWeapon(item);
           if (is2Handed && nextShield) {
             updatedInventory.push(nextShield);
             applyStatBonuses(nextShield, false);
             if (nextShield.defense) updatedStats.def = Math.max(0, updatedStats.def - nextShield.defense);
+            addLogMessage(`👐 Unequipped offhand ${nextShield.name} to wield 2-handed ${item.name}.`, 'system');
             nextShield = null;
           }
 
@@ -301,7 +304,7 @@ export function useEquipmentHandlers({
             id: item.id,
             name: item.name,
             baseType: item.subType as any,
-            type: item.type,
+            type: (item.type === 'armor' ? 'armor' : 'weapon') as 'weapon' | 'armor',
             damage: item.damage,
             critChance: item.critChance,
             range: item.range,
@@ -322,6 +325,7 @@ export function useEquipmentHandlers({
           if (item.defense) {
             updatedStats.def += item.defense;
           }
+          addLogMessage(`⚔️ Equipped ${item.name} into Right Hand (+${item.damage || 0} ATK).`, 'system');
         }
       }
 
@@ -341,11 +345,13 @@ export function useEquipmentHandlers({
   };
 
   const handleUnequipArmor = () => {
-    if (!gameState.equippedArmor) return;
     playSound('loot');
-    const armor = gameState.equippedArmor;
+    let unequippedName = '';
     
     setGameState((prev) => {
+      if (!prev.equippedArmor) return prev;
+      const armor = prev.equippedArmor;
+      unequippedName = armor.name;
       const updatedInventory = [...prev.equipmentInventory, armor];
       const updatedStats = { ...prev.playerStats };
       updatedStats.def = Math.max(0, updatedStats.def - armor.defense);
@@ -364,15 +370,17 @@ export function useEquipmentHandlers({
         playerStats: updatedStats
       };
     });
-    addLogMessage(`🛡️ Unequipped ${armor.name}.`, 'system');
+    if (unequippedName) addLogMessage(`🛡️ Unequipped ${unequippedName}.`, 'system');
   };
 
   const handleUnequipHelmet = () => {
-    if (!gameState.equippedHelmet) return;
     playSound('loot');
-    const helmet = gameState.equippedHelmet;
+    let unequippedName = '';
     
     setGameState((prev) => {
+      if (!prev.equippedHelmet) return prev;
+      const helmet = prev.equippedHelmet;
+      unequippedName = helmet.name;
       const updatedInventory = [...prev.equipmentInventory, helmet];
       const updatedStats = { ...prev.playerStats };
       updatedStats.def = Math.max(0, updatedStats.def - helmet.defense);
@@ -391,15 +399,17 @@ export function useEquipmentHandlers({
         playerStats: updatedStats
       };
     });
-    addLogMessage(`🛡️ Unequipped ${helmet.name}.`, 'system');
+    if (unequippedName) addLogMessage(`🛡️ Unequipped ${unequippedName}.`, 'system');
   };
 
   const handleUnequipGloves = () => {
-    if (!gameState.equippedGloves) return;
     playSound('loot');
-    const gloves = gameState.equippedGloves;
+    let unequippedName = '';
     
     setGameState((prev) => {
+      if (!prev.equippedGloves) return prev;
+      const gloves = prev.equippedGloves;
+      unequippedName = gloves.name;
       const updatedInventory = [...prev.equipmentInventory, gloves];
       const updatedStats = { ...prev.playerStats };
       updatedStats.def = Math.max(0, updatedStats.def - gloves.defense);
@@ -418,15 +428,17 @@ export function useEquipmentHandlers({
         playerStats: updatedStats
       };
     });
-    addLogMessage(`🛡️ Unequipped ${gloves.name}.`, 'system');
+    if (unequippedName) addLogMessage(`🛡️ Unequipped ${unequippedName}.`, 'system');
   };
 
   const handleUnequipBoots = () => {
-    if (!gameState.equippedBoots) return;
     playSound('loot');
-    const boots = gameState.equippedBoots;
+    let unequippedName = '';
     
     setGameState((prev) => {
+      if (!prev.equippedBoots) return prev;
+      const boots = prev.equippedBoots;
+      unequippedName = boots.name;
       const updatedInventory = [...prev.equipmentInventory, boots];
       const updatedStats = { ...prev.playerStats };
       updatedStats.def = Math.max(0, updatedStats.def - boots.defense);
@@ -445,18 +457,22 @@ export function useEquipmentHandlers({
         playerStats: updatedStats
       };
     });
-    addLogMessage(`🛡️ Unequipped ${boots.name}.`, 'system');
+    if (unequippedName) addLogMessage(`🛡️ Unequipped ${unequippedName}.`, 'system');
   };
 
   const handleUnequipShield = () => {
-    if (!gameState.equippedShield) return;
     playSound('loot');
-    const shield = gameState.equippedShield;
+    let unequippedName = '';
     
     setGameState((prev) => {
+      if (!prev.equippedShield) return prev;
+      const shield = prev.equippedShield;
+      unequippedName = shield.name;
       const updatedInventory = [...prev.equipmentInventory, shield];
       const updatedStats = { ...prev.playerStats };
-      updatedStats.def = Math.max(0, updatedStats.def - shield.defense);
+      if (shield.defense) {
+        updatedStats.def = Math.max(0, updatedStats.def - shield.defense);
+      }
       if (shield.statBonuses) {
         if (shield.statBonuses.str) updatedStats.str = Math.max(1, (updatedStats.str || 10) - shield.statBonuses.str);
         if (shield.statBonuses.dex) updatedStats.dex = Math.max(1, (updatedStats.dex || 10) - shield.statBonuses.dex);
@@ -472,18 +488,22 @@ export function useEquipmentHandlers({
         playerStats: updatedStats
       };
     });
-    addLogMessage(`🛡️ Unequipped ${shield.name}.`, 'system');
+    if (unequippedName) addLogMessage(`🛡️ Unequipped ${unequippedName}.`, 'system');
   };
 
   const handleUnequipAmulet = () => {
-    if (!gameState.equippedAmulet) return;
     playSound('loot');
-    const amulet = gameState.equippedAmulet;
+    let unequippedName = '';
     
     setGameState((prev) => {
+      if (!prev.equippedAmulet) return prev;
+      const amulet = prev.equippedAmulet;
+      unequippedName = amulet.name;
       const updatedInventory = [...prev.equipmentInventory, amulet];
       const updatedStats = { ...prev.playerStats };
-      updatedStats.def = Math.max(0, updatedStats.def - amulet.defense);
+      if (amulet.defense) {
+        updatedStats.def = Math.max(0, updatedStats.def - amulet.defense);
+      }
       if (amulet.statBonuses) {
         if (amulet.statBonuses.str) updatedStats.str = Math.max(1, (updatedStats.str || 10) - amulet.statBonuses.str);
         if (amulet.statBonuses.dex) updatedStats.dex = Math.max(1, (updatedStats.dex || 10) - amulet.statBonuses.dex);
@@ -499,15 +519,18 @@ export function useEquipmentHandlers({
         playerStats: updatedStats
       };
     });
-    addLogMessage(`🛡️ Unequipped ${amulet.name}.`, 'system');
+    if (unequippedName) addLogMessage(`🛡️ Unequipped ${unequippedName}.`, 'system');
   };
 
   const handleUnequipWeapon = () => {
-    if (!gameState.currentWeapon) return;
     playSound('loot');
-    const weapon = gameState.currentWeapon;
+    let unequippedName = '';
 
     setGameState((prev) => {
+      if (!prev.currentWeapon) return prev;
+      const weapon = prev.currentWeapon;
+      unequippedName = weapon.name;
+
       const returnedItem: EquipmentItem = {
         id: weapon.id,
         name: weapon.name,
@@ -548,7 +571,7 @@ export function useEquipmentHandlers({
         playerStats: updatedStats
       };
     });
-    addLogMessage(`⚔️ Stashed away ${weapon.name} into inventory bag.`, 'system');
+    if (unequippedName) addLogMessage(`⚔️ Stashed away ${unequippedName} into inventory bag.`, 'system');
   };
 
   const handleDiscardItem = (id: string, qty: number = 1) => {

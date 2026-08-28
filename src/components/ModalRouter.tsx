@@ -4,11 +4,12 @@ import AppOverlays, { AppOverlaysProps } from './AppOverlays';
 import QuestBoardOverlay from './QuestBoardOverlay';
 import CaravanActiveOverlay from './modals/CaravanActiveOverlay';
 import AudioSettingsModal from './AudioSettingsModal';
+import { generateCaravanSkirmishMap } from '../world/caravanSkirmishGen';
 
 export interface ModalRouterProps extends AppOverlaysProps {
-  handleResolveCaravanEncounterOption: (optionId: string) => void;
-  handleAdvanceCaravanTravel: () => void;
-  handleCompleteCaravanTravel: () => void;
+  handleResolveCaravanEncounterOption?: (optionId: any) => void;
+  handleAdvanceCaravanTravel?: () => void;
+  handleCompleteCaravanTravel?: () => void;
   isAudioSettingsOpen?: boolean;
   setIsAudioSettingsOpen?: (open: boolean) => void;
 }
@@ -25,6 +26,31 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
     isAudioSettingsOpen = false,
     setIsAudioSettingsOpen,
   } = props;
+
+  const handleDeployTacticalBattle = (encounter: any) => {
+    const skirmish = generateCaravanSkirmishMap(gameState, encounter);
+    setGameState((prev) => ({
+      ...prev,
+      map: skirmish.map,
+      discovered: skirmish.discovered,
+      visible: skirmish.visible,
+      enemies: skirmish.enemies,
+      props: skirmish.props,
+      playerX: skirmish.playerX,
+      playerY: skirmish.playerY,
+      caravanTravel: prev.caravanTravel ? {
+        ...prev.caravanTravel,
+        wagonX: skirmish.wagonX,
+        wagonY: skirmish.wagonY,
+        isTacticalCombat: true,
+        currentEncounter: {
+          ...encounter,
+          isTacticalCombat: true,
+          resolved: false
+        }
+      } : null
+    }));
+  };
 
   return (
     <>
@@ -49,6 +75,7 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
         handleResolveCaravanEncounterOption={handleResolveCaravanEncounterOption}
         handleAdvanceCaravanTravel={handleAdvanceCaravanTravel}
         handleCompleteCaravanTravel={handleCompleteCaravanTravel}
+        handleDeployTacticalBattle={handleDeployTacticalBattle}
       />
 
       {/* Procedural Audio & Soundscape Controls Modal */}

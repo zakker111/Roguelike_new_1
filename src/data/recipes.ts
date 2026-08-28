@@ -42,5 +42,18 @@ export interface BrewingRecipe {
   };
 }
 
+export interface ToolRecipe {
+  id: string;
+  name: string;
+  description: string;
+  requiredWood: number;
+  requiredMetal: number;
+  acceptsAnyWood?: boolean;
+  acceptsAnyMetal?: boolean;
+  yieldCount?: number;
+}
+
 export const COOKING_RECIPES: CookingRecipe[] = recipesData.cookingRecipes as CookingRecipe[];
 export const BREWING_RECIPES: BrewingRecipe[] = recipesData.brewingRecipes as BrewingRecipe[];
+export const TOOL_RECIPES: ToolRecipe[] = (recipesData.toolRecipes || []) as ToolRecipe[];
+

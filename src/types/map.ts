@@ -35,13 +35,24 @@ export enum TileType {
   WatchtowerDeck = 'WatchtowerDeck',
   WatchtowerFlag = 'WatchtowerFlag',
   WatchtowerBarricade = 'WatchtowerBarricade',
+  TreeStump = 'TreeStump',
+  Bedroll = 'Bedroll',
+  FieldTent = 'FieldTent',
 }
 
 export enum TrapType {
-  Spikes = 'Spikes',       // Melee damage
-  FireVent = 'FireVent',   // Heavy damage, activates periodically
-  PoisonGas = 'PoisonGas', // Applies Poison over time
+  Spikes = 'Spikes',             // Melee physical piercing damage
+  FireVent = 'FireVent',         // Heavy fire damage, activates periodically
+  PoisonGas = 'PoisonGas',       // Applies Poison over time
+  Geyser = 'Geyser',             // Sunken ruins high-pressure water burst (knockback + water damage)
+  MagmaEruption = 'MagmaEruption', // Volcanic caldera searing lava eruption (burn DOT + explosive fire damage)
+  FrostbiteVent = 'FrostbiteVent', // Glacial ice caverns cryogenic freeze (chill slow + frost damage)
+  FallingIcicle = 'FallingIcicle', // Glacial ice caverns falling ceiling spike (crushing damage)
+  SulfurVent = 'SulfurVent',     // Volcanic caldera toxic sulfur fumes (weakness debuff + poison)
 }
+
+export type DungeonArchetype = 'standard' | 'crypt' | 'sunken_ruins' | 'volcanic_caldera' | 'glacial_caverns';
+export type BiomeType = 'forest' | 'desert' | 'tundra' | 'swamp' | 'town' | 'coral_reef' | 'volcanic' | 'glacial' | 'mountain';
 
 export interface Trap {
   id: string;
@@ -85,6 +96,10 @@ export interface DungeonProp {
   name: string;
   color: string;
   description: string;
+  type?: string;
+  actionLabel?: string;
+  interaction?: string;
+  isInteracted?: boolean;
 }
 
 // Forward reference interfaces from entities & items needed in map/chunk
@@ -104,8 +119,8 @@ export interface OverworldChunk {
   lootPiles: LootPile[];
   dungeons: { x: number; y: number; id: string; targetDepth: number }[];
   towns: { x: number; y: number; name: string }[];
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
-  weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
+  biome: BiomeType;
+  weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard' | 'ashfall' | 'tidal_surge';
   secondFloorMap?: TileType[][];
   secondFloorDiscovered?: boolean[][];
   secondFloorVisible?: boolean[][];
@@ -113,16 +128,25 @@ export interface OverworldChunk {
     id: string;
     x: number;
     y: number;
+    chunkX?: number;
+    chunkY?: number;
     name: string;
-    type: 'monolith' | 'shrine' | 'hearth' | 'sunken_keep' | 'fossil';
+    type: 'monolith' | 'shrine' | 'hearth' | 'sunken_keep' | 'fossil' | string;
     description: string;
     historySnippet: string;
     chapterId: string;
     isInteracted: boolean;
+    isAttunedWaystone?: boolean;
+    guardianDefeated?: boolean;
+    guardianSpawned?: boolean;
     char: string;
     color: string;
   }[];
   watchtower?: WatchtowerState;
+  props?: DungeonProp[];
+  corpses?: Corpse[];
+  bloodSplatters?: BloodSplatter[];
+  visitedTiles?: { [coordString: string]: boolean };
 }
 
 export interface DungeonLevelState {
@@ -131,7 +155,7 @@ export interface DungeonLevelState {
   chunkY: number; // overworld origin y
   map: TileType[][];
   discovered: boolean[][];
-  visible: boolean[][];
+  visible?: boolean[][];
   enemies: Enemy[];
   traps: Trap[];
   chests: Chest[];

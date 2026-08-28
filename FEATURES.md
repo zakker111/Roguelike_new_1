@@ -2,6 +2,10 @@
 
 Welcome to **Sunder: Chronicles of the Forge** (Abyss Rogue), an advanced procedurally generated full-screen tactical roguelike role-playing game. Below is an in-depth breakdown of the game's mechanics, aesthetics, and systems.
 
+### 🌐 Play & Test the Game Live
+- **Development App (Live Environment)**: [https://ais-dev-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app](https://ais-dev-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app)
+- **Shared Production Preview**: [https://ais-pre-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app](https://ais-pre-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app)
+
 ---
 
 ## 1. World Exploration & Procedural Generation
@@ -10,15 +14,19 @@ Welcome to **Sunder: Chronicles of the Forge** (Abyss Rogue), an advanced proced
 - **Jumbo Map Dimensions**: Each overworld chunk is dynamically scaled to an expanded **64x40 grid** of tiles, widening the walk space and adding pristine density to natural and structural assets.
 - **Dynamic Coordinate Boundaries**: The Overworld spans an infinitely scrolling tile grid. Crossing chunk borders dynamically prompts smooth procedural generation of new landscapes, saving the old chunks inside the game's state memory.
 - **Biome Multiplicity**: Chunks feature distinct eco-regions:
-  - 🌲 **Verdant Forests**: Soft plains filled with trees, wild grass pathways, spawning red berry bushes (`♣`), and small ponds.
-  - 🏜️ **Arid Deserts**: Barren golden sand dunes, cacti clusters, dry tumbleweeds (`*`), and dry stony patches.
-  - ❄️ **Tundra Glaciers**: Deep ice fields with frozen evergreens and snowdrifts. High-yield sweet berry bushes do not spawn under freezing weather circles. Any attempt to pluck barren winter shrubs generates frostbite warning reminders.
-  - 🐊 **Soggy Swamps**: Dense mud pits, mossy floor tiles, stagnant water bodies, and custom purple wild elderberries (`🫐`) instead of toxic radioactive markers.
-  - 🏰 **Towns & Settlements**: Civilized sanctuaries with shopkeepers, taverns, inns, and municipal guards. Weather in town biomes remains mild and protected.
+  - 🌲 **Verdant Forests**: Soft plains filled with trees, wild grass pathways, spawning Sweet Berries (`mat_berry`), rare Earthy Forest Truffles (`mat_forest_truffle`), and Wild Honeycombs (`mat_honeycomb`).
+  - 🏜️ **Arid Deserts**: Barren golden sand dunes, cacti clusters, dry tumbleweeds (`*`), and harvestable Sun-Blossom Aloe succulents (`mat_sun_aloe`).
+  - ❄️ **Tundra Glaciers & Glacial Caverns**: Deep subzero ice fields with frozen evergreens, snowdrifts, frostbite vents, falling icicles, and delicate Glacial Frostbloom flowers (`mat_frostbloom`).
+  - 🐊 **Soggy Swamps**: Dense mud pits, mossy floor tiles, stagnant water bodies, and harvestable Bioluminescent Nightshade herbs (`mat_swamp_nightshade`).
+  - 🪸 **Sunken Coral Reefs**: Azure oceanic lagoons, vibrant pink/cyan coral colonies, geysers, tidal pools, and drifting aquatic bubble atmospheres.
+  - 🌋 **Volcanic Calderas**: Searing magma fissures, obsidian crag plains, sulfur vents, rising ash particles, and molten lava lakes.
+  - 🏰 **Towns & Settlements**: Civilized sanctuaries with shopkeepers, taverns, inns, and municipal town guards. Weather in town biomes remains mild and protected. Town guards (`isTownGuard: true`) feature an active defense AI that continuously scans the settlement map for hostile invaders (bandits, rogue beasts, or hostile monsters). When a threat is detected, guards wake sleeping sentries within 30 tiles, march towards the hostile using BFS pathfinding (`getNextStepTowards`), and engage in reciprocal combat dealing persistent damage.
 - **Strict Biome-Aware Weather Rules Engine**: The weather simulation enforces biome climate rules—there is always strictly one active weather pattern played at a time, tailored to the current biome:
   - *Deserts*: Only sunny/clear, foggy, or sandstorm conditions (rain, snow, or blizzards never occur in deserts).
-  - *Tundras*: Only clear, snowy, or blizzard whiteouts.
+  - *Tundras & Glacial*: Only clear, snowy, or blizzard whiteouts.
   - *Forests & Swamps*: Clear, rainy, or foggy conditions.
+  - *Volcanic*: Clear, foggy, or ashfall ember showers.
+  - *Coral Reef*: Clear, rainy, or thunderstorm conditions.
   - *Towns*: Clear or mild weather.
   - *GM & God Panel Integration*: All Storyteller GM commands (`weather_rainy`, `weather_foggy`, `weather_snowy`) and God World Editor weather controls automatically validate and shift requested weather to valid biome equivalents using `getValidWeatherForBiome`.
 - **Absolute Cardinal Navigation**: Fixed overlay markers displaying NORTH, SOUTH, EAST, and WEST along the respective viewport margins for seamless coordinates tracking.
@@ -47,6 +55,40 @@ The overworld is populated with unique, historical landmark coordinates. Approac
   - *Channel Primeval Life Soul*: Absorb primeval energy to permanently expand vitality (**+12 Max HP**), draining current **-15 MP**.
   - *Extract Magic Shards*: Dig into empty eye sockets to scavenge **2x randomized elemental catalyst shards** (Fire, Frost, Poison, Lightning, or Shadow).
 
+### Runtime Modding API & Custom Dungeon Level Editor (v6.4.0 / Phase 47)
+A complete runtime extension and level design suite built directly into the game engine:
+- **Runtime Modding Engine & Plugin Manager (`src/utils/moddingEngine.ts`, `src/components/god/GodModdingTab.tsx`)**:
+  - **Custom Entities & Content Types**: Supports registering Custom Monsters, Custom Equipment/Weapons/Armor, Custom Spells, and Custom Dungeon Level Blueprints at runtime.
+  - **Local Persistence & Plugin Management**: Features full local storage persistence (`sunder_registered_mods_v1`), enable/disable toggles, JSON schema parsing with syntax validation, and instant export/import.
+  - **Community Sample Mod Packs Included**:
+    - *Mythical Behemoths Boss Pack*: Adds Titan Behemoth and Obsidian Dragon monsters.
+    - *High-Elven Sorcery Spellbook*: Adds Arcane Supernova, Chrono Freeze, and Divine Restoration spells.
+    - *Shadow Realm Relics Pack*: Adds Void Shatterer Scythe and Eclipse Ring items.
+    - *Forgotten Catacombs Blueprint*: Custom pre-configured multi-room dungeon layout.
+  - **Live Combat & Spawning Integration**: Integrated directly into `getEnemyTemplate()` in `src/utils/dungeon.ts`, making modded entities available across dungeon levels, overworld encounters, and God Panel spawners.
+- **Visual Grid-Based Dungeon Level Editor (`src/components/god/GodDungeonEditor.tsx`)**:
+  - **Multi-Brush Painter**:
+    - *Tile Painting Palette*: Floor, Wall, Water, Door, Stairs Up/Down, Grass, Path, Tree, Campfire, Bed, Fireplace.
+    - *Decor Prop Placement*: Sarcophagus, Weapon Rack, Bookshelf, Alchemist Table, Spring Well.
+    - *Monster & Player Placement*: Enemy spawn points and custom Player spawn location (`P`).
+  - **Procedural Generator Baseline**: One-click cellular automata cave generator to quickly carve out natural cavern layouts.
+  - **Instant Test-Play Launcher**: Test custom dungeon levels immediately in live gameplay with customized level depth, biome settings, and player starting position.
+
+### Interactive Level Decor Props & Ambient World Objects (v6.3.0)
+The world features interactive decor objects and environmental structures placed throughout dungeons, towns, safehouses, and ruins:
+- **Ten Interactive Decor Types**:
+  - ⚰️ **Ancient Sarcophagus**: Carved marble sarcophagus from ancient lords. Offers rare equipment loot or ancient gold coins (or summons a spectral skeleton if disturbed!).
+  - 🗡️ **Rusted Weapon Rack**: Racks holding antique blades and rusted spears. Grants random weapons or scrap metal alloys.
+  - 📚 **Lore Bookshelf**: Shelves crammed with leather-bound arcane volumes. Grants +25 XP or random spell scrolls upon inspection.
+  - 🧪 **Alchemist Worktable**: Bubbling glass retorts and herbal powders. Restores +25 MP and grants random elemental catalysts or brewing potions.
+  - 🛏️ **Warm Feather Bed**: Comfortable feather bed for deep restoration. Completely restores HP/MP, purges exhaustion, and applies the Well-Rested buff.
+  - 🔥 **Roaring Hearth**: A crackling brick fireplace dispelling cold. Restores HP, purges cold debuffs, and provides cozy warmth.
+  - 🚰 **Town Spring Well**: Cool mountain spring water bucket. Restores +30 HP and cleanses poison/debuffs.
+  - 📜 **Town Notice Board**: Pinned notices of local bounties and trade routes. Grants +15 Town Reputation and reveals regional rumors.
+  - 🛢️ **Cinder Cask**: Oak barrel tapped with aged spiced mead. Restores HP/MP and applies Drunken Cheer (+10% Crit Rate).
+  - ☀️ **Celestial Sundial**: Polished brass dial aligned with solar rays. Shifts time forward by +2 Hours and restores MP.
+- **Interactive Alert Banner**: Stepping adjacent to any decor object automatically displays a dedicated HUD banner showing the object's name, description, and status with direct click or keyboard interaction options.
+
 ### Wandering Wilderness Merchants (Seppo)
 Exploration yields encounters with rare traveling entities roaming the wilderness chunks:
 - **Drunk Wandering Merchant Seppo (S)**:
@@ -63,9 +105,12 @@ The overworld is fully awake, containing faction encampments, moving trade route
   - Small 5x5 fortified outlaw camps spawn procedurally on 25% of generated overworld chunks.
   - Features camp sentries, roasting spit decoration, and a locked camp-exclusive treasure chest.
   - Defeating the camp guards permanently lowers the regional danger level, rewards epic materials/catalysts from the chest, and awards **+15 Town Reputation** and **+150 XP**.
-- **Baron Tobias' Traveling Caravans**:
-  - Dynamically spawns trade wagon groups parked on overworld crossroads.
-  - Spotting and saving Baron Tobias' carriage from bandit ambushers rewards a heroic victory screen: granting **+250 Gold, +200 XP, +25 Town Reputation**, and an active **Rare Caravan Trade License**.
+- **Baron Tobias' Traveling Caravans & Tactical Wagon Defense (v6.7.0)**:
+  - **Dynamic Trade Escorts**: Dynamically spawns trade wagon groups parked on overworld crossroads or initiated from town Trade Modals.
+  - **Tactical Skirmish Map Deployment (`caravanSkirmishGen.ts`)**: Players can deploy directly onto a 24x18 tactical skirmish grid featuring a central Merchant Wagon (`🛒`), a guard campfire (`🔥`), and 2 allied Caravan Guards (`🛡️` Veteran Guard & `🏹` Crossbow Sentry).
+  - **Enemy AI Wagon Targeting & Hull Damage (`useEnemyAI.ts`)**: Ambushers split focus between the player, guards, and attacking the wagon's hull (`wagonHp`). Damage shows floating text alerts and reduces Cargo Integrity %.
+  - **World Threat Boss Ambushes (`caravanBosses.json`)**: High threat levels, Eclipse/Blood Moon phases, and long trade routes trigger World Threat Boss Ambushes (*Corrupted Road Baron Malakor*, *Gloomfang Alpha Werewolf*, *Thunderlord Warlord Volkan*, *Abyssal Void Harbinger*) wielding corrupted affixes (*Vampiric*, *Shieldbreaker*, *Thorns*, *Berserker*).
+  - **Cargo Integrity & Relic Payouts**: Escorting the wagon safely scales gold rewards based on remaining wagon HP %, and delivering caravans with >85% cargo integrity grants rare **Flame/Void Catalysts** and **+250 Gold & +200 XP**.
 - **Caravan Trade License Perks**:
   - Automatically displays a gold-embossed credential certificate inside the player's sidebar stats.
   - Grants a permanent **+30% Gold Sales Bonus** when selling equipment/materials back to shopkeepers and a permanent **-20% Purchase Discount** on all town stores.
@@ -946,6 +991,128 @@ Implemented realistic building interior acoustic detection, lowpass atmospheric 
 - **Indoor Building Accent Soundscapes**: Triggers indoor atmospheric background soundscapes (`fire_crackle`, `wood_creak`, `lute_pluck`, `clock_tick`) at soft gain levels (`0.06`–`0.09`) inside buildings.
 - **Surface-Aware Footsteps & Door SFX**: Synthesizes procedural `door_open` creaks, `door_close` thuds, `wood_footstep` (warm plank step), `stone_footstep` (crisp tile step), and `grass_step` (outdoor rustle), dynamically switching sound effects as the player steps across different floor materials or threshold doors.
 - **Acoustic Wall Occlusion**: Filters positional sound effects heard through building walls, low-pass filtering higher frequencies to simulate sound passing through solid barriers.
+
+---
+
+## 50. Dynamic Sun & Moon Directional Drop Shadows (v6.2.0)
+
+Implemented astronomical 24h solar/lunar cycle drop shadow vector projection engine (`src/canvas/shadowRenderer.ts`):
+
+- **Dynamic Vector Math**: Calculates real-time directional shadow vector offsets `(dx, dy)`, lengths, and opacities based on in-game 24h clock minutes (long morning shadows extending west at dawn, compact midday shadows at noon, long evening shadows extending east at dusk, cool slate moonlight shadows at night).
+- **Comprehensive Environmental Projection**: Casts soft translucent directional drop shadows beneath trees (`🌲`, `🌳`, `▲`), rock walls/veins, structure gates/signs, as well as living entities (Player, NPCs, Enemies, Bosses) in `tileMapRenderer.ts` and `entityLayerRenderer.ts`.
+- **Astronomical Precision**: Shadows smoothly rotate and elongate as hours pass, blending seamlessly into night slate hues under the moon.
+
+---
+
+## 51. Water Ripples & Footstep Splashes (v6.2.0)
+
+Implemented kinetic water surface physics and rain footstep particles (`src/canvas/entityLayerRenderer.ts`, `src/canvas/visualFxParticleSystem.ts`):
+
+- **Concentric Water Ripples**: Triggers expanding concentric ring ripple animations (`spawnWaterRipple`) when player, NPCs, or enemies move onto water (`🌊`), shallow stream, or swamp bog (`🐊`) tiles.
+- **Rain Footstep Splashes**: Generates temporary water droplet splash particles (`spawnFootstepSplash`) when moving over any outdoor tile during active `rainy` or `stormy` weather conditions.
+- **Entity Agnostic**: Functions dynamically for player steps, NPC routines, companion movement, and enemy chase paths.
+
+---
+
+## 52. Ambient Environmental Particles & Desert Dust Devils (v6.2.0)
+
+Implemented biome-specific ambient particle systems in the 60 FPS HTML5 Canvas engine (`src/canvas/weatherLightingRenderer.ts`):
+
+- **Falling Leaves, Cherry Blossoms & Spores**: Forest, Tundra, and Swamp biomes generate ambient floating leaf particles (`fallingLeaves`), cherry blossom petals (`cherryBlossoms`), and glowing bio-luminescent spores (`spores`).
+- **Desert Dust Devils**: Desert biomes spawn animated spinning dust devil vortex particles with rotational physics and sandy trails.
+- **60 FPS Performance Optimized**: Batched path drawing and capped active particle pools prevent canvas thrashing.
+
+---
+
+## 53. Weather Pattern Transition Fade & Atmospheric Overlays (v6.2.0)
+
+Implemented smooth weather transition cross-fading and transitional atmospheric veil engine (`src/canvas/weatherLightingRenderer.ts`):
+
+- **Smooth Weather Cross-Fade**: When weather conditions shift (e.g. from clear to rain, fog, sandstorm, or blizzard), outgoing and incoming weather layers cross-fade smoothly over a 2.4-second interval (`renderWeatherOverlay`).
+- **Fade-to-Fog & Darken-Screen Veil**: During the transition window, a sine-wave bell curve overlay peaks at midpoint transition (`progress = 0.5`), casting a subtle darkening veil and soft rolling fog haze across the canvas.
+- **Atmospheric Depth**: Prevents abrupt visual pops, providing a cinematic, gradual shift in sky tone, lighting, and ambient precipitation.
+
+---
+
+## 54. Autonomous GM Enhancements: Weather Directives, Threat Escalation & Caravan Injections (v6.8.0)
+
+Implemented narrative GM storytelling intelligence extensions inside the core game loop (`src/utils/gmStoryteller.ts`, `src/data/gmCommands.ts`):
+
+- **Autonomous Biome-Aware Weather Modulations**:
+  - Sadistic & Mischievous GMs call down harsh tempests (`gm_harsh_tempest`): Blizzards in Tundra, Sandstorms in Deserts, and Torrential Storms in Forests.
+  - Benevolent GMs part storm clouds (`gm_benevolent_clear_skies`), clearing rain and dispersing mist into calming warm light when player HP is low.
+  - Meteorological climaxes and ambient audio cues (`thunder`, `wind_howl`, `spell_cast`) accompany all atmospheric state shifts.
+- **Dynamic World Threat & Chaos Escalation**:
+  - Dynamic threat surges and Chaos Matrix adaptation monitor player kill streaks, buffing monster stats, increasing elite corruption affixes, and summoning Anomaly mutations.
+  - Periodic Chaos Core Surges (rolls 1-20) deliver tactical hazard traps or divine restoration boons.
+- **Autonomous Caravan Injections & Outlaw Blockades**:
+  - The GM autonomously manifests passing travelling merchant wagons (`🛒`) in overworld wilderness chunks to offer field supplies or escort contracts.
+  - Dangerous trade corridors trigger dynamic Outlaw Road Blockades (`gm_road_blockade_skirmish`) led by Corrupted Road Barons.
+
+---
+
+## 55. Combat Visual Clarity & Directional Outward Drift (v6.9.0)
+
+Implemented clear line-of-sight directional drift mechanics and crisp text rendering for all combat floating numbers (`src/utils/combatFloaterDrift.ts`, `src/components/GameCanvas.tsx`, `src/canvas/entityLayerRenderer.ts`):
+
+- **Directional Outward Drift (Clear Line of Sight)**:
+  - Floating damage, critical strike, and spell damage numbers calculate their vector trajectory away from the attack source point $(\Delta x, \Delta y)$.
+  - Spawns offset outwards to the flank of the impacted entity, arcing smoothly away along the momentum vector with buoyant upward lift.
+  - Keeps entity sprites, enemy health bars, casting animations, and telegraph tiles completely unobstructed during intense melee and ranged skirmishes.
+- **Flank Divergence for Ambient / Self Effects**:
+  - Healing, mana restoration, and self-inflicted damage diverge outwards to side flanks rather than sitting on top of the central character model.
+- **Enhanced Contrast & Rapid Decay**:
+  - Rendered with deep dark outlines and high-contrast color fills for legibility across all biomes and lighting conditions.
+  - Refined decay rate (~0.9s duration) with smooth cubic ease-out alpha falloff to prevent visual clutter and screen crowding.
+
+---
+
+## 56. Contextual Lore & Deep Flavor Logging (v6.9.1)
+
+Implemented comprehensive narrative transparency and contextual lore explanations across all Game Master storyteller interventions, Chaos Surges, environmental events, and player world actions (`src/utils/gmStoryteller.ts`, `src/hooks/useEnemyAI.ts`):
+
+- **Contextual Narrative Explanations**:
+  - Every GM intervention, environmental hazard, weather alteration, and chaos surge explicitly logs the *cause and context* behind the event.
+  - Lore-grounded descriptors (such as ancient runic rejuvenation, leyline fractures, subterranean clockwork gears, celestial storms, and void rift tears) explain the mechanical consequences clearly.
+- **Multi-Message Dispatch**:
+  - The storyteller engine tracks and delivers simultaneous chaos evaluations and GM interventions as structured multi-message events to ensure no narrative logs are lost during combat or exploration turns.
+- **Lore Transparency**:
+  - All event logs maintain immersion by anchoring gameplay state mutations to established world lore, Finnish mythological themes, and dungeon mechanics.
+
+---
+
+## 57. Player Attack & Combat Resolution Hook Decoupling (v6.9.2)
+
+Decoupled player combat resolution and bump-to-attack mechanics from the monolithic `App.tsx` into a dedicated custom hook (`src/hooks/usePlayerAttack.ts`):
+
+- **Encapsulated Player Combat Mechanics**:
+  - Encapsulates player melee strikes, ranged weapon shots, stamina consumption, and critical strike calculations.
+  - Resolves weapon and shield durability decay across active hand slots with broken item notifications.
+  - Triggers companion follower attack assists and intercept maneuvers.
+  - Dispatches directional outward drift vectors (`combatFloaterDrift.ts`) for floating damage numbers and kinetic visual effects.
+- **Monolith Decomposition & Clean Architecture**:
+  - Streamlines `App.tsx` to serve as a focused UI and layout orchestrator.
+  - Eliminated dead functions and removed 75+ unused imports across the main component tree.
+  - Enforced 100% type safety and verified zero regressions across all 30 Vitest test suites (133 tests).
+
+---
+
+## 58. Sovereign God Mode Console Modularization (v7.0.0)
+
+Extracted all God Mode developer state and sub-tools into a dedicated hook and component architecture:
+
+- **Centralized Sandbox State Hook (`src/hooks/god/useGodPanelState.ts`)**:
+  - Centralizes invincibility toggles, stat overrides, item/relic spawning, teleportation (overworld chunks, empty arena, dungeon floors), blueprint preset conversions, and simulation test runners.
+- **Decomposed Tab Sub-Components (`src/components/god/`)**:
+  - Modularized into 24 distinct developer panels (`GodArenaTab`, `GodCheatsTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherTab`, `GodStorytellerTab`, `GodReplayTab`, etc.).
+  - Reduced `GodPanelOverlay.tsx` by ~3,000 lines down to a clean, high-performance tab layout container.
+- **Automated Verification**:
+  - Verified 31 Vitest test suites (139 tests passing 100% green).
+
+
+
+
+
 
 
 

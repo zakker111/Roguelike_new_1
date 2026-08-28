@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TileType, Chest, Enemy, EnemyState, EnemyType, WatchtowerState } from '../types';
+import { TileType, Chest, Enemy, EnemyState, EnemyType, WatchtowerState, BiomeType } from '../types';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from '../utils/itemsData';
 import { POI_BLUEPRINTS, getPOIBlueprint } from '../data/worldHistory';
+import { ensureEntranceClearance, connectPoiSpokeToTrail } from './organic/roadNetworkGen';
 
 export function generateWatchtowerPOI(
   map: TileType[][],
@@ -13,7 +14,9 @@ export function generateWatchtowerPOI(
   chunkY: number,
   prng: (x: number, y: number, seed?: number) => number,
   chests: Chest[],
-  enemies: Enemy[]
+  enemies: Enemy[],
+  width: number = 48,
+  height: number = 32
 ): WatchtowerState {
   const wtX = 20;
   const wtY = 10;
@@ -53,6 +56,10 @@ export function generateWatchtowerPOI(
       }
     }
   }
+
+  // Clear entrance clearance runway outward from watchtower gate & connect road spoke
+  ensureEntranceClearance(map, wtX + 4, wtY + 8, width, height, 'south');
+  connectPoiSpokeToTrail(map, wtX + 4, wtY + 9, width, height, true);
 
   // Initial Faction Owner
   const initialFaction = chunkX > 0 ? 'vanguard' : (chunkX < 0 ? 'syndicate' : 'neutral');
@@ -105,6 +112,7 @@ export function generateWatchtowerPOI(
     state: EnemyState.Patrolling,
     isBoss: true,
     isElite: true,
+    difficultyTier: 'apex',
     patrolPath: [{ x: wtX + 4, y: wtY + 3 }],
     patrolIndex: 0,
     debuffs: []
@@ -129,6 +137,7 @@ export function generateWatchtowerPOI(
     char: '🛡',
     state: EnemyState.Patrolling,
     isElite: true,
+    difficultyTier: 'tough',
     patrolPath: [{ x: wtX + 2, y: wtY + 4 }],
     patrolIndex: 0,
     debuffs: []
@@ -150,6 +159,7 @@ export function generateWatchtowerPOI(
     char: '🛡',
     state: EnemyState.Patrolling,
     isElite: true,
+    difficultyTier: 'tough',
     patrolPath: [{ x: wtX + 6, y: wtY + 4 }],
     patrolIndex: 0,
     debuffs: []
@@ -181,6 +191,7 @@ export function generateWatchtowerPOI(
       char: '🏹',
       state: EnemyState.Patrolling,
       isElite: false,
+      difficultyTier: 'tough',
       patrolPath: [{ x: spot.x, y: spot.y }],
       patrolIndex: 0,
       debuffs: []
@@ -292,6 +303,12 @@ export function generateRuinsPOI(
     const bx = ruinsX + Math.floor(ruinsW / 2);
     const by = ruinsY + Math.floor(ruinsH / 2) + 1;
 
+    // Clear entrance clearance runway at ruins entrance & connect road spoke
+    const entranceX = ruinsX + Math.floor(ruinsW / 2);
+    const entranceY = ruinsY + ruinsH - 1;
+    ensureEntranceClearance(map, entranceX, entranceY, width, height, 'south');
+    connectPoiSpokeToTrail(map, entranceX, entranceY + 1, width, height, true);
+
     enemies.push({
       id: `ruin_boss_${chunkX}_${chunkY}`,
       x: bx,
@@ -309,6 +326,7 @@ export function generateRuinsPOI(
       state: EnemyState.Patrolling,
       isElite: true,
       isBoss: true,
+      difficultyTier: 'apex',
       eliteEffect: 'Titan',
       patrolPath: [
         { x: bx, y: by },
@@ -325,7 +343,7 @@ export function generatePointsOfInterest(
   map: TileType[][],
   chunkX: number,
   chunkY: number,
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town',
+  biome: BiomeType,
   width: number,
   height: number,
   prng: (x: number, y: number, seed?: number) => number,
@@ -433,18 +451,27 @@ export function generatePointsOfInterest(
       if (map[poiY + 2]?.[poiX + 1] === TileType.Grass) map[poiY + 2][poiX + 1] = TileType.Wall;
     }
 
+    // Connect POI to nearest trail network with safe clearance
+    ensureEntranceClearance(map, poiX, poiY, width, height, 'all');
+    connectPoiSpokeToTrail(map, poiX, poiY, width, height, true);
+
     const blueprint = getPOIBlueprint(pType, biome, poiRoll);
     if (blueprint) {
       poisList.push({
         id: `poi_${chunkX}_${chunkY}_${pType}`,
         x: poiX,
         y: poiY,
+        chunkX,
+        chunkY,
         name: blueprint.name,
         type: pType,
         description: blueprint.description,
         historySnippet: blueprint.historySnippet,
         chapterId: blueprint.chapterId,
         isInteracted: false,
+        isAttunedWaystone: false,
+        guardianDefeated: false,
+        guardianSpawned: false,
         char: blueprint.char,
         color: blueprint.color
       });

@@ -1,6 +1,7 @@
 import worldConfig from '../data/worldConfig.json';
+import type { BiomeType } from '../types';
 
-export type BiomeType = 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
+export type { BiomeType };
 
 /**
  * Deterministic smooth organic noise based on low-frequency sine/cosine waves
@@ -34,8 +35,12 @@ export function getOrganicBiome(chunkX: number, chunkY: number, worldSeed: numbe
 
   const thresholds = worldConfig.biomeThresholds;
 
-  if (temperature < thresholds.tundra.temperatureMax) {
+  if (temperature < thresholds.glacial.temperatureMax && moisture >= thresholds.glacial.moistureMin) {
+    return 'glacial'; // Subzero frozen ice sheets & frost caverns
+  } else if (temperature < thresholds.tundra.temperatureMax) {
     return 'tundra'; // Cold environments are snowy Tundra
+  } else if (temperature >= thresholds.volcanic.temperatureMin && moisture <= thresholds.volcanic.moistureMax) {
+    return 'volcanic'; // Superheated molten caldera & ash wastes
   } else if (temperature >= thresholds.desert.temperatureMin && moisture < thresholds.desert.moistureMax) {
     return 'desert'; // Warm and dry environments are Desert
   } else if (temperature >= thresholds.swamp.temperatureMin && moisture >= thresholds.swamp.moistureMin) {

@@ -60,7 +60,7 @@ export const initialWorldState: WorldState = {
   weather: 'clear',
   season: 'spring',
   gmAutonomousWeather: true,
-  gmWeatherInterval: 25,
+  gmWeatherInterval: 120,
   dungeonProps: [],
   dungeonLevels: {},
   corpses: [],

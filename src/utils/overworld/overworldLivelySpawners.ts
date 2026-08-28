@@ -2,6 +2,7 @@ import { TileType, NPC, Enemy, Trap, Chest, WatchtowerState, EnemyType, EnemySta
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
 import { getEnemyTemplate } from "../dungeon";
 import { POI_BLUEPRINTS, getPOIBlueprint } from "../../data/worldHistory";
+import { applyCombatArchetypeAndChaosScaling } from "../combatArchetypes";
 import {
   prng,
   findNearestSafeNpcTile,
@@ -11,6 +12,7 @@ import {
   generateRuinsPOI,
   generatePointsOfInterest,
 } from "../../world/poiGenerators";
+import { ensureEntranceClearance, connectPoiSpokeToTrail } from "../../world/organic";
 import { OverworldGenContext } from "./types";
 
 export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
@@ -39,7 +41,9 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
   let isCampPlaced = false;
   let isCaravanPlaced = false;
 
-  if (!hasTown) {
+  const distFromOrigin = Math.hypot(chunkX, chunkY);
+
+  if (!hasTown && distFromOrigin > 1.5) {
     const campAndCaravanSeed = prng(chunkX * 19, chunkY * 31, 5543);
     
     if (campAndCaravanSeed < 0.28) {
@@ -216,24 +220,33 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
           const guardChar = chars[idx % chars.length];
           const guardColor = colors[idx % colors.length];
 
-          let gHp = 45;
-          let gAtk = 5;
-          let gDef = 3;
+          const isCaptain = idx === 2;
+          const tier: 'standard' | 'tough' = isCaptain ? 'tough' : 'standard';
+
+          let gHp = 24;
+          let gAtk = 4;
+          let gDef = 1;
 
           if (campType === 'goblin') {
-            gHp = 30; gAtk = 4; gDef = 1;
+            gHp = isCaptain ? 32 : (idx === 1 ? 16 : 18);
+            gAtk = isCaptain ? 5 : 3;
+            gDef = isCaptain ? 2 : 1;
           } else if (campType === 'syndicate') {
-            gHp = 55; gAtk = 6; gDef = 4;
+            gHp = isCaptain ? 44 : (idx === 1 ? 20 : 26);
+            gAtk = isCaptain ? 6 : 4;
+            gDef = isCaptain ? 3 : 2;
           } else if (campType === 'vanguard') {
-            gHp = 65; gAtk = 7; gDef = 5;
+            gHp = isCaptain ? 50 : (idx === 1 ? 22 : 28);
+            gAtk = isCaptain ? 7 : 5;
+            gDef = isCaptain ? 4 : 2;
           }
 
-          enemies.push({
+          const rawGuard: Enemy = {
             id: `camp_guard_${chunkX}_${chunkY}_${idx}`,
             x: gx,
             y: gy,
             type: enemyTypeStr,
-            name: `${guardName} [Camp Sentry]`,
+            name: `${guardName} [${isCaptain ? 'Tough Camp Captain' : 'Camp Sentry'}]`,
             hp: gHp,
             maxHp: gHp,
             atk: gAtk,
@@ -243,14 +256,28 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
             color: guardColor,
             char: guardChar,
             state: EnemyState.Patrolling,
-            isElite: idx === 2, // Desperado/Pyromaniac/Enforcer/Crusader is elite
-            eliteEffect: idx === 2 ? 'Furious' : undefined,
+            difficultyTier: tier,
+            isElite: isCaptain, // Desperado/Pyromaniac/Enforcer/Crusader is elite
+            eliteEffect: isCaptain ? 'Furious' : undefined,
             patrolPath: [{ x: gx, y: gy }, { x: gx + 1, y: gy }, { x: gx, y: gy + 1 }],
             patrolIndex: 0,
             debuffs: [],
             faction: campType
-          });
+          };
+
+          const scaledGuard = applyCombatArchetypeAndChaosScaling(
+            rawGuard,
+            0,
+            ctx.playerStats,
+            0
+          );
+
+          enemies.push(scaledGuard);
         });
+
+        // Clear camp entrance clearance runway & connect road spoke
+        ensureEntranceClearance(map, campX, campY + 2, width, height, 'south');
+        connectPoiSpokeToTrail(map, campX, campY + 2, width, height, true);
       }
     } else if (campAndCaravanSeed >= 0.28 && campAndCaravanSeed < 0.45) {
       // 17% chance of a Wandering Caravan under active Bandit Ambush
@@ -286,6 +313,10 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
         // Place a Carriage sign / box
         if (map[caravanY]?.[caravanX] === TileType.Grass) map[caravanY][caravanX] = TileType.Sign;
         if (map[caravanY]?.[caravanX + 1] === TileType.Grass) map[caravanY][caravanX + 1] = TileType.Table;
+
+        // Clear approach and connect caravan to road network
+        ensureEntranceClearance(map, caravanX, caravanY + 1, width, height, 'all');
+        connectPoiSpokeToTrail(map, caravanX, caravanY + 1, width, height, true);
 
         // Spawn interactive Baron Tobias NPC as Baron Tobias (Caravan Merchant)
         npcs.push({
@@ -342,26 +373,36 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
           const bx = caravanX + bnd.dx;
           const by = caravanY + bnd.dy;
 
-          enemies.push({
+          const rawAmbusher: Enemy = {
             id: `caravan_bandit_${chunkX}_${chunkY}_${idx}`,
             x: bx,
             y: by,
             type: bnd.char === 'G' ? EnemyType.Goblin : EnemyType.OrcBrute,
             name: `${bnd.name} [Hostile]`,
-            hp: 35,
-            maxHp: 35,
+            hp: bnd.char === 'G' ? 18 : 24,
+            maxHp: bnd.char === 'G' ? 18 : 24,
             atk: 4,
-            def: 2,
+            def: 1,
             range: 1,
             speed: 1,
             color: bnd.color,
             char: bnd.char,
             state: EnemyState.Chasing,
+            difficultyTier: 'standard',
             isElite: false,
             patrolPath: [],
             patrolIndex: 0,
             debuffs: []
-          });
+          };
+
+          const scaledAmbusher = applyCombatArchetypeAndChaosScaling(
+            rawAmbusher,
+            0,
+            ctx.playerStats,
+            0
+          );
+
+          enemies.push(scaledAmbusher);
         });
       }
     } else if (campAndCaravanSeed >= 0.45 && campAndCaravanSeed < 0.60) {

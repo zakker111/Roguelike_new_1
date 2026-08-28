@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, MessageSquare, Scroll, ShoppingBag, Swords, ShieldAlert, Sparkles, HelpCircle, CloudRain, Sun, Snowflake, CloudFog, CupSoda } from 'lucide-react';
+import { X, MessageSquare, Scroll, ShoppingBag, Swords, ShieldAlert, Sparkles, HelpCircle, CloudRain, Sun, Snowflake, CloudFog, CupSoda, Navigation } from 'lucide-react';
 import { NPC, PlayerStats } from '../../types';
 import { playSound } from '../../utils/audio';
 import { getWeatherTimeContextDialogue, getRegionalRumorAndGossip } from '../../utils/npcDialogue';
@@ -46,8 +46,31 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
     return getWeatherTimeContextDialogue(npc, { weather, gameTime, biome, season, townReputation });
   }, [npc, weather, gameTime, biome, season, townReputation]);
 
-  const isMerchant = npc.role === 'merchant' || npc.role === 'blacksmith' || npc.role === 'apothecary' || npc.role === 'merchant_seppo' || npc.role === 'fishmonger' || npc.role === 'harbor_master' || npc.role === 'sailor' || npc.role === 'dockworker' || npc.role === 'ferried_navigator';
-  const isTavernOrDrinking = npc.role === 'patron' || npc.role === 'villager' || npc.role === 'dockworker' || npc.role === 'sailor' || npc.isDrinking || npc.scheduleState === 'leisure';
+  const isMerchant = 
+    npc.role === 'merchant' || 
+    npc.role === 'blacksmith' || 
+    npc.role === 'apothecary' || 
+    npc.role === 'merchant_seppo' || 
+    npc.role === 'fishmonger' || 
+    npc.role === 'harbor_master' || 
+    npc.role === 'sailor' || 
+    npc.role === 'dockworker' || 
+    npc.role === 'ferried_navigator' ||
+    npc.role === 'merchant_caravan' ||
+    npc.role === ('merchant_caravan_ambushed' as any) ||
+    npc.role === 'traveler_merchant' ||
+    (npc.role && typeof npc.role === 'string' && (npc.role.includes('merchant') || npc.role.includes('caravan') || npc.role.includes('trader'))) ||
+    (npc.name && (npc.name.toLowerCase().includes('caravan') || npc.name.toLowerCase().includes('merchant') || npc.name.toLowerCase().includes('trader') || npc.name.toLowerCase().includes('sledger') || npc.name.toLowerCase().includes('barger') || npc.name.toLowerCase().includes('caravaneer')));
+
+  const isCaravanNpc = 
+    npc.role === 'merchant_caravan' ||
+    npc.role === ('merchant_caravan_ambushed' as any) ||
+    npc.role === 'traveler_merchant' ||
+    npc.id?.includes('caravan') ||
+    npc.id?.includes('wandering') ||
+    (npc.name && (npc.name.toLowerCase().includes('caravan') || npc.name.toLowerCase().includes('caravaneer') || npc.name.toLowerCase().includes('sledger') || npc.name.toLowerCase().includes('barger') || npc.name.toLowerCase().includes('trader')));
+
+  const isTavernOrDrinking = npc.role === 'innkeeper' || npc.role === 'drunk_villager' || npc.role === 'patron' || npc.isDrinking || (npc.scheduleState === 'leisure' && npc.isDrinking);
 
   const handleNextDialogue = () => {
     playSound('loot');
@@ -151,13 +174,28 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
             <span>Ask for Regional Rumors & Weather Tips</span>
           </button>
 
-          <button
-            onClick={handleBuyDrink}
-            className="w-full py-2.5 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 border border-amber-800/60 shadow-md"
-          >
-            <CupSoda className="w-4 h-4 text-amber-400" />
-            <span>🍻 Buy a Round of Drinks (5 Gold)</span>
-          </button>
+          {isTavernOrDrinking && (
+            <button
+              onClick={handleBuyDrink}
+              className="w-full py-2.5 bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 border border-amber-800/60 shadow-md"
+            >
+              <CupSoda className="w-4 h-4 text-amber-400" />
+              <span>🍻 Buy a Round of Drinks (5 Gold)</span>
+            </button>
+          )}
+
+          {isCaravanNpc && onOpenTrade && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenTrade();
+              }}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-blue-950/50 border border-blue-400/40 animate-pulse"
+            >
+              <Navigation className="w-4 h-4 text-yellow-300" />
+              <span>🗺️ View Caravan Escort Routes & Fast Travel</span>
+            </button>
+          )}
 
           {isMerchant && onOpenTrade && (
             <button
@@ -168,7 +206,7 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
               className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40"
             >
               <ShoppingBag className="w-4 h-4" />
-              <span>Open Merchant Store</span>
+              <span>Open Merchant Store & Caravan Counter</span>
             </button>
           )}
         </div>

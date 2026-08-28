@@ -1,6 +1,17 @@
-import { GameState } from '../types';
+import { GameState, TileType } from '../types';
 import { SpriteSheetConfig } from '../components/GameCanvas';
 import { drawSpriteOrAscii } from './spriteRenderer';
+import { getDirectionalShadowParams, renderEntityDirectionalShadow } from './shadowRenderer';
+import { visualFxParticleSystem } from './visualFxParticleSystem';
+
+const lastEntityPositions = new Map<string, { x: number; y: number }>();
+
+function isWaterOrSwampTile(tile: any): boolean {
+  if (!tile) return false;
+  if (tile === TileType.Water || tile === 'Water' || tile === 'ShallowWater' || tile === 'Swamp' || tile === 'Stream') return true;
+  if (typeof tile === 'string' && (tile.includes('🌊') || tile.includes('🐊') || tile.includes('~'))) return true;
+  return false;
+}
 
 export interface GameVisualEffect {
   id: string;
@@ -62,6 +73,8 @@ export function renderEntityLayer({
     return tx >= minTileX && tx <= maxTileX && ty >= minTileY && ty <= maxTileY;
   };
 
+  const shadowParams = getDirectionalShadowParams(gameState.gameTime || 720, gameState.weather);
+
   // 4b. Render Corpses (on top of blood, under living units/traps)
   if (gameState.corpses) {
     gameState.corpses.forEach((corpse) => {
@@ -98,8 +111,8 @@ export function renderEntityLayer({
     });
   }
 
-  // 4c. Render Dungeon Props (under traps and items)
-  if (!gameState.isOverworld && gameState.dungeonProps) {
+  // 4c. Render Decor & Dungeon Props (under traps and items)
+  if (gameState.dungeonProps && gameState.dungeonProps.length > 0) {
     gameState.dungeonProps.forEach((prop) => {
       const x = prop.x;
       const y = prop.y;
@@ -111,9 +124,9 @@ export function renderEntityLayer({
       const isVisible = gameState.visible[y]?.[x] ?? false;
 
       ctx.save();
-      ctx.globalAlpha = isVisible ? 0.90 : 0.40;
+      ctx.globalAlpha = isVisible ? 0.95 : 0.45;
       ctx.fillStyle = prop.color || '#64748b';
-      ctx.font = 'bold 13px "JetBrains Mono", Menlo, monospace';
+      ctx.font = 'bold 14px "JetBrains Mono", Menlo, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(prop.char, rx + tileSize / 2, ry + tileSize / 2);
@@ -249,6 +262,9 @@ export function renderEntityLayer({
       const rx = x * tileSize - camX;
       const ry = y * tileSize - camY;
 
+      // Directional drop shadow for Town NPCs
+      renderEntityDirectionalShadow(ctx, rx, ry, tileSize, shadowParams, 0.9);
+
       ctx.strokeStyle = npc.color + '44';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -278,6 +294,20 @@ export function renderEntityLayer({
       ctx.fillStyle = npc.color;
       ctx.font = '600 7px "Inter", sans-serif';
       ctx.fillText(npc.role.toUpperCase(), rx + tileSize / 2, ry + tileSize - 4);
+
+      // Check movement for water ripples & rain splashes
+      const npcKey = `npc_${npc.id || npc.name}`;
+      const prevNpcPos = lastEntityPositions.get(npcKey);
+      if (prevNpcPos && (prevNpcPos.x !== x || prevNpcPos.y !== y)) {
+        const tile = gameState.map[y]?.[x];
+        if (isWaterOrSwampTile(tile)) {
+          visualFxParticleSystem.spawnWaterRipple(rx + tileSize / 2, ry + tileSize / 2);
+        }
+        if (gameState.isOverworld && (gameState.weather === 'rainy' || (gameState.weather as string) === 'stormy')) {
+          visualFxParticleSystem.spawnFootstepSplash(rx + tileSize / 2, ry + tileSize / 2, 5);
+        }
+      }
+      lastEntityPositions.set(npcKey, { x, y });
     });
   }
 
@@ -318,7 +348,20 @@ export function renderEntityLayer({
     const rx = x * tileSize - camX;
     const ry = y * tileSize - camY;
 
-    if (enemy.isBoss) {
+    const isApex = enemy.isBoss || enemy.difficultyTier === 'apex';
+    const isTough = enemy.isElite || enemy.difficultyTier === 'tough';
+
+    // Directional drop shadow for Enemies
+    renderEntityDirectionalShadow(
+      ctx,
+      rx,
+      ry,
+      tileSize,
+      shadowParams,
+      isApex ? 1.5 : isTough ? 1.25 : 0.95
+    );
+
+    if (isApex) {
       const radial = ctx.createRadialGradient(
         rx + tileSize / 2,
         ry + tileSize / 2,
@@ -334,7 +377,7 @@ export function renderEntityLayer({
       ctx.beginPath();
       ctx.arc(rx + tileSize / 2, ry + tileSize / 2, tileSize * 1.15, 0, Math.PI * 2);
       ctx.fill();
-    } else if (enemy.isElite) {
+    } else if (isTough) {
       const radial = ctx.createRadialGradient(
         rx + tileSize / 2,
         ry + tileSize / 2,
@@ -415,11 +458,28 @@ export function renderEntityLayer({
       ctx.font = '600 7px "Inter", sans-serif';
       ctx.fillText(`${enemy.hp}/${enemy.maxHp}`, rx + tileSize / 2, ry + tileSize - 4);
     }
+
+    // Check movement for water ripples & rain splashes
+    const enemyKey = `enemy_${enemy.id}`;
+    const prevEnemyPos = lastEntityPositions.get(enemyKey);
+    if (prevEnemyPos && (prevEnemyPos.x !== x || prevEnemyPos.y !== y)) {
+      const tile = gameState.map[y]?.[x];
+      if (isWaterOrSwampTile(tile)) {
+        visualFxParticleSystem.spawnWaterRipple(rx + tileSize / 2, ry + tileSize / 2);
+      }
+      if (gameState.isOverworld && (gameState.weather === 'rainy' || (gameState.weather as string) === 'stormy')) {
+        visualFxParticleSystem.spawnFootstepSplash(rx + tileSize / 2, ry + tileSize / 2, 5);
+      }
+    }
+    lastEntityPositions.set(enemyKey, { x, y });
   });
 
   // 8. Render Player
   const prx = gameState.playerX * tileSize - camX;
   const pry = gameState.playerY * tileSize - camY;
+
+  // Directional drop shadow for Player
+  renderEntityDirectionalShadow(ctx, prx, pry, tileSize, shadowParams, 1.0);
 
   const torchGrad = ctx.createRadialGradient(
     prx + tileSize / 2,
@@ -480,6 +540,20 @@ export function renderEntityLayer({
     ctx.arc(prx + tileSize / 2, pry + tileSize / 2, tileSize * 0.5, 0, Math.PI * 2);
     ctx.stroke();
   }
+
+  // Check player movement for water ripples & rain splashes
+  const playerKey = 'player';
+  const prevPlayerPos = lastEntityPositions.get(playerKey);
+  if (prevPlayerPos && (prevPlayerPos.x !== gameState.playerX || prevPlayerPos.y !== gameState.playerY)) {
+    const tile = gameState.map[gameState.playerY]?.[gameState.playerX];
+    if (isWaterOrSwampTile(tile)) {
+      visualFxParticleSystem.spawnWaterRipple(prx + tileSize / 2, pry + tileSize / 2);
+    }
+    if (gameState.isOverworld && (gameState.weather === 'rainy' || (gameState.weather as string) === 'stormy')) {
+      visualFxParticleSystem.spawnFootstepSplash(prx + tileSize / 2, pry + tileSize / 2, 6);
+    }
+  }
+  lastEntityPositions.set(playerKey, { x: gameState.playerX, y: gameState.playerY });
 
   // 9. Render Floating Particle Effects / Damage numbers / Projectiles
   effects.forEach((fx) => {
@@ -645,17 +719,28 @@ export function renderEntityLayer({
       ctx.restore();
       ctx.shadowBlur = 0;
     } else {
-      ctx.font = fx.type === 'crit_num' ? 'bold 15px "Space Grotesk", system-ui' : '950 13px "Inter", system-ui';
-      ctx.fillStyle = fx.color;
-      ctx.globalAlpha = fx.life;
+      ctx.save();
+      const alpha = Math.min(1.0, Math.max(0, Math.pow(fx.life, 0.75)));
+      ctx.globalAlpha = alpha;
       ctx.textAlign = 'center';
-      ctx.shadowColor = '#000000';
-      ctx.shadowBlur = 6;
+      ctx.textBaseline = 'middle';
+
+      const isCrit = fx.type === 'crit_num';
       
+      ctx.font = isCrit 
+        ? 'bold 15px "Space Grotesk", system-ui' 
+        : '900 13px "Inter", system-ui';
+
+      // Crisp dark text outline for readability without obscuring background
+      ctx.lineWidth = isCrit ? 3.5 : 2.5;
+      ctx.strokeStyle = 'rgba(2, 6, 23, 0.92)'; // deep slate shadow ring
+      ctx.strokeText(fx.text || '', frx, fry);
+
+      // Main vibrant fill
+      ctx.fillStyle = fx.color;
       ctx.fillText(fx.text || '', frx, fry);
-      
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1.0;
+
+      ctx.restore();
     }
   });
 }

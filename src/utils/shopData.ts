@@ -1,4 +1,4 @@
-import { EquipmentItem, WeaponBaseType, CatalystType } from '../types';
+import { EquipmentItem, WeaponBaseType } from '../types';
 import { SPELL_SCROLLS, getSpellScrollAsEquipmentItem } from './spellScrolls';
 import shopsJson from '../data/shops.json';
 export { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';

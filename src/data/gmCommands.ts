@@ -1,22 +1,24 @@
 import React from 'react';
-import { GameState, Enemy, EnemyType, EnemyState, TileType, Follower, EquipmentItem } from '../types';
+import { GameState, Enemy, EnemyType, EnemyState, TileType, Follower, EquipmentItem, GameLogMessage } from '../types';
 import { isCastleTownAtChunk } from '../utils/overworld';
 import { generateLevel, generateDungeonProps } from '../utils/dungeon';
 import { computeFOV } from '../utils/ai';
 import { findStairsOrWalkablePosition } from '../utils/gameUtils';
 import { getValidWeatherForBiome, BIOME_VALID_WEATHERS } from '../utils/weatherEngine';
+import { modifyChaosScore, triggerManualChaosSurge } from '../utils/gmStoryteller';
+import { generateTownHouseDecorProps, generateRuinsDecorProps } from '../utils/decorEngine';
 
 export interface GmCommand {
   id: string;
   name: string;
   description: string;
-  category: 'Weather Control' | 'Hero Blessings' | 'Spawning Actions' | 'Tactical Smites';
+  category: 'Weather Control' | 'Hero Blessings' | 'Spawning Actions' | 'Tactical Smites' | 'Chaos Matrix';
   iconName: 'Sun' | 'CloudRain' | 'CloudFog' | 'Snowflake' | 'Heart' | 'Coins' | 'Sparkles' | 'ShieldAlert' | 'Users' | 'Swords' | 'Skull' | 'Flame' | 'Gem' | 'Bomb';
   costBoredom: number; // Modulates how boredom shifts when the GM acts
   execute: (
     gameState: GameState,
     setGameState: React.Dispatch<React.SetStateAction<GameState>>,
-    addLog: (text: string, type: 'combat' | 'info' | 'loot' | 'system' | 'danger' | 'craft') => void
+    addLog: (text: string, type?: GameLogMessage['type']) => void
   ) => { success: boolean; message: string };
 }
 
@@ -42,16 +44,68 @@ export function getDirectionString(px: number, py: number, tx: number, ty: numbe
 }
 
 /**
+ * Finds a walkable spot along the outer edges/perimeter of a town map
+ * so that attacking enemies appear to invade from outside the town bounds!
+ */
+export function findTownEdgeWalkableSpot(gameState: GameState): { x: number; y: number } | null {
+  const map = gameState.map;
+  if (!map || map.length === 0) return null;
+  const w = gameState.levelWidth || map[0].length;
+  const h = gameState.levelHeight || map.length;
+  const px = gameState.playerX;
+  const py = gameState.playerY;
+
+  const candidateSpots: { x: number; y: number }[] = [];
+
+  // Edge margin: 1 to 6 tiles from border
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const isTownEdge = x <= 6 || x >= w - 7 || y <= 6 || y >= h - 7;
+      if (!isTownEdge) continue;
+
+      const tile = map[y]?.[x];
+      const isWalkable = tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path;
+      const isPlayer = x === px && y === py;
+      const hasEnemy = gameState.enemies.some(e => e.x === x && e.y === y);
+      const hasNpc = gameState.npcs && gameState.npcs.some(n => n.x === x && n.y === y);
+
+      if (isWalkable && !isPlayer && !hasEnemy && !hasNpc) {
+        candidateSpots.push({ x, y });
+      }
+    }
+  }
+
+  if (candidateSpots.length > 0) {
+    return candidateSpots[Math.floor(Math.random() * candidateSpots.length)];
+  }
+
+  return null;
+}
+
+/**
  * Searches expanding rings around the player, preferentially starting further out
  * (e.g. radius 5 to 11, out of player vicinity) to spawn entities, falling back
  * to closer rings (radius 1 to 4) if no empty space exists there.
+ * If in a town environment, hostile enemies preferentially spawn along town edges.
  */
-export function findWalkableSpotNearPlayer(gameState: GameState, minRadius: number = 5, maxRadius: number = 11): { x: number; y: number } | null {
+export function findWalkableSpotNearPlayer(
+  gameState: GameState,
+  minRadius: number = 5,
+  maxRadius: number = 11,
+  forHostileEnemy: boolean = false
+): { x: number; y: number } | null {
+  const isTown = gameState.biome === 'town' || ((gameState as any).towns && (gameState as any).towns.length > 0) || (gameState as any).overworldLocation === 'town';
+  if (isTown || forHostileEnemy) {
+    const townEdgeSpot = findTownEdgeWalkableSpot(gameState);
+    if (townEdgeSpot) return townEdgeSpot;
+  }
+
   const px = gameState.playerX;
   const py = gameState.playerY;
   const map = gameState.map;
   const w = gameState.levelWidth;
   const h = gameState.levelHeight;
+
 
   // 1. First choice: Search out of vicinity (5 to 11 tiles away)
   for (let r = minRadius; r <= maxRadius; r++) {
@@ -991,12 +1045,12 @@ export const GM_COMMANDS: GmCommand[] = [
           nextMap[shoreY][shoreX] = TileType.Path;
         }
 
-        const newPoiObj = {
+        const newPoiObj: any = {
           id: `poi_lake_${Date.now()}`,
           x: shoreX,
           y: shoreY,
           name: "Whispering Mirror Lake",
-          type: 'lake',
+          type: 'sunken_keep',
           description: "A crystal clear glacial lake of deep mineral water. Ripples of active silver-scaled fish catch the twilight glare.",
           historySnippet: "Inscribed on a wet stone: 'Here flows the pristine runoff of Titan Oakhaven, where the primal waters of life emerge.'",
           chapterId: "sunken_crown",
@@ -1221,6 +1275,256 @@ export const GM_COMMANDS: GmCommand[] = [
       const hasFlaskText = !gameState.hasTransmuter ? " Inside the crater, the legendary 🧪 Portable Alchemical Transmuter flask was found!" : " The strike is rich with stellar alloys!";
       addLog(`☄️ A blazing Alchemical Meteor tears through the sky! A celestial fireball impacts with a deafening boom directly at your feet!${hasFlaskText}`, 'danger');
       return { success: true, message: 'Alchemical Meteor strike complete!' };
+    }
+  },
+  {
+    id: 'cmd_chaos_surge_roll',
+    name: 'Trigger Cosmic Chaos Surge',
+    description: 'Forces an immediate d20 Chaos Matrix surge discharge to trigger cosmic anomalies or divine blessings.',
+    category: 'Chaos Matrix',
+    iconName: 'Sparkles',
+    costBoredom: -15,
+    execute: (gameState, setGameState, addLog) => {
+      const surgeRes = triggerManualChaosSurge(gameState);
+      if (surgeRes.mutatedState) {
+        setGameState(prev => ({
+          ...prev,
+          ...surgeRes.mutatedState
+        }));
+      }
+      addLog(surgeRes.logText, surgeRes.effType === 'good' ? 'loot' : surgeRes.effType === 'bad' ? 'danger' : 'info');
+      return { success: true, message: `Chaos Surge d20 Roll [${surgeRes.roll}]: ${surgeRes.effName}` };
+    }
+  },
+  {
+    id: 'cmd_chaos_escalate_20',
+    name: 'Escalate Chaos Score (+20)',
+    description: 'Increases the global Chaos Matrix coefficient by +20 points, elevating monster threat and elite mutation rates.',
+    category: 'Chaos Matrix',
+    iconName: 'Flame',
+    costBoredom: -10,
+    execute: (gameState, setGameState, addLog) => {
+      const { nextState, logMessage } = modifyChaosScore(gameState, 20, "GM Matrix Escalation");
+      setGameState(nextState);
+      addLog(logMessage.text, logMessage.type);
+      return { success: true, message: 'Chaos Matrix escalated by +20 points!' };
+    }
+  },
+  {
+    id: 'cmd_chaos_purge_25',
+    name: 'Purge Chaos Matrix (-25)',
+    description: 'Purges spatial chaos by -25 points, stabilizing the local atmospheric resonance and calming hostile aggressors.',
+    category: 'Chaos Matrix',
+    iconName: 'ShieldAlert',
+    costBoredom: -5,
+    execute: (gameState, setGameState, addLog) => {
+      const { nextState, logMessage } = modifyChaosScore(gameState, -25, "GM Chaos Purge");
+      setGameState(nextState);
+      addLog(logMessage.text, logMessage.type);
+      return { success: true, message: 'Chaos Matrix purged by -25 points!' };
+    }
+  },
+  {
+    id: 'cmd_chaos_overcharge',
+    name: 'Abyssal Chaos Overcharge (100)',
+    description: 'Instantly maxes out the Chaos Score to 100, unlocking maximum Abyssal mutation tiers and lethal challenges.',
+    category: 'Chaos Matrix',
+    iconName: 'Bomb',
+    costBoredom: -25,
+    execute: (gameState, setGameState, addLog) => {
+      const current = gameState.chaosScore ?? 20;
+      const delta = 100 - current;
+      const { nextState, logMessage } = modifyChaosScore(gameState, delta, "GM Abyssal Overcharge");
+      setGameState(nextState);
+      addLog(logMessage.text, 'danger');
+      return { success: true, message: 'Chaos Matrix maxed out to 100 points!' };
+    }
+  },
+  {
+    id: 'cmd_chaos_stabilize',
+    name: 'Calibrate Matrix Baseline (0)',
+    description: 'Calibrates the Chaos Matrix down to 0 points, completely eliminating atmospheric distortion.',
+    category: 'Chaos Matrix',
+    iconName: 'Sun',
+    costBoredom: -5,
+    execute: (gameState, setGameState, addLog) => {
+      const current = gameState.chaosScore ?? 20;
+      const delta = -current;
+      const { nextState, logMessage } = modifyChaosScore(gameState, delta, "GM Calibration to Baseline");
+      setGameState(nextState);
+      addLog(logMessage.text, 'info');
+      return { success: true, message: 'Chaos Matrix calibrated to 0 points!' };
+    }
+  },
+
+  // ==========================================
+  // DEV TOOLS & EXPANDED GM ACTIONS
+  // ==========================================
+  {
+    id: 'grant_master_crafting_pack',
+    name: 'Master Crafting Hoard (+99 All Materials)',
+    description: 'Grant +99 of all crafting materials (Iron, Wood, Leather, Solstice Petals, Kingsfoil, Bone Dust) and +5000 Gold.',
+    category: 'Hero Blessings',
+    iconName: 'Coins',
+    costBoredom: -20,
+    execute: (gameState, setGameState, addLog) => {
+      setGameState(prev => {
+        const nextMats = { ...prev.inventoryMaterials };
+        ['mat_iron', 'mat_wood', 'mat_leather', 'mat_stone', 'solstice_petals', 'kingsfoil', 'bone_dust', 'mat_mithril', 'mat_obsidian'].forEach(mat => {
+          nextMats[mat] = (nextMats[mat] || 0) + 99;
+        });
+
+        const nextCats = { ...prev.inventoryCatalysts };
+        ['cat_fire', 'cat_ice', 'cat_lightning', 'cat_dark', 'cat_holy'].forEach(cat => {
+          nextCats[cat] = (nextCats[cat] || 0) + 25;
+        });
+
+        return {
+          ...prev,
+          inventoryMaterials: nextMats,
+          inventoryCatalysts: nextCats,
+          playerStats: {
+            ...prev.playerStats,
+            gold: prev.playerStats.gold + 5000,
+            xp: prev.playerStats.xp + 500
+          }
+        };
+      });
+      addLog('💰 GM BLESSING: Granted Master Crafting Hoard (+99 All Materials, +25 Catalysts, +5000 Gold)!', 'loot');
+      return { success: true, message: 'Master Crafting Hoard deposited!' };
+    }
+  },
+  {
+    id: 'spawn_decor_cluster',
+    name: 'Manifest Interactive Decor Cluster',
+    description: 'Spawns interactive decor objects (Sarcophagus, Weapon Rack, Bookshelf, Alchemy Table, Feather Bed, Roaring Hearth, Well) around the hero.',
+    category: 'Spawning Actions',
+    iconName: 'Sparkles',
+    costBoredom: -15,
+    execute: (gameState, setGameState, addLog) => {
+      setGameState(prev => {
+        const px = prev.playerX;
+        const py = prev.playerY;
+        const existingProps = prev.dungeonProps || [];
+
+        const decorTemplates = [
+          { name: "Ancient Sarcophagus", char: "⚰️", color: "#94a3b8", description: "Carved marble sarcophagus from ancient lords.", interaction: "sarcophagus" },
+          { name: "Rusted Weapon Rack", char: "🗡️", color: "#cbd5e1", description: "Racks holding antique blades and rusted spears.", interaction: "weapon_rack" },
+          { name: "Lore Bookshelf", char: "📚", color: "#f59e0b", description: "Shelves crammed with leather-bound arcane volumes.", interaction: "bookshelf" },
+          { name: "Alchemist Worktable", char: "🧪", color: "#10b981", description: "Bubbling glass retorts and herbal powders.", interaction: "alchemy_table" },
+          { name: "Warm Feather Bed", char: "🛏️", color: "#f43f5e", description: "A comfortable feather bed for deep restoration.", interaction: "bed" },
+          { name: "Roaring Hearth", char: "🔥", color: "#f97316", description: "A crackling brick fireplace dispelling cold.", interaction: "fireplace" },
+          { name: "Town Spring Well", char: "🚰", color: "#06b6d4", description: "Cool mountain spring water bucket.", interaction: "well" },
+          { name: "Town Notice Board", char: "📜", color: "#fbbf24", description: "Pinned notices of local bounties and trade routes.", interaction: "notice_board" },
+          { name: "Cinder Cask", char: "🛢️", color: "#a16207", description: "Oak barrel tapped with aged spiced mead.", interaction: "cask" },
+          { name: "Celestial Sundial", char: "☀️", color: "#eab308", description: "Polished brass dial aligned with solar rays.", interaction: "sun_dial" }
+        ];
+
+        const newProps = [...existingProps];
+        let placedCount = 0;
+
+        // Place decor in walkable tiles around player
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const tx = px + dx;
+            const ty = py + dy;
+
+            if (tx >= 0 && tx < (prev.levelWidth || 64) && ty >= 0 && ty < (prev.levelHeight || 40)) {
+              const tile = prev.map[ty]?.[tx];
+              const isWalkable = tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path;
+              const hasProp = newProps.some(p => p.x === tx && p.y === ty);
+
+              if (isWalkable && !hasProp && placedCount < decorTemplates.length) {
+                const template = decorTemplates[placedCount];
+                newProps.push({
+                  id: `gm_decor_${Date.now()}_${placedCount}`,
+                  x: tx,
+                  y: ty,
+                  name: template.name,
+                  char: template.char,
+                  color: template.color,
+                  description: template.description,
+                  type: template.interaction as any,
+                  actionLabel: "INTERACT",
+                  isInteracted: false
+                });
+                placedCount++;
+              }
+            }
+          }
+        }
+
+        return {
+          ...prev,
+          dungeonProps: newProps
+        };
+      });
+      addLog('✨ GM MANIFEST: Placed a cluster of interactive decor objects around your hero!', 'loot');
+      return { success: true, message: 'Interactive decor objects spawned!' };
+    }
+  },
+  {
+    id: 'reset_all_decor_props',
+    name: 'Reset All Level Decor (Re-Loot)',
+    description: 'Resets the exhausted state on all decor props on the current level, making them searchable and usable again!',
+    category: 'Spawning Actions',
+    iconName: 'RefreshCw' as any,
+    costBoredom: -5,
+    execute: (gameState, setGameState, addLog) => {
+      setGameState(prev => {
+        const nextProps = (prev.dungeonProps || []).map(p => ({
+          ...p,
+          isInteracted: false,
+          description: p.description.split(' (EXHAUSTED)')[0]
+        }));
+        return {
+          ...prev,
+          dungeonProps: nextProps
+        };
+      });
+      addLog('🔄 GM RESET: All decor objects on this map layer have been refreshed and can be looted/interacted with again!', 'system');
+      return { success: true, message: 'Level decor props refreshed!' };
+    }
+  },
+  {
+    id: 'teleport_overworld_surface',
+    name: 'Return Hero to Overworld Surface',
+    description: 'Instantly teleports the hero out of dungeons directly back to the Overworld surface.',
+    category: 'Spawning Actions',
+    iconName: 'Sun',
+    costBoredom: -10,
+    execute: (gameState, setGameState, addLog) => {
+      setGameState(prev => ({
+        ...prev,
+        isOverworld: true,
+        isArena: false,
+        playerStats: {
+          ...prev.playerStats,
+          depth: 0
+        }
+      }));
+      addLog('☀️ GM WARP: Teleported hero straight to the Overworld surface!', 'system');
+      return { success: true, message: 'Returned to Overworld surface.' };
+    }
+  },
+  {
+    id: 'fast_forward_time_6h',
+    name: 'Fast Forward Time (+6 Hours)',
+    description: 'Advances in-game world time by +6 hours (+360 minutes), triggering day/night shifts and schedule updates.',
+    category: 'Chaos Matrix',
+    iconName: 'Clock' as any,
+    costBoredom: -5,
+    execute: (gameState, setGameState, addLog) => {
+      setGameState(prev => {
+        const newTime = (prev.gameTime + 360) % 1440;
+        return {
+          ...prev,
+          gameTime: newTime
+        };
+      });
+      addLog('⏰ GM TIME SHIFT: Fast-forwarded world time by +6 hours!', 'system');
+      return { success: true, message: 'Advanced time by +6 hours!' };
     }
   }
 ];

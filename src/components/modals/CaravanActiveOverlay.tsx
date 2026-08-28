@@ -8,6 +8,7 @@ export interface CaravanActiveOverlayProps {
   handleResolveCaravanEncounterOption: (optionId: string) => void;
   handleAdvanceCaravanTravel: () => void;
   handleCompleteCaravanTravel: () => void;
+  handleDeployTacticalBattle?: (encounter: any) => void;
 }
 
 export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
@@ -16,8 +17,92 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
   handleResolveCaravanEncounterOption,
   handleAdvanceCaravanTravel,
   handleCompleteCaravanTravel,
+  handleDeployTacticalBattle,
 }) => {
   if (!gameState.caravanTravel?.active) return null;
+
+  // In tactical combat skirmish mode: show non-blocking interactive tactical HUD banner
+  if (gameState.caravanTravel.isTacticalCombat) {
+    const hostileAttackers = gameState.enemies.filter(e => !e.isFollower && !e.isTownGuard && e.hp > 0);
+    const escortGuards = gameState.enemies.filter(e => e.isFollower && e.hp > 0);
+    const wagonHp = gameState.caravanTravel.wagonHp ?? 100;
+    const maxWagonHp = gameState.caravanTravel.maxWagonHp ?? 100;
+    const hpRatio = wagonHp / maxWagonHp;
+
+    return (
+      <div className="fixed top-14 left-1/2 -translate-x-1/2 z-40 w-full max-w-2xl px-4 pointer-events-none">
+        <div className="bg-slate-900/95 border-2 border-red-500/60 rounded-xl shadow-2xl p-3 flex flex-col gap-2 pointer-events-auto backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl animate-pulse">⚔️</span>
+              <div className="text-left">
+                <div className="text-[10px] font-black uppercase tracking-widest text-rose-400">CARAVAN TACTICAL SKIRMISH</div>
+                <div className="text-xs font-bold text-slate-100">{gameState.caravanTravel.currentEncounter?.title || 'Ambush Encounter'}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-950/80 border border-red-600/40 text-rose-300">
+                🐺 Hostiles: {hostileAttackers.length} Alive
+              </span>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-950/80 border border-blue-600/40 text-blue-300">
+                🛡️ Guards: {escortGuards.length} Alive
+              </span>
+            </div>
+          </div>
+
+          {/* Wagon Hull Bar */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+              🛒 Wagon Hull:
+            </span>
+            <div className="flex-1 h-3 bg-slate-950 rounded-full border border-amber-500/30 overflow-hidden p-0.5">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  hpRatio > 0.5
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-400'
+                    : hpRatio > 0.25
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                      : 'bg-gradient-to-r from-red-600 to-rose-500 animate-pulse'
+                }`}
+                style={{ width: `${Math.max(0, Math.min(100, hpRatio * 100))}%` }}
+              />
+            </div>
+            <span className="text-xs font-mono font-bold text-amber-300 whitespace-nowrap">
+              {wagonHp} / {maxWagonHp} HP ({Math.round(hpRatio * 100)}%)
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+            <span>🎯 Defend the central wagon carriage & eliminate all ambushers!</span>
+            <button
+              onClick={() => {
+                setGameState(prev => {
+                  if (!prev.caravanTravel) return prev;
+                  return {
+                    ...prev,
+                    caravanTravel: {
+                      ...prev.caravanTravel,
+                      isTacticalCombat: false,
+                      wagonHp: Math.max(0, (prev.caravanTravel.wagonHp ?? 100) - (prev.caravanTravel.currentEncounter?.wagonDamagePenalty || 20)),
+                      currentEncounter: prev.caravanTravel.currentEncounter ? {
+                        ...prev.caravanTravel.currentEncounter,
+                        isTacticalCombat: false,
+                        resolved: true,
+                        resultLog: '🛡️ You rallied the guards and forced a chaotic withdrawal back to the convoy carriage.'
+                      } : null
+                    }
+                  };
+                });
+              }}
+              className="text-rose-400 hover:text-rose-300 underline font-mono text-[9px] cursor-pointer"
+            >
+              Flee to Convoy Carriage (Take Penalty)
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 sm:p-6 overflow-y-auto font-sans text-slate-100">
@@ -146,6 +231,34 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
               </div>
             </div>
 
+            {/* Wagon Hull Bar */}
+            <div className="bg-slate-950/80 p-3 border border-amber-500/20 rounded-xl text-left">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span>🛒</span> Caravan Wagon Hull
+                </span>
+                <span className="text-[11px] font-mono font-bold text-amber-300">
+                  {gameState.caravanTravel.wagonHp ?? 100} / {gameState.caravanTravel.maxWagonHp ?? 100} HP
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-slate-900 border border-slate-800 rounded-full overflow-hidden p-0.5">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    ((gameState.caravanTravel.wagonHp ?? 100) / (gameState.caravanTravel.maxWagonHp ?? 100)) > 0.5
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-400'
+                      : ((gameState.caravanTravel.wagonHp ?? 100) / (gameState.caravanTravel.maxWagonHp ?? 100)) > 0.25
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                        : 'bg-gradient-to-r from-red-600 to-rose-500 animate-pulse'
+                  }`}
+                  style={{ width: `${Math.max(0, Math.min(100, ((gameState.caravanTravel.wagonHp ?? 100) / (gameState.caravanTravel.maxWagonHp ?? 100)) * 100))}%` }}
+                />
+              </div>
+              <div className="mt-1 flex justify-between items-center text-[9px] font-mono text-slate-400">
+                <span>Cargo Integrity: {Math.round(((gameState.caravanTravel.wagonHp ?? 100) / (gameState.caravanTravel.maxWagonHp ?? 100)) * 100)}%</span>
+                <span>Payout Factor: {Math.round(Math.max(20, ((gameState.caravanTravel.wagonHp ?? 100) / (gameState.caravanTravel.maxWagonHp ?? 100)) * 100))}%</span>
+              </div>
+            </div>
+
           </div>
 
           {/* Right Column: History Narrative Log & Active Encounters */}
@@ -212,6 +325,29 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2 mt-2">
+                      {/* Tactical Grid Deployment Button for Combat Ambush Encounters */}
+                      {handleDeployTacticalBattle && (
+                        gameState.caravanTravel.currentEncounter.type === 'bandit_ambush' ||
+                        gameState.caravanTravel.currentEncounter.type === 'beast_attack' ||
+                        gameState.caravanTravel.currentEncounter.type === 'boss_ambush'
+                      ) && (
+                        <button
+                          onClick={() => handleDeployTacticalBattle(gameState.caravanTravel!.currentEncounter!)}
+                          className="w-full py-2.5 px-3 bg-gradient-to-r from-red-900/80 via-rose-950 to-slate-900 hover:from-red-800 hover:to-slate-800 border-2 border-red-500/60 rounded-xl text-left text-xs font-bold text-red-100 shadow-lg hover:shadow-red-900/30 transition-all flex items-center justify-between cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-base group-hover:scale-125 transition-transform">⚔️</span>
+                            <div className="flex flex-col">
+                              <span className="font-bold uppercase tracking-wider text-rose-300">Deploy to Tactical Battle Grid</span>
+                              <span className="text-[9px] text-slate-400 font-normal">Fight directly on the skirmish map to defend the wagon hull & slay ambushers!</span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold bg-red-500/20 px-2 py-0.5 rounded border border-red-500/30 text-rose-300">
+                            +100% REWARD
+                          </span>
+                        </button>
+                      )}
+
                       {gameState.caravanTravel.currentEncounter.options.map((option, oIdx) => {
                         const hasGold = option.costGold ? gameState.playerStats.gold >= option.costGold : true;
                         let hasItems = true;

@@ -34,15 +34,15 @@ export const CATALYST_LABELS: { [key: string]: string } = {
 export interface GodItemCreatorTabProps {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  selectedScarName: string;
-  setSelectedScarName: (name: string) => void;
-  handleInjectScar: (scarName: string) => void;
-  handleModifyAttribute: (attr: 'str' | 'dex' | 'int' | 'cha' | 'lck' | 'unspentPoints', val: number) => void;
-  customFollowerName: string;
-  setCustomFollowerName: (name: string) => void;
-  handleRecruitCustomFollower: (type: 'guard' | 'thief') => void;
-  handleSetWeatherBiome: (weather: any, biome?: any) => void;
-  handleModifyQuantity: (id: string, isCatalyst: boolean, val: number) => void;
+  selectedScarName?: string;
+  setSelectedScarName?: (name: string) => void;
+  handleInjectScar?: (scarName: string) => void;
+  handleModifyAttribute?: (attr: 'str' | 'dex' | 'int' | 'cha' | 'lck' | 'unspentPoints', val: number) => void;
+  customFollowerName?: string;
+  setCustomFollowerName?: (name: string) => void;
+  handleRecruitCustomFollower?: (type: 'guard' | 'thief') => void;
+  handleSetWeatherBiome?: (weather: any, biome?: any) => void;
+  handleModifyQuantity?: (id: string, isCatalyst: boolean, val: number) => void;
   triggerSuccessLog: (msg: string) => void;
   setJsonError: (err: string | null) => void;
 }
@@ -50,18 +50,102 @@ export interface GodItemCreatorTabProps {
 export const GodItemCreatorTab: React.FC<GodItemCreatorTabProps> = ({
   gameState,
   setGameState,
-  selectedScarName,
-  setSelectedScarName,
-  handleInjectScar,
-  handleModifyAttribute,
-  customFollowerName,
-  setCustomFollowerName,
-  handleRecruitCustomFollower,
-  handleSetWeatherBiome,
-  handleModifyQuantity,
+  selectedScarName: propSelectedScarName,
+  setSelectedScarName: propSetSelectedScarName,
+  handleInjectScar: propHandleInjectScar,
+  handleModifyAttribute: propHandleModifyAttribute,
+  customFollowerName: propCustomFollowerName,
+  setCustomFollowerName: propSetCustomFollowerName,
+  handleRecruitCustomFollower: propHandleRecruitCustomFollower,
+  handleSetWeatherBiome: propHandleSetWeatherBiome,
+  handleModifyQuantity: propHandleModifyQuantity,
   triggerSuccessLog,
   setJsonError,
 }) => {
+  const [localScarName, setLocalScarName] = React.useState<string>(SCAR_DATABASE[0]?.name || '');
+  const [localFollowerName, setLocalFollowerName] = React.useState<string>('Sentry Godfrey');
+
+  const selectedScarName = propSelectedScarName ?? localScarName;
+  const setSelectedScarName = propSetSelectedScarName ?? setLocalScarName;
+  const customFollowerName = propCustomFollowerName ?? localFollowerName;
+  const setCustomFollowerName = propSetCustomFollowerName ?? setLocalFollowerName;
+
+  const handleInjectScar = propHandleInjectScar || ((scarName: string) => {
+    const tmpl = SCAR_DATABASE.find(s => s.name === scarName);
+    if (!tmpl) return;
+    setGameState(prev => ({
+      ...prev,
+      playerStats: {
+        ...prev.playerStats,
+        scars: [
+          ...(prev.playerStats.scars || []),
+          {
+            ...tmpl,
+            id: `scar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            acquiredTurn: prev.playerStats.turnsPlayed || 0
+          }
+        ]
+      }
+    }));
+    triggerSuccessLog(`Inscribed scar: ${tmpl.name}`);
+  });
+
+  const handleModifyAttribute = propHandleModifyAttribute || ((attr: 'str' | 'dex' | 'int' | 'cha' | 'lck' | 'unspentPoints', val: number) => {
+    setGameState(prev => ({
+      ...prev,
+      playerStats: {
+        ...prev.playerStats,
+        [attr]: Math.max(0, ((prev.playerStats as any)[attr] || 0) + val)
+      }
+    }));
+    triggerSuccessLog(`Modified ${attr} by ${val > 0 ? '+' : ''}${val}`);
+  });
+
+  const handleRecruitCustomFollower = propHandleRecruitCustomFollower || ((type: 'guard' | 'thief') => {
+    const newFollower = {
+      id: `fol_${Date.now()}`,
+      name: customFollowerName || (type === 'guard' ? 'Sentinel Guard' : 'Shadow Thief'),
+      char: type === 'guard' ? '🛡️' : '👥',
+      color: type === 'guard' ? '#38bdf8' : '#c084fc',
+      level: 1,
+      hp: type === 'guard' ? 90 : 60,
+      maxHp: type === 'guard' ? 90 : 60,
+      x: gameState.playerX,
+      y: gameState.playerY,
+      targetX: gameState.playerX,
+      targetY: gameState.playerY,
+      archetypeId: type === 'guard' ? 'tank' : 'rogue',
+      weaponRange: 1
+    };
+    setGameState(prev => ({
+      ...prev,
+      followers: [...(prev.followers || []), newFollower as any]
+    }));
+    triggerSuccessLog(`Recruited companion: ${newFollower.name}`);
+  });
+
+  const handleSetWeatherBiome = propHandleSetWeatherBiome || ((weather: any, biome?: any) => {
+    setGameState(prev => ({
+      ...prev,
+      weather: weather || prev.weather,
+      biome: biome || prev.biome
+    }));
+    triggerSuccessLog(`Environment set: ${weather || ''} ${biome || ''}`);
+  });
+
+  const handleModifyQuantity = propHandleModifyQuantity || ((id: string, isCatalyst: boolean, val: number) => {
+    setGameState(prev => {
+      if (isCatalyst) {
+        const next = { ...prev.inventoryCatalysts };
+        next[id] = Math.max(0, (next[id] || 0) + val);
+        return { ...prev, inventoryCatalysts: next };
+      } else {
+        const next = { ...prev.inventoryMaterials };
+        next[id] = Math.max(0, (next[id] || 0) + val);
+        return { ...prev, inventoryMaterials: next };
+      }
+    });
+  });
   return (
     <div className="space-y-6 font-mono pb-6">
       

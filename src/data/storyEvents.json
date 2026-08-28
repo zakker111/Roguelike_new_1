@@ -3,315 +3,651 @@
     {
       "roll": 1,
       "effName": "Dimensional Rupture (Critical Failure)",
-      "effDesc": "Unstable tectonic rift ruptures. -15 HP damage!",
+      "effDesc": "Unstable subterranean fault lines snap under extreme tectonic stress. Inflicts -15 HP damage and springs a hidden spike hazard!",
       "effType": "bad",
-      "logText": "⚠️ THE CHAOS CORE RUPTURED (Roll 1): Dynamic tectonic rifts snap directly under your coordinates! Spikes burst forth, inflicting -15 HP damage!",
-      "spawnText": "💥 Rupture!"
+      "logText": "⚠️ [THE CHAOS CORE RUPTURED] (Roll 1): Deep subterranean fault lines snap under extreme tectonic friction! Jagged iron spikes burst through the flagstones, inflicting -15 HP damage!",
+      "spawnText": "💥 Rupture!",
+      "flavorPool": [
+        "⚠️ [THE CHAOS CORE RUPTURED] (Roll 1): Deep subterranean fault lines snap under extreme tectonic friction! Jagged iron spikes burst through the flagstones, inflicting -15 HP damage!",
+        "⚠️ [THE CHAOS CORE RUPTURED] (Roll 1): Unstable planar stress fractures the foundation bedrock! Ancient iron-toothed spike mechanisms spring upward violently for -15 HP damage!",
+        "⚠️ [THE CHAOS CORE RUPTURED] (Roll 1): Tremors from the deep awaken dormant geological fault lines! The ground violently buckles beneath your boots, dealing -15 HP puncture damage!",
+        "⚠️ [THE CHAOS CORE RUPTURED] (Roll 1): A chaotic seismic fracture tears across the stone floor, snapping ancient tension rods that fire jagged iron spikes upward for -15 HP!"
+      ]
     },
     {
       "roll": 2,
       "effName": "Poison Spore Seepage",
-      "effDesc": "Toxic spore pods explode in the vicinity. Inflicts -12 HP damage and spawns an active hazard.",
+      "effDesc": "Rotting subterranean mycelium pods rupture underfoot, spraying toxic spores for -12 HP damage and arming a volatile gas vent!",
       "effType": "bad",
-      "logText": "⚠️ CHAOS SURGE (Roll 2): Ruptured toxic spore vents spray toxic fumes! Inflicted -12 HP damage and activated a volatile vent trap nearby!",
-      "spawnText": "🤢 Poison Gas!"
+      "logText": "⚠️ [CHAOS SURGE: MYCELIAL ERUPTION] (Roll 2): Subterranean fungal pods burst open from underground pressure! Acrid poison gas seeps through the stones for -12 HP damage and primes an active gas vent!",
+      "spawnText": "🤢 Poison Gas!",
+      "flavorPool": [
+        "⚠️ [CHAOS SURGE: MYCELIAL ERUPTION] (Roll 2): Subterranean fungal pods burst open from underground pressure! Acrid poison gas seeps through the stones for -12 HP damage and primes an active gas vent!",
+        "⚠️ [CHAOS SURGE: TOXIC SPORE BLIGHT] (Roll 2): Decomposing mycelial colonies trapped within wall fissures rupture, spraying choking spore clouds for -12 HP damage and arming a volatile gas fissure!",
+        "⚠️ [CHAOS SURGE: VENOMOUS MIASMA] (Roll 2): Pressurized pockets of subterranean bog gas erupt through the masonry, poisoning the ambient air for -12 HP and arming an active hazard vent!",
+        "⚠️ [CHAOS SURGE: FUNGAL SPOREBURST] (Roll 2): Ancient subterranean puffball colonies detonate under tectonic vibrations, choking your lungs with toxic miasma for -12 HP damage!"
+      ]
     },
     {
       "roll": 3,
       "effName": "Corrosive Acid Fog",
-      "effDesc": "Corrosive fog dissolves equipment. Weapons and equipped armor decay by -20 durability!",
+      "effDesc": "Hydrothermal sulfur fissures vent acrid acid clouds, eroding equipped weapon, shield, and armor durability by -20!",
       "effType": "bad",
-      "logText": "⚠️ CHAOS SURGE (Roll 3): Heavy acid mist rolls through. Current weapon and armor decayed by -20 durability!",
-      "spawnText": "🧪 Acid Decay!"
+      "logText": "⚠️ [CHAOS SURGE: CORROSIVE VENTS] (Roll 3): Volcanic sulfur fissures spew hot acidic vapors across the stones! The caustic smog eats into metal temper, decaying equipped weapon, shield, and armor by -20 durability!",
+      "spawnText": "🧪 Acid Decay!",
+      "flavorPool": [
+        "⚠️ [CHAOS SURGE: CORROSIVE VENTS] (Roll 3): Volcanic sulfur fissures spew hot acidic vapors across the stones! The caustic smog eats into metal temper, decaying equipped weapon, shield, and armor by -20 durability!",
+        "⚠️ [CHAOS SURGE: CAUSTIC FUMES] (Roll 3): Deep hydrothermal steam channels burst upward, bathing your equipment in corrosive acidic vapors that tarnish and corrode metal durability by -20!",
+        "⚠️ [CHAOS SURGE: SULFURIC SMOG] (Roll 3): Acrid volcanic sulfur seepages bubble from floor cracks, dissolving the polish and temper of your equipped gear for -20 durability!",
+        "⚠️ [CHAOS SURGE: ACIDIC EROSION] (Roll 3): Chemical runoff from ancient alchemical pipes leaks into the ambient air, eating into weapon blades and armor rivets for -20 durability!"
+      ]
     },
     {
       "roll": 4,
       "effName": "Void-Static Ambush",
-      "effDesc": "An unstable static discharge drains -15 Focus (MP) and summons a Void Rat.",
+      "effDesc": "A tear in the planar fabric discharges raw void static, burning away -15 Focus (MP) and summoning a mutated Void Rat!",
       "effType": "bad",
-      "logText": "⚠️ CHAOS SURGE (Roll 4): Static discharge drains -15 Focus (MP) and conjures a Void-Crazed Static Rat!",
-      "spawnText": "👾 Void Portal!"
+      "logText": "⚠️ [CHAOS SURGE: VOID DISCHARGE] (Roll 4): A planar tear sparks with purple lightning! The static backlash drains -15 Focus (MP) and manifests a ravenous Void-Crazed Static Rat to hunt you!",
+      "spawnText": "👾 Void Portal!",
+      "flavorPool": [
+        "⚠️ [CHAOS SURGE: VOID DISCHARGE] (Roll 4): A planar tear sparks with purple lightning! The static backlash drains -15 Focus (MP) and manifests a ravenous Void-Crazed Static Rat to hunt you!",
+        "⚠️ [CHAOS SURGE: PLANAR BACKFIRE] (Roll 4): Thinning reality boundaries spark with raw astral static, burning away -15 Focus (MP) and pulling an unnatural Void-Crazed Rat through the rift!",
+        "⚠️ [CHAOS SURGE: ASTRAL TEAR] (Roll 4): A rift of unstable purple lightning tears through coordinate space, draining -15 Focus (MP) and letting a ravenous Void Rat slip into our world!",
+        "⚠️ [CHAOS SURGE: ETHEREAL DISRUPTION] (Roll 4): Residual dimensional friction generates an electrical backlash that siphons -15 MP and summons an agile Void-Crazed Static Rat from the abyss!"
+      ]
     },
     {
       "roll": 5,
       "effName": "Sunder Thief Raid",
-      "effDesc": "Sunder outlaws pickpocket your coinpurse. Drains up to -30 Gold directly!",
+      "effDesc": "Restless dungeon shades and phantom pickpockets phase through the gloom, siphoning up to -30 Gold from your coinpurse!",
       "effType": "bad",
-      "logText": "⚠️ CHAOS SURGE (Roll 5): Phantom bandits steal Gold from your pouch!",
-      "spawnText": "💸 Stolen!"
+      "logText": "⚠️ [CHAOS SURGE: PHANTOM SIPHON] (Roll 5): Spectral dungeon shades phase through the chill air, lured by the clinking of precious metal to steal Gold from your coinpurse!",
+      "spawnText": "💸 Stolen!",
+      "flavorPool": [
+        "⚠️ [CHAOS SURGE: PHANTOM SIPHON] (Roll 5): Spectral dungeon shades phase through the chill air, lured by the clinking of precious metal to steal Gold coins from your pouch!",
+        "⚠️ [CHAOS SURGE: SHADOW PICKPOCKETS] (Roll 5): Ethereal poltergeists attracted by the luster of your coin satchel slip through the shadows, pilfering loose Gold coins from your belt!",
+        "⚠️ [CHAOS SURGE: SPECTRAL TOLL] (Roll 5): Lingering spirits of greedy highwaymen reach through the veil, siphoning glittering Gold coins straight from your coinpurse!",
+        "⚠️ [CHAOS SURGE: GHOSTLY THIEVERY] (Roll 5): Chilling spectral fingers brush your hip in the darkness, snatching shiny Gold coins before vanishing into thin air!"
+      ]
     },
     {
       "roll": 6,
       "effName": "Unstable Magic Bleed",
-      "effDesc": "Atmospheric friction backfires on your spell cells. Drains -25 Focus (MP)!",
+      "effDesc": "Volatile leyline backpressure causes atmospheric magical friction, burning away -25 Focus (MP) from your core!",
       "effType": "bad",
-      "logText": "⚠️ CHAOS SURGE (Roll 6): Magical feedback backfires in your core cells, burning away -25 Focus (MP)!",
-      "spawnText": "⚡ MP Burn!"
+      "logText": "⚠️ [CHAOS SURGE: AETHERIC BACKFIRE] (Roll 6): Leyline backpressure destabilizes your internal aether reservoir, releasing a sharp discharge that burns away -25 Focus (MP)!",
+      "spawnText": "⚡ MP Burn!",
+      "flavorPool": [
+        "⚠️ [CHAOS SURGE: AETHERIC BACKFIRE] (Roll 6): Leyline backpressure destabilizes your internal aether reservoir, releasing a sharp discharge that burns away -25 Focus (MP)!",
+        "⚠️ [CHAOS SURGE: LEYLINE FRICTION] (Roll 6): Subterranean mana currents clash violently beneath your boots, creating an electrical backdraft that discharges -25 Focus (MP)!",
+        "⚠️ [CHAOS SURGE: SPELL CELL SHORT] (Roll 6): Atmospheric etheric instability overloads your mental channels, burning away -25 Focus (MP) in a shower of azure sparks!",
+        "⚠️ [CHAOS SURGE: ARCANE BLEED] (Roll 6): Volatile magical currents swirl unpredictably through the stone corridor, siphoning -25 Focus (MP) from your spiritual core!"
+      ]
     },
     {
       "roll": 7,
       "effName": "Frostbite Chill",
-      "effDesc": "A localized freezing wind drains your stamina. -10 HP and -10 Focus (MP) damage.",
+      "effDesc": "Glacial gale winds from the frozen wastes of Pohjola sweep through the chamber, sapping -10 HP and -10 Focus (MP)!",
       "effType": "bad",
-      "logText": "⚠️ CHAOS SURGE (Roll 7): Absolute zero cold drafts freeze your joints! Drained -10 HP and -10 Focus (MP) simultaneously.",
-      "spawnText": "❄️ Chill!"
+      "logText": "⚠️ [CHAOS SURGE: RIEKKO'S FROSTBITE] (Roll 7): Sub-zero drafts from the icy peaks of Pohjola whistle through stone crevices, chilling your blood for -10 HP and freezing mental focus for -10 MP!",
+      "spawnText": "❄️ Chill!",
+      "flavorPool": [
+        "⚠️ [CHAOS SURGE: RIEKKO'S FROSTBITE] (Roll 7): Sub-zero drafts from the icy peaks of Pohjola whistle through stone crevices, chilling your blood for -10 HP and freezing mental focus for -10 MP!",
+        "⚠️ [CHAOS SURGE: GLACIAL SQUALL] (Roll 7): A howling arctic gale leaks through deep mountain tunnels, numbing your limbs for -10 HP and freezing mental focus for -10 MP!",
+        "⚠️ [CHAOS SURGE: ARCTIC DRAFT] (Roll 7): Chilling northern winds blast through subterranean vents, sapping your stamina for -10 HP and clouding your mind for -10 Focus (MP)!",
+        "⚠️ [CHAOS SURGE: POHJOLA'S BREATH] (Roll 7): Frost crystals rapidly encrust the masonry as biting cold saps -10 HP physical health and -10 Focus (MP)!"
+      ]
     },
     {
       "roll": 8,
       "effName": "Tectonic Trap Shift",
-      "effDesc": "Vibrations in the ground move tectonic rifts, spawning 2 volatile active hazard traps nearby!",
+      "effDesc": "Subterranean clockwork mechanisms grind as seismic tremors reset ancient dungeon defense pins, arming 2 hazard traps!",
       "effType": "neutral",
-      "logText": "⚡ CHAOS SURGE (Roll 8): Tectonic stress shifts the ground beneath! Activated 2 volatile hazard traps adjacent to your position!",
-      "spawnText": "⚠️ Traps!"
+      "logText": "⚡ [CHAOS SURGE: CLOCKWORK SHIFT] (Roll 8): Ancient iron counterweights and tripwires grind through stone channels, priming 2 volatile hazard traps adjacent to your coordinates!",
+      "spawnText": "⚠️ Traps!",
+      "flavorPool": [
+        "⚡ [CHAOS SURGE: CLOCKWORK SHIFT] (Roll 8): Ancient iron counterweights and tripwires grind through stone channels, priming 2 volatile hazard traps adjacent to your coordinates!",
+        "⚡ [CHAOS SURGE: TECTONIC GEAR RESET] (Roll 8): Subterranean seismic tremors jolt ancient iron mechanisms in the masonry, arming 2 volatile hazard traps across the chamber!",
+        "⚡ [CHAOS SURGE: MECHANICAL REALIGNMENT] (Roll 8): Ancient dungeon defense tripwires snap taut under shifting floor plates, priming 2 hazardous traps near your position!",
+        "⚡ [CHAOS SURGE: PERIMETER ARMED] (Roll 8): Rusted gears deep in the floor click into place, resetting and arming 2 mechanical hazard traps in the room!"
+      ]
     },
     {
       "roll": 9,
       "effName": "Prismatic Monster Mutation",
-      "effDesc": "Aetheric feedback triggers genetic advancement. Mutates an active monster to an Elite form!",
+      "effDesc": "A surge of mutagenic aether overflows into a nearby monster, evolving it into an aggressive Star-marked Elite form!",
       "effType": "neutral",
-      "logText": "⚡ CHAOS SURGE (Roll 9): Magical aether overflows! Mutant energy surges through monster!",
-      "spawnText": "⚡ Mutated!"
+      "logText": "⚡ [CHAOS SURGE: MUTAGENIC OVERFLOW] (Roll 9): Glowing leyline vapors envelop a nearby creature! Mutagenic energy advances it into an empowered Elite form (+50% HP, +3 ATK)!",
+      "spawnText": "⚡ Mutated!",
+      "flavorPool": [
+        "⚡ [CHAOS SURGE: MUTAGENIC OVERFLOW] (Roll 9): Glowing leyline vapors envelop a nearby creature! Mutagenic energy advances it into an empowered Elite form (+50% HP, +3 ATK)!",
+        "⚡ [CHAOS SURGE: AETHERIC EVOLUTION] (Roll 9): Prismatic mana vapors leak from the stone bedrock, bathing a nearby monster and mutating it into an empowered Star-marked Elite!",
+        "⚡ [CHAOS SURGE: CHAOTIC INFUSION] (Roll 9): Raw subterranean magic coalesces around a roaming hostile, supercharging its muscles into an empowered Elite (+50% HP, +3 ATK)!",
+        "⚡ [CHAOS SURGE: PRIMORDIAL GENESIS] (Roll 9): An overflowing aether geyser drenches a nearby hostile, transmuting it into a savage Elite beast with boosted vitality!"
+      ]
     },
     {
       "roll": 10,
-      "effName": "Unstable Volatile Catalyst",
-      "effDesc": "A crystal catalyst reacts violently. Explodes for -6 HP, but drops raw wood/iron residue in your pack!",
+      "effName": "Volatile Slag Discovery",
+      "effDesc": "You crack open a brittle volcanic geode node on the ground (-6 HP strain), salvaging sturdy wood and raw iron ore from the fallout.",
       "effType": "neutral",
-      "logText": "⚡ CHAOS SURGE (Roll 10): An unstable crystal catalyst detonates! Dealed -6 HP damage, but molecular fallout added +2 Wood and +1 Iron to your pack!",
-      "spawnText": "💥 Residue!"
+      "logText": "⚡ [CHAOS SURGE: VOLCANIC FALLOUT] (Roll 10): You pry open a brittle volcanic node! It detonates with a sharp snap (-6 HP strain), but the blast reveals +2 Sturdy Wood and +1 Iron Ore in the rubble.",
+      "spawnText": "💥 Salvage!",
+      "flavorPool": [
+        "⚡ [CHAOS SURGE: VOLCANIC FALLOUT] (Roll 10): You pry open a brittle volcanic geode node on the ground! It snaps with a sharp crack (-6 HP strain), but the blast reveals +2 Sturdy Wood and +1 Iron Ore in the rubble.",
+        "⚡ [CHAOS SURGE: GEODE HARVEST] (Roll 10): Striking a volatile slag node on the floor releases a sharp concussive burst (-6 HP), but exposes +2 Sturdy Wood and +1 Iron Ore in the debris!",
+        "⚡ [CHAOS SURGE: MINERAL SHATTER] (Roll 10): You shatter a pressurized volcanic nodule (-6 HP backlash), unearthing +2 Sturdy Wood and +1 Iron Ore among the glowing gravel!",
+        "⚡ [CHAOS SURGE: SLAG SALVAGE] (Roll 10): Prying loose a brittle iron geode triggers a fiery snap (-6 HP strain), rewarding you with +2 Sturdy Wood and +1 Iron Ore from the rubble!"
+      ]
     },
     {
       "roll": 11,
-      "effName": "Alchemical Condensation",
-      "effDesc": "Pure elements condense directly into a rare Catalyst.",
+      "effName": "Elemental Geode Discovery",
+      "effDesc": "A crystalline elemental seam catches the light, yielding a pristine magical catalyst.",
       "effType": "good",
-      "logText": "🔮 CHAOS SURGE (Roll 11): Rare elements condense out of thin air.",
-      "spawnText": "✨ Catalyst!"
+      "logText": "🔮 [CHAOS SURGE: ELEMENTAL SEAM] (Roll 11): You spot a glistening elemental crystal embedded within the rockface and pry free a rare magical catalyst!",
+      "spawnText": "✨ Catalyst!",
+      "flavorPool": [
+        "🔮 [CHAOS SURGE: ELEMENTAL SEAM] (Roll 11): You spot a glistening elemental crystal embedded within the rockface and pry free 1x magical catalyst shard!",
+        "🔮 [CHAOS SURGE: CRYSTALLINE DISCOVERY] (Roll 11): A fracture in the cavern wall catches the torchlight, revealing a sparkling elemental node that yields 1x pure catalyst!",
+        "🔮 [CHAOS SURGE: AETHERIC NODE] (Roll 11): Vibrations in the stone shake loose a glowing mineral geode, allowing you to salvage 1x rare elemental catalyst!",
+        "🔮 [CHAOS SURGE: PRISMATIC MATRIX] (Roll 11): You uncover a shimmering crystal pocket resting in a wall alcove, harvesting 1x potent catalyst for your crafts!"
+      ]
     },
     {
       "roll": 12,
-      "effName": "Alchemical Condensation",
-      "effDesc": "Pure elements condense directly into a rare Catalyst.",
+      "effName": "Elemental Geode Discovery",
+      "effDesc": "A crystalline elemental seam catches the light, yielding a pristine magical catalyst.",
       "effType": "good",
-      "logText": "🔮 CHAOS SURGE (Roll 12): Rare elements condense out of thin air.",
-      "spawnText": "✨ Catalyst!"
+      "logText": "🔮 [CHAOS SURGE: ELEMENTAL SEAM] (Roll 12): You spot a glistening elemental crystal embedded within the rockface and pry free a rare magical catalyst!",
+      "spawnText": "✨ Catalyst!",
+      "flavorPool": [
+        "🔮 [CHAOS SURGE: ELEMENTAL SEAM] (Roll 12): You spot a glistening elemental crystal embedded within the rockface and pry free 1x magical catalyst shard!",
+        "🔮 [CHAOS SURGE: CRYSTALLINE DISCOVERY] (Roll 12): A fracture in the cavern wall catches the torchlight, revealing a sparkling elemental node that yields 1x pure catalyst!",
+        "🔮 [CHAOS SURGE: AETHERIC NODE] (Roll 12): Vibrations in the stone shake loose a glowing mineral geode, allowing you to salvage 1x rare elemental catalyst!",
+        "🔮 [CHAOS SURGE: PRISMATIC MATRIX] (Roll 12): You uncover a shimmering crystal pocket resting in a wall alcove, harvesting 1x potent catalyst for your crafts!"
+      ]
     },
     {
       "roll": 13,
       "effName": "Mielikki's Forage",
-      "effDesc": "Sweet berries grow. Adds +3 Wild Berries and +1 Bread to your pack.",
+      "effDesc": "Queen Mielikki blesses the underbrush, nurturing a vibrant thicket of +3 Wild Berries and +1 Traveler's Bread.",
       "effType": "good",
-      "logText": "✨ CHAOS SURGE (Roll 13): Woodland elements condense. Added +3 Wild Berries and +1 Bread to your food inventory!",
-      "spawnText": "🍓 +3 Berries!"
+      "logText": "🍓 [CHAOS SURGE: MIELIKKI'S BOUNTY] (Roll 13): Queen Mielikki's woodland blessing blooms across the trail, yielding +3 Sweet Wild Berries and +1 wholesome Traveler's Bread wrapped in leaves!",
+      "spawnText": "🍓 +3 Berries!",
+      "flavorPool": [
+        "🍓 [CHAOS SURGE: MIELIKKI'S BOUNTY] (Roll 13): Queen Mielikki's woodland blessing blooms across the trail, yielding +3 Sweet Wild Berries and +1 wholesome Traveler's Bread wrapped in leaves!",
+        "🍓 [CHAOS SURGE: WOODLAND HARVEST] (Roll 13): Gentle forest spirits guide your eyes to a thriving wild berry thicket, gathering +3 Sweet Wild Berries and +1 wholesome Traveler's Bread!",
+        "🍓 [CHAOS SURGE: NATURE'S REWARD] (Roll 13): Untouched mossy roots bloom with fragrant wild brambles, gifting you +3 Sweet Wild Berries and +1 leaf-wrapped Traveler's Bread!",
+        "🍓 [CHAOS SURGE: FORAGER'S LUCK] (Roll 13): You uncover a concealed foraging cache tucked beneath elder roots, securing +3 Sweet Wild Berries and +1 wholesome Traveler's Bread!"
+      ]
     },
     {
       "roll": 14,
-      "effName": "Gilded Spark",
-      "effDesc": "Atmospheric copper coins fuse together. Grants +45 Gold directly.",
+      "effName": "Forgotten Traveler's Coinpurse",
+      "effDesc": "A courier's dropped leather coin satchel caught behind loose floor slabs catches your eye, yielding +45 Gold coins.",
       "effType": "good",
-      "logText": "✨ CHAOS SURGE (Roll 14): Flashing aurum particles fuse! Added +45 Gold to your inventory.",
-      "spawnText": "🪙 +45 Gold!"
+      "logText": "🪙 [CHAOS SURGE: LOST SATCHEL] (Roll 14): Your boot uncovers a lost courier's leather coinpurse lodged beneath the flagstones, adding +45 Gold coins to your pouch!",
+      "spawnText": "🪙 +45 Gold!",
+      "flavorPool": [
+        "🪙 [CHAOS SURGE: LOST SATCHEL] (Roll 14): Your boot uncovers a lost royal courier's leather coinpurse lodged beneath the flagstones, adding +45 Gold coins to your pouch!",
+        "🪙 [CHAOS SURGE: MERCHANT'S DROP] (Roll 14): You notice a forgotten adventurer's coin satchel wedged in a stone niche, pocketing +45 shiny Gold coins!",
+        "🪙 [CHAOS SURGE: UNCOVERED HOARD] (Roll 14): Shifting gravel reveals a weathered leather pouch filled with ancient currency, rewarding you with +45 Gold coins!",
+        "🪙 [CHAOS SURGE: BURIED COINS] (Roll 14): A loose cobblestone flips over underfoot to expose a hidden traveler's stash of +45 Gold coins!"
+      ]
     },
     {
       "roll": 15,
-      "effName": "Abyssal Treasure Shard",
-      "effDesc": "A localized spatial rift spawns wood and iron. Adds +2 Wood and +2 Iron to your materials.",
+      "effName": "Abandoned Supply Cache",
+      "effDesc": "An iron-banded miner's crate hidden inside a rocky alcove yields +2 Sturdy Wood and +2 Iron Ore.",
       "effType": "good",
-      "logText": "✨ CHAOS SURGE (Roll 15): A minor spatial rift deposits crafting supplies. Gained +2 Wood and +2 Iron!",
-      "spawnText": "📦 +4 Mats!"
+      "logText": "📦 [CHAOS SURGE: MINER'S CACHE] (Roll 15): You uncover a sealed wooden supply crate left behind by an old prospecting expedition, salvaging +2 Sturdy Wood and +2 Iron Ore!",
+      "spawnText": "📦 +4 Mats!",
+      "flavorPool": [
+        "📦 [CHAOS SURGE: MINER'S CACHE] (Roll 15): You uncover a sealed wooden supply crate left behind by an old prospecting expedition, salvaging +2 Sturdy Wood and +2 Iron Ore!",
+        "📦 [CHAOS SURGE: PROSPECTOR'S BOX] (Roll 15): Prying open a weathered timber crate tucked inside an alcove reveals +2 Sturdy Wood beams and +2 raw Iron Ore chunks!",
+        "📦 [CHAOS SURGE: EXPEDITION SALVAGE] (Roll 15): You discover an abandoned engineering crate from an old mining tunnel, recovering +2 Sturdy Wood and +2 Iron Ore!",
+        "📦 [CHAOS SURGE: FORGOTTEN CRATE] (Roll 15): An intact iron-banded crate hidden behind fallen rubble yields +2 Sturdy Wood and +2 Iron Ore for your crafting!"
+      ]
     },
     {
       "roll": 16,
-      "effName": "Locksmith's Blessing",
-      "effDesc": "Aetheric particles solidify into lockpicks. Adds +2 Lockpicks to your inventory.",
+      "effName": "Lost Craftsman Toolkit",
+      "effDesc": "A master locksmith's oiled leather tool roll wedged in a wall fissure provides +2 High-Grade Lockpicks.",
       "effType": "good",
-      "logText": "✨ CHAOS SURGE (Roll 16): Metallic static aligns into functional shapes. Gained +2 Lockpicks in your storage pack!",
-      "spawnText": "🔑 +2 Lockpicks!"
+      "logText": "🔑 [CHAOS SURGE: LOCKSMITH'S ROLL] (Roll 16): You retrieve an abandoned leather tool roll wedged in a stone crevice, securing +2 High-Grade Lockpicks for future locks!",
+      "spawnText": "🔑 +2 Lockpicks!",
+      "flavorPool": [
+        "🔑 [CHAOS SURGE: LOCKSMITH'S ROLL] (Roll 16): You retrieve an abandoned master locksmith's leather tool roll wedged in a stone crevice, securing +2 High-Grade Lockpicks for future locks!",
+        "🔑 [CHAOS SURGE: ROGUE'S KIT] (Roll 16): A hidden wall cavity yields a set of precision tempered steel tools, adding +2 High-Grade Lockpicks to your inventory!",
+        "🔑 [CHAOS SURGE: SCOUT'S ROLL] (Roll 16): You spot an oiled leather sleeve tucked behind masonry, retrieving +2 durable High-Grade Lockpicks!",
+        "🔑 [CHAOS SURGE: BURGLAR'S RELIC] (Roll 16): Lodged inside an old sconce is a master thief's kit, granting +2 High-Grade Lockpicks for locked doors and chests!"
+      ]
     },
     {
       "roll": 17,
-      "effName": "Harmonic Abyssal Restoration",
-      "effDesc": "Heals +25 HP, restores +15 Mana, and disperses surrounding map fog.",
+      "effName": "Harmonic Sanctuary Respite",
+      "effDesc": "An underground grotto fed by sacred pristine springwater restores +25 HP, +15 MP, and expands mental terrain awareness.",
       "effType": "good",
-      "logText": "✨ CHAOS SURGE (Roll 17): Peaceful dynamic waves wash over you. Restored +25 HP and +15 Focus, and fully charted nearby terrain!",
-      "spawnText": "💖 Rejuvenation!"
+      "logText": "✨ [CHAOS SURGE: SACRED GROTTO] (Roll 17): You step into a secluded sanctuary alcove filled with glowing restorative dew. Restored +25 HP and +15 Focus, and fully charted nearby terrain!",
+      "spawnText": "💖 Rejuvenation!",
+      "flavorPool": [
+        "✨ [CHAOS SURGE: SACRED GROTTO] (Roll 17): You step into a secluded sanctuary alcove filled with glowing restorative dew. Restored +25 HP and +15 Focus, and fully charted nearby terrain!",
+        "✨ [CHAOS SURGE: HARMONIC RESOUND] (Roll 17): A tranquil subterranean spring bathed in gentle ley-light calms your mind, restoring +25 HP, +15 Focus, and mapping surrounding corridors!",
+        "✨ [CHAOS SURGE: SANCTUARY DEW] (Roll 17): Breathing in the soothing vapor of an untouched natural grotto knits your wounds for +25 HP, refills +15 MP, and reveals nearby terrain!",
+        "✨ [CHAOS SURGE: SPRIGHTLY BASIN] (Roll 17): A pure mineral spring bubbling from ancient bedrock restores +25 HP and +15 Focus (MP) while clearing the fog from your map!"
+      ]
     },
     {
       "roll": 18,
       "effName": "Scout's Clairvoyance",
-      "effDesc": "A flash of pure light reveals hidden traps and grants +35 Scouting XP.",
+      "effDesc": "An ancient seer's runic eye flashes in your mind, revealing all hidden traps in the area and granting +35 Scouting XP.",
       "effType": "good",
-      "logText": "✨ CHAOS SURGE (Roll 18): Cosmic foresight floods your awareness. All hidden traps in the level have been detected, and gained +35 Scouting XP!",
-      "spawnText": "👁️ Insight!"
+      "logText": "✨ [CHAOS SURGE: SEER'S EYE] (Roll 18): Cosmic foresight floods your awareness! An ancient seer's rune illuminates all hidden traps in the zone and grants +35 Scouting XP!",
+      "spawnText": "👁️ Insight!",
+      "flavorPool": [
+        "✨ [CHAOS SURGE: SEER'S EYE] (Roll 18): Cosmic foresight floods your awareness! An ancient seer's rune illuminates all hidden traps in the zone and grants +35 Scouting XP!",
+        "✨ [CHAOS SURGE: ASTRAL PERCEPTION] (Roll 18): An epiphany of heightened senses washes over you! Every hidden trap glows brightly in your vision (+35 Scouting XP)!",
+        "✨ [CHAOS SURGE: SEER'S REVELATION] (Roll 18): Ancient runic runes etched in your subconscious pulse with insight, exposing all hidden dungeon hazards and awarding +35 Scouting XP!",
+        "✨ [CHAOS SURGE: CLAIRVOYANT GLYPH] (Roll 18): A flash of mystical intuition unveils the dungeon's mechanical traps in plain view, earning you +35 Scouting XP!"
+      ]
     },
     {
       "roll": 19,
       "effName": "Abyssal Forge Blessing",
-      "effDesc": "Dungeon static aligns with iron molecules, repairing equipped weapon and armor durability by +50!",
+      "effDesc": "Ilmarinen's celestial anvil resonance rings through the stone, repairing equipped weapon, armor, and shield durability by +50!",
       "effType": "good",
-      "logText": "✨ CHAOS SURGE (Roll 19): Tectonic forge light shines upon you. Repaired +50 durability on your equipped weapon, armor, and shield!",
-      "spawnText": "🔧 Repaired!"
+      "logText": "✨ [CHAOS SURGE: ILMARINEN'S TEMPER] (Roll 19): The eternal forge hammers of Ilmarinen resound through the stones! Holy anvil sparks align the iron lattice of your equipped weapon, armor, and shield, restoring +50 durability!",
+      "spawnText": "🔧 Repaired!",
+      "flavorPool": [
+        "✨ [CHAOS SURGE: ILMARINEN'S TEMPER] (Roll 19): The eternal forge hammers of Ilmarinen resound through the stones! Holy anvil sparks align the iron lattice of your equipped weapon, armor, and shield, restoring +50 durability!",
+        "✨ [CHAOS SURGE: FORGE LORD'S HAMMER] (Roll 19): The ringing chime of Ilmarinen's mythical anvil echoes through the bedrock, reforging dull edges and restoring +50 gear durability!",
+        "✨ [CHAOS SURGE: METALLURGIC BLESSING] (Roll 19): Radiant blacksmithing sparks dance across your gear, realigning weapon steel and shield rims for +50 repaired durability!",
+        "✨ [CHAOS SURGE: ANVIL SPARK REPAIR] (Roll 19): Holy embers from the primordial forge bathe your equipped loadout, restoring +50 durability to your weapon, armor, and shield!"
+      ]
     },
     {
       "roll": 20,
       "effName": "Cosmic Perfect Alignment",
-      "effDesc": "Full HP & MP restored, +100 Gold awarded, and a Glazed Boar spawned.",
+      "effDesc": "The ancient constellations align in perfect harmony! Restores full HP & MP, awards +100 Gold, and manifests a Glazed Boar.",
       "effType": "good",
-      "logText": "☄️ CHAOS SURGE (Roll 20 - PERFECT HARMONY): The cosmic matrix reaches absolute focus! Fully restored HP and MP, and added +100 Gold!",
-      "spawnText": "🌟 Perfect Alignment!"
+      "logText": "☄️ [CHAOS SURGE: COSMIC HARMONY] (Roll 20 - PERFECT HARMONY): Ancient celestial constellations align in radiant equilibrium! Body and soul are fully restored (100% HP & MP), +100 Gold rains into your pack, and a Glazed Boar manifests nearby!",
+      "spawnText": "🌟 Perfect Alignment!",
+      "flavorPool": [
+        "☄️ [CHAOS SURGE: COSMIC HARMONY] (Roll 20 - PERFECT HARMONY): Ancient celestial constellations align in radiant equilibrium! Body and soul are fully restored (100% HP & MP), +100 Gold rains into your pack, and a Glazed Boar manifests nearby!",
+        "☄️ [CHAOS SURGE: CELESTIAL EQUILIBRIUM] (Roll 20 - PERFECT HARMONY): The heavens open in breathtaking harmony! Your vitals are completely replenished (100% HP & MP), +100 Gold showers into your satchel, and a succulent Glazed Boar appears!",
+        "☄️ [CHAOS SURGE: MYTHIC PROVIDENCE] (Roll 20 - PERFECT HARMONY): Divine alignment blesses your heroic path! Full recovery of HP and MP washes over you, +100 Gold fills your pouch, and a magical Glazed Boar emerges!",
+        "☄️ [CHAOS SURGE: COSMIC ALIGNMENT] (Roll 20 - PERFECT HARMONY): The universal wheel locks into perfect harmony! 100% HP and MP restored, +100 Gold awarded, and an enchanted Honey-Glazed Boar appears to join your feast!"
+      ]
     }
   ],
   "encounters": [
     {
       "id": "healing_breeze",
       "name": "Seraphic Healing Breeze",
-      "description": "GM notices the player is in near-lethal danger and casts a protective divine aura.",
+      "description": "Benevolent woodland spirits sense the player's critical mortal peril and channel an ancient runic rejuvenation aura.",
       "requiredMood": ["Benevolent", "Intrigued"],
       "minBoredom": 20,
       "minTension": 60,
-      "maxTension": 100
+      "maxTension": 100,
+      "flavorPool": [
+        "✨ [SERAPHIC RESPITE]: A warm breeze carrying the scent of pine and heather revitalizes your failing strength—the spirits of the ancient grove grant you respite (+{healAmt} HP, +10 MP)!",
+        "✨ [PÄIVÄTÄR'S EMBRACE]: Päivätär, goddess of the sun and morning light, looks down upon your battered frame with pity. A beam of radiant warmth bathes your soul, healing +{healAmt} HP and replenishing +10 Focus (MP)!",
+        "✨ [MIELIKKI'S WOODLAND BALM]: Queen Mielikki pities your struggling breath; sweet heather incense and wild pine sap seal your bleeding wounds for +{healAmt} HP and soothe your mind for +10 MP!",
+        "✨ [ANCIENT GROVE BENEDICTION]: Deep subterranean roots hum with ancestral vitality, releasing a fragrant pine mist that mends shattered bone for +{healAmt} HP and calms your mind for +10 MP!",
+        "✨ [TAPIO'S HEATHER ZEPHYR]: A gentle zephyr carrying golden pollen and mountain heather caresses your skin, sealing lacerations for +{healAmt} HP and infusing +10 Focus (MP) into your spirit!"
+      ]
     },
     {
       "id": "void_ambush",
       "name": "Sovereign Rift Ambush",
-      "description": "GM gets high irritation from idling or over-preparedness, tearing open a void rift spawning custom monsters.",
+      "description": "Prolonged idling and stagnant dimensional friction crack the fabric of space, unleashing a Void-Torn brute to hunt.",
       "requiredMood": ["Mischievous", "Sadistic", "Intrigued"],
       "minBoredom": 50,
-      "maxTension": 60
+      "maxTension": 60,
+      "flavorPool": [
+        "⚠️ [VOID RIFT INCURSION]: Prolonged stagnation and dimensional friction crack the fragile fabric of space! An unstable purple rift tears open to the [{direction}], allowing a ravenous {enemyName} to burst into the mortal plane to hunt!",
+        "⚠️ [PLANAR TEAR AMBUSH]: Subterranean leyline fractures snap under stagnant atmospheric pressure, tearing a howling planar rift to the [{direction}] from which a terrifying {enemyName} emerges!",
+        "⚠️ [ABYSSAL BREACH]: Scenting mortal blood through the thinning planar veil, an aggressive {enemyName} claws through a purple void gateway to the [{direction}]!",
+        "⚠️ [RIFT INTRUSION]: A distortion in coordinate space fractures with crackling void lightning to the [{direction}], manifesting an elite {enemyName} poised for battle!"
+      ]
     },
     {
       "id": "alchemy_gift",
       "name": "Alchemical Drop",
-      "description": "The storyteller summons a Volatile Alchemical Sprite near the player, loaded with premium alchemical catalysts.",
+      "description": "Spilled magical catalyst residue condenses into a playful Volatile Alchemical Sprite carrying rare reagents.",
       "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
-      "minBoredom": 35
+      "minBoredom": 35,
+      "flavorPool": [
+        "✨ [ALCHEMICAL VAPOR CONDENSATION]: Residual volatile catalyst vapors pooling in the damp cavern air suddenly condense into a playful Volatile Alchemical Sprite to the [{direction}], darting merrily with pockets brimming with rare reagents!",
+        "✨ [ETHERIC SPRITE BLESSING]: Droplets of ancient distilled ether seep from an overhead laboratory fissure, coalescing into a shimmering Alchemical Sprite to the [{direction}] carrying valuable crafting reagents!",
+        "✨ [TRANSMUTATION COALESCENCE]: Ambient sparks of wild alchemy ignite drifting dust motes, creating a chirping Alchemical Sprite to the [{direction}] eager to be caught for precious catalyst loot!",
+        "✨ [CATALYST WISP MANIFESTATION]: Dormant magical currents awaken in response to your presence, condensing into a quick-footed Alchemical Sprite to the [{direction}] clutching rare alchemy supplies!"
+      ]
     },
     {
       "id": "smite_nearest",
       "name": "Lightning Bolt Smite",
-      "description": "The storyteller strikes lightning on a hostile enemy when feeling charitable or seeking explosive balance.",
+      "description": "Ukko's watchful eye notices a foul abomination and hurls down an explosive spear of celestial sky-fire.",
       "requiredMood": ["Mischievous", "Benevolent", "Intrigued"],
-      "minBoredom": 40
+      "minBoredom": 40,
+      "flavorPool": [
+        "⚡ [UKKO'S CELESTIAL WRATH]: From the highest sky-vault, Ukko Ylijumala detects the foul stench of {targetName} and unleashes an explosive spear of celestial lightning to the [{direction}], striking for {smiteDmg} holy sky-fire damage!",
+        "⚡ [THUNDER DEITY SMITE]: The upper firmament ignites with righteous wrath as Ukko's golden hammer strikes the anvil, hurling down a blinding bolt upon {targetName} to the [{direction}] for {smiteDmg} Damage!",
+        "⚡ [SKY-FIRE RETRIBUTION]: Ancestral thunder gods refuse to allow darkness free rein, casting a searing spear of celestial lightning that blasts {targetName} to the [{direction}] for {smiteDmg} Damage!",
+        "⚡ [DIVINE SKY-SPEAR]: Blinding blue-white sky-fire pierces through the cavern ceiling, incinerating {targetName} to the [{direction}] for {smiteDmg} smite damage!"
+      ]
     },
     {
       "id": "trap_shower",
       "name": "Acoustic Hazard Alarm",
-      "description": "Sadistic or mischievous storytelling spawns dynamic spike traps beneath the feet of neighboring spaces.",
+      "description": "Tectonic friction and ancient dungeon counterweights click into place, priming a mechanical spike trap.",
       "requiredMood": ["Mischievous", "Sadistic"],
       "minBoredom": 60,
-      "maxTension": 50
+      "maxTension": 50,
+      "flavorPool": [
+        "⚠️ [ANCIENT DUNGEON MECHANISM]: Tectonic weight shifts trigger ancient subterranean clockwork counterweights! A resounding iron click echoes through the floor as concealed spike pins arm themselves to the [{direction}]!",
+        "⚠️ [TRIPWIRE REALIGNMENT]: Ancient defense wires embedded in the masonry tighten under shifting floor slabs, snapping an iron spike hazard into position to the [{direction}]!",
+        "⚠️ [SECURITY CLOCKWORK RESET]: Subterranean gears groan under shifting pressure, resetting dormant mechanical spike traps along the path to the [{direction}]!",
+        "⚠️ [PRESSURE PIN RELEASE]: Seismic vibrations jolt ancient trap counterweights into gear, priming a lethal spring-loaded spike trap to the [{direction}]!"
+      ]
     },
     {
       "id": "weather_mutation",
       "name": "Meteorological Climax",
-      "description": "GM rapidly forces an overworld environmental phase transition to high elemental tension.",
+      "description": "Planetary atmospheric currents and celestial wind gates shift overworld weather to a new elemental phase.",
       "requiredMood": ["Mischievous", "Intrigued", "Apathetic"],
-      "minBoredom": 10
+      "minBoredom": 10,
+      "flavorPool": [
+        "☁️ [CELESTIAL WIND GATE SHIFT]: Cosmic planetary air currents and atmospheric pressure gates shift over the realm, altering the overworld weather to [{weather}]!",
+        "☁️ [METEOROLOGICAL PHASE VEER]: High-altitude thermal currents collide across Pohjola's skies, rapidly transitioning the regional weather to [{weather}]!",
+        "☁️ [CELESTIAL WINDS SHIFT]: Planetary wind gates open wide above the canopy, sweeping away existing clouds to usher in [{weather}] across the horizon!",
+        "☁️ [ATMOSPHERIC TRANSITION]: Shifting barometric pressures over the mountains steer the skies into a new weather phase of [{weather}]!"
+      ]
+    },
+    {
+      "id": "gm_harsh_tempest",
+      "name": "GM Tempest Escalation",
+      "description": "Howling northern squalls of Pohjola manifest violent gale storms to test the wanderer's survival resolve.",
+      "requiredMood": ["Sadistic", "Mischievous"],
+      "minBoredom": 25,
+      "minTension": 20,
+      "flavorPool": [
+        "{icon} [TEMPEST OF POHJOLA]: The icy malice of the Northern Wastes brews into a violent squall! Howling gale winds roar across the plains as the weather rapidly turns into [{weather}], testing your survival fortitude!",
+        "{icon} [LOUHI'S CHILL SQUALL]: Louhi's dark tempest squall sweeps across the horizon, commanding the heavens to unleash punishing [{weather}] upon the land!",
+        "{icon} [SAVAGE GALE FRONT]: Fierce atmospheric fronts slam against the landscape with thunderous ferocity, turning the weather into [{weather}] to test your resolve!",
+        "{icon} [NORTHERN TEMPEST ESCALATION]: Biting mountain winds descend from the crags of Pohjola, plunging the territory into extreme [{weather}]!"
+      ]
+    },
+    {
+      "id": "gm_benevolent_clear_skies",
+      "name": "GM Seraphic Cleansing Sky",
+      "description": "Päivätär's golden dawn rays pierce dark tempest clouds to grant an exhausted wanderer protective clear skies.",
+      "requiredMood": ["Benevolent", "Intrigued"],
+      "minBoredom": 15,
+      "flavorPool": [
+        "☀️ [PÄIVÄTÄR'S GOLDEN DAWN]: Sensing your weary, wounded footsteps, Päivätär parts the dark tempest clouds with warm solar rays, granting you protective [{weather}]!",
+        "☀️ [SERAPHIC SKY CLEANSING]: Gentle morning breezes blessed by the woodland queen disperse the biting storm, leaving behind a tranquil expanse of [{weather}]!",
+        "☀️ [DIVINE CELESTIAL RADIANCE]: Radiant sunlight pierces through suffocating squalls, warming your path and clearing the firmament into soothing [{weather}]!",
+        "☀️ [GUARDIAN ZEPHYR]: Protective guardian spirits whisper to the upper winds, calming the turbulent squalls into a gentle blanket of [{weather}]!"
+      ]
+    },
+    {
+      "id": "gm_caravan_traveler_injection",
+      "name": "GM Merchant Caravan Manifestation",
+      "description": "A lost merchant wagon diverted off the king's highway pulls up to trade emergency goods and request an escort.",
+      "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
+      "minBoredom": 20,
+      "flavorPool": [
+        "🛒 [WAYWARD MERCHANT REFUGEE]: Forced off the king's highway by roving monsters, a sturdy Travelling Merchant Wagon diverts onto your trail to the [{direction}], seeking safety in numbers and offering emergency provisions!",
+        "🛒 [ENTERPRISING TRADE WAGON]: An intrepid wandering merchant navigates around bandit blockades, rolling their supply wagon toward your coordinates to the [{direction}]!",
+        "🛒 [ROYAL GUILD WAGON]: A royal guild supply transport separated from its convoy emerges from the trees to the [{direction}], eager to barter emergency provisions!",
+        "🛒 [WILDERNESS TRADE ENVOY]: Attracted by the glow of your path, a well-stocked travelling merchant rolls their wagon to the [{direction}] ready for trade!"
+      ]
+    },
+    {
+      "id": "gm_road_blockade_skirmish",
+      "name": "GM Outlaw Road Blockade",
+      "description": "Highway outlaws notice wealthy travelers passing through and erect a spiked timber barricade to demand tribute.",
+      "requiredMood": ["Sadistic", "Mischievous"],
+      "minBoredom": 35,
+      "minTension": 20,
+      "flavorPool": [
+        "🚧 [OUTLAW TOLL AMBUSH]: Corrupted highway outlaws, alerted to a well-equipped traveler on these desolate roads, erect a heavy spiked timber blockade to the [{direction}], stepping forward with drawn steel to demand tribute!",
+        "🚧 [BARON'S ROAD BLOCKADE]: Ruthless road brigands ambush the trade route, dragging barricade spikes across the path to the [{direction}] and brandishing sharpened blades!",
+        "🚧 [HIGHWAY CHOKEPOINT AMBUSH]: Exiled raiders spot your pack from their ridge lookout and snap shut a fortified road gate to the [{direction}], demanding blood or coin!",
+        "🚧 [FORTIFIED OUTLAW GATE]: Highway bandits assemble a spiked timber barricade across the choke point to the [{direction}], stepping forward to enforce an illegal toll!"
+      ]
+    },
+    {
+      "id": "gm_triangle_cheater",
+      "name": "GM Triangle Anomaly Surge",
+      "description": "Chaotic primordial leyline aether ruptures, mutating a nearby enemy beyond standard Golden Triangle laws of nature.",
+      "requiredMood": ["Mischievous", "Sadistic", "Intrigued"],
+      "minBoredom": 35,
+      "flavorPool": [
+        "⚡ [CHAOTIC LEYLINE WARP]: An unstable primordial mana surge ruptures the Golden Triangle equilibrium! The chaotic backlash infuses {targetName} to the [{direction}], corrupting it into an Anomaly Mutation that defies mortal combat limits!",
+        "⚡ [ANOMALY POWER SURGE]: Primordial chaos aether leaks through subterranean rock seams, warping {targetName} to the [{direction}] with impossible combat versatility!",
+        "⚡ [TRIANGLE EQUILIBRIUM BREACH]: Cosmic radiation fractures standard combat archetypes, infusing {targetName} to the [{direction}] with anomalous multi-style prowess!",
+        "⚡ [VOID ANOMALY MUTATION]: The Golden Triangle of combat twists under impossible arcane tension, supercharging {targetName} to the [{direction}] into an Anomaly!"
+      ]
     },
     {
       "id": "arcane_torrent",
       "name": "Arcane Gale Torrent",
-      "description": "When the player depletes their mana reservoir, the storyteller channels a dense stream of raw ether directly to them.",
+      "description": "Dormant mana geode fissures rupture beneath the cavern floor when mortal focus runs dry, releasing pure ether.",
       "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
-      "minBoredom": 10
+      "minBoredom": 10,
+      "flavorPool": [
+        "🔮 [ETHERIC RESERVOIR]: The cavern floor cracks to reveal a dormant crystalline mana geode! As etheric vapor washes over you, your drained mana reservoir absorbs +{restoreAmt} Focus (MP) alongside a radiant catalyst!",
+        "🔮 [LEYLINE AQUIFER ERUPTION]: Subterranean mana springs burst through ancient stone fissures, showering your exhausted mind in pure liquid ether (+{restoreAmt} MP) and yielding a rare catalyst!",
+        "🔮 [ASTRAL FONT RESONANCE]: A dormant astral font hidden within the rockface chimes softly, funneling concentrated arcane currents (+{restoreAmt} MP) and an elemental catalyst into your pack!",
+        "🔮 [ANCIENT MANA GEODE]: Runic glyphs carved into the chamber walls illuminate simultaneously, infusing your spiritual core with +{restoreAmt} Focus (MP) and a gleaming catalyst!"
+      ]
     },
     {
       "id": "guardian_summon",
       "name": "Sovereign Light-Guardian",
-      "description": "GM spawns an Ethereal Holy Paladin ally nearby to aid the player in moments of heavy battlefield stress or boss showdowns.",
+      "description": "A consecrated paladin spirit bound by ancient oaths materializes from the astral plane to guard a valiant warrior.",
       "requiredMood": ["Benevolent"],
-      "minBoredom": 55
+      "minBoredom": 55,
+      "flavorPool": [
+        "🛡️ [DIVINE INTERVENTION]: In response to the perilous trials of the deep, a consecrated templar spirit materializes from the astral plane to the [{direction}], pledging its blade to protect you!",
+        "🛡️ [ASTRAL GUARDIAN OATH]: Ancient paladin oaths bound to these cavern halls awaken, manifesting an Ethereal Light-Guardian to the [{direction}] to stand faithfully at your side!",
+        "🛡️ [CELESTIAL TEMPLAR SUMMON]: A radiant beam of celestial light pierces the shadows, summoning a loyal Ethereal Light-Guardian to the [{direction}] in your defense!",
+        "🛡️ [KNIGHT OF ETERNAL LIGHT]: A spectral vanguard spirit sworn to defend valiant souls materializes to the [{direction}], raising its shield in your honor!"
+      ]
     },
     {
       "id": "gilded_bounty",
       "name": "Primal Resource Bounty",
-      "description": "The storyteller manifests Ilmarinen's rogue Ore Thief nearby, a fast goblin carrying premium metals and ores.",
+      "description": "An elusive subterranean forge thief emerges from stone crevices, drawn by the scent of smelted alloys and metal.",
       "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
-      "minBoredom": 15
+      "minBoredom": 15,
+      "flavorPool": [
+        "💰 [ROGUE FORGE THIEF]: Drawn by the scent of subterranean ore veins, an elusive Gilded Ore Thief drops from the cavern ceiling to the [{direction}], hoarding raw smelting metals!",
+        "💰 [PROSPECTOR GOBLIN AMBUSH]: An underground ore collector startled by pickaxe vibrations scurries into view to the [{direction}], carrying a heavy pouch of raw alloys!",
+        "💰 [GILDED ORE GREMLIN]: Scrambling through loose rubble with bulging pockets of unrefined iron and gold, a greedy Ore Thief scurries to the [{direction}]!",
+        "💰 [FORGE THIEF SIGHTING]: Vibrations from your footsteps startle a nimble Ore Thief to the [{direction}], laden with freshly mined metals and alloys!"
+      ]
     },
     {
       "id": "mana_leak",
       "name": "Alchemical Mana Leak",
-      "description": "A mischievous GM causes the player to lose some Mana (MP) because of alchemical leakage.",
+      "description": "Volatile catalyst fumes react unstably inside your belt pouch, causing an electrical pop that burns away Focus.",
       "requiredMood": ["Mischievous", "Sadistic"],
-      "minBoredom": 25
+      "minBoredom": 25,
+      "flavorPool": [
+        "⚠️ [ALCHEMICAL INSTABILITY]: Unstable catalyst vapor reacts violently within your pouch, releasing an electrical pop that burns away -{drainAmt} Focus (MP)!",
+        "⚠️ [STATIC REAGENT POP]: A burst of atmospheric static ignites residual potion fumes on your belt, draining -{drainAmt} Focus (MP) in a flash!",
+        "⚠️ [ETHERIC VOLATILITY]: Turbulent aetheric waves clash with your internal mana reservoir, discharging -{drainAmt} Focus (MP) into the surrounding air!",
+        "⚠️ [MAGIC LEAK]: A subtle magical siphon rune hidden beneath the dirt activates underfoot, leeching -{drainAmt} Focus (MP) before fading away!"
+      ]
     },
     {
       "id": "goblins_greed",
       "name": "Goblin's Hidden Toll",
-      "description": "The GM directly drains some gold from the player's pockets because they are carrying too much treasure.",
+      "description": "Greedy dungeon poltergeists attracted by the heavy clinking of gold coins phase through your purse.",
       "requiredMood": ["Sadistic", "Mischievous"],
-      "minBoredom": 30
+      "minBoredom": 30,
+      "flavorPool": [
+        "💸 [PHANTOM TOLL]: Lingering dungeon shades and greedy poltergeists phase through the gloom, siphoning -{goldToll} Gold coins from your overburdened coinpurse!",
+        "💸 [SPECTRAL PICKPOCKET]: Ethereal pickpockets attracted by the metallic clinking of currency slip ghostly fingers into your belt pouch, stealing -{goldToll} Gold!",
+        "💸 [GREEDY SHADOW TOLL]: Subterranean gremlins snatch loose coins through stone crevices, making off with -{goldToll} Gold before vanishing into the dark!",
+        "💸 [CURSED PURSE DRAIN]: A cursed dungeon draft passes over your pack, dissolving -{goldToll} Gold coins into spectral mist!"
+      ]
     },
     {
       "id": "acidic_smog",
       "name": "Acidic Alloy Tarnish",
-      "description": "An acidic environmental smog causes the durability of the players equipped weapon or shields to decay.",
+      "description": "Corrosive sulfuric hydrothermal vents belch acrid acid vapors that erode exposed equipment durability.",
       "requiredMood": ["Sadistic"],
-      "minBoredom": 40
+      "minBoredom": 40,
+      "flavorPool": [
+        "⚠️ [CORROSIVE VAPOR]: Noxious sulfur vents spew acidic fog across the stones, tarnishing and eroding the durability of your exposed equipment! {itemText}",
+        "⚠️ [HYDROTHERMAL ACID SMOG]: Caustic hydrothermal geysers release a cloud of corrosive vapors, eating into the temper of your weapon and shield! {itemText}",
+        "⚠️ [CAUSTIC MIST]: A foul subterranean smog rolls along the cavern floor, corroding polished steel and leather straps on your gear! {itemText}",
+        "⚠️ [VOLCANIC STEAM WEAR]: Volcanic acidic steam hisses through wall crevices, wearing down the durability of your equipped arms! {itemText}"
+      ]
     },
     {
       "id": "earthquake_tremor",
       "name": "Tectonic Earthquake Tremor",
-      "description": "A sudden seismic shockwave deals minor strain damage to both you and active hostile monsters.",
+      "description": "Deep tectonic fault lines fracture under ancestral mountain strain, rattling stone blocks across the chamber.",
       "requiredMood": ["Sadistic", "Mischievous", "Apathetic"],
-      "minBoredom": 25
+      "minBoredom": 25,
+      "flavorPool": [
+        "🌋 [TECTONIC TREMOR]: Deep subterranean fault lines fracture violently! A violent seismic shudder rocks the foundation, dealing -5 strain damage to you and rattling nearby hostiles for -8 HP!",
+        "🌋 [SEISMIC SHOCKWAVE]: Seismic shockwaves tear through the chamber floor as ancestral mountain roots shift, jarring your footing (-5 HP) and staggering hostiles (-8 HP)!",
+        "🌋 [BEDROCK FRACTURE]: A deep tectonic quake reverberates through the subterranean bedrock, raining loose stone fragments that inflict damage across the entire room!",
+        "🌋 [EARTHQUAKE SURGE]: The earth groans under crushing continental pressure, sending a violent tremor through the flagstones that damages all combatants!"
+      ]
     },
     {
       "id": "dimensional_blur",
       "name": "Dimensional Phase Blur",
-      "description": "A transient reality glitch blurs coordinate spaces, pushing nearby hostiles 1 tile away from the player.",
+      "description": "A momentary rift warp blurs coordinate space, pushing and disorienting nearby hostiles 1 tile outward.",
       "requiredMood": ["Mischievous", "Intrigued", "Apathetic"],
-      "minBoredom": 20
+      "minBoredom": 20,
+      "flavorPool": [
+        "🌀 [SPATIAL DISTORTION]: A momentary rupture in the physical plane warps space-time coordinates, scattering and disorienting nearby hostiles 1 tile outward!",
+        "🌀 [GRAVITATIONAL DISPLACEMENT]: Localized gravity ripples distort coordinate geometry, pushing back adjacent hostiles into the shadows!",
+        "🌀 [SPACETIME FRACTURE]: Spacetime fractures refract through the air, displacing hostile enemies a step backward in disarray!",
+        "🌀 [REALITY PHASE-SHIFT]: A transient reality phase-shift bends the floor grid, shoving surrounding monsters away from your perimeter!"
+      ]
     },
     {
       "id": "mystical_resonance",
       "name": "Leyline Acoustic Resonance",
-      "description": "An acoustic wave of ancient ley energy restores 15 focus mana points to the player.",
+      "description": "Ancient singing cavern stones harmonize with the heartbeat of the earth, channeling focus into your spirit.",
       "requiredMood": ["Benevolent", "Intrigued"],
-      "minBoredom": 10
+      "minBoredom": 10,
+      "flavorPool": [
+        "🔮 [LEYLINE RESONANCE]: The ancient cavern slate vibrates at a harmonic frequency, channeling +15 Focus (MP) directly into your spirit!",
+        "🔮 [ACOUSTIC HARMONY]: Singing crystal formations catch the echoes of your movement, resonating with a calming hum that replenishes +15 Focus (MP)!",
+        "🔮 [SUBTERRANEAN LEYLINE INFUSION]: Subterranean acoustic leylines harmonize with your breathing, infusing +15 Focus (MP) through the soles of your boots!",
+        "🔮 [RUNIC PILLAR CHIME]: Ancient runic pillars pulse with calming azure light, refilling your mental reservoir with +15 Focus (MP)!"
+      ]
     },
     {
       "id": "wild_beast_pack",
       "name": "Wilderness Fauna Spawn",
-      "description": "A passive woodland beast wanders onto the active coordinate matrix.",
+      "description": "Rustling leaves and snapped twigs herald peaceful woodland wildlife foraging for roots in the clearing.",
       "requiredMood": ["Intrigued", "Benevolent", "Apathetic"],
-      "minBoredom": 15
+      "minBoredom": 15,
+      "flavorPool": [
+        "🐇 [WILDLIFE SIGHTING]: Rustling leaves and snapped twigs herald the arrival of a wild {animalName} grazing peacefully to the [{direction}]!",
+        "🐇 [WOODLAND FAUNA]: Sensing a temporary lull in predator activity, a cautious {animalName} wanders into the open clearing to the [{direction}]!",
+        "🐇 [FORAGING WILDLIFE]: A foraging {animalName} emerges from the underbrush sniffing for roots and wild berries to the [{direction}]!",
+        "🐇 [GAME TRAIL SIGHTING]: Peaceful forest wildlife trot along an old game trail as a {animalName} appears to the [{direction}]!"
+      ]
     },
     {
       "id": "ukko_thunder",
       "name": "Ukko's Golden Bolt",
-      "description": "Ukko Ylijumala strikes a massive golden lightning bolt, purging nearest enemy and infusing player with sky-sparks.",
+      "description": "Ukko Ylijumala strikes a golden lightning bolt from the heights, incinerating evil and energizing the air.",
       "requiredMood": ["Benevolent", "Intrigued"],
-      "minBoredom": 30
+      "minBoredom": 30,
+      "flavorPool": [
+        "⚡ [UKKO'S GOLDEN THUNDER]: Ukko Ylijumala hurls an incandescent thunderbolt from the upper heavens, incinerating {targetName} for {lightningDmg} Damage and releasing energized static that restores +10 MP!",
+        "⚡ [CELESTIAL BOLT OF UKKO]: Blinding divine sky-fire lances through the cavern ceiling as Ukko's celestial wrath strikes down {targetName} for {lightningDmg} Damage!",
+        "⚡ [HOLY SKY-SPARK]: The high god Ukko strikes his golden spark upon the firmament, obliterating {targetName} with holy lightning (+10 MP restored)!",
+        "⚡ [THUNDERCLAP PURGE]: A deafening thunderclap rips through the stone vaults as Ukko's golden bolt smites {targetName} into smoldering ash!"
+      ]
     },
     {
       "id": "vainamoinen_song",
       "name": "Väinämöinen's Rune-Song",
-      "description": "Väinämöinen sings the ancient runes of creation, putting all nearby enemies to sleep/calm and healing the player.",
+      "description": "Väinämöinen's eternal Kantele melodies echo through the deep, soothing wounds and spellbinding hostile fury.",
       "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
-      "minBoredom": 20
+      "minBoredom": 20,
+      "flavorPool": [
+        "🎵 [RUNIC HARMONY]: The eternal melodies of Väinämöinen echo through the stone. Your wounds knit for +{healAmt} HP, while hostile creatures pause spellbound as their fury is pacified!",
+        "🎵 [SONG OF CREATION]: Väinämöinen plays his pike-bone Kantele in the astral mists, weaving song-runes that soothe your injuries (+{healAmt} HP) and calm the aggressive instincts of surrounding foes!",
+        "🎵 [SONG-RUNE OF PEACE]: Ancient runes of creation sung by the eternal bard resonate through your veins (+{healAmt} HP), bewitching nearby hostiles into tranquil stillness!",
+        "🎵 [BARDIC LULLABY]: A soothing song-rune drifts upon the subterranean breeze, mending your flesh for +{healAmt} HP and pacifying hostile rage across the room!"
+      ]
     },
     {
       "id": "mielikki_gift",
       "name": "Mielikki's Honey Drop",
-      "description": "Mielikki, Queen of the Forest, spawns a glowing Honey-Glazed Boar that flees from the player, dropping cooked meats and honey.",
+      "description": "Queen Mielikki blesses the trail with an enchanted Honey-Glazed Boar carrying prime roasts and wild honey.",
       "requiredMood": ["Benevolent", "Intrigued"],
-      "minBoredom": 10
+      "minBoredom": 10,
+      "flavorPool": [
+        "🐗 [FOREST QUEEN'S FAVOR]: Mielikki blesses the trail with a magical Honey-Glazed Boar to the [{direction}], offering wholesome roasted meats and trail honey if hunted!",
+        "🐗 [AMBER-GLAZED BOUNTY]: Queen Mielikki's enchanted woodland emissary, a succulent Honey-Glazed Boar, bounds onto the path to the [{direction}] laden with savory trail provisions!",
+        "🐗 [WOODLAND QUEEN'S ROAST]: The Forest Queen sends an amber-glazed foraging boar through the brush to the [{direction}], promising tender roasts and nourishing honey comb!",
+        "🐗 [HONEY-GLAZED EMISSARY]: A golden-bristled Honey-Glazed Boar scampers across your trail to the [{direction}], carrying wild forest honey and prime roasted steaks!"
+      ]
     },
     {
       "id": "story_bandit_camp",
       "name": "Roaming Outlaw Camp",
-      "description": "The GM spawns a small camp of 2-3 Outlaw Bandits around a newly lit wood campfire nearby, accompanied by a dynamic lore announcement.",
+      "description": "Exiled highway raiders set up a fortified wilderness campfire to ambush travelers along trade trails.",
       "requiredMood": ["Mischievous", "Sadistic", "Intrigued"],
-      "minBoredom": 30
+      "minBoredom": 30,
+      "flavorPool": [
+        "🔥 [BANDIT OUTPOST]: Smoke curls above the tree line as a gang of ruthless outlaws sets up a fortified campfire to the [{direction}], plotting ambushes on passing travelers!",
+        "🔥 [OUTLAW CAMPFIRE]: Exiled highway raiders establish an entrenched wilderness camp to the [{direction}], stoking their campfire and sharpening axes for unsuspecting wanderers!",
+        "🔥 [DESERTER ENCAMPMENT]: A band of desperate deserters builds a fortified outpost in the clearing to the [{direction}], lighting a crackling campfire as they patrol the perimeter!",
+        "🔥 [HIGHWAYMAN PERIMETER]: Roving bandit skirmishers construct a fortified timber campfire to the [{direction}], preparing ambush traps for passing merchants!"
+      ]
+    },
+    {
+      "id": "ancestral_pity_shield",
+      "name": "Ancestral Grove Emergency Ward",
+      "description": "When the mortal wanderer is on the brink of death surrounded by vicious foes, spirits of the ancient grove unleash a pine-scented shockwave that heals the player and repels adjacent hostiles.",
+      "requiredMood": ["Benevolent", "Intrigued", "Apathetic"],
+      "minBoredom": 10,
+      "minTension": 60,
+      "maxTension": 100,
+      "flavorPool": [
+        "🌿 [ANCESTRAL GROVE RESCUE]: A warm breeze carrying the scent of pine and heather revitalizes your failing strength—the spirits of the ancient grove grant you respite! A burst of emerald light knits your wounds (+{healAmt} HP) and repels surrounding hostiles!",
+        "🌿 [TAPIO'S WARDING BARRIER]: Sensing your mortal life slipping away under claw and blade, Tapio strikes his pine staff upon the earth! An enchanted emerald gale bursts outward, mending +{healAmt} HP and repelling nearby enemies!",
+        "🌿 [SPIRITS OF THE ANCIENT GROVE]: As darkness encroaches upon your failing vision, ancient grove spirits surge from the bedrock in an explosion of blooming heather, restoring +{healAmt} HP and pushing back your attackers!",
+        "🌿 [KALEVA'S REVEILLE]: Ancestral protectors of the northern woods refuse to let your legend end here. A fragrant surge of sacred pine air rejuvenates +{healAmt} HP and forces back adjacent foes!"
+      ]
+    },
+    {
+      "id": "chaos_mercy",
+      "name": "Ancestral Threat Reduction & Pity Reprieve",
+      "description": "When the player is near death or in severe peril, ancient grove spirits and ancestral deities intervene to suppress environmental malice and reduce the Chaos Matrix.",
+      "minBoredom": 0,
+      "flavorPool": [
+        "✨ [GM CHAOS MERCY]: {oldScore} → {currentChaos} (-{delta}) — A warm breeze carrying the scent of pine and heather revitalizes your failing strength—the spirits of the ancient grove grant you respite, calming subterranean malice!",
+        "✨ [GM CHAOS MERCY]: {oldScore} → {currentChaos} (-{delta}) — Tapio weaves a soothing shroud of pine needles and damp moss mist over the cavern, shielding your failing pulse and lowering environmental danger!",
+        "✨ [GM CHAOS MERCY]: {oldScore} → {currentChaos} (-{delta}) — The elder skald Väinämöinen whispers a calming verse across the deep, pacifying environmental fury and easing the oppressive dread!",
+        "✨ [GM CHAOS MERCY]: {oldScore} → {currentChaos} (-{delta}) — Queen Mielikki covers your trembling footsteps in wild heather fragrance, keeping ancient dungeon horrors at bay!",
+        "✨ [GM CHAOS MERCY]: {oldScore} → {currentChaos} (-{delta}) — Guardian spirits of Kaleva interpose an ethereal veil of quiet starlight, giving you breathing room as environmental threat subsides!"
+      ]
     }
   ],
   "narrativePrompts": {
-    "Sadistic": "HP ratio is low. Should I introduce a poison gas hazard or let them crawl in blood?",
-    "Benevolent": "Player is exerting valiant coordination on this grid. Perhaps a healing spark or alloy cluster falls near.",
-    "Mischievous": "Too quiet. Let's mutate the chunk configuration or drop a trap adjacent to their next footstep.",
-    "Intrigued": "Watching coordinate vector. Autonomous GM active and monitoring...",
-    "Apathetic": "Observing silently as the mortal wanders the realm."
+    "Sadistic": "HP ratio is low. The scent of mortal blood draws subterranean predators into the damp shadows.",
+    "Benevolent": "The mortal displays valiant fortitude. Ancient forest spirits weave subtle protective auras nearby.",
+    "Mischievous": "The silence grows stale. Tectonic gears align and dormant leyline rifts prepare to test their footing.",
+    "Intrigued": "Observing spatial vector and vital signs. Autonomous Storyteller monitoring world harmony.",
+    "Apathetic": "The cosmic wheel turns silently as the wanderer navigates the ancient paths of Pohjola."
   }
 }

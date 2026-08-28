@@ -10,7 +10,8 @@ export interface UseQuestsAndGuildParams {
 export function useQuestsAndGuild({ setGameState, addLog, playSound }: UseQuestsAndGuildParams) {
   const acceptGuildQuest = useCallback((quest: Quest) => {
     setGameState((prev) => {
-      if (prev.activeGuildQuests.some((q) => q.id === quest.id)) {
+      const activeQuests = prev.quests || [];
+      if (activeQuests.some((q) => q.id === quest.id)) {
         addLog(`📜 Quest "${quest.title}" is already accepted.`);
         return prev;
       }
@@ -20,28 +21,30 @@ export function useQuestsAndGuild({ setGameState, addLog, playSound }: UseQuests
 
       return {
         ...prev,
-        activeGuildQuests: [...prev.activeGuildQuests, { ...quest, status: 'active' }],
+        quests: [...activeQuests, { ...quest, status: 'active' }],
       };
     });
   }, [setGameState, addLog, playSound]);
 
   const claimQuestReward = useCallback((questId: string) => {
     setGameState((prev) => {
-      const quest = prev.activeGuildQuests.find((q) => q.id === questId);
+      const activeQuests = prev.quests || [];
+      const quest = activeQuests.find((q) => q.id === questId);
       if (!quest || quest.status !== 'completed') return prev;
 
       addLog(`🏆 Quest Complete! "${quest.title}". Claimed +${quest.rewardGold}g and +${quest.rewardXp} XP.`);
       playSound('level_up');
 
-      const remainingQuests = prev.activeGuildQuests.filter((q) => q.id !== questId);
-      const nextXp = prev.playerStats.xp + quest.rewardXp;
+      const remainingQuests = activeQuests.filter((q) => q.id !== questId);
+      const nextXp = (prev.playerStats?.xp ?? 0) + quest.rewardXp;
+      const nextGold = (prev.playerStats?.gold ?? 0) + quest.rewardGold;
 
       return {
         ...prev,
-        gold: prev.gold + quest.rewardGold,
-        activeGuildQuests: remainingQuests,
+        quests: remainingQuests,
         playerStats: {
           ...prev.playerStats,
+          gold: nextGold,
           xp: nextXp,
         },
       };
@@ -53,4 +56,5 @@ export function useQuestsAndGuild({ setGameState, addLog, playSound }: UseQuests
     claimQuestReward,
   };
 }
+
 

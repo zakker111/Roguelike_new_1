@@ -1,0 +1,170 @@
+{
+  "dungeon": [
+    {
+      "type": "sarcophagus",
+      "char": "⚰️",
+      "name": "Ancient Stone Sarcophagus",
+      "color": "#94a3b8",
+      "description": "A heavy marble tomb inscribed with forgotten funerary seals. Inspect to search for ancient relics or gold.",
+      "actionLabel": "Open Sarcophagus",
+      "interaction": "search_tomb"
+    },
+    {
+      "type": "weapon_rack",
+      "char": "🗡️",
+      "name": "Rusted Weapon Rack",
+      "color": "#e2e8f0",
+      "description": "An old iron rack holding worn blades and polearms. Search to scavenge weapons or crafting metal.",
+      "actionLabel": "Scavenge Weapon",
+      "interaction": "scavenge_weapon"
+    },
+    {
+      "type": "bookshelf",
+      "char": "📚",
+      "name": "Ancient Crypt Bookshelf",
+      "color": "#fbbf24",
+      "description": "A dust-covered oak shelf filled with crumbling spell tomes and historical logs.",
+      "actionLabel": "Read Tome",
+      "interaction": "read_tome"
+    },
+    {
+      "type": "cask",
+      "char": "🛢️",
+      "name": "Aged Wine Cask",
+      "color": "#b45309",
+      "description": "A heavy oak barrel sealed with iron bands. Tap the cask to restore HP and stamina.",
+      "actionLabel": "Drink Mead",
+      "interaction": "drink_cask"
+    },
+    {
+      "type": "bone_pile",
+      "char": "☠️",
+      "name": "Bleached Skeleton Pile",
+      "color": "#cbd5e1",
+      "description": "Scattered remains of past explorers. Search through dust for leftover coins or materials.",
+      "actionLabel": "Search Bones",
+      "interaction": "search_bones"
+    },
+    {
+      "type": "crystal_cluster",
+      "char": "💎",
+      "name": "Resonant Mana Crystal",
+      "color": "#38bdf8",
+      "description": "A glowing azure gem pulsating with elemental energy. Touch to restore MP.",
+      "actionLabel": "Channel Energy",
+      "interaction": "channel_crystal"
+    },
+    {
+      "type": "cobweb",
+      "char": "🕸️",
+      "name": "Thick Arachnid Cobweb",
+      "color": "#94a3b8",
+      "description": "Dense sticky webbing draped over the wall. Clear away to collect silk threads.",
+      "actionLabel": "Clear Webbing",
+      "interaction": "clear_web"
+    },
+    {
+      "type": "alchemy_table",
+      "char": "🧪",
+      "name": "Forgotten Alchemist Bench",
+      "color": "#a855f7",
+      "description": "Vials and glass retorts sitting on a stained stone slab. Search for leftover potions.",
+      "actionLabel": "Search Vials",
+      "interaction": "search_alchemy"
+    }
+  ],
+  "ruins": [
+    {
+      "type": "statue",
+      "char": "🗿",
+      "name": "Crumbling Sentinel Statue",
+      "color": "#cbd5e1",
+      "description": "A weathered statue of a forgotten king. Pray for an ancient blessing and lore.",
+      "actionLabel": "Pray at Statue",
+      "interaction": "statue_blessing"
+    },
+    {
+      "type": "relic_chest",
+      "char": "📦",
+      "name": "Overgrown Relic Coffer",
+      "color": "#f59e0b",
+      "description": "A moss-covered brass coffer half-buried in stone ruins. Open to retrieve ancient artifacts.",
+      "actionLabel": "Open Coffer",
+      "interaction": "open_relic_chest"
+    },
+    {
+      "type": "sun_dial",
+      "char": "☀️",
+      "name": "Weathered Celestial Sundial",
+      "color": "#fde047",
+      "description": "An ancient astronomical instrument marking solar movements. Align dial for clarity.",
+      "actionLabel": "Align Sundial",
+      "interaction": "align_sundial"
+    }
+  ],
+  "town": [
+    {
+      "type": "bed",
+      "char": "🛏️",
+      "name": "Feather Bed",
+      "color": "#38bdf8",
+      "description": "A clean, comfortable bed filled with goose feathers. Rest to fully restore HP and MP.",
+      "actionLabel": "Rest & Sleep",
+      "interaction": "rest_bed"
+    },
+    {
+      "type": "fireplace",
+      "char": "🔥",
+      "name": "Roaring Stone Hearth",
+      "color": "#f97316",
+      "description": "A crackling stone fireplace emitting comforting warmth. Stand nearby to warm up.",
+      "actionLabel": "Warm Up",
+      "interaction": "warm_hearth"
+    },
+    {
+      "type": "bookshelf",
+      "char": "📖",
+      "name": "Town Chronicle Bookshelf",
+      "color": "#eab308",
+      "description": "A neatly organized library shelf with town records, maps, and recipe notes.",
+      "actionLabel": "Read Chronicle",
+      "interaction": "read_chronicle"
+    },
+    {
+      "type": "herb_pot",
+      "char": "🪴",
+      "name": "Herbalist Flower Pot",
+      "color": "#4ade80",
+      "description": "A ceramic pot flourishing with fresh medicinal herbs. Harvest for alchemy ingredients.",
+      "actionLabel": "Harvest Herbs",
+      "interaction": "harvest_herbs"
+    },
+    {
+      "type": "well",
+      "char": "🚰",
+      "name": "Town Stone Well",
+      "color": "#60a5fa",
+      "description": "A deep stone well fed by underground mountain springs. Drink to restore MP & stamina.",
+      "actionLabel": "Drink Water",
+      "interaction": "drink_well"
+    },
+    {
+      "type": "notice_board",
+      "char": "📜",
+      "name": "Bounty & News Notice Board",
+      "color": "#fef08a",
+      "description": "A wooden board pinned with regional trade notices and monster rumors.",
+      "actionLabel": "Inspect Board",
+      "interaction": "inspect_board"
+    },
+    {
+      "type": "feast_table",
+      "char": "🍞",
+      "name": "Tavern Feast Table",
+      "color": "#fb923c",
+      "description": "A long oak dining table laden with fresh bread, cheese, and roasted meats.",
+      "actionLabel": "Eat Meal",
+      "interaction": "eat_meal"
+    }
+  ]
+}

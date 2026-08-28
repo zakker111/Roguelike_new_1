@@ -1,0 +1,796 @@
+import {
+  Enemy,
+  EnemyState,
+  EnemyType,
+  GameState,
+  TileType,
+  PlayerEffect,
+  CatalystType,
+  EquipmentItem,
+  CaravanTravelState
+} from '../../types';
+import { LEVEL_WIDTH, LEVEL_HEIGHT, isLunarBlessingActive } from '../../utils/gameUtils';
+import { getNextStepTowards, hasLineOfSight } from '../../utils/ai';
+import { getEnemyFleeQuote } from '../../utils/fleeQuotes';
+import { incrementDefeatedEnemyCount } from '../../utils/bestiary';
+import { evaluateScarAcquisition, getEffectiveStats } from '../../utils/scars';
+import { getItemDurabilityDecay } from '../../utils/spellsAndEquipment';
+import { calculateArchetypeDamageAdjustment } from '../../utils/combatArchetypes';
+import { isPlayerInvincible } from '../../utils/invincibility';
+import { DefeatedEnemyCounts } from './types';
+
+function safeDispatchEffect(detail: any) {
+  if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+    const ev = new CustomEvent('spawn-game-effect', { detail });
+    window.dispatchEvent(ev);
+  }
+}
+
+export interface HostileAIParams {
+  e: Enemy;
+  i: number;
+  px: number;
+  py: number;
+  playerHp: number;
+  prev: GameState;
+  nextGuardsHostile: boolean;
+  nextEnemies: Enemy[];
+  updatedEnemiesList: Enemy[];
+  updatedStats: any;
+  nextArmor?: EquipmentItem;
+  nextHelmet?: EquipmentItem;
+  nextGloves?: EquipmentItem;
+  nextBoots?: EquipmentItem;
+  nextShield?: EquipmentItem;
+  activeScars: any[];
+  updatedEffects: PlayerEffect[];
+  nextCaravanTravel?: CaravanTravelState;
+  nextDefeatedCounts: DefeatedEnemyCounts;
+  incomingPlayerDamage: number;
+  incomingPlayerHits: number;
+  hadPlayerCrit: boolean;
+  hadPlayerBrace: boolean;
+  lastAttackerX?: number;
+  lastAttackerY?: number;
+  staticLogs: string[];
+  playSound: (soundName: string, options?: any) => void;
+  applyDamageToEnemy: (target: Enemy, damage: number) => boolean;
+}
+
+export interface HostileActionResult {
+  e: Enemy | null;
+  playerHp: number;
+  nextArmor?: EquipmentItem;
+  nextHelmet?: EquipmentItem;
+  nextGloves?: EquipmentItem;
+  nextBoots?: EquipmentItem;
+  nextShield?: EquipmentItem;
+  activeScars: any[];
+  updatedEffects: PlayerEffect[];
+  nextCaravanTravel?: CaravanTravelState;
+  nextDefeatedCounts: DefeatedEnemyCounts;
+  incomingPlayerDamage: number;
+  incomingPlayerHits: number;
+  hadPlayerCrit: boolean;
+  hadPlayerBrace: boolean;
+  lastAttackerX?: number;
+  lastAttackerY?: number;
+}
+
+export function processHostileTurn(params: HostileAIParams): HostileActionResult {
+  const {
+    i,
+    px,
+    py,
+    prev,
+    nextGuardsHostile,
+    nextEnemies,
+    updatedEnemiesList,
+    updatedStats,
+    staticLogs,
+    playSound,
+    applyDamageToEnemy,
+  } = params;
+
+  let e = { ...params.e };
+  let playerHp = params.playerHp;
+  let nextArmor = params.nextArmor;
+  let nextHelmet = params.nextHelmet;
+  let nextGloves = params.nextGloves;
+  let nextBoots = params.nextBoots;
+  let nextShield = params.nextShield;
+  const activeScars = [...params.activeScars];
+  const updatedEffects = [...params.updatedEffects];
+  let nextCaravanTravel = params.nextCaravanTravel;
+  let nextDefeatedCounts = { ...params.nextDefeatedCounts };
+  let incomingPlayerDamage = params.incomingPlayerDamage;
+  let incomingPlayerHits = params.incomingPlayerHits;
+  let hadPlayerCrit = params.hadPlayerCrit;
+  let hadPlayerBrace = params.hadPlayerBrace;
+  let lastAttackerX = params.lastAttackerX;
+  let lastAttackerY = params.lastAttackerY;
+
+  // Process enemy debuffs
+  let isStunned = false;
+  if (e.debuffs && e.debuffs.length > 0) {
+    const nextDebuffs = [];
+    for (const d of e.debuffs) {
+      const dType = String(d.type || '');
+      const turns = (d as any).turnsRemaining ?? (d as any).duration ?? 1;
+      if (dType === 'stun' || dType === 'freeze' || dType === CatalystType.Frost || dType === CatalystType.Shadow) {
+        isStunned = true;
+      } else if (dType === 'burn' || dType === 'poison' || dType === CatalystType.Fire || dType === CatalystType.Poison || dType === CatalystType.Lightning) {
+        const tickVal = d.damagePerTurn || 3;
+        e.hp -= tickVal;
+        if (prev.visible[e.y]?.[e.x]) {
+          staticLogs.push(`🔥 ${e.name} takes -${tickVal} damage from status affliction!`);
+          safeDispatchEffect({ x: e.x, y: e.y, text: `-${tickVal}`, type: 'dmg' });
+        }
+      }
+      if (turns > 1) {
+        nextDebuffs.push({ ...d, duration: turns - 1, turnsRemaining: turns - 1 });
+      }
+    }
+    e.debuffs = nextDebuffs;
+  }
+
+  if (e.hp <= 0) {
+    if (prev.visible[e.y]?.[e.x]) {
+      staticLogs.push(`💀 ${e.name} succumbed to status ailments!`);
+    }
+    nextDefeatedCounts = incrementDefeatedEnemyCount(nextDefeatedCounts, e.name, e.type, !!e.isBoss);
+    return {
+      e: null,
+      playerHp,
+      nextArmor,
+      nextHelmet,
+      nextGloves,
+      nextBoots,
+      nextShield,
+      activeScars,
+      updatedEffects,
+      nextCaravanTravel,
+      nextDefeatedCounts,
+      incomingPlayerDamage,
+      incomingPlayerHits,
+      hadPlayerCrit,
+      hadPlayerBrace,
+      lastAttackerX,
+      lastAttackerY
+    };
+  }
+
+  if (isStunned) {
+    if (prev.visible[e.y]?.[e.x]) {
+      staticLogs.push(`💫 ${e.name} is stunned/frozen and skips their turn!`);
+    }
+    return {
+      e,
+      playerHp,
+      nextArmor,
+      nextHelmet,
+      nextGloves,
+      nextBoots,
+      nextShield,
+      activeScars,
+      updatedEffects,
+      nextCaravanTravel,
+      nextDefeatedCounts,
+      incomingPlayerDamage,
+      incomingPlayerHits,
+      hadPlayerCrit,
+      hadPlayerBrace,
+      lastAttackerX,
+      lastAttackerY
+    };
+  }
+
+  // Stagger / Guard Recovery
+  if (e.isStaggered) {
+    e.staggerTurns = (e.staggerTurns || 1) - 1;
+    if (e.staggerTurns <= 0) {
+      e.isStaggered = false;
+      e.staggerMeter = 0;
+      if (prev.visible[e.y]?.[e.x]) {
+        staticLogs.push(`🛡️ ${e.name} recovers their posture and stance!`);
+      }
+    } else {
+      if (prev.visible[e.y]?.[e.x]) {
+        staticLogs.push(`💫 ${e.name} is STAGGERED and helpless!`);
+      }
+      return {
+        e,
+        playerHp,
+        nextArmor,
+        nextHelmet,
+        nextGloves,
+        nextBoots,
+        nextShield,
+        activeScars,
+        updatedEffects,
+        nextCaravanTravel,
+        nextDefeatedCounts,
+        incomingPlayerDamage,
+        incomingPlayerHits,
+        hadPlayerCrit,
+        hadPlayerBrace,
+        lastAttackerX,
+        lastAttackerY
+      };
+    }
+  }
+
+  // Telegraphed Attack Resolution
+  if (e.telegraphedAttack) {
+    const attack = e.telegraphedAttack;
+    attack.turnsRemaining -= 1;
+    if (attack.turnsRemaining <= 0) {
+      const tx = attack.targetX;
+      const ty = attack.targetY;
+      const dmg = attack.damage;
+
+      if (px === tx && py === ty) {
+        if (isPlayerInvincible(prev, prev.playerStats)) {
+          staticLogs.push(`🛡️ [GOD MODE]: You are invincible! ${e.name}'s ${attack.name} strikes your divine shield for 0 damage!`);
+          playSound('shield');
+          safeDispatchEffect({ x: tx, y: ty, text: `🛡️ IMMUNE`, type: 'heal' });
+        } else if (prev.isBraced) {
+          const reducedDmg = Math.max(1, Math.floor(dmg * 0.25));
+          playerHp = Math.max(0, playerHp - reducedDmg);
+          incomingPlayerDamage += reducedDmg;
+          incomingPlayerHits += 1;
+          hadPlayerBrace = true;
+          const curStagger = e.staggerMeter || 0;
+          const maxStag = e.maxStaggerMeter || (e.isBoss ? 120 : e.isElite ? 75 : 45);
+          e.staggerMeter = Math.min(maxStag, curStagger + 35);
+          if (e.staggerMeter >= maxStag && !e.isStaggered) {
+            e.isStaggered = true;
+            e.staggerTurns = 2;
+          }
+          staticLogs.push(`🛡️ [PERFECT BRACE]: You braced firmly against ${e.name}'s ${attack.name}! Absorbed 75% of damage (-${reducedDmg} HP) and counter-staggered the attacker!`);
+          playSound('shield');
+        } else {
+          playerHp = Math.max(0, playerHp - dmg);
+          incomingPlayerDamage += dmg;
+          incomingPlayerHits += 1;
+          staticLogs.push(`💥 [TELEGRAPHED IMPACT]: ${e.name}'s heavy ${attack.name} smashes you at (${tx}, ${ty}) for -${dmg} HP!`);
+          playSound('injury');
+        }
+      } else {
+        staticLogs.push(`💨 [TACTICAL DODGE]: ${e.name}'s ${attack.name} smashes empty ground at (${tx}, ${ty}) as you dodged out of danger!`);
+        playSound('bump');
+        safeDispatchEffect({ x: tx, y: ty, text: `💨 DODGED!`, type: 'heal' });
+      }
+      e.telegraphedAttack = null;
+      return {
+        e,
+        playerHp,
+        nextArmor,
+        nextHelmet,
+        nextGloves,
+        nextBoots,
+        nextShield,
+        activeScars,
+        updatedEffects,
+        nextCaravanTravel,
+        nextDefeatedCounts,
+        incomingPlayerDamage,
+        incomingPlayerHits,
+        hadPlayerCrit,
+        hadPlayerBrace,
+        lastAttackerX,
+        lastAttackerY
+      };
+    }
+  }
+
+  const sameZ = (e.z ?? 0) === ((prev as any).overworldZ ?? 0);
+  const distToPlayer = Math.abs(e.x - px) + Math.abs(e.y - py);
+  const enemyRange = e.range || 1;
+  const dxToPlayer = Math.abs(e.x - px);
+  const dyToPlayer = Math.abs(e.y - py);
+  const hasLOS = hasLineOfSight(e.x, e.y, px, py, prev.map);
+  const isWithinAttackRange = sameZ && dxToPlayer <= enemyRange && dyToPlayer <= enemyRange && (dxToPlayer > 0 || dyToPlayer > 0) && (enemyRange === 1 || hasLOS);
+  const isHostile = !e.isFollower && (!e.isTownGuard || nextGuardsHostile);
+
+  // Perception check
+  const isInPerceptionRange = distToPlayer <= 10;
+  if (sameZ && isInPerceptionRange && isHostile && (enemyRange === 1 || hasLOS)) {
+    e.state = EnemyState.Chasing;
+    if (!e.hasWarnedElite && (e.isBoss || e.maxHp >= 75 || e.name.toLowerCase().includes('commander') || e.name.toLowerCase().includes('elite')) && prev.followers && prev.followers.length > 0) {
+      e.hasWarnedElite = true;
+      const folName = prev.followers[0].name;
+      staticLogs.push(`🛡️ ${folName}: "Master, heads up! An elite foe (${e.name}) is bearing down on us!"`);
+    }
+  }
+
+  // Wagon Attack Targeting
+  if (isHostile && nextCaravanTravel?.active && (nextCaravanTravel.wagonHp ?? 100) > 0) {
+    const wagonX = 12;
+    const wagonY = 9;
+    const wDistX = Math.abs(wagonX - e.x);
+    const wDistY = Math.abs(wagonY - e.y);
+    const atkRange = e.range || 1;
+    const inWagonRange = atkRange === 1 ? (wDistX <= 1 && wDistY <= 1) : (wDistX <= atkRange && wDistY <= atkRange);
+
+    if (inWagonRange && Math.random() < 0.60) {
+      const rawWagonDmg = Math.max(5, Math.round(e.atk * 0.85));
+      const currentWagonHp = nextCaravanTravel.wagonHp ?? 100;
+      const updatedWagonHp = Math.max(0, currentWagonHp - rawWagonDmg);
+      nextCaravanTravel = {
+        ...nextCaravanTravel,
+        wagonHp: updatedWagonHp
+      };
+      staticLogs.push(`💥 [WAGON DAMAGED]: ${e.name} strikes the Merchant Wagon for -${rawWagonDmg} Hull Damage! (${updatedWagonHp}/${nextCaravanTravel.maxWagonHp || 100} HP remaining)`);
+      playSound('metal_hit');
+      safeDispatchEffect({ x: wagonX, y: wagonY, text: `-${rawWagonDmg} Wagon`, type: 'dmg' });
+
+      if (updatedWagonHp <= 0) {
+        staticLogs.push(`💥 [CARGO DESTROYED]: The merchant wagon frame was shattered! Cargo has been lost!`);
+      }
+      return {
+        e,
+        playerHp,
+        nextArmor,
+        nextHelmet,
+        nextGloves,
+        nextBoots,
+        nextShield,
+        activeScars,
+        updatedEffects,
+        nextCaravanTravel,
+        nextDefeatedCounts,
+        incomingPlayerDamage,
+        incomingPlayerHits,
+        hadPlayerCrit,
+        hadPlayerBrace,
+        lastAttackerX,
+        lastAttackerY
+      };
+    }
+  }
+
+  // Target Defenders (Followers & Town Guards)
+  let targetDefender: Enemy | null = null;
+  if (isHostile) {
+    for (const defender of updatedEnemiesList) {
+      if ((defender.isFollower || (defender.isTownGuard && !nextGuardsHostile)) && defender.hp > 0) {
+        const fDistX = Math.abs(defender.x - e.x);
+        const fDistY = Math.abs(defender.y - e.y);
+        const atkRange = e.range || 1;
+        const inAtkRange = atkRange === 1 ? (fDistX <= 1 && fDistY <= 1 && (fDistX > 0 || fDistY > 0)) : (fDistX <= atkRange && fDistY <= atkRange && (fDistX > 0 || fDistY > 0));
+        if (inAtkRange) {
+          if (atkRange === 1 || hasLineOfSight(e.x, e.y, defender.x, defender.y, prev.map)) {
+            targetDefender = defender;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (isHostile && targetDefender && (!isWithinAttackRange || Math.random() < 0.6)) {
+    const fDmg = Math.max(1, e.atk - (targetDefender.def || 0));
+    const isKilled = applyDamageToEnemy(targetDefender, fDmg);
+    const isVisible = (prev.visible[targetDefender.y]?.[targetDefender.x] ?? false) || (prev.visible[e.y]?.[e.x] ?? false);
+    if (isVisible) {
+      const defLabel = targetDefender.isTownGuard ? 'Town Guard' : 'companion';
+      staticLogs.push(`⚔️ [HOSTILE ATTACK]: ${e.name} strikes ${defLabel} ${targetDefender.name} for -${fDmg} HP! (${Math.max(0, targetDefender.hp)}/${targetDefender.maxHp} HP remaining)`);
+      playSound('injury');
+      safeDispatchEffect({ x: targetDefender.x, y: targetDefender.y, sourceX: e.x, sourceY: e.y, text: `-${fDmg} HP`, type: 'dmg' });
+    }
+    if (isKilled && isVisible) {
+      if (targetDefender.isTownGuard) {
+        staticLogs.push(`☠️ [TOWN GUARD FALLEN]: ${targetDefender.name} was slain defending the town!`);
+      } else {
+        staticLogs.push(`💔 [COMPANION FALLEN]: ${targetDefender.name} has been wounded and fell in combat!`);
+      }
+    }
+    return {
+      e,
+      playerHp,
+      nextArmor,
+      nextHelmet,
+      nextGloves,
+      nextBoots,
+      nextShield,
+      activeScars,
+      updatedEffects,
+      nextCaravanTravel,
+      nextDefeatedCounts,
+      incomingPlayerDamage,
+      incomingPlayerHits,
+      hadPlayerCrit,
+      hadPlayerBrace,
+      lastAttackerX,
+      lastAttackerY
+    };
+  }
+
+  // Hostile Attacks Player
+  if (isHostile && isWithinAttackRange) {
+    const isHeavy = e.isBoss || e.isElite || e.type === EnemyType.OrcBrute || e.type === EnemyType.Dragon || e.type === EnemyType.DreadKnight || e.type === EnemyType.Louhi || e.type === EnemyType.IkuTurso;
+    const telegraphChance = isHeavy ? 0.35 : 0.18;
+
+    if (!e.telegraphedAttack && Math.random() < telegraphChance) {
+      const atkName = e.isBoss ? 'Sunder Titan Slam' : isHeavy ? 'Brutal Heavy Cleave' : 'Heavy Ground Strike';
+      e.telegraphedAttack = {
+        targetX: px,
+        targetY: py,
+        turnsRemaining: 1,
+        damage: Math.round(e.atk * 1.6),
+        name: atkName
+      };
+      staticLogs.push(`⚠️ [TELEGRAPH WARNING]: ${e.name} winds up ${atkName} targeting (${px}, ${py})! Move away or BRACE (B) to block!`);
+      playSound('alert');
+      safeDispatchEffect({ x: e.x, y: e.y, text: `⚠️ TELEGRAPHING!`, type: 'dmg' });
+      return {
+        e,
+        playerHp,
+        nextArmor,
+        nextHelmet,
+        nextGloves,
+        nextBoots,
+        nextShield,
+        activeScars,
+        updatedEffects,
+        nextCaravanTravel,
+        nextDefeatedCounts,
+        incomingPlayerDamage,
+        incomingPlayerHits,
+        hadPlayerCrit,
+        hadPlayerBrace,
+        lastAttackerX,
+        lastAttackerY
+      };
+    }
+
+    let lunarDodgeBonus = 0;
+    if (isLunarBlessingActive(prev, 'new_moon')) lunarDodgeBonus = 0.15;
+    else if (isLunarBlessingActive(prev, 'waxing_crescent')) lunarDodgeBonus = 0.10;
+
+    const effectiveDex = getEffectiveStats(prev.playerStats).dex || 10;
+    const dodgeChance = Math.min(0.5, Math.max(0, (effectiveDex - 10) * 0.02 + lunarDodgeBonus));
+
+    if (Math.random() < dodgeChance) {
+      staticLogs.push(`💨 You dodged ${e.name}'s attack!`);
+      playSound('bump');
+    } else {
+      let baseAtk = e.atk;
+      if (e.affixes?.includes('berserker') && e.hp < e.maxHp * 0.5) {
+        baseAtk = Math.round(baseAtk * 1.5);
+        staticLogs.push(`🩸 [BERSERKER RAGE]: ${e.name} strikes with frenzied rage (+50% DMG)!`);
+      }
+
+      const effectiveDef = getEffectiveStats(prev.playerStats).def || 0;
+      const totalArmorDef = (nextArmor?.defense || 0) + 
+                       (nextHelmet?.defense || 0) + 
+                       (nextGloves?.defense || 0) + 
+                       (nextBoots?.defense || 0) + 
+                       (nextShield?.defense || 0) + 
+                       effectiveDef;
+      
+      let penPercent = (e.armorPenetrationPercent || 0) + (e.affixes?.includes('shieldbreaker') ? 0.50 : 0);
+      penPercent = Math.min(0.85, penPercent);
+      
+      const braceMult = prev.isBraced ? 2.0 : 1.0;
+      const netArmorDef = Math.floor(totalArmorDef * (1.0 - penPercent));
+      const absorbedDef = Math.floor(netArmorDef * braceMult);
+      const rawStrike = Math.max(1, baseAtk - absorbedDef);
+
+      if (isPlayerInvincible(prev, prev.playerStats)) {
+        staticLogs.push(`🛡️ [GOD MODE]: ${e.name}'s attack strikes your divine shield for 0 damage!`);
+        playSound('shield');
+        safeDispatchEffect({ x: px, y: py, text: `🛡️ IMMUNE`, type: 'heal' });
+        return {
+          e,
+          playerHp,
+          nextArmor,
+          nextHelmet,
+          nextGloves,
+          nextBoots,
+          nextShield,
+          activeScars,
+          updatedEffects,
+          nextCaravanTravel,
+          nextDefeatedCounts,
+          incomingPlayerDamage: 0,
+          incomingPlayerHits: 0,
+          hadPlayerCrit: false,
+          hadPlayerBrace: false,
+          lastAttackerX: e.x,
+          lastAttackerY: e.y
+        };
+      }
+
+      if (penPercent > 0) {
+        staticLogs.push(`⚡ [ARMOR PENETRATION]: ${e.name}'s strike bypassed ${Math.round(penPercent * 100)}% of your armor!`);
+      }
+
+      const isCritHit = Math.random() < 0.15;
+      const archetypeAdj = calculateArchetypeDamageAdjustment(
+        { archetype: e.archetype, isCrit: isCritHit },
+        null,
+        rawStrike
+      );
+      const strikeDmg = archetypeAdj.damage;
+      if (archetypeAdj.logNote) {
+        staticLogs.push(archetypeAdj.logNote);
+      }
+
+      playerHp = Math.max(0, playerHp - strikeDmg);
+      incomingPlayerDamage += strikeDmg;
+      incomingPlayerHits += 1;
+      lastAttackerX = e.x;
+      lastAttackerY = e.y;
+      if (isCritHit) hadPlayerCrit = true;
+      if (prev.isBraced) hadPlayerBrace = true;
+
+      staticLogs.push(`⚔️ ${e.name} attacks you for -${strikeDmg} HP!`);
+      playSound('injury');
+
+      if (e.affixes?.includes('vampiric') && strikeDmg > 0) {
+        const leech = Math.max(1, Math.floor(strikeDmg * 0.40));
+        e.hp = Math.min(e.maxHp, e.hp + leech);
+        staticLogs.push(`🧛 [VAMPIRIC DRAIN]: ${e.name} drained +${leech} HP from you!`);
+      }
+
+      if (e.affixes?.includes('venomous') && Math.random() < 0.75) {
+        updatedEffects.push({
+          id: 'venom_dot_' + Date.now() + Math.random(),
+          name: 'Toxic Venom',
+          type: 'debuff',
+          icon: '☠️',
+          description: 'Infected with toxic venom (-3 HP/turn)',
+          turnsRemaining: 3,
+          color: '#10b981',
+          damagePerTurn: 3
+        });
+        staticLogs.push(`☠️ [VENOMOUS STRIKE]: ${e.name} infected you with toxic venom! (-3 HP/turn)`);
+      }
+
+      if (nextArmor && Math.random() < 0.25) {
+        const decayAmt = getItemDurabilityDecay(nextArmor, 1);
+        const curDur = nextArmor.durability ?? nextArmor.maxDurability ?? 100;
+        const newDur = Math.max(0, curDur - decayAmt);
+        nextArmor = { ...nextArmor, durability: newDur };
+        if (newDur === 0) {
+          staticLogs.push(`🛡️ [EQUIPMENT BROKEN]: Your ${nextArmor.name} has broken!`);
+        }
+      }
+      if (nextShield && Math.random() < 0.25) {
+        const decayAmt = getItemDurabilityDecay(nextShield, 1);
+        const curDur = nextShield.durability ?? nextShield.maxDurability ?? 100;
+        const newDur = Math.max(0, curDur - decayAmt);
+        nextShield = { ...nextShield, durability: newDur };
+        if (newDur === 0) {
+          staticLogs.push(`🛡️ [EQUIPMENT BROKEN]: Your ${nextShield.name} has broken!`);
+        }
+      }
+
+      const scarResult = evaluateScarAcquisition(strikeDmg, playerHp, updatedStats.maxHp, activeScars, updatedStats.turnsPlayed);
+      if (scarResult) {
+        activeScars.push(scarResult.scar);
+        staticLogs.push(scarResult.logText);
+      }
+    }
+
+    return {
+      e,
+      playerHp,
+      nextArmor,
+      nextHelmet,
+      nextGloves,
+      nextBoots,
+      nextShield,
+      activeScars,
+      updatedEffects,
+      nextCaravanTravel,
+      nextDefeatedCounts,
+      incomingPlayerDamage,
+      incomingPlayerHits,
+      hadPlayerCrit,
+      hadPlayerBrace,
+      lastAttackerX,
+      lastAttackerY
+    };
+  }
+
+  // Wounded Retreat State
+  if (e.state === EnemyState.Chasing && !e.isBoss && (e.hp < e.maxHp * 0.25 || e.type === EnemyType.LootGoblin)) {
+    e.state = EnemyState.Retreating;
+    if (Math.random() < 0.35) {
+      staticLogs.push(getEnemyFleeQuote(e.name, e.type));
+    }
+  }
+
+  // Hostile Movement & Flanking Logic
+  if (e.state === EnemyState.Chasing && isHostile) {
+    let chaseTargetX = px;
+    let chaseTargetY = py;
+    let minDefenderDist = Math.abs(px - e.x) + Math.abs(py - e.y);
+
+    if (nextCaravanTravel?.active && (nextCaravanTravel.wagonHp ?? 100) > 0) {
+      const wagonX = 12;
+      const wagonY = 9;
+      const wagonDist = Math.abs(wagonX - e.x) + Math.abs(wagonY - e.y);
+      if (wagonDist < minDefenderDist) {
+        minDefenderDist = wagonDist;
+        chaseTargetX = wagonX;
+        chaseTargetY = wagonY;
+      }
+    }
+
+    for (const defender of updatedEnemiesList) {
+      if (defender.hp > 0 && (defender.isFollower || (defender.isTownGuard && !nextGuardsHostile))) {
+        const defDist = Math.abs(defender.x - e.x) + Math.abs(defender.y - e.y);
+        if (defDist < minDefenderDist) {
+          minDefenderDist = defDist;
+          chaseTargetX = defender.x;
+          chaseTargetY = defender.y;
+        }
+      }
+    }
+
+    const packTypes: (EnemyType | string)[] = [EnemyType.Goblin, EnemyType.Bandit, EnemyType.LootGoblin, EnemyType.OrcBrute, EnemyType.Hiisi];
+    const isPackUnit = packTypes.includes(e.type) ||
+                       /goblin|wolf|bandit|outlaw|raider|pack|beast|rogue|hiisi|orc/i.test(e.name);
+
+    if (isPackUnit) {
+      const flankAngles = [
+        { x: px, y: py - 1 },
+        { x: px + 1, y: py },
+        { x: px, y: py + 1 },
+        { x: px - 1, y: py },
+        { x: px + 1, y: py - 1 },
+        { x: px + 1, y: py + 1 },
+        { x: px - 1, y: py + 1 },
+        { x: px - 1, y: py - 1 }
+      ];
+
+      let chosenFlank: { x: number; y: number } | null = null;
+      for (const pos of flankAngles) {
+        if (pos.x >= 0 && pos.x < LEVEL_WIDTH && pos.y >= 0 && pos.y < LEVEL_HEIGHT) {
+          const tile = prev.map[pos.y]?.[pos.x];
+          const isWall = tile === TileType.Wall || tile === TileType.Water;
+          if (!isWall) {
+            const isOccupied = updatedEnemiesList.some(other => other.x === pos.x && other.y === pos.y) ||
+                               nextEnemies.some((other, idx) => idx > i && other.x === pos.x && other.y === pos.y);
+            if (!isOccupied) {
+              chosenFlank = pos;
+              break;
+            }
+          }
+        }
+      }
+
+      if (chosenFlank) {
+        chaseTargetX = chosenFlank.x;
+        chaseTargetY = chosenFlank.y;
+      }
+    }
+
+    const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+    if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
+      const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
+                                   nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
+      const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+      if (!isTileBlockedByEnemy && isTileWalkable) {
+        e.x = nextStep.x;
+        e.y = nextStep.y;
+      }
+    }
+  } else if (e.state === EnemyState.Retreating) {
+    let nearestDormant: Enemy | null = null;
+    let minDormantDist = 999;
+
+    if (!e.hasAlertedBackup) {
+      for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
+        if (targetIdx === i) continue;
+        const target = nextEnemies[targetIdx];
+        if (target.hp > 0 && !target.isFollower && !target.isTownGuard) {
+          const isDormant = target.state === EnemyState.Sleeping || target.state === EnemyState.Patrolling || target.state !== EnemyState.Chasing;
+          if (isDormant) {
+            const d = Math.abs(target.x - e.x) + Math.abs(target.y - e.y);
+            if (d < minDormantDist) {
+              minDormantDist = d;
+              nearestDormant = target;
+            }
+          }
+        }
+      }
+    }
+
+    let retreatTargetX = e.x;
+    let retreatTargetY = e.y;
+
+    if (nearestDormant && minDormantDist <= 18) {
+      retreatTargetX = nearestDormant.x;
+      retreatTargetY = nearestDormant.y;
+
+      if (minDormantDist <= 2) {
+        e.hasAlertedBackup = true;
+        nearestDormant.state = EnemyState.Chasing;
+        if (nearestDormant.originalChar) nearestDormant.char = nearestDormant.originalChar;
+
+        for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
+          const nearby = nextEnemies[targetIdx];
+          if (nearby.hp > 0 && !nearby.isFollower && !nearby.isTownGuard) {
+            const distToGroup = Math.abs(nearby.x - nearestDormant.x) + Math.abs(nearby.y - nearestDormant.y);
+            if (distToGroup <= 6) {
+              nearby.state = EnemyState.Chasing;
+              if (nearby.originalChar) nearby.char = nearby.originalChar;
+            }
+          }
+        }
+
+        const isActionVisible = (prev.visible[e.y]?.[e.x] ?? false) || (prev.visible[nearestDormant.y]?.[nearestDormant.x] ?? false);
+        if (isActionVisible) {
+          staticLogs.push(`📢 [REINFORCEMENTS]: Wounded ${e.name} yells for backup, alerting nearby ${nearestDormant.name} to attack!`);
+          playSound('bump', { x: e.x, y: e.y, playerX: px, playerY: py });
+        }
+      }
+    } else {
+      const dirX = Math.sign(e.x - px) || (Math.random() < 0.5 ? 1 : -1);
+      const dirY = Math.sign(e.y - py) || (Math.random() < 0.5 ? 1 : -1);
+      retreatTargetX = Math.max(0, Math.min(LEVEL_WIDTH - 1, e.x + dirX * 5));
+      retreatTargetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + dirY * 5));
+    }
+
+    const nextStep = getNextStepTowards(e.x, e.y, retreatTargetX, retreatTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+    if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
+      const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
+                                   nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
+      const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+      if (!isTileBlockedByEnemy && isTileWalkable) {
+        e.x = nextStep.x;
+        e.y = nextStep.y;
+      }
+    }
+    if (Math.random() < 0.10) {
+      staticLogs.push(getEnemyFleeQuote(e.name, e.type));
+    }
+  } else if (e.state === EnemyState.Patrolling && e.patrolPath && e.patrolPath.length > 0) {
+    let currentPatrolIdx = e.patrolIndex || 0;
+    let targetTile = e.patrolPath[currentPatrolIdx];
+    
+    if (targetTile && e.x === targetTile.x && e.y === targetTile.y) {
+      currentPatrolIdx = (currentPatrolIdx + 1) % e.patrolPath.length;
+      e.patrolIndex = currentPatrolIdx;
+      targetTile = e.patrolPath[currentPatrolIdx];
+    }
+
+    if (targetTile) {
+      const nextStep = getNextStepTowards(e.x, e.y, targetTile.x, targetTile.y, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+      if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
+        const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
+                                     nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
+        const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+        if (!isTileBlockedByEnemy && isTileWalkable) {
+          e.x = nextStep.x;
+          e.y = nextStep.y;
+        }
+      }
+    }
+  }
+
+  return {
+    e,
+    playerHp,
+    nextArmor,
+    nextHelmet,
+    nextGloves,
+    nextBoots,
+    nextShield,
+    activeScars,
+    updatedEffects,
+    nextCaravanTravel,
+    nextDefeatedCounts,
+    incomingPlayerDamage,
+    incomingPlayerHits,
+    hadPlayerCrit,
+    hadPlayerBrace,
+    lastAttackerX,
+    lastAttackerY
+  };
+}

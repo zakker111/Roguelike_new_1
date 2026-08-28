@@ -1,6 +1,7 @@
 import { TileType, NPC, Enemy, Trap, Chest, EnemyType, EnemyState, TrapType } from "../../types";
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
 import { generateWatchtowerPOI, generateRuinsPOI } from "../../world/poiGenerators";
+import { generateRuinsDecorProps } from "../decorEngine";
 import worldConfig from "../../data/worldConfig.json";
 import { getEnemyTemplate } from "../dungeon";
 import { applyCombatArchetypeAndChaosScaling } from "../combatArchetypes";
@@ -9,6 +10,13 @@ import {
   findNearestSafeNpcTile,
 } from "./overworldCore";
 import { OverworldGenContext } from "./types";
+import {
+  carveNaturalRiversAndLakes,
+  generateOrganicVegetationAndOres,
+  carveOrganicTrailsAndRoads,
+  ensureEntranceClearance,
+  connectPoiSpokeToTrail,
+} from "../../world/organic";
 
 export function generateWildernessChunk(ctx: OverworldGenContext): void {
   const {
@@ -69,10 +77,17 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
         }
       }
 
-      // If islet was generated in the center, decorate it with an ancient tree or sweet berry bush
+      // If islet was generated in the center, decorate it and connect with a natural stepping-stone ford to mainland
       if (lakeX >= 0 && lakeX < width && lakeY >= 0 && lakeY < height) {
         if (map[lakeY][lakeX] === TileType.Grass) {
           map[lakeY][lakeX] = (biome === 'forest' || biome === 'tundra') ? TileType.Tree : TileType.Bush;
+          // Step path connecting islet eastwards to shoreline
+          for (let step = 1; step <= baseRadius + 1; step++) {
+            const sx = lakeX + step;
+            if (sx >= 0 && sx < width && map[lakeY][sx] === TileType.Water) {
+              map[lakeY][sx] = TileType.Path;
+            }
+          }
         }
       }
       
@@ -86,10 +101,10 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist > baseRadius && dist <= ringRadius && map[y][x] === TileType.Grass) {
               const roll = prng(x, y, 77);
-              if (roll > 0.4) {
+              if (roll > 0.78) {
                 map[y][x] = TileType.Tree; // Palm trees around Oasis water edge
-              } else if (roll > 0.15) {
-                map[y][x] = TileType.Bush; // Dense oasis green shrubs
+              } else if (roll > 0.72) {
+                map[y][x] = TileType.Bush; // Rare oasis green shrub
               }
             }
           }
@@ -100,6 +115,10 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
         const chestY = lakeY;
         if (chestX >= 0 && chestX < width && chestY >= 0 && chestY < height) {
           map[chestY][chestX] = TileType.Floor; // cleared pedestal tile
+          // Guarantee walkable approach from land
+          if (chestX + 1 < width && map[chestY][chestX + 1] === TileType.Water) {
+            map[chestY][chestX + 1] = TileType.Path;
+          }
           chests.push({
             id: `oasis_chest_${chunkX}_${chunkY}`,
             x: chestX,
@@ -118,31 +137,41 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
       }
     }
 
-    // 2. Organic Wending River (flows vertically with a nice bridge crossing)
+    // 2. Organic Wending River with Guaranteed Multi-Point Crossings (Upper, Mid-ford, Lower)
     const riverX = Math.floor(prng(chunkX, chunkY, 1) * (width - 15)) + 7;
-    const bridgeY = Math.floor(prng(chunkX, chunkY, 2) * (height - 10)) + 5;
+    const bridgeY1 = Math.floor(prng(chunkX, chunkY, 2) * (Math.floor(height / 2) - 8)) + 5;
+    const bridgeY2 = Math.floor(prng(chunkX, chunkY, 22) * (Math.floor(height / 2) - 8)) + Math.floor(height / 2) + 2;
+    const midFordY = Math.floor(height / 2);
 
     for (let y = 0; y < height; y++) {
       // Wiggle of current river line
       const riverCurvature = Math.floor(Math.sin((y + chunkY) * 0.4) * 2.5);
       const rx = riverX + riverCurvature;
       
-      if (rx >= 1 && rx < width - 1) {
-        if (y === bridgeY || y === bridgeY + 1) {
-          map[y][rx] = TileType.Path; // Bridge structure
-          map[y][rx + 1] = TileType.Path;
+      if (rx >= 1 && rx < width - 2) {
+        const isBridge = (y === bridgeY1 || y === bridgeY1 + 1 || y === bridgeY2 || y === bridgeY2 + 1 || y === midFordY);
+
+        if (isBridge) {
+          if (map[y][rx] !== TileType.Wall && map[y][rx] !== TileType.Door) map[y][rx] = TileType.Path;
+          if (map[y][rx + 1] !== TileType.Wall && map[y][rx + 1] !== TileType.Door) map[y][rx + 1] = TileType.Path;
         } else {
-          map[y][rx] = TileType.Water;
-          map[y][rx + 1] = TileType.Water;
+          if (map[y][rx] !== TileType.Wall && map[y][rx] !== TileType.Door && map[y][rx] !== TileType.DungeonEntrance && map[y][rx] !== TileType.Path) {
+            map[y][rx] = TileType.Water;
+          }
+          if (map[y][rx + 1] !== TileType.Wall && map[y][rx + 1] !== TileType.Door && map[y][rx + 1] !== TileType.DungeonEntrance && map[y][rx + 1] !== TileType.Path) {
+            map[y][rx + 1] = TileType.Water;
+          }
         }
       }
     }
 
-    // Place dynamic wooden Signpost next to the road bridge
+    // Place dynamic wooden Signpost next to the upper bridge
     const signX = riverX < width - 4 ? riverX + 3 : riverX - 3;
-    const signY = bridgeY < height - 3 ? bridgeY + 2 : bridgeY - 2;
+    const signY = bridgeY1 < height - 3 ? bridgeY1 + 2 : bridgeY1 - 2;
     if (signX >= 0 && signX < width && signY >= 0 && signY < height) {
-      map[signY][signX] = TileType.Sign;
+      if (map[signY][signX] !== TileType.Water && map[signY][signX] !== TileType.Wall) {
+        map[signY][signX] = TileType.Sign;
+      }
     }
 
     // 3. Spawns biome-specific hazards and traps loaded from WorldConfig
@@ -192,55 +221,14 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
       }
     }
 
-    // Organic clustered forests development (clearing surrounding of paths)
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (map[y][x] === TileType.Grass) {
-          let blocked = false;
-          for (let dy = -2; dy <= 2; dy++) {
-            for (let dx = -2; dx <= 2; dx++) {
-              const nx = x + dx;
-              const ny = y + dy;
-              if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                const adjTile = map[ny][nx];
-                if (adjTile === TileType.Path || adjTile === TileType.Door || adjTile === TileType.Water || adjTile === TileType.TownGate || adjTile === TileType.DungeonEntrance) {
-                  blocked = true;
-                }
-              }
-            }
-          }
+    // Organic clustered forests & ore vein lodes
+    generateOrganicVegetationAndOres(map, chunkX, chunkY, width, height, biome);
 
-          if (!blocked) {
-            const noiseVal = prng(x + chunkX * width, y + chunkY * height, 10);
-            if (noiseVal < 0.12) {
-              const treeTypeNoise = prng(x + chunkX * width, y + chunkY * height, 25);
-              if (treeTypeNoise < 0.35) {
-                map[y][x] = TileType.PineTree;
-              } else if (treeTypeNoise < 0.65) {
-                map[y][x] = TileType.BirchTree;
-              } else {
-                map[y][x] = TileType.Tree;
-              }
-            } else if (noiseVal < 0.16) {
-              if (biome !== 'tundra') {
-                map[y][x] = TileType.Bush; // Harvestable bushes
-              } else {
-                map[y][x] = TileType.PineTree; // Winter biome has snow-laden Pine trees
-              }
-            } else if (noiseVal < 0.18) {
-              const veinNoise = prng(x + chunkX * width, y + chunkY * height, 42);
-              if (veinNoise < 0.25) {
-                map[y][x] = TileType.CopperVein;
-              } else if (veinNoise < 0.45) {
-                map[y][x] = TileType.IronVein;
-              }
-            }
-          }
-        }
-      }
-    }
+    // Carve organic cross-chunk trails and winding pathways
+    carveOrganicTrailsAndRoads(map, chunkX, chunkY, width, height, hasTown);
 
-    const isWatchtowerChunk = !hasTown && !isCastleTown && (Math.abs(chunkX) + Math.abs(chunkY)) % 3 === 2 && !(chunkX === 0 && chunkY === 0);
+    const distFromOrigin = Math.hypot(chunkX, chunkY);
+    const isWatchtowerChunk = !hasTown && !isCastleTown && distFromOrigin > 1.5 && (Math.abs(chunkX) + Math.abs(chunkY)) % 3 === 2;
 
     if (isWatchtowerChunk) {
       watchtower = generateWatchtowerPOI(map, chunkX, chunkY, prng, chests, enemies);
@@ -277,13 +265,34 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
 
         // Random position for door (south, west, or east)
         const doorRand = Math.floor(prng(dungX, dungY, 82) * 3);
+        let doorX = dungX + 1;
+        let doorY = dungY + 2;
+        let doorFacing: 'south' | 'west' | 'east' = 'south';
+
         if (doorRand === 0) {
-          map[dungY + 2][dungX + 1] = TileType.Door; // South
+          doorX = dungX + 1;
+          doorY = dungY + 2;
+          doorFacing = 'south';
+          map[doorY][doorX] = TileType.Door; // South
         } else if (doorRand === 1) {
-          map[dungY + 1][dungX] = TileType.Door; // West
+          doorX = dungX;
+          doorY = dungY + 1;
+          doorFacing = 'west';
+          map[doorY][doorX] = TileType.Door; // West
         } else {
-          map[dungY + 1][dungX + 2] = TileType.Door; // East
+          doorX = dungX + 2;
+          doorY = dungY + 1;
+          doorFacing = 'east';
+          map[doorY][doorX] = TileType.Door; // East
         }
+
+        // Clear entrance clearance runway outward from dungeon doorway
+        ensureEntranceClearance(map, doorX, doorY, width, height, doorFacing);
+
+        // Connect spoke to nearest highway / trail
+        const spokeStartX = doorFacing === 'south' ? doorX : (doorFacing === 'west' ? doorX - 1 : doorX + 1);
+        const spokeStartY = doorFacing === 'south' ? doorY + 1 : doorY;
+        connectPoiSpokeToTrail(map, spokeStartX, spokeStartY, width, height, true);
 
         dungeons.push({
           x: dungX + 1,
@@ -295,6 +304,8 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
         // Fallback single tile
         if (map[dungY] && map[dungY][dungX] !== TileType.Water && map[dungY][dungX] !== TileType.Path) {
           map[dungY][dungX] = TileType.DungeonEntrance;
+          ensureEntranceClearance(map, dungX, dungY, width, height, 'all');
+          connectPoiSpokeToTrail(map, dungX, dungY, width, height, true);
           dungeons.push({
             x: dungX,
             y: dungY,
@@ -304,10 +315,11 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
         }
       }
 
-      // Spawn some atmospheric ruined buildings in the wild with premium loot chest!
-      const spawnRuins = prng(chunkX, chunkY, 150) > 0.55;
+      // Spawn some atmospheric ruined buildings in the wild with premium loot chest outside starter buffer!
+      const spawnRuins = distFromOrigin > 1.5 && prng(chunkX, chunkY, 150) > 0.55;
       if (spawnRuins) {
         generateRuinsPOI(map, chunkX, chunkY, biome, width, height, prng, chests, enemies);
+        ctx.props = generateRuinsDecorProps(map);
       }
     }
 
@@ -332,172 +344,331 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
       }
     }
 
-    // Spawn wild monsters roaming the grassy fields with biome-specific styles and naming loaded from WorldConfig!
+    // Spawn wild monsters roaming the grassy fields with biome-specific styles, naming, and dynamic difficulty range!
     const minM = biomeConfig.monsterCountMin !== undefined ? biomeConfig.monsterCountMin : 2;
     const maxM = biomeConfig.monsterCountMax !== undefined ? biomeConfig.monsterCountMax : 4;
     const monsterCount = minM + Math.floor(prng(chunkX, chunkY, 12) * (maxM - minM + 1)); 
+
+    // Calculate distance from origin (0,0) to adjust wilderness difficulty tier weights
+    let easyWeight = 0.50;
+    let standardWeight = 0.35;
+    let toughWeight = 0.15;
+    let apexWeight = 0.00;
+
+    if (distFromOrigin <= 1.5) {
+      // Safe / Starter Frontier near town: Strictly easy critters and light standard scouts (0% Tough, 0% Apex)
+      easyWeight = 0.70;
+      standardWeight = 0.30;
+      toughWeight = 0.00;
+      apexWeight = 0.00;
+    } else if (distFromOrigin <= 3.5) {
+      // Mid Wilderness
+      easyWeight = 0.45;
+      standardWeight = 0.35;
+      toughWeight = 0.16;
+      apexWeight = 0.04;
+    } else {
+      // Deep Frontier
+      easyWeight = 0.35;
+      standardWeight = 0.35;
+      toughWeight = 0.22;
+      apexWeight = 0.08;
+    }
+
     for (let i = 0; i < monsterCount; i++) {
       const mx = Math.floor(prng(chunkX, chunkY, 100 + i) * (width - 4)) + 2;
       const my = Math.floor(prng(chunkX, chunkY, 200 + i) * (height - 4)) + 2;
 
       if (map[my]?.[mx] === TileType.Grass) {
-        const mRoll = prng(mx, my, 99);
+        const tierRoll = prng(mx, my, 99);
+        const subRoll = prng(mx, my, 199);
+
+        let tier: 'easy' | 'standard' | 'tough' | 'apex' = 'easy';
+        if (tierRoll < easyWeight) {
+          tier = 'easy';
+        } else if (tierRoll < easyWeight + standardWeight) {
+          tier = 'standard';
+        } else if (tierRoll < easyWeight + standardWeight + toughWeight) {
+          tier = 'tough';
+        } else {
+          tier = 'apex';
+        }
+
         let type = EnemyType.Rat;
+        let name = "Wild Rat";
+        let char = '🐀';
+        let color = '#94a3b8';
+        let baseHp = 8;
+        let baseAtk = 2;
+        let baseDef = 0;
+        let range = 1;
+        let isBoss = false;
 
-        if (mRoll > 0.95) {
-          if (biome === 'forest' && mRoll > 0.98) {
-            type = EnemyType.Otso; // Rare golden bear spirit boss!
-          } else if (biome === 'tundra' && mRoll > 0.97) {
-            type = EnemyType.Louhi; // Rare Mistress of Pohjola boss!
-          } else if (biome === 'swamp' && mRoll > 0.97) {
-            type = EnemyType.IkuTurso; // Finnish ancient sea leviathan boss!
+        // Biome and Tier based enemy generation
+        if (tier === 'easy') {
+          // --- EASY TIER: Frail critters & scouts (fast, satisfying kills in 1-2 hits) ---
+          if (biome === 'desert') {
+            if (subRoll > 0.65) {
+              type = EnemyType.Goblin;
+              name = "Dusty Dune Scavenger [Easy]";
+              char = '⚲';
+              color = '#f59e0b';
+              baseHp = 10; baseAtk = 2; baseDef = 0;
+            } else if (subRoll > 0.35) {
+              type = EnemyType.Spider;
+              name = "Sun Scorpionling [Easy]";
+              char = '🦂';
+              color = '#fbbf24';
+              baseHp = 8; baseAtk = 2; baseDef = 0;
+            } else {
+              type = EnemyType.Rat;
+              name = "Desert Sand Beetle [Easy]";
+              char = '🐞';
+              color = '#ea580c';
+              baseHp = 7; baseAtk = 1; baseDef = 1;
+            }
+          } else if (biome === 'tundra') {
+            if (subRoll > 0.65) {
+              type = EnemyType.Goblin;
+              name = "Shivering Snow Kobold [Easy]";
+              char = '❄';
+              color = '#93c5fd';
+              baseHp = 10; baseAtk = 2; baseDef = 0;
+            } else if (subRoll > 0.35) {
+              type = EnemyType.Spider;
+              name = "Ice Web Weaver [Easy]";
+              char = '🕸️';
+              color = '#e2e8f0';
+              baseHp = 8; baseAtk = 2; baseDef = 0;
+            } else {
+              type = EnemyType.Rat;
+              name = "Frost Biter Rat [Easy]";
+              char = '🐀';
+              color = '#cbd5e1';
+              baseHp = 7; baseAtk = 2; baseDef = 0;
+            }
+          } else if (biome === 'swamp') {
+            if (subRoll > 0.65) {
+              type = EnemyType.Goblin;
+              name = "Feeble Mud Imp [Easy]";
+              char = '♟';
+              color = '#65a30d';
+              baseHp = 10; baseAtk = 2; baseDef = 0;
+            } else if (subRoll > 0.35) {
+              type = EnemyType.Spider;
+              name = "Bog Creeper Spider [Easy]";
+              char = '🕷️';
+              color = '#84cc16';
+              baseHp = 9; baseAtk = 2; baseDef = 0;
+            } else {
+              type = EnemyType.Rat;
+              name = "Swamp Mud Slimelet [Easy]";
+              char = 'o';
+              color = '#10b981';
+              baseHp = 8; baseAtk = 1; baseDef = 1;
+            }
           } else {
-            type = EnemyType.Dragon;
+            // Forest / Default
+            if (subRoll > 0.65) {
+              type = EnemyType.Goblin;
+              name = "Frail Goblin Scout [Easy]";
+              char = 'g';
+              color = '#eab308';
+              baseHp = 10; baseAtk = 2; baseDef = 0;
+            } else if (subRoll > 0.35) {
+              type = EnemyType.Spider;
+              name = "Scurrying Spiderling [Easy]";
+              char = '🕷️';
+              color = '#a1a1aa';
+              baseHp = 8; baseAtk = 2; baseDef = 0;
+            } else {
+              type = EnemyType.Rat;
+              name = "Forest Field Mouse [Easy]";
+              char = '🐁';
+              color = '#94a3b8';
+              baseHp = 6; baseAtk = 1; baseDef = 0;
+            }
           }
-        } else if (mRoll > 0.70) {
-          if (biome === 'swamp' && mRoll > 0.82) {
-            type = EnemyType.Kalma; // Finnish grave/death goddess!
+        } else if (tier === 'standard') {
+          // --- STANDARD TIER: Balanced skirmishers ---
+          if (biome === 'desert') {
+            if (subRoll > 0.5) {
+              type = EnemyType.Goblin;
+              name = "Dune Nomad Raider";
+              char = '⚲';
+              color = '#f59e0b';
+              baseHp = 22; baseAtk = 4; baseDef = 1;
+            } else {
+              type = EnemyType.SkeletonMage;
+              name = "Sun Priest Acolyte";
+              char = '☄';
+              color = '#fbbf24';
+              baseHp = 18; baseAtk = 4; baseDef = 0; range = 3;
+            }
+          } else if (biome === 'tundra') {
+            if (subRoll > 0.5) {
+              type = EnemyType.Goblin;
+              name = "Frost Goblin Scout";
+              char = '❄';
+              color = '#60a5fa';
+              baseHp = 22; baseAtk = 4; baseDef = 1;
+            } else {
+              type = EnemyType.SkeletonMage;
+              name = "Ice Cryomancer Acolyte";
+              char = '☸';
+              color = '#38bdf8';
+              baseHp = 18; baseAtk = 4; baseDef = 0; range = 3;
+            }
+          } else if (biome === 'swamp') {
+            if (subRoll > 0.5) {
+              type = EnemyType.Goblin;
+              name = "Bog Lurker Sneak";
+              char = '♟';
+              color = '#84cc16';
+              baseHp = 24; baseAtk = 4; baseDef = 1;
+            } else {
+              type = EnemyType.Nakki;
+              name = "Näkki Water Spirit";
+              char = '🧜';
+              color = '#06b6d4';
+              baseHp = 22; baseAtk = 4; baseDef = 1;
+            }
           } else {
-            type = EnemyType.OrcBrute;
+            // Forest / Default
+            if (subRoll > 0.65) {
+              type = EnemyType.Hiisi;
+              name = "Hiisi Forest Scout";
+              char = '👹';
+              color = '#16a34a';
+              baseHp = 24; baseAtk = 4; baseDef = 1;
+            } else if (subRoll > 0.35) {
+              type = EnemyType.Goblin;
+              name = "Scavenger Goblin";
+              char = 'g';
+              color = '#84cc16';
+              baseHp = 20; baseAtk = 4; baseDef = 1;
+            } else {
+              type = EnemyType.SkeletonMage;
+              name = "Woodland Pyromancer";
+              char = 'S';
+              color = '#fb923c';
+              baseHp = 18; baseAtk = 4; baseDef = 0; range = 3;
+            }
           }
-        } else if (mRoll > 0.45) {
-          if (biome === 'forest' && mRoll > 0.58) {
-            type = EnemyType.Hiisi; // Finnish forest fiend!
-          } else if (biome === 'tundra' && mRoll > 0.58) {
-            type = EnemyType.Kalma; // Grave goddess haunts the cold northern soil
+        } else if (tier === 'tough') {
+          // --- TOUGH TIER: Heavy hitters & veterans ---
+          if (biome === 'desert') {
+            if (subRoll > 0.5) {
+              type = EnemyType.OrcBrute;
+              name = "Armored Sand Golem [Tough]";
+              char = '⚙';
+              color = '#d97706';
+              baseHp = 48; baseAtk = 7; baseDef = 4;
+            } else {
+              type = EnemyType.SkeletonMage;
+              name = "Sun Priest Pyromancer [Tough]";
+              char = '☄';
+              color = '#f97316';
+              baseHp = 32; baseAtk = 8; baseDef = 2; range = 3;
+            }
+          } else if (biome === 'tundra') {
+            if (subRoll > 0.5) {
+              type = EnemyType.OrcBrute;
+              name = "Abominable Yeti [Tough]";
+              char = '⛄';
+              color = '#ffffff';
+              baseHp = 58; baseAtk = 8; baseDef = 4;
+            } else {
+              type = EnemyType.Kalma;
+              name = "Kalma Frost Maiden [Tough]";
+              char = '💀';
+              color = '#93c5fd';
+              baseHp = 38; baseAtk = 8; baseDef = 2;
+            }
+          } else if (biome === 'swamp') {
+            if (subRoll > 0.5) {
+              type = EnemyType.OrcBrute;
+              name = "Marsh Troll Giant [Tough]";
+              char = '☈';
+              color = '#15803d';
+              baseHp = 52; baseAtk = 7; baseDef = 3;
+            } else {
+              type = EnemyType.Kalma;
+              name = "Kalma Grave Goddess [Tough]";
+              char = '💀';
+              color = '#a855f7';
+              baseHp = 42; baseAtk = 8; baseDef = 2;
+            }
           } else {
-            type = EnemyType.Goblin;
-          }
-        } else if (mRoll > 0.25) {
-          if (biome === 'swamp' && mRoll > 0.35) {
-            type = EnemyType.Nakki; // Finnish water spirit!
-          } else {
-            type = EnemyType.SkeletonMage;
-          }
-        }
-
-        const template = getEnemyTemplate(type);
-        let name = "Wild " + template.name;
-        if (type === EnemyType.Hiisi || type === EnemyType.Nakki || type === EnemyType.Otso || type === EnemyType.Louhi || type === EnemyType.IkuTurso || type === EnemyType.Kalma) {
-          name = template.name; // Keep pure epic name
-        }
-        let char = template.char;
-        let color = template.color;
-        
-        // Custom Biome Skins for monsters!
-        if (biome === 'desert') {
-          if (type === EnemyType.Rat) {
-            name = "Desert Sand Beetle";
-            char = '🐞';
-            color = '#ea580c';
-          } else if (type === EnemyType.Goblin) {
-            name = "Dune Nomad Nomad";
-            char = '⚲';
-            color = '#f59e0b';
-          } else if (type === EnemyType.OrcBrute) {
-            name = "Sand Golem";
-            char = '⚙';
-            color = '#d97706';
-          } else if (type === EnemyType.SkeletonMage) {
-            name = "Sun Priest Pyromancer";
-            char = '☄';
-            color = '#fbbf24';
-          } else if (type === EnemyType.Dragon) {
-            name = "Desert Sun-Drake Dragon";
-            char = '🐉';
-            color = '#f97316';
-          }
-        } else if (biome === 'tundra') {
-          if (type === EnemyType.Rat) {
-            name = "Frost Biter Rat";
-            char = '🐀';
-            color = '#e2e8f0';
-          } else if (type === EnemyType.Goblin) {
-            name = "Frost Goblin";
-            char = '❄';
-            color = '#93c5fd';
-          } else if (type === EnemyType.OrcBrute) {
-            name = "Abominable Yeti";
-            char = '⛄';
-            color = '#ffffff';
-          } else if (type === EnemyType.SkeletonMage) {
-            name = "Ice Cryomancer Lich";
-            char = '☸';
-            color = '#38bdf8';
-          } else if (type === EnemyType.Dragon) {
-            name = "Glacial Frost-Wyrm Dragon";
-            char = '🐉';
-            color = '#cbd5e1';
-          }
-        } else if (biome === 'swamp') {
-          if (type === EnemyType.Rat) {
-            name = "Swamp Mud Slime";
-            char = 'o';
-            color = '#10b981';
-          } else if (type === EnemyType.Goblin) {
-            name = "Bog Lurker Sneak";
-            char = '♟';
-            color = '#84cc16';
-          } else if (type === EnemyType.OrcBrute) {
-            name = "Marsh Troll Giant";
-            char = '☈';
-            color = '#15803d';
-          } else if (type === EnemyType.SkeletonMage) {
-            name = "Swamp Witch Doctor";
-            char = '✨';
-            color = '#a855f7';
-          } else if (type === EnemyType.Dragon) {
-            name = "Noxious Acid Drake Dragon";
-            char = '🐉';
-            color = '#10b981';
+            // Forest / Default
+            if (subRoll > 0.5) {
+              type = EnemyType.OrcBrute;
+              name = "Savage Orc Skullbreaker [Tough]";
+              char = 'O';
+              color = '#ea580c';
+              baseHp = 46; baseAtk = 7; baseDef = 3;
+            } else {
+              type = EnemyType.Hiisi;
+              name = "Hiisi Forest Fiend [Tough]";
+              char = '👹';
+              color = '#15803d';
+              baseHp = 42; baseAtk = 7; baseDef = 2;
+            }
           }
         } else {
-          // Default/forest biome
-          if (type === EnemyType.Dragon) {
-            name = "Emerald Forest Dragon";
+          // --- APEX TIER: Rare Roaming Legends & Dragons ---
+          isBoss = true;
+          if (biome === 'desert') {
+            type = EnemyType.Dragon;
+            name = "👑 Desert Sun-Drake Dragon [Apex]";
             char = '🐉';
-            color = '#22c55e';
+            color = '#f97316';
+            baseHp = 140; baseAtk = 12; baseDef = 5; range = 3;
+          } else if (biome === 'tundra') {
+            if (subRoll > 0.5) {
+              type = EnemyType.Louhi;
+              name = "👑 Louhi, Mistress of Pohjola [Apex]";
+              char = '🦅';
+              color = '#c084fc';
+              baseHp = 160; baseAtk = 13; baseDef = 6; range = 3;
+            } else {
+              type = EnemyType.Dragon;
+              name = "👑 Glacial Frost-Wyrm Dragon [Apex]";
+              char = '🐉';
+              color = '#cbd5e1';
+              baseHp = 140; baseAtk = 12; baseDef = 5; range = 3;
+            }
+          } else if (biome === 'swamp') {
+            if (subRoll > 0.5) {
+              type = EnemyType.IkuTurso;
+              name = "👑 Iku-Turso Ancient Leviathan [Apex]";
+              char = '🦑';
+              color = '#0ea5e9';
+              baseHp = 150; baseAtk = 12; baseDef = 5; range = 2;
+            } else {
+              type = EnemyType.Dragon;
+              name = "👑 Noxious Acid Drake Dragon [Apex]";
+              char = '🐉';
+              color = '#10b981';
+              baseHp = 135; baseAtk = 11; baseDef = 5; range = 3;
+            }
+          } else {
+            // Forest / Default
+            if (subRoll > 0.5) {
+              type = EnemyType.Otso;
+              name = "👑 Otso the Sacred Bear Spirit [Apex]";
+              char = '🐻';
+              color = '#b45309';
+              baseHp = 150; baseAtk = 12; baseDef = 5;
+            } else {
+              type = EnemyType.Dragon;
+              name = "👑 Emerald Canopy Drake [Apex]";
+              char = '🐉';
+              color = '#22c55e';
+              baseHp = 130; baseAtk = 11; baseDef = 5; range = 3;
+            }
           }
         }
-
-        let baseHp = template.baseHp;
-        let baseAtk = template.baseAtk;
-        let baseDef = template.baseDef;
-
-        // Buff swamp monsters and yeti slightly for high end challenge value!
-        if (biome === 'swamp') {
-          baseHp = Math.floor(baseHp * 1.2);
-          baseAtk += 1;
-        } else if (biome === 'tundra' && type === EnemyType.OrcBrute) {
-          baseHp = Math.floor(baseHp * 1.3); // Yeti is extra bulky!
-        }
-
-        // Apply scale difficulty more based on playerStats and weapon in hand
-        let playerScaleCoeff = 1.0;
-        if (playerStats) {
-          const pLevel = playerStats.level || 1;
-          const totalStats = (playerStats.str || 10) + 
-                              (playerStats.dex || 10) + 
-                              (playerStats.int || 10) + 
-                              (playerStats.cha || 10) + 
-                              (playerStats.lck || 10);
-          const statExcess = Math.max(0, totalStats - 50);
-          const statBonusFactor = statExcess * 0.01; // +1% per allocated stat point
-          const levelBonusFactor = Math.max(0, pLevel - 1) * 0.05; // +5% per level above level 1
-          playerScaleCoeff += levelBonusFactor + statBonusFactor;
-        }
-        
-        if (currentWeapon) {
-          const weaponVal = Math.max(0, currentWeapon.damage || 0);
-          const weaponBonusFactor = weaponVal * 0.02; // +2% per weapon damage point
-          playerScaleCoeff += weaponBonusFactor;
-        }
-
-        // Overworld scale factor: scale HP smoothly, but damp attack scaling to prevent 1-shots
-        baseHp = Math.round(baseHp * playerScaleCoeff);
-        const atkScaleCoeff = 1.0 + (playerScaleCoeff - 1.0) * 0.35;
-        baseAtk = Math.round(baseAtk * atkScaleCoeff);
-        baseDef = Math.round(baseDef * atkScaleCoeff);
 
         const rawEnemy: Enemy = {
           id: `wild_enemy_${chunkX}_${chunkY}_${i}`,
@@ -509,14 +680,15 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
           maxHp: baseHp,
           atk: baseAtk,
           def: baseDef,
-          range: template.range !== undefined ? template.range : (type === EnemyType.Dragon ? 3 : (type === EnemyType.SkeletonMage ? 4 : 1)),
-          speed: template.speed !== undefined ? template.speed : 1,
+          range,
+          speed: 1,
           color,
           char,
           state: EnemyState.Patrolling,
-          isBoss: type === EnemyType.Otso || type === EnemyType.Louhi || type === EnemyType.IkuTurso,
-          isElite: prng(mx, my, 25) > 0.88,
-          eliteEffect: prng(mx, my, 25) > 0.88 ? 'Scurrying' : undefined,
+          isBoss,
+          difficultyTier: tier,
+          isElite: tier === 'tough' ? prng(mx, my, 25) > 0.75 : (tier === 'apex'),
+          eliteEffect: tier === 'tough' && prng(mx, my, 25) > 0.75 ? 'Scurrying' : undefined,
           patrolPath: [
             { x: mx, y: my },
             { x: Math.max(1, mx - 3), y: my },
@@ -530,7 +702,7 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
         const scaledEnemy = applyCombatArchetypeAndChaosScaling(
           rawEnemy,
           0,
-          playerStats ? { ...playerStats, hp: 100, maxHp: 100, mp: 20, maxMp: 20, turnsPlayed: 0, str: playerStats.str, dex: playerStats.dex, int: playerStats.int, cha: playerStats.cha, lck: playerStats.lck, level: playerStats.level, gold: 0, xp: 0, atk: 10, def: 5 } : undefined,
+          playerStats || undefined,
           0
         );
 

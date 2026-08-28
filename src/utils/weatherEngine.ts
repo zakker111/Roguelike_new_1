@@ -1,4 +1,4 @@
-import { CatalystType } from '../types';
+import { CatalystType, TileType } from '../types';
 
 export type BiomeType = 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
 export type WeatherType = 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
@@ -117,3 +117,46 @@ export const WEATHER_EFFECTS: Record<string, WeatherEffect> = {
     }
   }
 };
+
+export function isForestBiome(biome?: string): boolean {
+  return !biome || biome === 'forest';
+}
+
+export function isDesertBiome(biome?: string, weather?: string): boolean {
+  return biome === 'desert' || weather === 'sandstorm';
+}
+
+export function isObstacleTile(tile?: TileType): boolean {
+  if (!tile) return false;
+  return (
+    tile === TileType.Wall ||
+    tile === TileType.CopperVein ||
+    tile === TileType.IronVein ||
+    tile === TileType.WatchtowerWall ||
+    tile === TileType.Tree ||
+    tile === TileType.PineTree ||
+    tile === TileType.BirchTree ||
+    tile === TileType.WatchtowerBarricade
+  );
+}
+
+export function getSeasonalLeafPalette(season: string = 'autumn'): { colors: string[]; type: 'petal' | 'leaf' } {
+  switch (season) {
+    case 'spring':
+      return {
+        colors: ['rgba(251, 207, 232, 0.45)', 'rgba(244, 114, 182, 0.35)', 'rgba(253, 242, 248, 0.50)'],
+        type: 'petal',
+      };
+    case 'summer':
+      return {
+        colors: ['rgba(16, 185, 129, 0.35)', 'rgba(5, 150, 105, 0.30)', 'rgba(52, 211, 153, 0.40)'],
+        type: 'leaf',
+      };
+    case 'autumn':
+    default:
+      return {
+        colors: ['rgba(217, 119, 6, 0.45)', 'rgba(202, 138, 4, 0.35)', 'rgba(245, 158, 11, 0.40)', 'rgba(180, 83, 9, 0.35)'],
+        type: 'leaf',
+      };
+  }
+}

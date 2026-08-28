@@ -31,7 +31,9 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         currentStep: 0,
         stepsHistory: ["🏕️ Caravan gathers. Baron Tobias checks the heavy iron axles. 'Ready to roll, guard! Keep your hand on your sword hilt!'"],
         rewardGold: reward,
-        currentEncounter: null
+        currentEncounter: null,
+        wagonHp: 100,
+        maxWagonHp: 100
       };
       
       return {
@@ -329,6 +331,26 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
           xpGained = 45;
           resultLog = `🌿 You mash 12 Wild Berries into a thick, sweet anti-toxic paste for the draft horses and guards. The natural fruit acids fully filter out the worst of the toxic fumes! Gained +${xpGained} XP. Used 12 Wild Berries.`;
         }
+      } else if (encounter.type === 'boss_ambush') {
+        if (isSuccess) {
+          xpGained = 180;
+          const rewardBonus = 300;
+          nextGold += rewardBonus;
+          nextMats['cat_fire'] = (nextMats['cat_fire'] || 0) + 1;
+          resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). 👑 BOSS SLAIN! You vanquished ${encounter.bossName || 'the World Threat Boss'}! Gained +${xpGained} XP, +${rewardBonus} Gold, and 1 Catalyst! The wagon is protected!`;
+        } else if (option.id === 'pay') {
+          resultLog = `🪙 You surrendered tribute gold to appease ${encounter.bossName || 'the Boss'}. The highway terror lets the caravan proceed, but your wallet is much lighter.`;
+        } else {
+          hpChange = -32;
+          const dmg = encounter.wagonDamagePenalty || 35;
+          resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). ❌ FAILURE! ${encounter.bossName || 'The Boss Threat'} broke through your defenses! The wagon suffered -${dmg} Hull Damage and you lost -32 HP!`;
+        }
+      }
+
+      let currentWagonHp = travel.wagonHp ?? 100;
+      if (!isSuccess && option.id !== 'pay' && option.id !== 'ignore') {
+        const dmg = encounter.wagonDamagePenalty || 15;
+        currentWagonHp = Math.max(0, currentWagonHp - dmg);
       }
 
       let nextHp = playerStats.hp;
@@ -380,6 +402,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
 
       const updatedTravel: CaravanTravelState = {
         ...travel,
+        wagonHp: currentWagonHp,
         currentEncounter: updatedEncounter,
         stepsHistory: [...travel.stepsHistory, resultLog]
       };
@@ -414,9 +437,19 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
       const destX = travel.destX;
       const destY = travel.destY;
       const destName = travel.destName;
-      const reward = travel.rewardGold;
+      const baseReward = travel.rewardGold;
+      const hpRatio = (travel.wagonHp ?? 100) / (travel.maxWagonHp ?? 100);
+      const reward = Math.round(baseReward * Math.max(0.2, hpRatio));
 
       const nextGold = prev.playerStats.gold + reward;
+
+      const nextMats = { ...prev.inventoryMaterials };
+      let bonusMsg = '';
+      if (hpRatio >= 0.85) {
+        const bonusCat = Math.random() < 0.5 ? 'cat_fire' : 'cat_void';
+        nextMats[bonusCat] = (nextMats[bonusCat] || 0) + 1;
+        bonusMsg = ` 🧪 High Cargo Integrity Bonus: Baron Tobias hands you 1x ${bonusCat === 'cat_fire' ? 'Flame Catalyst' : 'Void Catalyst'}!`;
+      }
 
       const targetChunkKey = `${destX},${destY}`;
       let updatedChunks = prev.overworldChunks ? { ...prev.overworldChunks } : {};
@@ -455,7 +488,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
       const newMsgs = [...prev.logs];
       newMsgs.push({
         id: `caravan_arrived_${Date.now()}`,
-        text: `🏆 [CARAVAN SECURED]: You have safely escorted the merchant caravan to ${destName}! Baron Tobias smiles warmly and slides a heavy reward pouch into your hands. +${reward} Gold collected!`,
+        text: `🏆 [CARAVAN SECURED]: Escorted merchant caravan to ${destName}! Cargo Integrity: ${Math.round(hpRatio * 100)}%. Baron Tobias slides a reward pouch of +${reward} Gold into your hands!${bonusMsg}`,
         type: 'loot',
         timestamp: formatGameTime(prev.gameTime).timeStr
       });
@@ -480,6 +513,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         chests: targetChunk.chests,
         npcs: targetChunk.npcs,
         lootPiles: targetChunk.lootPiles || [],
+        inventoryMaterials: nextMats,
         logs: newMsgs,
         playerStats: {
           ...prev.playerStats,

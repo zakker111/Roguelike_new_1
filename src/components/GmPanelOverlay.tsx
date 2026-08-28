@@ -2,18 +2,28 @@ import React, { useState } from 'react';
 import { 
   X, Cpu, Star, Sun, CloudRain, CloudFog, Snowflake, Heart, 
   Coins, Sparkles, ShieldAlert, Users, Swords, Skull, Flame, 
-  Gem, Bomb, CheckCircle2, AlertCircle, Sparkle, RefreshCw, Sliders, MessageSquare, Terminal
+  Gem, Bomb, CheckCircle2, AlertCircle, Sparkle, RefreshCw, Sliders, MessageSquare, Terminal,
+  Zap, Clock, Shield, Brain, Activity
 } from 'lucide-react';
 import { GameState, GameLogMessage } from '../types';
 import { GM_COMMANDS, GmCommand } from '../data/gmCommands';
 import { playSound } from '../utils/audio';
-import { getGMStorytellerState, setGMStorytellerState, forceGMEncounter, GM_ENCOUNTERS_DATABASE } from '../utils/gmStoryteller';
+import { 
+  getGMStorytellerState, 
+  setGMStorytellerState, 
+  forceGMEncounter, 
+  GM_ENCOUNTERS_DATABASE,
+  modifyChaosScore,
+  triggerManualChaosSurge
+} from '../utils/gmStoryteller';
+import DifficultyTracker from './DifficultyTracker';
 
 interface GmPanelOverlayProps {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
-  addLogMessage: (text: string, type?: 'combat' | 'info' | 'loot' | 'system' | 'danger' | 'craft') => void;
+  addLogMessage: (text: string, type?: GameLogMessage['type']) => void;
   onClose: () => void;
+  initialTab?: 'Chaos Matrix' | 'Weather Control' | 'Hero Blessings' | 'Spawning Actions' | 'Tactical Smites' | 'Autonomous GM';
 }
 
 // Map command icon string names to premium Lucide component instances
@@ -31,16 +41,19 @@ const IconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Skull,
   Flame,
   Gem,
-  Bomb
+  Bomb,
+  RefreshCw,
+  Clock
 };
 
 export default function GmPanelOverlay({ 
   gameState, 
   setGameState, 
   addLogMessage, 
-  onClose 
+  onClose,
+  initialTab = 'Chaos Matrix'
 }: GmPanelOverlayProps) {
-  const [activeTab, setActiveTab] = useState<'Weather Control' | 'Hero Blessings' | 'Spawning Actions' | 'Tactical Smites' | 'Autonomous GM'>('Weather Control');
+  const [activeTab, setActiveTab] = useState<'Chaos Matrix' | 'Weather Control' | 'Hero Blessings' | 'Spawning Actions' | 'Tactical Smites' | 'Autonomous GM'>(initialTab);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Read live Storyteller configuration state
@@ -121,6 +134,69 @@ export default function GmPanelOverlay({
   if (gameState.biome === 'desert') traits.push('Desert Wanderer');
   if (traits.length === 0) traits.push('Aspirant Hero');
 
+  // Chaos Matrix parameters & stats
+  const chaosScore = gameState.chaosScore ?? 20;
+  let chaosTierName = 'Tier 0: Calibrated';
+  let chaosTierColor = 'text-emerald-400 bg-emerald-950/60 border-emerald-500/30';
+  if (chaosScore >= 75) {
+    chaosTierName = 'Tier 3: Abyssal Chaos';
+    chaosTierColor = 'text-rose-400 bg-rose-950/60 border-rose-500/40 animate-pulse';
+  } else if (chaosScore >= 50) {
+    chaosTierName = 'Tier 2: High Surge';
+    chaosTierColor = 'text-purple-400 bg-purple-950/60 border-purple-500/30';
+  } else if (chaosScore >= 25) {
+    chaosTierName = 'Tier 1: Volatile';
+    chaosTierColor = 'text-amber-400 bg-amber-950/60 border-amber-500/30';
+  }
+
+  const abyssalCoeff = (1 + chaosScore * 0.015).toFixed(2);
+  const hpBonusPct = Math.floor(chaosScore * 0.5);
+  const atkBonus = Math.floor(chaosScore * 0.05);
+  const mutationChancePct = Math.floor(chaosScore * 0.4);
+
+  const cycleLength = 15;
+  const turnsSinceLastCycle = totalTurns % cycleLength;
+  const turnsUntilNextSurge = cycleLength - turnsSinceLastCycle;
+  const surgeProgressPercent = (turnsSinceLastCycle / cycleLength) * 100;
+
+  // Handlers for Chaos Matrix actions
+  const handleModifyChaos = (delta: number, reason: string) => {
+    playSound('spell');
+    const { nextState, logMessage } = modifyChaosScore(gameState, delta, reason);
+    setGameState(nextState);
+    addLogMessage(logMessage.text, logMessage.type);
+    setNotification({
+      type: delta >= 0 ? 'error' : 'success',
+      text: logMessage.text
+    });
+    setSessionLogs(prev => [
+      `[${new Date().toLocaleTimeString()}] CHAOS ADJUSTMENT (${delta > 0 ? '+' : ''}${delta}): ${reason}`,
+      ...prev
+    ]);
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  const handleForceSurgeRoll = () => {
+    playSound('spell');
+    const surgeRes = triggerManualChaosSurge(gameState);
+    if (surgeRes.mutatedState) {
+      setGameState(prev => ({
+        ...prev,
+        ...surgeRes.mutatedState
+      }));
+    }
+    addLogMessage(surgeRes.logText, surgeRes.effType === 'good' ? 'loot' : surgeRes.effType === 'bad' ? 'danger' : 'info');
+    setNotification({
+      type: surgeRes.effType === 'good' ? 'success' : 'error',
+      text: `Surge d20 Roll [${surgeRes.roll}]: ${surgeRes.effName}`
+    });
+    setSessionLogs(prev => [
+      `[${new Date().toLocaleTimeString()}] CHAOS SURGE DISCHARGE (d20 Roll ${surgeRes.roll}): ${surgeRes.effName}`,
+      ...prev
+    ]);
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   // Trigger command sequence
   const handleExecuteCommand = (cmd: GmCommand) => {
     playSound('spell');
@@ -199,21 +275,21 @@ export default function GmPanelOverlay({
         </div>
       )}
 
-      <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+      <div className="flex-1 space-y-3.5 overflow-y-auto pr-1 scrollbar-thin">
         
-        {/* State Indicators & Mood combined */}
-        <div className="grid grid-cols-2 gap-2 bg-slate-950/45 p-3 rounded-xl border border-slate-850/80">
-          <div className="space-y-1">
-            <span className="text-[9px] text-slate-500 uppercase font-bold">GM SENTIMENT:</span>
-            <div className={`text-center py-1 rounded border font-bold uppercase text-[10px] ${moodColor}`}>
+        {/* State Indicators & Mood combined (4-metric HUD) */}
+        <div className="grid grid-cols-2 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-850">
+          <div className="space-y-0.5">
+            <span className="text-[8px] text-slate-500 uppercase font-bold block">GM SENTIMENT:</span>
+            <div className={`text-center py-0.5 rounded border font-bold uppercase text-[9px] ${moodColor}`}>
               {gmMood}
             </div>
           </div>
-          <div className="space-y-1">
-            <span className="text-[9px] text-slate-500 uppercase font-bold">BOREDOM LEVEL:</span>
-            <div className="py-1 flex flex-col items-center justify-center">
-              <span className="font-bold text-purple-400 font-mono text-[11px]">{boredomLevel}%</span>
-              <div className="w-full h-1 bg-slate-800 rounded-full mt-1 overflow-hidden">
+          <div className="space-y-0.5">
+            <span className="text-[8px] text-slate-500 uppercase font-bold block">BOREDOM LEVEL:</span>
+            <div className="py-0.5 flex flex-col items-center justify-center">
+              <span className="font-bold text-purple-400 font-mono text-[10px]">{boredomLevel}%</span>
+              <div className="w-full h-1 bg-slate-800 rounded-full mt-0.5 overflow-hidden">
                 <div 
                   className="h-full bg-purple-500 transition-all duration-300" 
                   style={{ width: `${boredomLevel}%` }}
@@ -221,18 +297,42 @@ export default function GmPanelOverlay({
               </div>
             </div>
           </div>
+          <div className="space-y-0.5">
+            <span className="text-[8px] text-slate-500 uppercase font-bold block">TENSION LEVEL:</span>
+            <div className="py-0.5 flex flex-col items-center justify-center">
+              <span className="font-bold text-rose-400 font-mono text-[10px]">{localTension}%</span>
+              <div className="w-full h-1 bg-slate-800 rounded-full mt-0.5 overflow-hidden">
+                <div 
+                  className="h-full bg-rose-500 transition-all duration-300" 
+                  style={{ width: `${localTension}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-0.5">
+            <span className="text-[8px] text-slate-500 uppercase font-bold block">CHAOS MATRIX:</span>
+            <div className="py-0.5 flex flex-col items-center justify-center">
+              <span className="font-bold text-amber-400 font-mono text-[10px]">{chaosScore} / 100 ({abyssalCoeff}x)</span>
+              <div className="w-full h-1 bg-slate-800 rounded-full mt-0.5 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 transition-all duration-300" 
+                  style={{ width: `${chaosScore}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Reputation Traits Badges */}
-        <div className="space-y-1.5">
-          <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider block">Acquired Heroic Traits</span>
-          <div className="flex flex-wrap gap-1.5 font-sans">
+        <div className="space-y-1">
+          <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider block">Acquired Heroic Traits</span>
+          <div className="flex flex-wrap gap-1 font-sans">
             {traits.map((t, idx) => (
               <div 
                 key={idx} 
-                className="bg-slate-950/60 border border-slate-850 px-2 py-1 rounded-lg flex items-center gap-1.5 text-[9px] text-slate-300 hover:border-amber-500/20 transition-all"
+                className="bg-slate-950/60 border border-slate-850 px-2 py-0.5 rounded-lg flex items-center gap-1 text-[8px] text-slate-300 hover:border-amber-500/20 transition-all"
               >
-                <Star className="w-3 h-3 text-amber-500 shrink-0" />
+                <Star className="w-2.5 h-2.5 text-amber-500 shrink-0" />
                 <span>{t}</span>
               </div>
             ))}
@@ -240,18 +340,18 @@ export default function GmPanelOverlay({
         </div>
 
         {/* Categories Tab Selector */}
-        <div className="space-y-1.5">
-          <span className="text-[10px] text-purple-400 font-bold uppercase tracking-wider block">Spell & Engine categories</span>
+        <div className="space-y-1">
+          <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider block">Spell & Engine Categories</span>
           <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-850/60 font-sans">
-            {(['Weather Control', 'Hero Blessings', 'Spawning Actions', 'Tactical Smites', 'Autonomous GM'] as const).map((cat) => {
+            {(['Chaos Matrix', 'Weather Control', 'Hero Blessings', 'Spawning Actions', 'Tactical Smites', 'Autonomous GM'] as const).map((cat) => {
               const labelMap: Record<string, string> = {
+                'Chaos Matrix': '🌀 Chaos Matrix',
                 'Weather Control': '⛅ Weather',
                 'Hero Blessings': '✨ Blessings',
                 'Spawning Actions': '🧟 Spawns',
                 'Tactical Smites': '💥 Smites',
-                'Autonomous GM': '🌀 Autonomous GM'
+                'Autonomous GM': '🔮 Storyteller Engine'
               };
-              const isFullWidth = cat === 'Autonomous GM';
               return (
                 <button
                   key={cat}
@@ -259,11 +359,11 @@ export default function GmPanelOverlay({
                     setActiveTab(cat);
                     playSound('loot');
                   }}
-                  className={`py-2 rounded-lg text-center font-bold text-[9px] uppercase tracking-wider transition-all cursor-pointer ${
-                    isFullWidth ? 'col-span-2' : ''
-                  } ${
+                  className={`py-1.5 rounded-lg text-center font-bold text-[8.5px] uppercase tracking-wider transition-all cursor-pointer ${
                     activeTab === cat
-                      ? cat === 'Autonomous GM'
+                      ? cat === 'Chaos Matrix'
+                        ? 'bg-gradient-to-r from-amber-600 via-purple-600 to-pink-600 border border-amber-400 text-white font-black shadow-md shadow-purple-900/20'
+                        : cat === 'Autonomous GM'
                         ? 'bg-gradient-to-r from-purple-600 to-pink-600 border border-purple-400 text-white font-black shadow-md shadow-purple-900/20'
                         : 'bg-purple-600 border border-purple-500 text-white font-black shadow-md shadow-purple-900/15'
                       : 'border border-transparent text-slate-400 hover:bg-slate-900/80 hover:text-slate-200'
@@ -276,7 +376,225 @@ export default function GmPanelOverlay({
           </div>
         </div>
 
-        {activeTab === 'Autonomous GM' ? (
+        {activeTab === 'Chaos Matrix' ? (
+          /* ==================== CHAOS MATRIX DASHBOARD ==================== */
+          <div className="space-y-3">
+            {/* Global Threat & Difficulty Matrix */}
+            <div className="max-h-64 overflow-y-auto">
+              <DifficultyTracker
+                turnsPlayed={gameState.playerStats.turnsPlayed}
+                realTimeSeconds={gameState.playerStats.realTimeSeconds}
+                depth={gameState.playerStats.depth}
+                defeatedEnemiesCount={gameState.defeatedEnemiesCount}
+                clearedCampsCount={gameState.clearedCamps?.length || 0}
+                playerStats={gameState.playerStats}
+                currentWeapon={gameState.currentWeapon}
+              />
+            </div>
+
+            {/* Live Chaos Matrix Dial & Adjusters */}
+            <div className="bg-slate-950/70 border border-purple-500/30 rounded-xl p-3 space-y-2.5 shadow-lg">
+              <div className="flex items-center justify-between border-b border-slate-850 pb-2">
+                <div className="flex items-center gap-1.5 text-purple-400 font-bold uppercase text-[9.5px]">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                  <span>Abyssal Chaos Matrix Gauge</span>
+                </div>
+                <span className={`text-[8px] font-mono px-2 py-0.5 rounded border font-bold uppercase ${chaosTierColor}`}>
+                  {chaosTierName}
+                </span>
+              </div>
+
+              {/* Chaos Gauge Visual Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[9.5px] font-mono">
+                  <span className="text-slate-400">Atmospheric Chaos:</span>
+                  <span className="font-extrabold text-purple-300">{chaosScore} / 100 pts ({abyssalCoeff}x Threat)</span>
+                </div>
+                <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800 p-0.5">
+                  <div 
+                    className="h-full rounded-full transition-all duration-300 bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-600 shadow-[0_0_10px_rgba(168,85,247,0.5)]" 
+                    style={{ width: `${Math.max(4, chaosScore)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Adjustment Controls */}
+              <div className="space-y-1 pt-1">
+                <span className="text-[8.5px] text-slate-500 uppercase font-black block">Direct Matrix Modulators</span>
+                <div className="grid grid-cols-5 gap-1 font-sans">
+                  <button
+                    onClick={() => handleModifyChaos(-10, "GM Stability Adjustment")}
+                    className="py-1 px-1 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 rounded text-[8.5px] font-bold text-emerald-300 transition-all cursor-pointer text-center"
+                  >
+                    -10
+                  </button>
+                  <button
+                    onClick={() => handleModifyChaos(10, "GM Surge Boost")}
+                    className="py-1 px-1 bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/30 rounded text-[8.5px] font-bold text-amber-300 transition-all cursor-pointer text-center"
+                  >
+                    +10
+                  </button>
+                  <button
+                    onClick={() => handleModifyChaos(25, "GM Heavy Escalation")}
+                    className="py-1 px-1 bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/30 rounded text-[8.5px] font-bold text-purple-300 transition-all cursor-pointer text-center"
+                  >
+                    +25
+                  </button>
+                  <button
+                    onClick={() => handleModifyChaos(-chaosScore, "GM Calibration to Zero")}
+                    className="py-1 px-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-[8.5px] font-bold text-slate-300 transition-all cursor-pointer text-center"
+                  >
+                    Reset 0
+                  </button>
+                  <button
+                    onClick={() => handleModifyChaos(100 - chaosScore, "GM Overcharge")}
+                    className="py-1 px-1 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/40 rounded text-[8.5px] font-bold text-rose-300 transition-all cursor-pointer text-center"
+                  >
+                    Max 100
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Aetheric Surge Countdown & Manual Trigger */}
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[8.5px] text-purple-400 font-bold uppercase font-mono flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> Aetheric Core Accumulator
+                </span>
+                <span className="text-[9.5px] font-mono text-purple-300 font-bold">
+                  {turnsUntilNextSurge} turn{turnsUntilNextSurge > 1 ? 's' : ''} to Surge
+                </span>
+              </div>
+
+              <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800 p-0.5">
+                <div 
+                  className="bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 h-full rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, Math.max(4, surgeProgressPercent))}%` }}
+                />
+              </div>
+
+              <button
+                onClick={handleForceSurgeRoll}
+                className="w-full py-2 bg-gradient-to-r from-purple-900/80 via-pink-900/80 to-purple-900/80 hover:from-purple-800 hover:to-pink-800 border border-purple-500/40 rounded-lg text-white font-extrabold text-[9.5px] uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-purple-950/50 flex items-center justify-center gap-1.5 active:scale-98"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400 animate-bounce" />
+                <span>Force Cosmic Chaos Surge (d20 Roll)</span>
+              </button>
+            </div>
+
+            {/* Active Matrix Stat Boosts & Mitigations */}
+            <div className="bg-slate-950/50 border border-slate-850 rounded-xl p-2.5 space-y-1.5">
+              <span className="text-[8.5px] text-amber-400 font-bold uppercase tracking-wider block font-sans">
+                Active Abyssal Mutators & Threat Scaling
+              </span>
+              <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+                <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                  <span className="text-slate-400 block text-[7.5px] uppercase">Monster HP Boost</span>
+                  <span className="font-extrabold text-purple-300 font-mono">+{hpBonusPct}% HP</span>
+                </div>
+                <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                  <span className="text-slate-400 block text-[7.5px] uppercase">Monster ATK Bonus</span>
+                  <span className="font-extrabold text-rose-400 font-mono">+{atkBonus} ATK</span>
+                </div>
+                <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                  <span className="text-slate-400 block text-[7.5px] uppercase">Elite Mutation Rate</span>
+                  <span className="font-extrabold text-amber-400 font-mono">{mutationChancePct}%</span>
+                </div>
+                <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                  <span className="text-slate-400 block text-[7.5px] uppercase">Threat Multiplier</span>
+                  <span className="font-extrabold text-emerald-400 font-mono">{abyssalCoeff}x</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Chaos Spells / Interventions */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center bg-slate-950/30 p-1 px-2 rounded-lg border border-slate-850/40">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider font-sans">Chaos Intervention Spells</span>
+                <span className="text-[8.5px] text-purple-400 font-bold uppercase">{filteredCommands.length} Spells</span>
+              </div>
+
+              <div className="space-y-1.5">
+                {filteredCommands.map((command) => {
+                  const CmdIcon = IconMap[command.iconName] || Cpu;
+                  return (
+                    <div 
+                      key={command.id}
+                      className="bg-slate-950/40 border border-slate-850/80 rounded-xl p-2.5 hover:border-purple-500/30 transition-all flex flex-col gap-1.5 relative overflow-hidden group hover:bg-slate-950/70"
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="w-6 h-6 bg-slate-900 border border-slate-800 rounded-lg flex items-center justify-center text-purple-400 shrink-0 group-hover:bg-purple-950/15 group-hover:border-purple-500/20 transition-all">
+                          <CmdIcon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-bold text-slate-200 tracking-wide text-[10px] block truncate group-hover:text-purple-300 transition-colors">
+                            {command.name}
+                          </span>
+                          <p className="text-[9px] font-sans text-slate-400 leading-snug mt-0.5">
+                            {command.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-900">
+                        <div className="flex items-center gap-1 text-[8.5px] text-slate-500 uppercase font-sans">
+                          <span>Shift:</span>
+                          <span className="text-purple-400 font-mono font-bold">{command.costBoredom} pts</span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleExecuteCommand(command)}
+                          className="py-0.5 px-2 bg-purple-900/40 hover:bg-purple-800/80 border border-purple-700/50 rounded text-slate-200 hover:text-white font-bold text-[8.5px] uppercase tracking-wider transition-all cursor-pointer active:scale-95"
+                        >
+                          Trigger Spell
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Chaos History Feed */}
+            <div className="bg-slate-950 border border-slate-850 rounded-xl p-2.5 space-y-1.5">
+              <span className="text-[8.5px] text-purple-400 font-bold uppercase tracking-wider block font-mono flex items-center gap-1">
+                <Activity className="w-3 h-3" /> Recent Core Discharges
+              </span>
+              <div className="max-h-24 overflow-y-auto space-y-1 font-mono text-[8.5px] scrollbar-thin">
+                {currentGMObj.chaosHistory && currentGMObj.chaosHistory.length > 0 ? (
+                  currentGMObj.chaosHistory.map((hist, idx) => (
+                    <div 
+                      key={idx}
+                      className={`p-1 rounded border flex items-center justify-between ${
+                        hist.type === 'good'
+                          ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-300'
+                          : hist.type === 'bad'
+                          ? 'bg-rose-950/30 border-rose-500/20 text-rose-300'
+                          : 'bg-slate-900/50 border-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <div className="truncate flex items-center gap-1">
+                        <span className="px-1 py-0.25 bg-slate-900 rounded text-slate-400 font-bold text-[7.5px]">
+                          T.{hist.turn}
+                        </span>
+                        <span className="font-bold">{hist.name}</span>
+                      </div>
+                      <span className="font-extrabold px-1 rounded bg-slate-900/80 shrink-0 text-[8px]">
+                        d{hist.roll}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-slate-500 italic text-center py-1.5 text-[8.5px]">
+                    No recent Chaos discharges logged.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'Autonomous GM' ? (
           /* ==================== AUTONOMOUS GM STORYTELLER DASHBOARD ==================== */
           <div className="space-y-4">
             <div className="bg-slate-950/50 border border-purple-500/20 rounded-xl p-4 space-y-3.5">

@@ -5,3 +5,4 @@ export * from './DialogueModal';
 export * from './PoiChoiceModal';
 export * from './TradeModal';
 export * from './UnlawfulAssaultModal';
+export * from './WorldThreatModal';

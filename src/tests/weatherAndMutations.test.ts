@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { WEATHER_EFFECTS, WeatherEffect } from '../utils/weatherEngine';
 import { DUAL_ELEMENT_SYNERGIES, MutationSynergyDefinition } from '../utils/mutationSynergy';
+import { renderWeatherAndLighting, renderWeatherOverlay, resetWeatherTransitionState } from '../canvas/weatherLightingRenderer';
 
 describe('Phase 7: Weather Engine & Mutation Synergy Suite', () => {
   it('validates weather effects database structure and movement penalty properties', () => {
@@ -49,4 +50,55 @@ describe('Phase 7: Weather Engine & Mutation Synergy Suite', () => {
     expect(thermalShock?.elements).toContain('Frost');
     expect(thermalShock?.bonusPowerPct).toBe(35);
   });
+
+  it('renders weather overlay elements without crashing and handles transition state', () => {
+    resetWeatherTransitionState();
+    const mockCtx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      rotate: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      fill: vi.fn(),
+      fillRect: vi.fn(),
+      arc: vi.fn(),
+      ellipse: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      createLinearGradient: vi.fn().mockReturnValue({
+        addColorStop: vi.fn(),
+      }),
+      globalAlpha: 1.0,
+      strokeStyle: '',
+      fillStyle: '',
+      lineWidth: 1,
+    } as unknown as CanvasRenderingContext2D;
+
+    expect(() => renderWeatherOverlay(mockCtx, 'rainy', { width: 800, height: 600 }, 0.8)).not.toThrow();
+    expect(() => renderWeatherOverlay(mockCtx, 'foggy', { width: 800, height: 600 }, 1.0)).not.toThrow();
+    expect(() => renderWeatherOverlay(mockCtx, 'sandstorm', { width: 800, height: 600 }, 0.5)).not.toThrow();
+
+    const mockGameState = {
+      isOverworld: true,
+      gameTime: 720,
+      weather: 'rainy',
+    } as any;
+
+    expect(() => renderWeatherAndLighting({
+      ctx: mockCtx,
+      gameState: mockGameState,
+      dimensions: { width: 800, height: 600 },
+    })).not.toThrow();
+
+    // Weather transition trigger from rainy to foggy
+    mockGameState.weather = 'foggy';
+    expect(() => renderWeatherAndLighting({
+      ctx: mockCtx,
+      gameState: mockGameState,
+      dimensions: { width: 800, height: 600 },
+    })).not.toThrow();
+  });
 });
+

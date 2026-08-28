@@ -1,6 +1,10 @@
 # Abyss Rogue: Chronicles of the Forge
 
-Abyss Rogue is highly interactive, procedurally generated full-screen tactical roguelike RPG with durable persistence, deep combat systems, and a dynamic material crafting system.
+Abyss Rogue is a highly interactive, procedurally generated full-screen tactical roguelike RPG with durable persistence, deep combat systems, and a dynamic material crafting system.
+
+### 🌐 Play & Test the Game Live
+- **Development App (Live Preview)**: [https://ais-dev-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app](https://ais-dev-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app)
+- **Shared App**: [https://ais-pre-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app](https://ais-pre-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app)
 
 ---
 
@@ -11,7 +15,7 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
 1. **Procedural Infinite Overworld**:
    - Scroll infinitely across distinct environmental biomes (Forests, Deserts, Swamps, Glaciers, and Castle Towns) powered by jumbo-sized **64x40 grids** per chunk.
    - **Safe Player Spawning & Repositioning**: Incorporates a 20-tile scanning safety validator `findNearestSafePlayerTile` so that players never spawn or get stuck in walls, trees, water, or mountains during initial boots, chunk boundary crossings, caravan arrivals, and Recall Scroll teleports.
-   - **Biome-Aware Meteorological Engine**: Experience active daylight shading and single active climate overlays (falling rain, snowstorms, dense fog, sandstorms, blizzards) that shift dynamically and adhere strictly to biome climate rules (no rain in deserts, sandstorms exclusively in deserts, blizzards exclusively in tundras, and mild weather in towns). All Storyteller GM commands and God Panel controls enforce these biome weather constraints.
+   - **Biome-Aware Meteorological Engine**: Experience active daylight shading and single active climate overlays (falling rain, snowstorms, dense fog, sandstorms, blizzards) that shift dynamically over extended 120-turn intervals (configurable up to 300 turns) and adhere strictly to biome climate rules (no rain in deserts, sandstorms exclusively in deserts, blizzards exclusively in tundras, and mild weather in towns). All Storyteller GM commands and God Panel controls enforce these biome weather constraints.
    - **Winter Frost Berry Freeze**: Sweet berry bushes are frozen in glacial tundra biomes. Attempting to harvest them displays an immersive winter freeze notice while swamp biomes feature custom purple wild elderberries (`🫐`).
    - **Modular Building Design**: Evaluates building IDs sequentially to spawn shop-specific furniture (anvils, warm hearths, glass vials, tables, counter blocks).
    - **Castle Fortresses**: Fortified keeps and citadels have a 25% chance of spawning in place of standard overworld villages, dynamically calculating stone wall perimeters, gates, courtyard paving and torch points using the full 64x40 chunk boundaries.
@@ -19,6 +23,8 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - **Modular Chunk Minimap (`ChunkMinimap.tsx`)**: Refactored the previous inline map grid renderer into a high-performance, memoized standalone component. Renders an active 21x21 grid representing a 10-tile radius around the adventurer, matching individual terrain colors (walls, water, roads, stairs, landmarks) with robust string-based `TileType` enum checking.
    - **Storyteller Point of Interest Nudges**: Implements deterministic storytelling updates about nearby castles, cozy villages, ruins, and caverns depending on adjacent chunk positions (located in `/src/utils/gmNarrator.ts`).
    - **Interactive Landmark POIs**: Encounter active Landmarks (Shrines, Crucibles, Monoliths, Keeps, and Fossils). Approaching them launches rich, choice-driven encounters for custom alchemical, physical, and stat-modifying rewards.
+   - **Interactive Level Decor Props**: Discover interactive decor objects (Sarcophagi, Weapon Racks, Lore Bookshelves, Alchemy Tables, Feather Beds, Roaring Hearths, Town Wells, Notice Boards, Cinder Casks, Sundials). Stepping adjacent automatically displays an interactive HUD alert banner with click/key interactions.
+   - **Runtime Modding API & Custom Dungeon Editor**: Register custom monsters, weapons, armor, spells, and dungeon level blueprints at runtime. Includes a visual grid painter with customizable canvas sizes, tile palettes, decor props, enemy placements, and instant Test-Play mode!
    - **Wandering Wilderness Merchants**: Encounter rare roving traders like **Drunk Merchant Seppo (S)** who spawns procedurally on grass tiles in wilderness chunks (4% chance). Sells premium items (Finnish Sisu Hammer 🪵, Ever-Burning Flask 🛡️, Seppo's Secret Hooch 🍶) and features rich, comedic log commentary.
    - **Adaptive Seasonal Cycles (Planned Roadmap)**: Dynamic Spring, Summer, Autumn, and Winter cycles with high-fidelity mechanical and visual impacts (e.g., Spring harvest abundance, Summer dehydrating heat, Autumnal stealth fog, and Winter lake freezes).
 2. **Persistent Multi-Floor Dungeons**:
@@ -50,10 +56,12 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - Advance through 4 distinct reputation milestone tiers: *Sunder Outlaw* (0-20, hostile guards, trading blocked), *Wandering Mercenary* (21-50, standard rates), *Honored Protector* (51-80, 10% discount), and *Champion of Sunder* (81-100, 20% discount, elite guard companion recruitment, rare stocks).
    - Upgrade the Blacksmith forge and Apothecary lab to earn massive reputation boosts (+8 to +15), unlock higher-tier resources, and buy advanced equipment.
    - Embark on the unique Outlaw Pardon Quest to wipe your criminal record clean if your reputation falls into the criminal outlaw bracket.
-8. **Life Skills, Campfire Cooking & Apothecary Brewing (v2.6.0)**:
-   - Harvest raw lumber from Birch/Pine logging trees and minerals from rich Copper/Iron veins generated on overworld chunks.
-   - Cook gourmet meals (Lightning Grilled Salmon, Spicy Crimson Salmon, Glacial Frost Ribs, Shadow Smoked Jerky) adjacent to any warm Campfire to gain powerful active combat buffs or completely purge physical exhaustion.
-   - Upgrade your Apothecary Laboratory up to Tier 3 to brew ancient elixirs (Regenerative Dew, Hyper Focus, Ironheart Fortitude, Shadow-Warp Void) that restore vital stats and permanently increase your Strength, Intelligence, Defense, or Luck.
+8. **Life Skills, Wilderness Foraging, Gourmet Campfire Cooking & Survival Camping (v7.5.0)**:
+   - **Multi-Biome Foraging & Herbology**: Harvest Glacial Frostbloom (Tundra), Sun-Blossom Aloe (Desert), Bioluminescent Nightshade (Swamp), Earthy Truffles, Wild Honeycombs, and Forest Berries (Forest).
+   - **Gourmet Culinary Buffet**: Cook advanced meals (Forest Truffle Chowder, Glacial Frostbloom Tea, Honeycomb Glazed Jerky, Sun-Aloe Hydration Stew, Nightshade Broth) at campfires for sustained stat increases, passive HP/MP regeneration, and extreme weather insulation.
+   - **Survival Shelters & Camping**: Craft and deploy Traveler's Bedrolls and Expedition Field Tents on any overworld wilderness tile. Analyzes campsite surroundings, insulation, and companion sentry night-watch duties to mitigate nocturnal predator ambushes.
+   - **Passive Mana Meditation**: Restores Focus/MP periodically during exploration, scaling recovery rate with player Intelligence (INT).
+   - **Raw Resources & Brewing**: Harvest raw lumber from logging trees, minerals from rich Copper/Iron veins, and brew ancient stat elixirs at upgraded Apothecary Laboratories.
 9. **Celestial Blood Moons, Alchemical Loot Goblins & Stamina Exhaustion (v2.8.0)**:
    - Survive the **Celestial Blood Moon Rift** cycle triggering every 300-550 turns, where hostiles gain aggressive damage and lifesteal properties but drop double alchemical catalysts.
    - Hunt down the rare **Alchemical Loot Goblin**, a fast golden sprite that drops ores and catalysts on hit.
@@ -67,7 +75,13 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - Features realistic lockpick tension physics, wobble warning stress, snap degradation, and perfect performance reward modifiers (+25g pristine unlock, free catalyst shard, +40 Lockpicking XP).
    - Fully optimized for mobile screens: players can drag and pivot the lockpick directly by swiping/dragging their finger over the circular lock face, with customized touch prevention settings.
    - Restock supplies by forging 3x lockpicks with 1x Tempered Iron at campfires or visiting town shops.
-12. **Dynamic Faction Wars & Territory Conquest (v3.5.0)**:
+12. **Master UI, Cartography World Map & Crafting Overhaul (v7.6.0)**:
+   - **Unified HUD & Top Header**: High-contrast gold and slate layout with real-time biome badges, turn counters, time-of-day clock, and glowing navigation tab indicators.
+   - **Interactive World Map & Cartography**: Micro-tile surface rasterizer with offscreen canvas caching, soft parchment-burn fog of war, deep-zoom canvas controls, sector threat intelligence dossiers, custom waypoint pins, and runic waystone teleport flows.
+   - **Unified Inventory & Paperdoll**: 8-slot humanoid gear paperdoll with segmented durability meters, dual-slot 2H brackets, and active scar overlays. Interactive RPG attribute allocation card (STR, DEX, INT, CHA, LCK), tiered item rarity glows, and portable Alchemical Transmuter.
+   - **Modernized Crafting Stations & Overforge**: Multi-discipline tab switcher with live search, stock validation ledgers, Overforge heat danger gauges, scriptorium scroll scribing, alchemy laboratory tiers, and cooking stations.
+   - **Monster Codex Bestiary & Categorized Chronologue Log**: Classified monster dossier locking with stat telemetry and loot tables. High-performance categorized adventure log with 6 tactical filters and color-coded damage badges.
+13. **Dynamic Faction Wars & Territory Conquest (v3.5.0)**:
    - Campaign for regional dominance across 5 unique territories (Borderlands, Shadow Fjord, Moonshadow Cove, Sunplate Ridge, Swamp of Whispers) that track active faction control and control percentages.
    - Monitor, govern, and interact with the war landscape inside the Faction War Room Dashboard.
    - Collect accumulated gold and alchemical/mineral tax products generated continuously on a turn-by-turn basis.
@@ -166,9 +180,23 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - **Tileset Atlas Manager (`TilesetAtlasManager.ts`)**: Supports 16-variant 4-neighbor cardinal autotiling bitmask rules (North=1, East=2, South=4, West=8) for walls, paths, and biomes.
    - **Multi-Frame Sprite State Machine (`spriteAnimationManager.ts`)**: Controls 4-directional sprite states (`idle`, `walk`, `attack`, `hurt`, `cast`, `death`) for player and monsters.
    - **Visual FX Particle System (`visualFxParticleSystem.ts`)**: Emitters render dynamic spell bursts, magic circles, campfire embers, and atmospheric particles into the 60 FPS HTML5 Canvas loop.
+37. **Dynamic Sun & Moon Directional Drop Shadows (v6.2.0)**:
+   - **24h Solar Vector Projection (`shadowRenderer.ts`)**: Casts soft translucent directional drop shadows beneath trees (`🌲`, `🌳`, `▲`), rock walls/veins, structure gates/signs, as well as living entities (Player, NPCs, Enemies, Bosses).
+   - **Real-Time Astronomical Calculations**: Shadows smoothly rotate and elongate based on the in-game 24h clock, shifting from morning west shadows to evening east shadows and cool slate moonlight shadows at night.
+38. **Kinetic Water Ripples, Rain Footstep Splashes & Ambient Particles (v6.2.0)**:
+   - **Expanding Water Ripples**: Steps onto water (`🌊`), streams, or swamp bogs (`🐊`) trigger expanding concentric ring animations.
+   - **Rain Footstep Splashes**: Movement across outdoor tiles during rainy or stormy weather produces temporary water droplet splash particles.
+   - **Ambient Particles & Dust Devils**: Forest, Tundra, and Swamp biomes generate ambient floating leaves, cherry blossoms, and bio-luminescent spores, while Deserts spawn animated spinning dust devil vortexes.
 
 
 
+
+39. **Directional Outward Drift & Combat Floating Physics (v6.9.0)**:
+   - **Kinetic Impact Momentum Vectors (`combatFloaterDrift.ts`)**: Floating damage, heals, and crits calculate directional impact trajectories between attacker and defender, arcing outward outside entity sprites and health bars.
+   - **High-Contrast Text Outlines**: Dark outline rings ensure crystal-clear combat legibility across all terrains, biomes, and lighting conditions.
+40. **Player Attack & Combat Logic Decoupling (v6.9.2)**:
+   - **Modular Attack Hook (`usePlayerAttack.ts`)**: Decoupled player melee/ranged attack resolution, weapon durability wear, directional floater physics, and companion assistance intercepts into a standalone hook.
+   - **Monolith Decomposition**: Deconstructed `App.tsx` orchestrator, eliminating dead functions and pruning 75+ unused imports.
 
 ---
 
@@ -391,6 +419,6 @@ Maintain codebase health with our automated import and catalog scanner:
 # Run codebase import integrity check + TypeScript linter + Vitest suite
 npm run audit
 ```
-This checks 200+ source files and 22 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 21 Vitest test suites (86 tests passing 100% green).
+This checks 378 source files and 29 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 50 Vitest test suites (308 tests passing 100% green).
 
 

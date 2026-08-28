@@ -104,6 +104,10 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
                   <span className="text-amber-400 font-bold">V / K Key</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Realm Cartography World Map:</span>
+                  <span className="text-amber-400 font-bold">M Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Open Game Master UI:</span>
                   <span className="text-purple-400">O Key</span>
                 </div>
@@ -267,10 +271,10 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
           <div>
             <h4 className="font-bold text-amber-500 uppercase tracking-wide border-b border-slate-800 pb-1 mb-2 flex items-center gap-1.5">
               <Hammer className="w-4 h-4 text-amber-500" />
-              <span>✨ Equipment Mastery: Forge, Mutate & Upgrade</span>
+              <span>✨ Equipment Mastery: Flexible Tool Crafting & Forge</span>
             </h4>
             <p className="text-[11px] text-slate-300 leading-normal mb-2">
-              The Arcanum Workbench offers three distinct tiers of gear customization:
+              Chopping down trees leaves behind walkable 🪵 <strong className="text-amber-400 font-semibold">Tree Stumps</strong> and yields timber. Tools (Hatchet 🪓, Pickaxe ⛏️, Fishing Pole 🎣) can be crafted using <em>ANY</em> available wood (Scrap Wood, Pine, Birch) and <em>ANY</em> metal or iron!
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-2">
               <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-850">

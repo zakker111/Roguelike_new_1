@@ -10,30 +10,35 @@ export interface UseTradeEconomyParams {
 export function useTradeEconomy({ setGameState, addLog, playSound }: UseTradeEconomyParams) {
   const buyItemFromMerchant = useCallback((itemToBuy: EquipmentItem, price: number) => {
     setGameState((prev) => {
-      if (prev.gold < price) {
-        addLog(`🪙 Not enough gold! Needed ${price}g, but you only have ${prev.gold}g.`);
+      const currentGold = prev.playerStats?.gold ?? 0;
+      if (currentGold < price) {
+        addLog(`🪙 Not enough gold! Needed ${price}g, but you only have ${currentGold}g.`);
         playSound('error');
         return prev;
       }
 
-      const updatedInventory = [...prev.inventory, { ...itemToBuy, id: `inv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}` }];
+      const updatedInventory = [...(prev.equipmentInventory || []), { ...itemToBuy, id: `inv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}` }];
       addLog(`🛍️ Purchased ${itemToBuy.name} for ${price} gold.`);
       playSound('coin');
 
       return {
         ...prev,
-        gold: prev.gold - price,
-        inventory: updatedInventory,
+        playerStats: {
+          ...prev.playerStats,
+          gold: currentGold - price,
+        },
+        equipmentInventory: updatedInventory,
       };
     });
   }, [setGameState, addLog, playSound]);
 
   const sellItemToMerchant = useCallback((itemToSell: EquipmentItem, price: number) => {
     setGameState((prev) => {
-      const itemIndex = prev.inventory.findIndex((i) => i.id === itemToSell.id);
+      const inventory = prev.equipmentInventory || [];
+      const itemIndex = inventory.findIndex((i) => i.id === itemToSell.id);
       if (itemIndex === -1) return prev;
 
-      const updatedInventory = [...prev.inventory];
+      const updatedInventory = [...inventory];
       updatedInventory.splice(itemIndex, 1);
 
       addLog(`💰 Sold ${itemToSell.name} for ${price} gold.`);
@@ -41,8 +46,11 @@ export function useTradeEconomy({ setGameState, addLog, playSound }: UseTradeEco
 
       return {
         ...prev,
-        gold: prev.gold + price,
-        inventory: updatedInventory,
+        playerStats: {
+          ...prev.playerStats,
+          gold: (prev.playerStats?.gold ?? 0) + price,
+        },
+        equipmentInventory: updatedInventory,
       };
     });
   }, [setGameState, addLog, playSound]);
@@ -52,4 +60,5 @@ export function useTradeEconomy({ setGameState, addLog, playSound }: UseTradeEco
     sellItemToMerchant,
   };
 }
+
 

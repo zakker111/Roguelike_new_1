@@ -88,7 +88,7 @@ export interface CraftedWeapon {
   damage: number;
   critChance: number;
   range: number;
-  manaCost: number;
+  manaCost?: number;
   effectDescription: string;
   color: string;
   durability?: number;
@@ -122,7 +122,7 @@ export interface EquipmentItem {
   id: string;
   name: string;
   type: 'weapon' | 'armor' | 'scroll';
-  subType: WeaponBaseType | 'LightArmor' | 'HeavyArmor' | 'Shield' | 'Helmet' | 'Gloves' | 'Boots' | 'Scroll' | 'Amulet';
+  subType: WeaponBaseType | 'LightArmor' | 'HeavyArmor' | 'Shield' | 'Helmet' | 'Gloves' | 'Boots' | 'Scroll' | 'Amulet' | string;
   defense: number;
   damage: number;
   critChance: number;
@@ -132,6 +132,7 @@ export interface EquipmentItem {
   value: number; // Buy/Sell gold cost
   quantity?: number; // Stack quantity for stackable items (like scrolls)
   durability?: number;
+  currentDurability?: number;
   maxDurability?: number;
   upgradeLevel?: number;
   isMutated?: boolean;

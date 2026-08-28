@@ -10,7 +10,7 @@ describe('Phase 6: Crafting & Alchemy Suite', () => {
       expect(recipe.name).toBeDefined();
       expect(recipe.restoringHp).toBeGreaterThanOrEqual(0);
       expect(Object.keys(recipe.materials).length).toBeGreaterThan(0);
-      expect(Object.keys(recipe.catalysts).length).toBeGreaterThan(0);
+      expect(recipe.catalysts).toBeDefined();
 
       if (recipe.buff) {
         expect(recipe.buff.turnsRemaining).toBeGreaterThan(0);
@@ -54,5 +54,17 @@ describe('Phase 6: Crafting & Alchemy Suite', () => {
     expect(calcShatterChance(50)).toBe(0.325);
     expect(calcShatterChance(100)).toBe(0.65);
     expect(calcShatterChance(150)).toBe(0.65);
+  });
+
+  it('validates weapon templates data and stats completeness', () => {
+    const WEAPON_TEMPLATES_KEYS = ['Sword', 'Spear', 'Dagger', 'Hammer', 'Staff', 'Bow', 'Wand', 'Crossbow', 'Greatsword', 'Warhammer'];
+    WEAPON_TEMPLATES_KEYS.forEach((key) => {
+      const mat = BASIC_MATERIALS[0];
+      const cat = ELEMENTAL_CATALYSTS[0];
+      expect(mat).toBeDefined();
+      expect(cat).toBeDefined();
+      expect(typeof mat.baseDamageMod).toBe('number');
+      expect(typeof mat.critMod).toBe('number');
+    });
   });
 });

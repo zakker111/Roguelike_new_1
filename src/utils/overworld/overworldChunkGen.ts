@@ -52,6 +52,7 @@ export function generateOverworldChunk(
   const dungeons: { x: number; y: number; id: string; targetDepth: number }[] = [];
   const towns: { x: number; y: number; name: string }[] = [];
   const poisList: any[] = [];
+  const props: any[] = [];
 
   const hasTown = hasTownAtChunk(chunkX, chunkY);
   const townName = hasTown ? getDeterministicTownName(chunkX, chunkY) : '';
@@ -81,6 +82,7 @@ export function generateOverworldChunk(
     traps,
     dungeons,
     towns,
+    props,
     poisList,
     hasTown,
     townName,
@@ -127,6 +129,7 @@ export function generateOverworldChunk(
     lootPiles: [],
     dungeons: ctx.dungeons,
     towns: ctx.towns,
+    props: ctx.props || [],
     biome,
     weather,
     pois: ctx.poisList,

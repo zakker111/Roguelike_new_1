@@ -1,5 +1,6 @@
 import { CatalystType, CraftedWeapon, EquipmentItem, WeaponBaseType } from '../types';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './itemsData';
+import spellsCatalogData from '../data/spellsCatalog.json';
 
 export interface Spell {
   id: string;
@@ -12,63 +13,15 @@ export interface Spell {
   effectDescription: string;
 }
 
-export const SPELLS: Spell[] = [
-  {
-    id: 'arcane_bolt',
-    name: 'Arcane Bolt',
-    icon: '🔮',
-    manaCost: 4,
-    damageMultiplier: 1.0,
-    element: CatalystType.Lightning,
-    description: 'A pure bolt of condensed mana.',
-    effectDescription: 'Deals 100% spell damage.'
-  },
-  {
-    id: 'pyroblast',
-    name: 'Pyroblast',
-    icon: '🔥',
-    manaCost: 6,
-    damageMultiplier: 1.35,
-    element: CatalystType.Fire,
-    description: 'A swelling fireball that explodes on impact.',
-    effectDescription: 'Deals 135% fire splash damage to target & adjacent enemies. 40% chance to Ignite.'
-  },
-  {
-    id: 'frostbite_lance',
-    name: 'Frostbite Lance',
-    icon: '❄️',
-    manaCost: 5,
-    damageMultiplier: 1.0,
-    element: CatalystType.Frost,
-    description: 'An icy lance that freezes enemies solid.',
-    effectDescription: 'Deals 100% ice damage. Guaranteed Freeze debuff for 3 turns (slows & skips alternate turns).'
-  },
-  {
-    id: 'chain_lightning',
-    name: 'Chain Lightning',
-    icon: '⚡',
-    manaCost: 6,
-    damageMultiplier: 1.15,
-    element: CatalystType.Lightning,
-    description: 'Forked lightning that arcs between foes.',
-    effectDescription: 'Deals 115% storm damage, chaining up to 2 additional nearby targets (radius 3).'
-  },
-  {
-    id: 'void_siphon',
-    name: 'Void Siphon',
-    icon: '🌌',
-    manaCost: 5,
-    damageMultiplier: 0.9,
-    element: CatalystType.Shadow,
-    description: 'A shadow tendril that siphons life force.',
-    effectDescription: 'Deals 90% shadow damage, siphoning 25% of damage dealt back to your HP.'
-  }
-];
+export const SPELLS: Spell[] = spellsCatalogData.map(spell => ({
+  ...spell,
+  element: spell.element as CatalystType
+}));
 
 export function getSpellById(id: string): Spell {
   const spell = SPELLS.find((s) => s.id === id);
   if (!spell) {
-    throw new Error(`[spellsAndEquipment] Invalid spell ID requested: "${id}". Available spells: ${SPELLS.map((s) => s.id).join(', ')}`);
+    throw new Error(`[spellsAndEquipment] Invalid spell ID requested: "${id}".`);
   }
   return spell;
 }

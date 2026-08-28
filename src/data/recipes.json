@@ -63,6 +63,96 @@
       "materials": { "mat_raw_meat": 1, "mat_wood": 1 },
       "catalysts": { "cat_shadow": 1 },
       "buff": null
+    },
+    {
+      "id": "forest_truffle_chowder",
+      "name": "Forest Truffle Chowder 🍄🍲",
+      "description": "Slow-simmered aromatic wild mushrooms and prime meats. Restores 60 HP, 30 MP, and grants +4 Defense for 40 turns.",
+      "restoringHp": 60,
+      "restoringMp": 30,
+      "materials": { "mat_forest_truffle": 2, "mat_prime_meat": 1, "mat_berry": 2 },
+      "catalysts": {},
+      "buff": {
+        "name": "Earthy Fortitude 🍄",
+        "description": "Defense increased by +4 and passive HP regeneration active.",
+        "atkBonus": 0,
+        "defBonus": 4,
+        "critBonus": 0.05,
+        "speedBonus": 0,
+        "turnsRemaining": 40
+      }
+    },
+    {
+      "id": "glacial_frostbloom_tea",
+      "name": "Glacial Frostbloom Tea ❄️🍵",
+      "description": "Infused mountain flower tea steeped in hot campfire water. Restores 45 MP, protects against cold hypothermia, and grants +2 Speed.",
+      "restoringHp": 20,
+      "restoringMp": 45,
+      "materials": { "mat_frostbloom": 2, "mat_honeycomb": 1 },
+      "catalysts": {},
+      "buff": {
+        "name": "Glacial Acuity ❄️",
+        "description": "Movement speed increased by +2, cold immunity, and +15% spell critical chance.",
+        "atkBonus": 0,
+        "defBonus": 1,
+        "critBonus": 0.15,
+        "speedBonus": 2,
+        "turnsRemaining": 50
+      }
+    },
+    {
+      "id": "honeycomb_glazed_jerky",
+      "name": "Golden Honeycomb Glazed Jerky 🍯🥩",
+      "description": "Char-grilled prime meat basted in wild honey. Restores 55 HP, 20 MP, cleanses exhaustion, and adds +4 Attack.",
+      "restoringHp": 55,
+      "restoringMp": 20,
+      "materials": { "mat_honeycomb": 2, "mat_prime_meat": 1 },
+      "catalysts": {},
+      "buff": {
+        "name": "Honey-Stoked Vigor 🍯",
+        "description": "Physical Attack increased by +4 and stamina recovery boosted.",
+        "atkBonus": 4,
+        "defBonus": 0,
+        "critBonus": 0.05,
+        "speedBonus": 1,
+        "turnsRemaining": 35
+      }
+    },
+    {
+      "id": "desert_aloe_stew",
+      "name": "Desert Sun-Aloe Hydration Stew 🌵🍲",
+      "description": "Cooling succulent stew crafted from sun-blossom desert plants. Restores 40 HP, 35 MP, and prevents heat dehydration.",
+      "restoringHp": 40,
+      "restoringMp": 35,
+      "materials": { "mat_sun_aloe": 2, "mat_berry": 2 },
+      "catalysts": {},
+      "buff": {
+        "name": "Desert Oasis Hydration 🌵",
+        "description": "Immunity to desert exhaustion and heatwave MP drain. +2 Defense.",
+        "atkBonus": 0,
+        "defBonus": 2,
+        "critBonus": 0,
+        "speedBonus": 1,
+        "turnsRemaining": 45
+      }
+    },
+    {
+      "id": "swamp_nightshade_broth",
+      "name": "Bioluminescent Nightshade Broth 🌿🍲",
+      "description": "A glowing alchemical wetland broth. Restores 50 HP, 40 MP, and sharpens night combat reflexes with +20% Crit.",
+      "restoringHp": 50,
+      "restoringMp": 40,
+      "materials": { "mat_swamp_nightshade": 2, "mat_raw_fish": 1, "mat_honeycomb": 1 },
+      "catalysts": {},
+      "buff": {
+        "name": "Ethereal Nightvision 🌿✨",
+        "description": "Critical strike chance increased by +20% and attack power increased by +3.",
+        "atkBonus": 3,
+        "defBonus": 1,
+        "critBonus": 0.20,
+        "speedBonus": 1,
+        "turnsRemaining": 40
+      }
     }
   ],
   "brewingRecipes": [
@@ -109,6 +199,78 @@
       "materials": { "mat_copper_ore": 3, "mat_birch_log": 3 },
       "catalysts": { "cat_shadow": 2 },
       "permanentStats": { "lck": 1 }
+    }
+  ],
+  "toolRecipes": [
+    {
+      "id": "lumberjack_hatchet",
+      "name": "Lumberjack Hatchet 🪓",
+      "description": "A sturdy handaxe for chopping down trees and harvesting timber. Accepts any wood logs/timber and any metal/iron. Works automatically from inventory or equipped!",
+      "requiredWood": 2,
+      "requiredMetal": 1,
+      "acceptsAnyWood": true,
+      "acceptsAnyMetal": true
+    },
+    {
+      "id": "prospector_pickaxe",
+      "name": "Prospector Pickaxe ⛏️",
+      "description": "A heavy pickaxe for mining copper and iron mineral veins. Accepts any wood logs/timber and any metal/iron. Works automatically from inventory or equipped!",
+      "requiredWood": 2,
+      "requiredMetal": 2,
+      "acceptsAnyWood": true,
+      "acceptsAnyMetal": true
+    },
+    {
+      "id": "tension_lockpicks",
+      "name": "Tension Lockpicks 🔑",
+      "description": "Thin tempered steel lockpicks for opening locked dungeon chests. Yields 3 lockpicks per craft.",
+      "requiredWood": 0,
+      "requiredMetal": 1,
+      "acceptsAnyMetal": true,
+      "yieldCount": 3
+    },
+    {
+      "id": "fishing_pole",
+      "name": "Ancient Fishing Pole 🎣",
+      "description": "A sanded wood rod bound with nylon thread. Allows angling next to quiet waters.",
+      "requiredWood": 2,
+      "requiredMetal": 1,
+      "acceptsAnyWood": true,
+      "acceptsAnyMetal": true
+    },
+    {
+      "id": "campfire",
+      "name": "Portable Campfire 🔥",
+      "description": "Assembles a warm campfire for resting and cooking food.",
+      "requiredWood": 3,
+      "requiredMetal": 0,
+      "acceptsAnyWood": true
+    },
+    {
+      "id": "bedroll",
+      "name": "Traveler's Survival Bedroll 🛏️",
+      "description": "A warm fur-lined sleeping roll for resting and recovering anywhere in the open wilderness.",
+      "requiredWood": 2,
+      "requiredMetal": 0,
+      "acceptsAnyWood": true
+    },
+    {
+      "id": "field_tent",
+      "name": "Expedition Field Tent ⛺",
+      "description": "An insulated weatherproof canvas shelter. Provides 100% weather insulation, +25% rest recovery, and cuts wilderness ambush risk by 50%!",
+      "requiredWood": 4,
+      "requiredMetal": 1,
+      "acceptsAnyWood": true,
+      "acceptsAnyMetal": true
+    },
+    {
+      "id": "anvil",
+      "name": "Portable Blacksmith Anvil ⚒️",
+      "description": "Assembles a heavy portable anvil for forging, mutating, and upgrading gear.",
+      "requiredWood": 2,
+      "requiredMetal": 5,
+      "acceptsAnyWood": true,
+      "acceptsAnyMetal": true
     }
   ]
 }

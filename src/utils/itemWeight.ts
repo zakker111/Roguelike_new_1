@@ -1,4 +1,4 @@
-import { EquipmentItem, WeaponBaseType, GameState } from '../types';
+import { WeaponBaseType, GameState } from '../types';
 import { getEffectiveStats } from './scars';
 
 /**

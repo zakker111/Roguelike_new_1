@@ -482,6 +482,7 @@ export function usePlayerMovement({
             chunkY,
             map: nextLvl.map,
             discovered,
+            visible: fov,
             enemies: nextLvl.enemies,
             traps: nextLvl.traps,
             chests: nextLvl.chests,

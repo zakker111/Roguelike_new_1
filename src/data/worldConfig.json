@@ -9,6 +9,21 @@
       "temperatureMax": 0.35,
       "description": "Cold and snowy environments"
     },
+    "glacial": {
+      "temperatureMax": 0.18,
+      "moistureMin": 0.40,
+      "description": "Sub-zero glacial ice caverns, frost spires, and frozen sheets"
+    },
+    "coral_reef": {
+      "temperatureMin": 0.45,
+      "moistureMin": 0.75,
+      "description": "Sunken coral reef ruins, tidal tidepools, and azure lagoons"
+    },
+    "volcanic": {
+      "temperatureMin": 0.75,
+      "moistureMax": 0.25,
+      "description": "Molten volcanic caldera, ash wastes, and obsidian crags"
+    },
     "desert": {
       "temperatureMin": 0.35,
       "moistureMax": 0.35,
@@ -45,6 +60,23 @@
       "foggy": 0.10,
       "snowy": 0.40,
       "blizzard": 0.20
+    },
+    "glacial": {
+      "clear": 0.15,
+      "foggy": 0.15,
+      "snowy": 0.35,
+      "blizzard": 0.35
+    },
+    "coral_reef": {
+      "clear": 0.40,
+      "rainy": 0.30,
+      "foggy": 0.15,
+      "tidal_surge": 0.15
+    },
+    "volcanic": {
+      "clear": 0.35,
+      "sandstorm": 0.15,
+      "ashfall": 0.50
     },
     "swamp": {
       "clear": 0.20,
@@ -93,6 +125,36 @@
       "chestCount": 2,
       "monsterCountMin": 3,
       "monsterCountMax": 6
+    },
+    "glacial": {
+      "lakeCount": 3,
+      "baseLakeRadiusMin": 3,
+      "baseLakeRadiusMax": 5,
+      "trapCount": 4,
+      "trapType": "frostbiteVent",
+      "chestCount": 3,
+      "monsterCountMin": 4,
+      "monsterCountMax": 7
+    },
+    "coral_reef": {
+      "lakeCount": 4,
+      "baseLakeRadiusMin": 4,
+      "baseLakeRadiusMax": 6,
+      "trapCount": 3,
+      "trapType": "geyser",
+      "chestCount": 3,
+      "monsterCountMin": 3,
+      "monsterCountMax": 6
+    },
+    "volcanic": {
+      "lakeCount": 2,
+      "baseLakeRadiusMin": 3,
+      "baseLakeRadiusMax": 5,
+      "trapCount": 4,
+      "trapType": "magmaEruption",
+      "chestCount": 3,
+      "monsterCountMin": 4,
+      "monsterCountMax": 8
     },
     "swamp": {
       "lakeCount": 3,

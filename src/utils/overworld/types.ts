@@ -1,4 +1,5 @@
-import { TileType, NPC, Enemy, Chest, Trap, WatchtowerState } from '../../types';
+import { TileType, NPC, Enemy, Chest, Trap, WatchtowerState, DungeonProp, BiomeType } from '../../types';
+import { WeatherType } from '../weatherEngine';
 
 export interface OverworldGenContext {
   chunkX: number;
@@ -9,8 +10,8 @@ export interface OverworldGenContext {
   spawnedSeppo?: boolean;
   playerStats?: { level: number; str: number; dex: number; int: number; cha: number; lck: number };
   currentWeapon?: { damage: number; name?: string } | null;
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town';
-  weather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard';
+  biome: BiomeType;
+  weather: WeatherType;
   map: TileType[][];
   npcs: NPC[];
   enemies: Enemy[];
@@ -18,6 +19,7 @@ export interface OverworldGenContext {
   traps: Trap[];
   dungeons: { x: number; y: number; id: string; targetDepth: number }[];
   towns: { x: number; y: number; name: string }[];
+  props?: DungeonProp[];
   watchtower?: WatchtowerState;
   secondFloorMap?: TileType[][];
   secondFloorDiscovered?: boolean[][];

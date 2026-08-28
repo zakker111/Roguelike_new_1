@@ -19,7 +19,9 @@ export const GodWorldEditor: React.FC<GodWorldEditorProps> = ({
   setGameState,
   setJsonError,
 }) => {
-  const [selectedWeather, setSelectedWeather] = useState<'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard'>(
+  const [selectedWeather, setSelectedWeather] = useState<
+    'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard' | 'ashfall' | 'tidal_surge'
+  >(
     gameState.weather || 'clear'
   );
 

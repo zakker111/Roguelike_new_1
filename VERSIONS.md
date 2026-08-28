@@ -6,6 +6,377 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v7.7.5] — Save/Load, State Migration Resilience & Telemetry Diagnostics (Phase 8) (August 26, 2026)
+*Completed Phase 8 implementation of comprehensive Save/Load persistence middleware, multi-version state schema migration (v1.0.0 through v7.7.4+), material storage normalization, equipment durability clamping, and explicit verification of run logs, adventure journals, and developer simulation replay telemetry diagnostics. All 50 test suites and 308 automated tests pass 100% green.*
+
+- **1. Multi-Version State Schema Migration Engine (`src/hooks/useSaveLoad.ts`)**:
+  - `migrateSaveData`: Intelligently converts legacy, partial, and corrupted save files from prior schema versions (v1.0.0 minimalist coordinates, v2.0.0 array materials, v3.0.0 depth/chaos, v4.0.0 town reputation) to the modern schema `v7.7.4`.
+  - Backfills missing attributes (Strength, Agility, Intelligence, Charisma, Luck), default waystones (`waystone_0_0`), player stats, chaos score, town reputation, and unlocks.
+  - Recovers gracefully from non-object inputs, NaN player coordinates, missing stats, and clamped grid boundaries (`[0, 128]`).
+- **2. Data Normalization Middleware**:
+  - `normalizeMaterialStorage`: Automatically converts legacy array-of-objects (`{ id, count }` or `{ materialId, count }`), array-of-string keys, and raw dictionaries into strict, sanitized `Record<string, number>` mappings.
+  - `normalizeEquippedItem`: Sanitizes equipment durability, ensuring valid numbers clamped within `[0, maxDurability]` and defaulting missing durabilities to 50.
+- **3. Save File Import/Export & LocalStorage Engine**:
+  - Added `importSaveFromString` to allow importing external JSON save files with automatic schema migration and state dispatching.
+  - Synchronized `saveGame` payload structure with `SaveFilePayload` interface.
+- **4. Run Logs & Simulation Telemetry Diagnostics (`src/utils/logExporter.ts`)**:
+  - Explicitly validated `exportAndDownloadGameLogs`, ensuring accurate generation of human-readable adventure run journals alongside machine-parsable JSON simulator replay telemetry (`--- COMPREHENSIVE SIMULATOR REPLAY DATA ---`).
+  - Added headless Node/test environment guards around DOM interactions to ensure uninterrupted export validation during headless CI/CD runs.
+- **5. Automated Testing Suite (`src/tests/automatedSaveLoadAndMigrationSuite.test.ts`)**:
+  - Created 11 automated test cases covering schema migration, material normalization, corrupted data sanitization, round-trip serialization, and log export/telemetry parsing.
+  - Full test suite running 50 test files with 308 tests passing 100% green.
+
+## [v7.7.4] — Wilderness Resource Balancing & Biome Refinement (August 26, 2026)
+*Removed coral reef biomes from overworld generation and rebalanced resource density across the infinite wilderness. Toned down berry bush clustering along waterlines and forest edges, and increased the rarity threshold for copper and iron ore vein lodes to create natural, balanced wilderness exploration.*
+
+- **1. Coral Removal from Overworld Generation**:
+  - Removed `coral_reef` biome assignments from `getOrganicBiome` in `src/world/overworldBiomes.ts`, naturally resolving warm high-moisture climate regions to lush swamps and forests.
+  - Removed coral reef vegetation generation branch in `src/world/organic/vegetationClusterGen.ts`.
+- **2. Berry Bush Density Rebalance**:
+  - Reduced water bank berry bush spawn rates from ~60% down to ~12%, providing clean, walkable grassy shorelines with rare foraging opportunities.
+  - Reduced forest grove edge and wilderness scrub bush density across forest, tundra, desert oasis, and swamp biomes.
+- **3. Ore Vein Lode Scarcity Balancing**:
+  - Increased the multi-octave noise threshold for ore vein generation (`> 0.81` with iron veins at `> 0.88`), replacing dense ore fields with scarce, valuable mineral deposits.
+
+## [v7.7.3] — Automated Button, Interaction & Studio Test Suite Hardening (August 26, 2026)
+*Completed full implementation and validation of the comprehensive button and interaction testing matrix across all engine layers (App Navigation, Crafting/Smithing, Inventory/Paperdoll, Guild Sanctum/Directives, World Map Cartography, and God Mode / GM Chaos / Audio Studio). Codebase audit and test execution verifies 49 test suites and 295 automated tests passing 100% green.*
+
+- **1. Phase 1-4 & Phase 9 Automated Interaction Suites (`src/tests/`)**:
+  - `automatedButtonSuite.test.ts` (Phase 1): Top-level tab buttons, quick menu actions (World Map, God Mode, GM Panel, Sleep, Save, Audio, Rest), and mobile command triggers under high-frequency navigation fuzzing.
+  - `automatedCraftingButtonSuite.test.ts` (Phase 2): Weapon/armor forging across 10 templates and 30 materials, heat overforge gauges (0-100%), catalyst infusions, gear upgrades (+1 to +3), dismantling, cooking provisions, alchemy brewing, and scriptorium scroll scribing.
+  - `automatedInventoryButtonSuite.test.ts` (Phase 3): 8-slot humanoid paperdoll equip/unequip/swap, durability decay, consumable items (potions, provisions, scrolls, teleports), item disposal/ground drops, and RPG attribute point allocation (STR, DEX, INT, CHA, LCK).
+  - `automatedGuildButtonSuite.test.ts` (Phase 4): Sunder Guild HQ founding, laboratory research upgrades, treasury donations, autonomous companion expedition dispatches, and safehouse stash management.
+  - `automatedWorldMapButtonSuite.test.ts` (Phase 4): Cartographic canvas zoom/pan, sector threat inspection dossiers, custom waypoint pin creation/deletion, layer filter toggles, and runic waystone teleports.
+  - `automatedGodAndStudioButtonSuite.test.ts` (Phase 9): God Mode sandbox cheats, GM Storyteller Chaos Console tuning, persona shifting, forced GM interventions, and WebAudio synthesizer sound/oscilloscope studio verification.
+- **2. Full Codebase Audit & Import Integrity (`npm run audit`)**:
+  - Validated all 29 JSON data catalogs syntax and structural schemas.
+  - Scanned 378 total source and data files across `/src/`.
+  - Audited relative imports across 349 TypeScript source files with 0 orphaned files and 0 broken links.
+  - Vitest test suite executing 49 test files with 295 tests passing 100% green.
+
+## [v7.7.2] — World Map Mobile Information & Biome Inspector Enhancements (August 24, 2026)
+*Resolved mobile view clipping and overflow in the World Map sector intelligence inspector. Re-engineered the cartographic inspector into a scrollable, responsive panel featuring all 9 biomes, detailed resource lists, environmental hazard alerts, threat tier badges, elevation/moisture metrics, distance calculations from the hero, custom pin notes, and mobile collapsible map legends.*
+
+- **1. Mobile Responsive Inspector (`src/components/worldmap/WorldMapChunkTooltip.tsx`)**:
+  - Implemented responsive vertical scrolling container (`max-h-[60vh] sm:max-h-[70vh] overflow-y-auto`) with backdrop blur and touch targets.
+  - Added dedicated dismissal (`X`) button to easily close the sector inspector on mobile touchscreens and desktop.
+  - Added distance calculator showing sector offset from hero position (`N sectors away`).
+- **2. Full Biome Intelligence & Ecosystem Data**:
+  - Added rich metadata, color badges, and lore descriptions for all 9 biomes: Woodland Forest (`🌲`), Frost Tundra (`❄️`), Arid Desert (`🏜️`), Mire Swamp (`🌿`), Granite Peaks (`🏔️`), Sunken Coral Reef (`🪸`), Volcanic Caldera (`🌋`), Glacial Ice Caverns (`🧊`), and Civilized Citadel (`🏰`).
+  - Added structured display for **Abundant Resources** (e.g. Obsidian Glass, Molten Ore, Cryo Crystals, Coral, Bog Iron) and **Environmental Hazards** (e.g. Lava Pools, Ash Storms, Blizzards, Poison Gas).
+  - Enhanced Threat Rating breakdown with descriptive levels (Peaceful, Moderate, Perilous, Lethal, Cataclysmic).
+- **3. Mobile-Optimized Cartographic Legend (`src/components/worldmap/WorldMapLegend.tsx`)**:
+  - Added expandable/collapsible toggle bar for mobile screens to save vertical space while keeping all 9 biomes and POI markers accessible on demand.
+- **4. Type & Test Verification (`src/components/worldmap/types.ts`, `src/tests/worldMap.test.ts`)**:
+  - Added full biome type mappings to `WorldBiome`.
+  - Added test suite coverage verifying all 9 biome classifications and cartographic properties.
+
+## [v7.7.1] — World Map Starting Town & Harbor Distinction Fix (August 24, 2026)
+*Fixed World Map cartography prediction and POI labeling to accurately reflect the starting town at Chunk (0,0) as an inland Castle Town / Citadel (🏰) rather than a coastal harbor (⛵), ensuring only true coastal settlements (such as Vanguard Harbor Port at Chunk (3,-2)) display harbor traits and icons.*
+
+- **1. World Map Settlement Landmark Rendering (`src/components/worldmap/WorldMapCanvas.tsx`)**:
+  - Corrected `isPortTown` and `hasHarbor` evaluation logic to exclude inland starting chunk (0,0) Oakhaven Citadel.
+  - Oakhaven Citadel at (0,0) now properly renders the Castle landmark icon (`🏰`), is labeled as `Oakhaven Citadel [0, 0]`, and registers as a `town` POI.
+  - Dedicated coastal port settlements (e.g. Chunk (3, -2) Vanguard Harbor Port) retain the harbor boat landmark icon (`⛵`) and `harbor` POI classification.
+- **2. Waystone Registry & Pin Selector Synchronization (`src/components/worldmap/WorldMapModal.tsx`)**:
+  - Updated starting waystone registry name from `Oakhaven Citadel & Harbor` to `Oakhaven Citadel`.
+  - Updated custom pin selection inspector to correctly assign `hasHarbor: false` for chunk (0,0).
+- **3. Cartography & Settlement Tests (`src/tests/worldMap.test.ts`)**:
+  - Added test suite coverage verifying proper distinction between inland citadel settlements and coastal harbor ports.
+  - All 43 test suites (215 tests) compiling and passing 100% green.
+
+## [v7.7.0] — New Biomes & Unique Dungeons Overhaul (August 24, 2026)
+*Implemented new continuous organic biomes (Sunken Coral Reef, Volcanic Caldera, Glacial Ice Caverns), distinctive dungeon archetypes with depth-themed environmental hazards, 6 new aquatic, cryo, and molten enemies, 3 new legendary boss titans, dynamic atmospheric particle shaders, and dedicated test suite passing 100% green.*
+
+- **1. New Biome Types & Organic Noise Gradients (`src/world/overworldBiomes.ts`, `src/data/worldConfig.json`)**:
+  - 🪸 **Sunken Coral Reef**: Tropical, hyper-moist coastal lagoons with turquoise waters, blooming coral colonies, tidal tidepools, and luminescent pink/cyan spore atmospheres.
+  - 🌋 **Volcanic Caldera**: High-temperature, arid volcanic zones with black obsidian ash soils, molten fissures, sulfuric vents, and rising ember spark micro-particles.
+  - ❄️ **Glacial Ice Caverns**: Subzero arctic ice sheets with crystalline frost spires, subzero temperature thresholds, drifting snowflake storms, and ice reflection shaders.
+- **2. Unique Dungeon Archetypes & Environmental Hazards (`src/world/dungeon/`, `src/types/map.ts`)**:
+  - *Sunken Coral Ruins (Depth 3 / Archetype `sunken_ruins`)*: Flooded chambers, high-pressure **Geyser** traps, tidal surging currents, and aquatic combatants.
+  - *Volcanic Caldera (Depth 7 / Archetype `volcanic_caldera`)*: Underworld magma pools, **Magma Eruption** fissures, toxic **Sulfur Vent** emissions, and molten rock hazards.
+  - *Glacial Ice Caverns (Depth 5 / Archetype `glacial_caverns`)*: Sub-zero freezing frost vents (**Frostbite Vent**), falling razor-sharp **Falling Icicles**, and slippery floor tiles.
+- **3. Expanded Bestiary & Legendary Boss Encounters (`src/data/enemies.json`, `src/world/dungeon/dungeonEntities.ts`)**:
+  - *New Monsters*: Added **Coral Golem**, **Magma Wurm**, **Cryo Stalker**, **Abyssal Siren**, **Cinder Fiend**, and **Glacial Colossus** with custom stats, glyph colors, and abilities.
+  - *New Boss Titans*: Integrated **Sunken Dread Kraken**, **Ignis the Caldera Wyrm**, and **Frostfang the Glacial Titan** into procedural dungeon depths.
+- **4. Atmospheric Rendering & Cartography World Map Updates (`src/canvas/`, `src/components/worldmap/`)**:
+  - Added atmospheric particle shaders in `biomeAtmosphereRenderer.ts` for rising volcanic embers, drifting coral reef bubbles/spores, and glacial frost crystal flurries.
+  - Expanded `tileMapRenderer.ts` and `chunkTileRasterizer.ts` with custom ASCII glyphs, high-contrast cartography palettes, and offscreen canvas cache optimizations.
+- **5. Automated Testing & Flawless Verification (`src/tests/biomesAndUniqueDungeons.test.ts`)**:
+  - Added full test suite verifying worldConfig biome thresholds, noise distribution, new enemies, boss templates, trap mechanics, and level connectivity.
+  - All 43 test suites (214 tests) compiling and passing 100% green.
+
+## [v7.6.0] — UI, Cartography World Map, Inventory Paperdoll & Crafting Stations Overhaul (August 23, 2026)
+*Executed full 5-step user interface, world map cartography, inventory paperdoll, crafting station, guild sanctum, bestiary, and real-time adventure log modernization.*
+
+- **Step 1: Visual Theme Tokens, Unified Layout & Header Overhaul**:
+  - Polished global dark-stone and gold accent styling across `MainAppLayout.tsx` and `AppHeaderBar.tsx`.
+  - Added real-time biome badge with interactive map trigger, time-of-day indicator, and clean navigation tabs with glow badges (`AppNavigationTabs.tsx`).
+- **Step 2: World Map & Cartography Visual Overhaul**:
+  - Implemented rich micro-tile surface rasterizer with offscreen canvas caching (`chunkTileRasterizer.ts`).
+  - Added soft organic parchment burn fog-of-war shaders, floating sector intel cards (`WorldMapChunkTooltip.tsx`), and runic waystone teleport flows.
+  - Expanded custom pin marker palette with custom labels (`CustomPinEditorModal.tsx`).
+- **Step 3: Unified Inventory, Paperdoll Gear & Backpack Grid**:
+  - Interactive Core RPG Attribute point allocation card with STR, DEX, INT, CHA, LCK previews (`HeroBiometricsCard.tsx`).
+  - 8-slot humanoid paperdoll display with durability meters, 2H weapon dual-bracket indicators, and active battle scar overlays (`EquipmentPaperdoll.tsx`).
+  - Backpack grid with item rarity color borders, dynamic weight bar, and quick-stash tools (`BackpackSlotGrid.tsx`).
+  - Streamlined portable Alchemical Transmuter UI (`AlchemicalTransmuterPanel.tsx`).
+- **Step 4: Crafting Stations & Overforge Modernization**:
+  - Themed discipline tab switcher with live search and station badges (`CraftingHeader.tsx`).
+  - Modular recipe card architecture with stock validation ledgers and stat forecasts (`RecipeCard.tsx`).
+  - Redesigned Overforge heat danger gauge and catalyst mutation matrices (`OverforgeGauge.tsx`, `MutationCatalystTab.tsx`, `GearUpgradeTab.tsx`).
+  - Arcane scriptorium scroll scribing, alchemy laboratory tiers, and campfire culinary cooking modules.
+- **Step 5: Guild Sanctum, Bestiary, and Real-Time Event Logs**:
+  - Modernized Sunder Guild headquarters navigation and faction war directives (`GuildHeaderBar.tsx`, `GuildHQPanel.tsx`, `GuildFactionWarPanel.tsx`).
+  - High-contrast Monster Codex with classified dossier locking, elemental weaknesses, and guaranteed drop schedules (`BestiaryOverlay.tsx`).
+  - Categorized adventure chronologue log with 6 tactical category filters (All, Combat, Story, Loot, Craft, System), live text search, and color-coded damage badges (`GameLog.tsx`).
+
+## [v7.5.0] — Phase 5: Wilderness Foraging, Herbology, Gourmet Cooking & Camping Overhaul (August 21, 2026)
+*Implemented multi-biome wild foraging, rare herbalism ingredients, gourmet campfire recipes with sustained combat & survival buffs, deployable wilderness shelters, companion sentry night-watch, and passive MP meditation.*
+
+- **Wilderness Foraging & Herbology (`src/hooks/app/useGKeyInteraction.ts`, `src/data/materials.json`)**:
+  - Tundra Biomes: Harvest **Glacial Frostbloom** (`mat_frostbloom`), crystalline flowers granting cold immunity and spell crit buffs.
+  - Desert Biomes: Gather **Sun-Blossom Aloe** (`mat_sun_aloe`), hydrating succulent gel granting heatwave resistance and stamina recovery.
+  - Swamp Biomes: Harvest **Bioluminescent Nightshade** (`mat_swamp_nightshade`), yielding ethereal nightvision and crit boosts.
+  - Forest Biomes: Forage **Earthy Forest Truffles** (`mat_forest_truffle`), **Wild Gold Honeycombs** (`mat_honeycomb`), and **Sweet Wild Berries** (`mat_berry`).
+- **Gourmet Campfire Cooking & Sustenance Buffs (`src/data/recipes.json`, `src/components/crafting/CookingTab.tsx`)**:
+  - Added new multi-ingredient culinary creations: *Forest Truffle Chowder*, *Glacial Frostbloom Tea*, *Golden Honeycomb Glazed Jerky*, *Desert Sun-Aloe Hydration Stew*, and *Bioluminescent Nightshade Broth*.
+  - Recipes apply sustained multi-turn stat buffs (DEF, ATK, Crit %, Speed, Cold/Heat immunities, and passive HP/MP regeneration).
+- **Wilderness Camping & Shelter Placement (`src/utils/wildernessCamping.ts`, `src/hooks/crafting/useSurvivalCrafting.ts`)**:
+  - Deployable **Traveler's Survival Bedroll** and **Expedition Field Tent** structures craftable at campfires and placeable anywhere on overworld wilderness tiles.
+  - Environmental surroundings analysis evaluating shelter quality, campfire warmth, weather insulation, and nocturnal predator ambush risks.
+  - Companion followers automatically assume night-watch sentry roles, mitigating ambush probabilities by up to 65%.
+- **Mana Meditation Recovery Engine (`src/hooks/ai/aiTurnEnvironment.ts`)**:
+  - Added passive MP mental recovery during active exploration, scaling recovery intervals directly with player Intelligence (INT).
+
+## [v7.4.0] — Phase 4: Unified Inventory Sub-Components Decoupling & Modular Architecture (August 19, 2026)
+*Decomposed the monolithic 1,406-line inventory interface (`src/components/UnifiedInventoryPanel.tsx`) into modular sub-components under `src/components/inventory/`, added dedicated unit test suite, and verified 35 Vitest suites (171 tests) passing 100% green.*
+
+- **Modular Inventory Sub-Engine & Sub-Components (`src/components/inventory/`)**:
+  - `types.ts`: Inventory interfaces, action handler contracts, item/food/material rarity analyzers (`getItemRarityValue`, `getFoodRarityValue`, `getMaterialRarityValue`).
+  - `HeroBiometricsCard.tsx`: Hero profile, level progress, and interactive Core RPG Attribute point allocation (STR, DEX, INT, CHA, LCK).
+  - `EquipmentPaperdoll.tsx`: 8-slot equipped gear display (Helmet, Armor, Boots, Weapon R-Hand, Shield L-Hand, Gauntlets, Amulet) with durability bars, 2-handed occupied badge, humanoid cat wireframe, active scars visual overlay, and broken item indicators.
+  - `CombatStatsSummary.tsx`: Calculated combat statistics, Cat Lover special trait card, and Permanent Battle Scars list with simulate scar trigger.
+  - `BackpackSlotGrid.tsx`: Carrying weight limit bar, overburdened status alert, Sort & Group stashes trigger, 4 sub-navigation tabs (Allies, Gear, Food, Resources/Mats), and discard long-press/gump modal triggers.
+  - `AlchemicalTransmuterPanel.tsx`: Portable Wild Alchemical Transmuter UI (catalyst alignment shifter, Unstable Wild Reactor surge button, offline fallback card).
+  - `index.ts`: Inventory sub-components barrel export.
+- **Lightweight Composer & Zero Breaking Changes**:
+  - Refactored `src/components/UnifiedInventoryPanel.tsx` (1,406 lines -> ~130 lines) into a lean coordinator orchestrating the modular sub-components, modal state, and audio triggers.
+- **Automated Verification & Test Expansion**:
+  - Added `src/tests/inventoryComponents.test.ts` verifying component definitions and item/food/material rarity calculation tiers.
+  - Validated 35 Vitest test suites (171 unit, integration, and simulation tests passing 100% green).
+
+## [v7.3.0] — Phase 3: WebAudio Synthesizer Engine Modularization & Acoustic Architecture (August 19, 2026)
+*Decomposed the monolithic 1,677-line WebAudio engine (`src/utils/audio.ts`) into a modular sub-engine architecture under `src/utils/audio/`, added dedicated unit test suite, and verified 34 Vitest suites (167 tests) passing 100% green.*
+
+- **Modular WebAudio Sub-Engine (`src/utils/audio/`)**:
+  - `types.ts`: Audio context interfaces, tone definitions, SFX registries, and sound parameters.
+  - `synthEngine.ts`: WebAudio node graphs, oscillators, ADSR envelopes, filters, and global gain control.
+  - `spatialAudio.ts`: 2D tile coordinate panning, low-pass distance muffling, and volume falloff.
+  - `ambientSoundscapes.ts`: Continuous environmental audio layers (rain, blizzards, winds, dungeon caves, tavern chatter).
+  - `soundCatalog.ts`: Procedural sound design definitions for UI, spells, combat hits, loot drops, footsteps, crafting, boss fanfares, and death cues.
+  - `index.ts`: Unified audio barrel export.
+- **Zero Breaking Changes & Backward Compatibility**:
+  - Maintained `src/utils/audio.ts` as a thin facade re-exporting the entire audio engine for existing callers.
+- **Automated Verification & Test Expansion**:
+  - Added `src/tests/audioEngineModular.test.ts` verifying all 14 audio test cases (volume clamping, muting toggle, spatial audio falloff & panning, indoor acoustics, synth dispatching, and procedural ambient soundscape updates).
+  - Validated 34 Vitest test suites (167 unit, integration, and simulation tests passing 100% green).
+
+## [v7.2.0] — Phase 2: Enemy & Follower AI Engine Decoupling (August 19, 2026)
+*Decomposed the monolithic 1,890-line Enemy AI engine (`src/hooks/useEnemyAI.ts`) into a modular behavior controller architecture under `src/hooks/ai/`, added dedicated unit test suite, and verified 33 Vitest suites (153 tests) passing 100% green.*
+
+- **Modular AI Sub-Engine (`src/hooks/ai/`)**:
+  - `types.ts`: Context parameter interfaces, return contracts, and state typing.
+  - `aiTurnEnvironment.ts`: Status effect resolution (DoTs, HoTs, poison, food buffs), environmental weather/seasons, day/night cycles, GM POI nudges, companion tactical advice, and adaptive roaming monster spawning.
+  - `useFollowerAI.ts`: Companion follow logic, ranged weapon awareness (bow/magic/spear/melee), tactical retreats, and combat assist.
+  - `useTownGuardAI.ts`: Town defense threat response, 30-tile alarm broadcast, day/night shift scheduling, and barracks bed sleeping routines.
+  - `useHostileAI.ts`: Stagger posture mechanics, telegraphed attacks with BRACE/DODGE, wagon attacks, companion targeting, armor penetration, and wounded reinforcements call.
+  - `useCivilianAI.ts`: Cat playful wandering, civilian schedules (work/leisure/campfire/home sleep), blizzard/rain shelter reactions, ambient barks, and hireable hero counter-attacks.
+  - `aiCombatAggregator.ts`: Aggregated visual floating combat text dispatcher and tactical caravan skirmish victory evaluations.
+  - `useEnemyAI.ts`: Central turnkey coordinator executing turn-based AI resolution.
+  - `index.ts`: Modular AI engine barrel export.
+- **Zero Breaking Changes & Backward Compatibility**:
+  - Maintained `src/hooks/useEnemyAI.ts` as a thin facade re-exporting the entire AI engine for existing callers.
+- **Automated Verification & Test Expansion**:
+  - Added `src/tests/modularAIEngine.test.ts` verifying all 6 core AI mechanics (environment shifts, follower combat, guard threat response, hostile attacks, civilian schedules, and caravan victory).
+  - Validated 33 Vitest test suites (153 unit, integration, and simulation tests passing 100% green).
+
+## [v7.1.0] — Phase 1: Sovereign Game Master Storyteller Engine Modularization (August 19, 2026)
+*Decomposed the monolithic 2,569-line Game Master Storyteller (`src/utils/gmStoryteller.ts`) into a clean, decoupled sub-engine architecture under `src/utils/storyteller/`, added dedicated unit test suite, and verified 32 Vitest suites (147 tests) passing 100% green.*
+
+- **Modular Storyteller Sub-Engine (`src/utils/storyteller/`)**:
+  - `types.ts`: Domain models (`GMState`, `GMMemory`, `GMPersonality`, `GMEncounter`, `ChaosSurgeEntry`) and catalog type loaders.
+  - `storytellerFlavor.ts`: Dynamic narrative prompt and placeholder token interpolators (`getRandomFlavorText`, `getEncounterFlavorText`, `getChaosSurgeFlavorText`).
+  - `storytellerEncountersData.ts`: Master registry of 26 dynamic GM encounters and story execution callbacks.
+  - `storytellerRescue.ts`: Autonomous pity system, low-HP rescues, and emergency savior spawns.
+  - `storytellerChaos.ts`: Chaos score math, surge rolls, and 20-tier periodic Chaos Core Surge matrices.
+  - `storytellerEngine.ts`: Tension pacing, boredom curves, autonomous monologue synthesis, and tick runner.
+  - `index.ts`: Unified barrel exports.
+- **Zero Breaking Changes & Backward Compatibility**:
+  - Maintained `src/utils/gmStoryteller.ts` as a thin facade re-exporting the entire storyteller engine for existing callers.
+- **Automated Verification & Test Expansion**:
+  - Added `src/tests/storytellerModule.test.ts` verifying all 8 core storyteller mechanics.
+  - Validated 32 Vitest test suites (147 unit, integration, and simulation tests passing 100% green).
+
+## [v7.0.0] — Phase 55: Sovereign God Mode Full Modularization, Deep Codebase Audit & Architectural Synchronization (August 18, 2026)
+*Decomposed the massive God Mode console overlay into a modular state hook (`useGodPanelState.ts`) and 24 focused sub-components, synchronized all architectural documentation, verified all 31 Vitest test suites (139 tests passing 100% green), and established pristine codebase structures for developers and testers.*
+
+- **God Mode State & Sandbox Decoupling (`src/hooks/god/useGodPanelState.ts`, `src/components/GodPanelOverlay.tsx`)**:
+  - Extracted centralized state, cheat toggles, weather modulators, GM thought injectors, inventory/relic grantors, blueprint preset converters, and simulation runners into `useGodPanelState.ts`.
+  - Reduced `GodPanelOverlay.tsx` from 3,598 lines to ~690 lines, transforming it into a clean, high-performance tab router.
+  - Housed 24 modular sub-components in `src/components/god/` with a centralized barrel export index.
+- **Architectural & Documentation Synchronization**:
+  - Updated `AGENTS.md`, `DEVELOPERS.md`, `README.md`, `codebase_structure.md`, `todo.md`, and `all.md` with complete directory maps, testing workflows, and developer cheat references.
+  - Linked active game environments (Development App and Shared App) directly in developer guides for instant test access.
+- **Automated QA & Simulation Suite**:
+  - Verified 31 Vitest test suites comprising 139 unit, integration, and end-to-end simulation tests with 100% pass rate.
+  - Validated strict TypeScript type checking (`tsc --noEmit`) and production bundle compilation (`compile_applet`).
+
+## [v6.9.2] — Phase 53: Player Attack Hook Extraction, Monolith Reduction & Codebase Audit (August 16, 2026)
+*Extracted player combat execution logic from App.tsx into dedicated usePlayerAttack.ts hook, performed thorough dead code and import cleanup, verified 100% test pass rate across 30 test suites (133 tests), and synchronized all architectural documentation.*
+
+- **Player Attack Hook Extraction (`src/hooks/usePlayerAttack.ts`, `src/App.tsx`)**:
+  - Decoupled `handlePlayerAttack` logic encompassing melee strikes, ranged archery, stamina depletion, critical hits, and companion assistance intercepts into `usePlayerAttack.ts`.
+  - Integrated weapon and shield durability decay handling with automatic broken item alerts.
+  - Linked directional floater outward drift (`combatFloaterDrift.ts`) directly into combat resolution.
+- **Monolith Deconstruction & Import Sanitization (`src/App.tsx`)**:
+  - Removed unreferenced legacy functions (`handleAlchemicalTransmute`, `handleInvokeWeatherRitual`, `renderItemDurability`).
+  - Pruned 75+ unused imports across component and utility trees.
+- **Automated Verification & Documentation Sync**:
+  - Ran comprehensive automated codebase auditor (`npm run audit`), verifying 263 source files and 29 JSON data catalogs with 0 broken imports and 0 type errors.
+  - Validated 30 Vitest test suites (133 tests passing 100% green).
+  - Synchronized folder hierarchy and sub-system maps across `DEVELOPERS.md`, `README.md`, `FEATURES.md`, `all.md`, and `todo.md`.
+
+## [v6.9.1] — Phase 52: Contextual Lore & Deep Flavor Logging (August 15, 2026)
+*Implemented comprehensive narrative transparency and contextual lore explanations across all Game Master storyteller interventions, Chaos Surges, environmental events, and player world actions.*
+
+- **Contextual GM & Storyteller Encounters (`src/utils/gmStoryteller.ts`)**:
+  - Upgraded all GM encounters (`healing_breeze`, `void_ambush`, `alchemy_gift`, `smite_nearest`, `trap_shower`, `arcane_torrent`, `guardian_summon`, `gilded_bounty`, `mana_leak`, `goblins_greed`, `acidic_smog`, `earthquake_tremor`, `dimensional_blur`, `mystical_resonance`, `wild_beast_pack`, `ukko_thunder`, `vainamoinen_song`, `mielikki_gift`, `story_bandit_camp`) with rich narrative explanations detailing *why* each event occurred and its contextual lore basis.
+  - Formatted logs with descriptive brackets (`[SERAPHIC RESPITE]`, `[RIFT INCURSION]`, `[DIVINE INTERVENTION]`, `[TECTONIC TREMOR]`, `[ETHERIC RESERVOIR]`, `[BANDIT OUTPOST]`, etc.) for clear readability and high narrative immersion.
+- **Dual Log Handling in Turn Loop (`src/hooks/useEnemyAI.ts`, `src/utils/gmStoryteller.ts`)**:
+  - Expanded `tickActiveGMStoryteller` to return structured `logMessages` arrays ensuring simultaneous chaos matrix evaluations and storyteller interventions are both logged without omission.
+- **Chaos Matrix & Surge Lore Detail (`src/utils/gmStoryteller.ts`)**:
+  - Added thematic explanations to all 20 Chaos Core Surge rolls (tectonic fractures, toxic spore ruptures, corrosive vapors, etheric feedbacks, geode discoveries, foraging thickets, celestial alignments).
+
+## [v6.9.0] — Phase 51: Combat Visual Clarity & Directional Outward Drift (August 15, 2026)
+*Implemented directional outward drift physics for combat floating numbers (`combatFloaterDrift.ts`), projectile impact trajectory alignment, clear line-of-sight offsets over entity models, refined decay curves, and high-contrast text outlines.*
+
+- **Directional Outward Drift (`src/utils/combatFloaterDrift.ts`, `src/components/GameCanvas.tsx`)**:
+  - Calculates impact momentum vector $(\Delta x, \Delta y)$ between attacker and target for player melee, ranged shots, companion strikes, and enemy assaults.
+  - Spawns floating numbers offset outside entity sprites and health bars, arcing outward in the direction of the blow.
+  - Diverges ambient/self effects (healing, mana gains) towards side flanks to ensure central line of sight remains unobstructed.
+- **Visual Contrast & Decay Tuning (`src/canvas/entityLayerRenderer.ts`, `src/components/GameCanvas.tsx`)**:
+  - Replaced lingering floating text decay with a crisp ~0.9s lifetime and smooth ease-out alpha fade.
+  - Added high-contrast dark outline rings around floating damage and critical numbers for instant legibility across all terrains and light levels.
+
+## [v6.8.0] — Phase 50: Autonomous GM Storyteller Enhancements (Weather, Threat & Caravan Injections) (August 14, 2026)
+*Implemented autonomous biome-aware weather modulations (`gm_harsh_tempest`, `gm_benevolent_clear_skies`), dynamic world threat surges & Chaos Matrix enemy adaptation, autonomous merchant caravan injections (`gm_caravan_traveler_injection`), and outlaw road blockades (`gm_road_blockade_skirmish`).*
+
+- **Autonomous Biome Weather Modulations (`src/utils/gmStoryteller.ts`)**:
+  - GM dynamically evaluates battlefield tension, boredom, and player peril to command atmospheric weather mutations.
+  - Sadistic/Mischievous personalities trigger harsh tempests (Blizzards in Tundra, Sandstorms in Deserts, Torrential Rains in Forests).
+  - Benevolent personalities clear storms and cast warm protective skies when player HP is in critical danger (<35%).
+- **World Threat & Chaos Escalation (`src/utils/gmStoryteller.ts`)**:
+  - Implemented dynamic Chaos Matrix threat surges that analyze player kill streaks and effortless slaughter, increasing monster ATK, HP, and corrupt affixes.
+  - Periodic 15-turn Chaos Core Surges roll on 20 distinct tactical effects.
+- **Autonomous Caravan Injections & Outlaw Blockades (`src/utils/gmStoryteller.ts`)**:
+  - GM spawns travelling merchant wagons (`🛒`) in overworld wilderness chunks to offer field supplies or escort contracts.
+  - Spawns dynamic Outlaw Road Blockades with Corrupted Road Barons along high-danger routes.
+
+## [v6.7.0] — Phase 49: Tactical Caravan Defense, World Threat Boss Ambushes & Data Separation (August 13, 2026)
+*Implemented tactical "Defend the Wagon" skirmish battlegrounds (`caravanSkirmishGen.ts`), enemy AI wagon hull targeting (`useEnemyAI.ts`), World Threat Boss Ambushes, dynamic cargo integrity payout scaling, and data extraction into pure JSON (`caravanBosses.json`).*
+
+- **Tactical "Defend the Wagon" Battle Map (`src/world/caravanSkirmishGen.ts`)**:
+  - Generates a dedicated tactical skirmish battleground featuring a central Merchant Wagon prop (`🛒`), a smoldering guard campfire (`🔥`), 2 allied Caravan Guards (`🛡️` Veteran Guard and `🏹` Crossbow Sentry), and perimeter enemy spawn points.
+  - Players can deploy directly from the caravan overlay into active skirmish grid combat to defend the wagon hull and slay ambushers.
+- **Wagon AI Targeting & Health Engine (`src/hooks/useEnemyAI.ts`)**:
+  - Ambushers intelligently track distance to the wagon and split focus between attacking the player, allied guards, and striking the wagon hull.
+  - Damage dealt to the wagon reduces `wagonHp`, plays metallic impact sounds (`metal_hit`), logs real-time damage messages, and renders floating damage text over the wagon on the canvas.
+  - Defeating all ambushers on the grid triggers an automatic victory state, awarding bonus gold, XP, and rare crafting materials while preserving remaining wagon HP.
+- **Escort Overlay & Dynamic Payout Scaling (`src/components/modals/CaravanActiveOverlay.tsx`, `src/hooks/useCaravanTravel.ts`)**:
+  - Displays a live Wagon Hull HP bar, Cargo Integrity %, and payout scaling factors inside `CaravanActiveOverlay`.
+  - Escorting caravans with high cargo integrity (>85%) awards bonus **Flame** or **Void Catalysts**.
+  - High-hazard routes in `TradeModal` clearly display `👑🔴 High Hazard (Boss Ambush Risk!)` warnings.
+- **Pure Data Separation to JSON (`src/data/caravanBosses.json`, `src/utils/caravanEncounters.ts`)**:
+  - Extracted all World Threat Boss Ambush templates, options, stat checks, affixes, and penalties into `src/data/caravanBosses.json` for easy developer customization and balancing.
+
+## [v6.6.0] — Phase 38: Ancient Monoliths & Biome Shrines (Finnish Mythology Overworld Landmarks) (August 12, 2026)
+*Implemented procedural overworld landmark spawning (Tapio's Ley-Well Shrines, Ilmarinen's Forge Hearths, Väinämöinen's Rune Monoliths, Tuonela's Sunken Keeps, and Antero Vipunen's Tectonic Fossils), Finnish Mythology Spell-Song Chants (Laulu), Runic Item Offerings, Overworld Leyline Waystone Fast Travel Network, and Biome Guardian Trial Boss Battles.*
+
+- **Procedural Landmark Spawning (`src/world/poiGenerators.ts`, `src/data/worldHistory.json`)**:
+  - Procedurally places ancient landmarks across overworld chunks tailored to biomes and Finnish mythology deities (Forest Tapio/Mielikki, Tundra Vipunen, Volcanic/Desert Ilmarinen, Swamp Tuonela, Mountain Ukko).
+- **Interactive Landmark Rituals & Runic Offerings (`src/components/PoiInteractionOverlay.tsx`)**:
+  - **Chant Spell-Songs (Laulu)**: Spend MP to invoke deity names for permanent attribute increases (+15 Max HP, +2 DEF, +3 Attribute Points), HP/MP restoration, and status buffs (BLESSED, SHIELDED).
+  - **Runic Offerings**: Sacrifice materials (Forest Berries, Iron Ore, Gold, Shadow Catalysts) to receive rare Ember Cores, Poison Catalysts, and Town Reputation.
+- **Leyline Waystone Fast Travel Network (`src/components/PoiInteractionOverlay.tsx`, `src/App.tsx`)**:
+  - Players can attune discovered landmarks to Sunder's Leyline Network.
+  - Interactive Waystone Network modal enables instant fast-travel teleportation between attuned landmarks across overworld chunks.
+  - Interactive minimap (`ChunkMinimap.tsx`) renders distinct glowing POI icons (Grove, Forge, Rune, Waystone) and map legend.
+- **Biome Guardian Trial Boss Battles (`src/App.tsx`, `src/components/PoiInteractionOverlay.tsx`)**:
+  - Players can challenge mythic spirit guardians (*Hiisi Grove Warden*, *Ilmarinen's Iron Golem*, *Ukko's Storm Sentinel*, *Tuonela River Wraith*, *Tectonic Bone Automaton*).
+  - Spawns high-difficulty trial boss encounters dropping rare Mithril, Ember Cores, Dragon Scales, and elemental catalysts.
+
+## [v6.5.0] — Phase 48: Pure Data Separation to JSON & Deep Codebase Refactoring (August 12, 2026)
+*Extracted hardcoded game arrays and catalogs into pure JSON data structures (`combatFlavors.json`, `worldHistory.json`, `soundCatalog.json`, `spellsCatalog.json`, `guildData.json`), enforced strict type safety and pure functional separation, and verified 100% build and linter pass.*
+
+- **Data Separation & JSON Migration**:
+  - `src/data/combatFlavors.json`: Extracted all weapon-specific attack narratives (Sword, Spear, Dagger, Hammer, Staff, Bow, Wand, Crossbow, Greatsword, Warhammer) and fallback combat text into structured JSON.
+  - `src/data/worldHistory.json`: Extracted 10 Lore Chapters and Finnish-lore POI blueprints into clean JSON format.
+  - `src/data/soundCatalog.json`: Extracted complete sound effect catalog across combat, movement, environment, crafting, and UI.
+  - `src/data/spellsCatalog.json`: Extracted spell definitions and elemental mappings.
+  - `src/data/guildData.json`: Extracted Guild Upgrades, Sanctuary Decors, Companion Quests, and Faction Gear (Syndicate, Vanguard, Bandit).
+- **TypeScript Integration & Pure Utilities**:
+  - Refactored `combatFlavors.ts`, `worldHistory.ts`, `soundCatalog.ts`, `spellsAndEquipment.ts`, and `tradeEconomy.ts` to import and type-cast JSON files cleanly.
+  - Verified zero regressions, 100% type safety, clean `tsc --noEmit`, and full `compile_applet` build validation.
+
+## [v6.4.0] — Phase 47: Runtime Modding API & Custom Dungeon Level Editor (August 12, 2026)
+*Implemented Runtime Modding API Engine, Custom Grid-Based Dungeon Level Editor, Live JSON Schema Mod Manager, Community Sample Mods, and Instant Test-Play Launcher.*
+
+- **Runtime Modding API & Plugin Engine (`src/utils/moddingEngine.ts`, `src/components/god/GodModdingTab.tsx`)**:
+  - Modular plugin architecture enabling dynamic registration of custom monsters, custom weapons & armor, custom magic spells, and custom dungeon blueprints.
+  - Full local persistence, enable/disable toggling, JSON schema validation, error reporting, and export/import functionality.
+  - Pre-loaded with 4 Community Sample Mods: *Mythical Behemoths Boss Pack*, *High-Elven Sorcery Spellbook*, *Shadow Realm Relics Pack*, and *Forgotten Catacombs Blueprint*.
+  - Integrated `getActiveCustomMonsters()` seamlessly into `getEnemyTemplate()` in `src/utils/dungeon.ts` for live combat spawning.
+- **Interactive Custom Dungeon Level Editor (`src/components/god/GodDungeonEditor.tsx`)**:
+  - Visual grid painter supporting configurable canvas dimensions (20x16, 24x18, 30x20) and tile palettes (Floors, Walls, Water, Doors, Stairs, Grass, Paths, Campfires, Beds, Fireplaces).
+  - Multi-category painting tools for interactive decor props (Sarcophagi, Weapon Racks, Bookshelves, Worktables), monster spawn points, and player spawn location (`P`).
+  - Features quick procedural cave generator baseline, level title/depth/biome configuration, and **Instant Test-Play** mode loading custom maps directly into active gameplay.
+
+## [v6.3.0] — Phase 43: Interactive Level Decor Props, Alert Banner & Expanded Dev Tools (August 11, 2026)
+*Implemented Interactive Level Decor Props Engine, Adjacent Props Interactive Alert Banner, Exhaustion/Cooldown Refresh, Master Crafting Pack & God Mode Time/Fatigue Tools, and verified clean compilation and linter baseline.*
+
+- **Interactive Level Decor Props Engine (`src/utils/decorEngine.ts`, `src/App.tsx`, `src/hooks/useWorldInteraction.ts`)**:
+  - Implemented 10 interactive dungeon & town decor templates: Ancient Sarcophagus, Rusted Weapon Rack, Lore Bookshelf, Alchemist Worktable, Warm Feather Bed, Roaring Hearth, Town Spring Well, Town Notice Board, Cinder Cask, and Celestial Sundial.
+  - Interacting with decor props grants thematic rewards, HP/MP recovery, status cleanses, random equipment, lore logs, and time shifts, with exhausted state tracking.
+- **Adjacent Decor Interactive Alert Banner (`src/App.tsx`)**:
+  - Automatically displays an interactive HUD banner when standing adjacent to decor objects, showing name, description, and status with direct click / keyboard interaction options.
+- **Expanded Developer & GM Tools (`src/data/gmCommands.ts`, `src/components/GodPanelOverlay.tsx`, `src/components/god/GodCheatsTab.tsx`)**:
+  - Added new GM Storyteller commands (`grant_master_crafting_pack`, `spawn_decor_cluster`, `reset_all_decor_props`, `teleport_overworld_surface`, `fast_forward_time_6h`).
+  - Added dedicated God Panel controls to spawn decor clusters, refresh exhausted decor props, advance game time by 6 hours, and purge physical exhaustion & debuffs.
+
+## [v6.2.0] — Phase 42: Directional Drop Shadows, Water Ripples, Environmental Particles & Codebase Health Audit (August 10, 2026)
+*Implemented Dynamic Sun & Moon Directional Drop Shadows, Water Ripples & Footstep Splashes, Ambient Falling Leaves, Cherry Blossom Petals, Glowing Spores, Desert Dust Devils, and verified 100% test suite pass rate across 24 test suites (95 tests).*
+
+- **Town Guard Active Defense AI & Defensive Alarm Network (`src/hooks/useEnemyAI.ts`, `src/tests/ai.test.ts`)**:
+  - Implemented town-wide active scanning for town guards (`isTownGuard: true`), enabling guards to actively search out, pursue (`getNextStepTowards`), and engage hostile invaders anywhere in town.
+  - Added a defensive alarm broadcast that wakes sleeping guards and sentries within 30 tiles when a threat is spotted, summoning a coordinated response force.
+  - Integrated full multi-target combat reciprocity, allowing hostile enemies to pathfind toward and attack town guards and companions while guards deal persistent damage and slay hostile invaders.
+- **Dynamic Sun & Moon Directional Drop Shadows (`src/canvas/shadowRenderer.ts`, `src/canvas/tileMapRenderer.ts`, `src/canvas/entityLayerRenderer.ts`)**:
+  - Calculated real-time directional shadow vector offsets `(dx, dy)`, lengths, and opacities based on in-game 24h clock minutes (long morning shadows extending west at dawn, compact midday shadows at noon, long evening shadows extending east at dusk, cool slate moonlight shadows at night).
+  - Cast soft translucent directional drop shadows beneath trees (`🌲`, `🌳`, `▲`), rock walls/veins, structure gates/signs, as well as living entities (Player, NPCs, Enemies, Bosses).
+- **Water Ripples & Footstep Splashes (`src/canvas/entityLayerRenderer.ts`, `src/canvas/visualFxParticleSystem.ts`)**:
+  - Trigger expanding concentric ring ripple animations (`spawnWaterRipple`) when player, NPCs, or enemies move onto water (`🌊`), shallow stream, or swamp bog (`🐊`) tiles.
+  - Add temporary water droplet splash particles (`spawnFootstepSplash`) when moving over any outdoor tile during active `rainy` or `stormy` weather conditions.
+- **Weather Pattern Transition Fade & Atmospheric Overlays (`src/canvas/weatherLightingRenderer.ts`)**:
+  - Implemented smooth cross-fading between outgoing and incoming weather layers over 2.4s (`renderWeatherOverlay`).
+  - Added a dynamic 'fade-to-fog' and 'darken-screen' transitional atmosphere overlay featuring a sine-wave bell curve peaking at midpoint transition to smoothly shift atmospheric moods during weather changes.
+- **Ambient Environmental Particles & Dust Devils (`src/canvas/weatherLightingRenderer.ts`)**:
+  - Render ambient floating leaf particles (`fallingLeaves`), cherry blossom petals (`cherryBlossoms`), and glowing bio-luminescent spores (`spores`) across Forest, Tundra, and Swamp biomes.
+  - Render animated spinning dust devil particles with rotational physics and sandy trails across Desert biomes.
+- **Comprehensive Codebase & Import Health Audit Pass (`scripts/auditCodebase.cjs`)**:
+  - 100% test pass rate across 24 Vitest test suites (95 unit and end-to-end simulation tests).
+  - Automated codebase auditor verified 226 source files, 22 JSON catalogs, relative imports across 204 TypeScript files, `tsc --noEmit` type compilation, and production applet build with 0 errors.
+
 ## [v1.0.0 / v6.0.0] — Public Testing Release & GM Adaptive Performance Evaluation (August 9, 2026)
 *Pristine Public Testing Release Candidate prepared for GitHub push. Features GM Adaptive Combat Performance Evaluation, Biome-Aware Weather System, Town Biome Expansion, Drastic Chaos Escalation on Effortless Slaughter, Dynamic Enemy Stat Mutators & Reinforcements, 100% Test Suite Pass Rate across 21 Test Suites (86 Tests), and Clean Codebase Verification.*
 

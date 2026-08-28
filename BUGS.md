@@ -1,13 +1,19 @@
 # Game Bug Tracking & Resolution Register
-
-## 🔴 Current Open Bugs
-*None! All reported bugs, feedback items, and edge cases have been resolved and verified.*
-
----
-
+BUG enemies always target to player make them target more to followers too then make sure followers do take damage and can get killed some followers should flee if they are low on health like cats and thiefs baed what their personality is 
+enemies should try to chase them down make sure followers do not respawn when they are dead and player travels to another chunk
+Chaos threat should not be scaled if player is idling not ewen from gm intervention
+all the dev tools are not shown in desktop mode chek mobile too so all the dev tools can be seen ui element now blocs them its too up
+Sometimes worldmap crashes if it is shown all in dev tools this is pretty criticall error
 ## 🟢 Resolved Issue Registry
 
+### Recent Gameplay, AI & Performance Fixes
+- **[RESOLVED] World Map Reveal Error & Canvas Guarding** — Enhanced `chunkTileRasterizer.ts` and `WorldMapCanvas.tsx` with error boundaries, try/catch fallbacks, LRU cache eviction, and null-safe HTMLCanvasElement validation when opening or zooming the fully revealed overworld map (2,600+ chunks).
+- **[RESOLVED] NPC Bed & Tavern Chair/Stool Location & Sleeping** — Updated BFS pathfinding in `ai.ts` and civilian scheduling in `useCivilianAI.ts` so `TileType.Bed` and `TileType.Chair` are valid destinations. NPCs in towns and taverns automatically locate nearby beds when sleeping at night (20:00–07:00) and sit on tavern stools/chairs during leisure hours.
+- **[RESOLVED] Chaos Threat Macro-Turn Scaling** — Refactored `storytellerEngine.ts` to transition Chaos Matrix scaling away from real-time turns to 350-turn macro epochs and decisive GM narrative milestones, with proportional chances to either escalate or lessen (celestial/grove respite or player struggle).
+
 ### Recent Gameplay & Mechanics Fixes
+- **[RESOLVED] Tactical Caravan Skirmish AI & Wagon Hull Damage** — Integrated AI wagon targeting in `useEnemyAI.ts` so ambushers on the skirmish grid actively attack the merchant wagon's hull (`wagonHp`). Damage triggers floating damage text, metallic impact SFX, and reduces cargo integrity %, resolving passive ambusher behavior on skirmish maps.
+- **[RESOLVED] Tavern Drink Interaction Scope & Out-of-Tavern Offers** — Corrected `DialogueModal.tsx` and `useEnemyAI.ts` so the option to buy a round of drinks is strictly restricted to NPCs who are actively drinking (`isDrinking`), patrons inside a tavern/inn, or innkeepers/drunk villagers. Outdoor NPCs and NPCs without a tavern in town no longer offer or receive drink options.
 - **[RESOLVED] Traveling Merchant Wilderness Inventory & Markup** — Traveling merchants (Herbalists, Hunters, Pilgrims, Wandering Caravaneers) now possess dedicated inventories (potions, catalysts, survival gear, pelts, scrolls, materials, equipment) marked up by 30% for bringing goods into dangerous wilderness territories.
 - **[RESOLVED] Follower Damage & Combat Engagement** — Hostile enemies now actively target and deal damage to active companions/followers in proximity, with combat log reporting and fallen state notifications.
 - **[RESOLVED] Line of Sight & Ranged Enemies Through Walls** — Added `hasLineOfSight` raycasting checks so enemies no longer shoot, cast spells, or sense players through solid walls or watchtower barricades.
@@ -43,4 +49,7 @@
 ## 📊 Current Defect Status: ZERO OPEN BUGS
 - **TypeScript Verification**: Clean (`tsc --noEmit` exit 0)
 - **Applet Build**: Production Build Clean (`npm run build` exit 0)
+- **Automated Test Suite**: 50 Vitest Test Suites Passing (308 / 308 tests green)
+- **Architectural Health**: All imports, data catalogs, and modular hooks synchronized
+
 

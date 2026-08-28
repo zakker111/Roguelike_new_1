@@ -236,7 +236,14 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
       // Floating damage text
       window.dispatchEvent(
         new CustomEvent('spawn-game-effect', {
-          detail: { x: enemy.x, y: enemy.y, text: `-${totalDmg} Spell Dmg 📜`, type: 'damage' },
+          detail: { 
+            x: enemy.x, 
+            y: enemy.y, 
+            sourceX: gameState.playerX, 
+            sourceY: gameState.playerY, 
+            text: `-${totalDmg} Spell Dmg 📜`, 
+            type: 'damage' 
+          },
         })
       );
 

@@ -90,6 +90,12 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     }
 
     case 'TAKE_DAMAGE': {
+      if (
+        state.playerStats.isInvincible ||
+        (typeof window !== 'undefined' && ((window as any).arenaGodModeActive || (window as any).isInvincibleActive))
+      ) {
+        return state;
+      }
       const newHp = Math.max(0, state.playerStats.hp - action.payload.amount);
       return {
         ...state,

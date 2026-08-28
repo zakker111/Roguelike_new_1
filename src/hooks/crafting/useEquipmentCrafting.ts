@@ -102,11 +102,17 @@ export function useEquipmentCrafting({
     const isWeapon = !category || category === 'weapon';
 
     if (isWeapon) {
-      const baseTmpl = WEAPON_TEMPLATES[base];
-      customName = `${getCatalystPrefix(catalyst)} ${getMaterialAdj(material)} ${base}`;
-      scoreDamage = baseTmpl.baseDamage + material.baseDamageMod;
-      scoreCrit = Math.min(1.0, baseTmpl.baseCrit + material.critMod);
-      scoreRange = baseTmpl.range;
+      const baseTmpl = WEAPON_TEMPLATES[base] || WEAPON_TEMPLATES[WeaponBaseType.Sword] || Object.values(WEAPON_TEMPLATES)[0] || {
+        baseDamage: 5,
+        baseCrit: 0.1,
+        range: 1,
+        name: 'Sword',
+        description: 'A standard blade'
+      };
+      customName = `${getCatalystPrefix(catalyst)} ${getMaterialAdj(material)} ${base || 'Sword'}`;
+      scoreDamage = (baseTmpl.baseDamage ?? 5) + (material.baseDamageMod ?? 2);
+      scoreCrit = Math.min(1.0, (baseTmpl.baseCrit ?? 0.1) + (material.critMod ?? 0.05));
+      scoreRange = baseTmpl.range ?? 1;
       description = `Fused alloy combining physical properties of ${material.name} and elemental kinetic discharge of ${catalyst.name}. Range: ${scoreRange}.`;
       maxDur = 150;
     } else {
@@ -201,8 +207,8 @@ export function useEquipmentCrafting({
     };
 
     setGameState((prev) => {
-      const nextMats = { ...prev.inventoryMaterials };
-      const nextCats = { ...prev.inventoryCatalysts };
+      const nextMats = { ...(prev.inventoryMaterials || {}) };
+      const nextCats = { ...(prev.inventoryCatalysts || {}) };
 
       // Deduct items used
       nextMats[matId] = Math.max(0, (nextMats[matId] || 0) - 1);
@@ -212,7 +218,7 @@ export function useEquipmentCrafting({
         ...prev,
         inventoryMaterials: nextMats,
         inventoryCatalysts: nextCats,
-        equipmentInventory: [...prev.equipmentInventory, newItem],
+        equipmentInventory: [...(prev.equipmentInventory || []), newItem],
       };
     });
 

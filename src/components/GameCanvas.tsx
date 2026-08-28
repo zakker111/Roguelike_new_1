@@ -9,6 +9,7 @@ import { renderTileMap } from '../canvas/tileMapRenderer';
 import { renderEntityLayer, GameVisualEffect } from '../canvas/entityLayerRenderer';
 import { renderWeatherAndLighting } from '../canvas/weatherLightingRenderer';
 import { hybridGraphicsEngine } from '../canvas/HybridGraphicsEngine';
+import { calculateDirectionalDrift } from '../utils/combatFloaterDrift';
 
 export interface SpriteSheetTileMapping {
   /** Column index on the sprite sheet (0-indexed) */
@@ -71,6 +72,7 @@ export const DEFAULT_TILESET_CONFIG: SpriteSheetConfig = {
     [TileType.Torch]: { sx: 0, sy: 1, frameCount: 3, ticksPerFrame: 8 }, // Animated flickering torch
     [TileType.PineTree]: { sx: 1, sy: 1 },
     [TileType.BirchTree]: { sx: 2, sy: 1 },
+    [TileType.TreeStump]: { sx: 6, sy: 1 },
     [TileType.CopperVein]: { sx: 3, sy: 1 },
     [TileType.IronVein]: { sx: 4, sy: 1 },
   },
@@ -405,15 +407,23 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
                   fxType = 'heal_num';
                 }
 
+                const drift = calculateDirectionalDrift({
+                  targetX,
+                  targetY,
+                  sourceX: startX,
+                  sourceY: startY,
+                  isCrit: fx.impactType === 'crit',
+                });
+
                 newTrailParticles.push({
                   id: `proj_impact_dmg_${Math.random()}`,
                   type: fxType,
-                  x: targetX + 0.5 + (Math.random() - 0.5) * 0.2,
-                  y: targetY + 0.2,
+                  x: drift.spawnX,
+                  y: drift.spawnY,
                   text: fx.impactText,
                   color: col,
-                  vx: (Math.random() - 0.5) * 0.04,
-                  vy: -0.06 - Math.random() * 0.04,
+                  vx: drift.vx,
+                  vy: drift.vy,
                   life: 1.0,
                   size: fx.impactType === 'crit' ? 14 : 10,
                 });
@@ -507,8 +517,8 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
           }
 
           const isText = fx.type !== 'particle';
-          const speedMultiplier = isText ? 0.12 : 0.40;
-          const decayRate = isText ? 0.005 : 0.012; // 0.005 decay rate translates to over 200 frames of visible lifetime (3.3 seconds!)
+          const speedMultiplier = isText ? 0.28 : 0.40;
+          const decayRate = isText ? 0.018 : 0.016; // ~55 frames of crisp, clear lifetime (~0.9s)
           return {
             ...fx,
             x: fx.x + fx.vx * speedMultiplier,
@@ -662,8 +672,8 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
   // We can write a custom DOM event or reference to inject nice numbers!
   // Let's hook up a global window listener for floating particles to decouple turn effects
   useEffect(() => {
-    const handleAddEffect = (event: CustomEvent<{ x: number; y: number; text: string; type: 'dmg' | 'crit' | 'heal' | 'mana' }>) => {
-      const { x, y, text, type } = event.detail;
+    const handleAddEffect = (event: CustomEvent<{ x: number; y: number; text: string; type: 'dmg' | 'crit' | 'heal' | 'mana'; sourceX?: number; sourceY?: number }>) => {
+      const { x, y, text, type, sourceX, sourceY } = event.detail;
       let color = '#f87171'; // pale red
       let fxType: 'damage_num' | 'crit_num' | 'heal_num' = 'damage_num';
 
@@ -678,15 +688,23 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         fxType = 'heal_num';
       }
 
+      const drift = calculateDirectionalDrift({
+        targetX: x,
+        targetY: y,
+        sourceX,
+        sourceY,
+        isCrit: type === 'crit',
+      });
+
       effectsRef.current.push({
         id: `damage_fx_${Math.random()}`,
         type: fxType,
-        x: x + 0.5 + (Math.random() - 0.5) * 0.2,
-        y: y + 0.2,
+        x: drift.spawnX,
+        y: drift.spawnY,
         text,
         color,
-        vx: (Math.random() - 0.5) * 0.04,
-        vy: -0.06 - Math.random() * 0.04,
+        vx: drift.vx,
+        vy: drift.vy,
         life: 1.0,
         size: type === 'crit' ? 12 : 9,
       });
@@ -915,32 +933,41 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
       </div>
       
       {/* HUD Quick overlays inside the Canvas zone */}
-      <div className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur border border-slate-800 rounded px-2.5 py-1.5 text-[10px] text-slate-400 font-mono flex gap-4 pointer-events-none shadow">
-        <span className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-ping" />
-          Depth: <strong className="text-white">{gameState.playerStats.depth === 0 ? 'Surface' : `${gameState.playerStats.depth}F`}</strong>
+      <div className="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-md border border-slate-800/90 rounded-xl px-3 py-1.5 text-[10px] text-slate-300 font-mono flex items-center gap-3.5 pointer-events-none shadow-lg z-20">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-sm shadow-amber-400/50" />
+          <span className="text-slate-400">Depth:</span>
+          <strong className="text-amber-300">{gameState.playerStats.depth === 0 ? 'Surface' : `${gameState.playerStats.depth}F`}</strong>
         </span>
-        <span>Turns: <strong className="text-white">{gameState.playerStats.turnsPlayed}</strong></span>
-        <span>Threat: <strong className="text-red-400">{(1 + (gameState.playerStats.depth - 1) * 0.25 + (gameState.playerStats.turnsPlayed / 100) * 0.05 + (gameState.playerStats.realTimeSeconds / 3600) * 0.5).toFixed(2)}x</strong></span>
+        <span className="text-slate-700">|</span>
+        <span className="flex items-center gap-1">
+          <span className="text-slate-400">Turns:</span>
+          <strong className="text-slate-100">{gameState.playerStats.turnsPlayed}</strong>
+        </span>
+        <span className="text-slate-700">|</span>
+        <span className="flex items-center gap-1">
+          <span className="text-slate-400">Threat:</span>
+          <strong className="text-rose-400">{(1 + (gameState.playerStats.depth - 1) * 0.25 + (gameState.playerStats.turnsPlayed / 100) * 0.05 + (gameState.playerStats.realTimeSeconds / 3600) * 0.5).toFixed(2)}x</strong>
+        </span>
       </div>
 
       {/* Cardinal Map Directions */}
-      <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-slate-900/40 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-800/40 text-[9px] font-mono tracking-widest text-slate-400 opacity-60 pointer-events-none select-none">
+      <div className="absolute top-2.5 left-1/2 -translate-x-1/2 bg-slate-950/70 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-slate-800/80 text-[9px] font-mono tracking-widest text-slate-400/90 shadow-sm pointer-events-none select-none z-20">
         ▲ NORTH
       </div>
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-900/40 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-800/40 text-[9px] font-mono tracking-widest text-slate-400 opacity-60 pointer-events-none select-none">
+      <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-slate-950/70 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-slate-800/80 text-[9px] font-mono tracking-widest text-slate-400/90 shadow-sm pointer-events-none select-none z-20">
         ▼ SOUTH
       </div>
-      <div className="absolute left-2 top-1/2 -translate-y-1/2 bg-slate-900/40 backdrop-blur-xs py-2 px-1 rounded-full border border-slate-800/40 text-[9px] font-mono tracking-widest text-slate-400 opacity-60 pointer-events-none select-none [writing-mode:vertical-lr] flex items-center justify-center">
+      <div className="absolute left-2.5 top-1/2 -translate-y-1/2 bg-slate-950/70 backdrop-blur-sm py-2.5 px-1 rounded-full border border-slate-800/80 text-[9px] font-mono tracking-widest text-slate-400/90 shadow-sm pointer-events-none select-none [writing-mode:vertical-lr] flex items-center justify-center z-20">
         ◀ WEST
       </div>
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-slate-900/40 backdrop-blur-xs py-2 px-1 rounded-full border border-slate-800/40 text-[9px] font-mono tracking-widest text-slate-400 opacity-60 pointer-events-none select-none [writing-mode:vertical-lr] flex items-center justify-center">
+      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-slate-950/70 backdrop-blur-sm py-2.5 px-1 rounded-full border border-slate-800/80 text-[9px] font-mono tracking-widest text-slate-400/90 shadow-sm pointer-events-none select-none [writing-mode:vertical-lr] flex items-center justify-center z-20">
         ▶ EAST
       </div>
 
-      <div className="absolute bottom-3 py-1 px-3 bg-slate-900/80 border border-slate-800 text-[10px] text-slate-400 font-mono flex items-center gap-2 rounded select-none pointer-events-none">
+      <div className="absolute bottom-3 py-1 px-3 bg-slate-950/85 backdrop-blur-sm border border-slate-800 text-[10px] text-slate-400 font-mono flex items-center gap-2 rounded-xl shadow-lg select-none pointer-events-none z-20">
         <span className="hidden sm:inline">🖱️ Click tiles to walk/strike</span>
-        <span className="hidden sm:inline">|</span>
+        <span className="hidden sm:inline text-slate-700">|</span>
         <span className="hidden sm:inline">⌨️ Arrow keys or WASD</span>
         <span className="inline sm:hidden">📱 Tap D-pad below or canvas to move</span>
       </div>

@@ -22,7 +22,7 @@ export interface TradeModalProps {
   setActiveTab: (tab: string) => void;
   handleStartCaravanTravel: (x: number, y: number, name: string) => void;
   handleRepairAll: () => void;
-  handleRepairItem: (keyOrId: string, item: EquipmentItem, isEquipped: boolean) => void;
+  handleRepairItem: (keyOrId: string, item: any, isEquipped: boolean) => void;
   handleUpgradeBlacksmith: () => void;
   handleUpgradeApothecary: () => void;
   handleBuyRumor: () => void;
@@ -118,85 +118,120 @@ export const TradeModal: React.FC<TradeModalProps> = ({
         const isCaravanMerchant = 
           activeTradeNpcId === 'npc_caravan_merchant' || 
           activeTradeNpcId?.includes('caravan') ||
-          activeTradeNpcId?.includes('wandering_merchant') ||
+          activeTradeNpcId?.includes('wandering') ||
+          activeTradeNpcId?.includes('traveler') ||
+          activeTradeNpcId?.includes('merchant') ||
           activeNpc?.role === 'merchant_caravan' ||
           activeNpc?.role === ('merchant_caravan_ambushed' as any) ||
-          activeNpc?.name?.toLowerCase().includes('caravan') ||
-          activeNpc?.name?.toLowerCase().includes('sledger') ||
-          activeNpc?.name?.toLowerCase().includes('barger') ||
-          activeNpc?.name?.toLowerCase().includes('caravaneer');
+          activeNpc?.role === 'traveler_merchant' ||
+          (activeNpc?.role && typeof activeNpc.role === 'string' && (activeNpc.role.includes('caravan') || activeNpc.role.includes('merchant'))) ||
+          (activeNpc?.name && (
+            activeNpc.name.toLowerCase().includes('caravan') ||
+            activeNpc.name.toLowerCase().includes('sledger') ||
+            activeNpc.name.toLowerCase().includes('barger') ||
+            activeNpc.name.toLowerCase().includes('caravaneer') ||
+            activeNpc.name.toLowerCase().includes('trader') ||
+            activeNpc.name.toLowerCase().includes('merchant')
+          ));
         if (!isCaravanMerchant) return null;
         return (
-          <div className="mb-4 bg-blue-950/20 border border-blue-500/30 rounded-xl p-4 flex flex-col gap-3">
+          <div className="mb-4 bg-blue-950/20 border border-blue-500/30 rounded-xl p-4 flex flex-col gap-3 shadow-lg">
             <div className="flex items-center gap-2 border-b border-blue-950/40 pb-2">
               <span className="text-2xl">🗺️</span>
               <div className="text-left">
-                <h4 className="text-xs font-black uppercase text-blue-400 font-sans tracking-wider">CARAVAN ESCORT & FAST TRAVEL</h4>
+                <h4 className="text-xs font-black uppercase text-blue-400 font-sans tracking-wider flex items-center gap-2">
+                  <span>CARAVAN ROUTES & ESCORT FAST TRAVEL</span>
+                  <span className="text-[9px] bg-blue-900/60 text-blue-200 px-1.5 py-0.5 rounded font-mono font-normal">Wilderness & Town Routes</span>
+                </h4>
                 <p className="text-[10px] text-slate-400 leading-normal">
-                  Sign up as a Caravan Guard to travel securely with the traders across overworld chunks. You will face random wilderness encounters, protect the wagon cargo, and collect a major gold payout upon safe arrival!
+                  Sign up as a Caravan Guard to accompany wilderness and regional trade wagons across overworld chunks. Face random road encounters, protect wagon cargo from bandits, and claim major gold payouts upon arrival!
                 </p>
               </div>
             </div>
             
             <div className="flex flex-col gap-2.5">
-              <h5 className="text-[9.5px] font-bold text-slate-300 uppercase tracking-wide text-left">Available Destinations:</h5>
+              <h5 className="text-[9.5px] font-bold text-slate-300 uppercase tracking-wide text-left flex justify-between items-center">
+                <span>Available Regional Caravan Destinations:</span>
+                <span className="text-slate-500 font-mono text-[9px] font-normal">Current Chunk: ({gameState.currentChunkX}, {gameState.currentChunkY})</span>
+              </h5>
               {(() => {
                 const currentCx = gameState.currentChunkX;
                 const currentCy = gameState.currentChunkY;
-                const destinations = [];
+                const destinations: Array<{ x: number; y: number; name: string; dist: number; theme: string }> = [];
                 
-                for (let dx = -3; dx <= 3; dx++) {
-                  for (let dy = -3; dy <= 3; dy++) {
+                // 1. Scan nearby chunks for procedural towns (-4 to +4)
+                for (let dx = -4; dx <= 4; dx++) {
+                  for (let dy = -4; dy <= 4; dy++) {
                     const tx = currentCx + dx;
                     const ty = currentCy + dy;
                     if (tx === currentCx && ty === currentCy) continue;
                     if (hasTownAtChunk(tx, ty)) {
                       const name = getDeterministicTownName(tx, ty);
                       const dist = Math.max(Math.abs(dx), Math.abs(dy));
-                      destinations.push({ x: tx, y: ty, name, dist });
+                      destinations.push({ x: tx, y: ty, name, dist, theme: '🏘️ Regional Settlement' });
                     }
                   }
                 }
                 
-                if (!destinations.some(t => t.x === 0 && t.y === 0) && !(currentCx === 0 && currentCy === 0)) {
-                  destinations.push({
-                    x: 0,
-                    y: 0,
-                    name: 'Oakhaven Village',
-                    dist: Math.max(Math.abs(currentCx), Math.abs(currentCy))
-                  });
-                }
-                if (!destinations.some(t => t.x === 3 && t.y === -2) && !(currentCx === 3 && currentCy === -2)) {
-                  destinations.push({
-                    x: 3,
-                    y: -2,
-                    name: 'Vanguard Harbor Port',
-                    dist: Math.max(Math.abs(currentCx - 3), Math.abs(currentCy + 2))
-                  });
+                // 2. Major Capital & Wilderness Outpost Trade Hubs
+                const majorHubs = [
+                  { x: 0, y: 0, name: 'Oakhaven Village', theme: '🌲 Forest Capital' },
+                  { x: 3, y: -2, name: 'Vanguard Harbor Port', theme: '⛵ Coastal Citadel' },
+                  { x: -3, y: 3, name: 'Ironforge Stronghold', theme: '🏔️ Mountain Fortress' },
+                  { x: 4, y: 4, name: 'Sunfire Oasis Outpost', theme: '🏜️ Desert Bazaar' },
+                  { x: -4, y: -4, name: 'Frostpeak Sledge Haven', theme: '❄️ Tundra Outpost' },
+                  { x: -2, y: 2, name: 'Shadowfen Barge Dock', theme: '🐊 Swamp Dock' },
+                  { x: 5, y: -3, name: 'Stormwatch Citadel', theme: '⚡ Highlands Watchtower' }
+                ];
+
+                for (const hub of majorHubs) {
+                  if (hub.x === currentCx && hub.y === currentCy) continue;
+                  if (!destinations.some(t => t.x === hub.x && t.y === hub.y)) {
+                    const dist = Math.max(Math.abs(currentCx - hub.x), Math.abs(currentCy - hub.y));
+                    destinations.push({
+                      x: hub.x,
+                      y: hub.y,
+                      name: hub.name,
+                      dist,
+                      theme: hub.theme
+                    });
+                  }
                 }
 
                 if (destinations.length === 0) {
                   return <p className="text-[10px] text-slate-500 italic">No alternative towns discovered in nearby regions.</p>;
                 }
 
+                // Sort by distance
+                destinations.sort((a, b) => a.dist - b.dist);
+
                 return (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                     {destinations.map((dest, idx) => {
                       const reward = 100 + dest.dist * 80;
+                      const riskLevel = dest.dist <= 2 ? '🟢 Low Risk' : dest.dist <= 4 ? '🟡 Moderate Risk' : '👑🔴 High Hazard (Boss Ambush Risk!)';
+
                       return (
-                        <div key={idx} className="bg-slate-950/70 border border-slate-800 p-3 rounded-lg flex flex-col justify-between gap-2">
+                        <div key={idx} className="bg-slate-950/70 border border-slate-800 hover:border-blue-500/40 p-3 rounded-lg flex flex-col justify-between gap-2 transition-all">
                           <div className="text-left">
-                            <div className="font-bold text-slate-200 text-[11px] truncate">{dest.name}</div>
-                            <div className="text-[9px] text-slate-400 mt-0.5 flex justify-between">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="font-bold text-slate-100 text-[11px] truncate">{dest.name}</span>
+                              <span className="text-[9px] text-slate-400 font-mono shrink-0">{dest.theme}</span>
+                            </div>
+                            <div className="text-[9px] text-slate-400 mt-1 flex justify-between items-center font-mono">
                               <span>Region: ({dest.x}, {dest.y})</span>
-                              <span className="font-mono text-blue-400 font-semibold">{dest.dist} {dest.dist === 1 ? 'region' : 'regions'} away</span>
+                              <span className="text-blue-400 font-semibold">{dest.dist} {dest.dist === 1 ? 'region' : 'regions'} away</span>
+                            </div>
+                            <div className="text-[8.5px] text-slate-500 mt-0.5 flex justify-between">
+                              <span>Route Safety: {riskLevel}</span>
+                              <span className="text-yellow-400/90 font-bold">Reward: +{reward}g</span>
                             </div>
                           </div>
                           <button
                             onClick={() => handleStartCaravanTravel(dest.x, dest.y, dest.name)}
                             className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 hover:scale-[1.01] text-slate-50 font-bold text-[9px] rounded-md transition-all flex justify-center items-center gap-1.5 shadow-md cursor-pointer"
                           >
-                            <span>🛡️ Escort Caravan</span>
+                            <span>🛡️ Escort Caravan Wagon</span>
                             <span className="text-yellow-300 font-mono font-bold">(Payout: +{reward}g)</span>
                           </button>
                         </div>

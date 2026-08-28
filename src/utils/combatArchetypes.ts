@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Enemy, CombatArchetype, EnemyType, PlayerStats } from '../types';
+import { Enemy, CombatArchetype, EnemyType, PlayerStats, EnemyAffix } from '../types';
+import { calculateWorldThreatTier, getThreatTierInfo, getAffixMeta } from './worldThreat';
 
 export interface GoldenTriangleProfile {
   resilience: number;  // 0.0 to 1.0+ (Defensive HP/armor density)
@@ -135,44 +136,60 @@ export function getEnemyArchetype(type: EnemyType | string, isBoss?: boolean): C
 export function applyCombatArchetypeAndChaosScaling(
   enemy: Enemy,
   chaosScore: number = 0,
-  playerStats?: PlayerStats,
+  playerStats?: Partial<PlayerStats>,
   depth: number = 0
 ): Enemy {
   const isBoss = enemy.isBoss || enemy.archetype === 'boss_apex';
   const profile = getGoldenTriangleProfile(enemy.type, isBoss);
 
   // --- 1. GOLDEN TRIANGLE STAT CALCULATIONS ---
-  // Base multipliers derived from barycentric triangle coordinates
   const hpMultiplier = 0.6 + profile.resilience * 1.35;
   const atkMultiplier = 0.65 + profile.damage * 1.25;
   const defBonus = Math.floor(profile.resilience * 4);
 
-  // Speed mapping: high speed coordinate translates to faster turn interval (lower speed value in tick logic)
   let speedVal = enemy.speed || 1.0;
   if (profile.archetype === 'juggernaut') {
-    speedVal = Math.max(1.2, speedVal * 1.25); // Slower, heavier turns
+    speedVal = Math.max(1.1, speedVal * 1.2);
   } else if (profile.archetype === 'glass_cannon' || profile.archetype === 'skirmisher') {
-    speedVal = Math.min(0.85, speedVal * 0.8);  // Faster action cadence
+    speedVal = Math.min(0.85, speedVal * 0.8);
   }
 
-  // --- 2. DYNAMIC CHAOS MATRIX & PLAYER PROGRESSION SCALING ---
+  // --- 2. DYNAMIC CHAOS MATRIX & WORLD THREAT PROGRESSION SCALING ---
   const playerLvl = playerStats?.level || 1;
-  const chaosFactor = Math.max(0, chaosScore) * 0.018;
-  const levelFactor = Math.max(0, playerLvl - 1) * 0.040;
-  const depthFactor = Math.max(0, depth) * 0.050;
+  const turnsPlayed = playerStats?.turnsPlayed || 0;
+  const turnsScale = Math.min(2.0, (turnsPlayed / 150) * 0.05); // Scales steadily over long runs!
+  
+  const calculatedTier = calculateWorldThreatTier(playerStats, chaosScore);
+  const threatInfo = getThreatTierInfo(calculatedTier);
 
-  let totalChaosScale = 1.0 + chaosFactor + levelFactor + depthFactor;
+  const chaosFactor = Math.max(0, chaosScore) * 0.018;
+  const levelFactor = Math.max(0, playerLvl - 1) * 0.045;
+  const depthFactor = Math.max(0, depth) * 0.06;
+
+  const difficultyTier = enemy.difficultyTier || (isBoss ? 'apex' : enemy.isElite ? 'tough' : 'standard');
+
+  let tierStatMult = 1.0;
+  if (difficultyTier === 'easy') {
+    tierStatMult = 0.55; // Easy/Fodder enemies: light HP, fast satisfying kills (1-2 hits)
+  } else if (difficultyTier === 'standard') {
+    tierStatMult = 0.95; // Standard roamers
+  } else if (difficultyTier === 'tough') {
+    tierStatMult = 1.45; // Tough veterans: substantial HP, heavy strikes
+  } else if (difficultyTier === 'apex') {
+    tierStatMult = 2.2; // Apex champions: formidable challenge
+  }
+
+  let totalScale = (1.0 + chaosFactor + levelFactor + depthFactor + turnsScale) * threatInfo.statMultiplier * tierStatMult;
 
   // --- 3. GM CHEAT / ANOMALY OVERRIDE ---
   let isAnomaly = enemy.isAnomaly || profile.isAnomaly || false;
   
-  // High Chaos Matrix (>60) has a 12% chance to spawn GM "Triangle Cheaters"!
-  if (!isAnomaly && !isBoss && chaosScore >= 60 && Math.random() < 0.12) {
+  if (!isAnomaly && !isBoss && difficultyTier !== 'easy' && (chaosScore >= 50 || calculatedTier >= 3) && Math.random() < 0.15) {
     isAnomaly = true;
   }
 
   if (isAnomaly && !isBoss) {
-    totalChaosScale *= 1.35; // 35% stat boost for Triangle Cheaters
+    totalScale *= 1.35;
   }
 
   let chaosTier = 0;
@@ -184,17 +201,66 @@ export function applyCombatArchetypeAndChaosScaling(
   const rawBaseAtk = enemy.atk || 4;
   const rawBaseDef = enemy.def || 0;
 
-  const scaledHp = Math.max(1, Math.floor(rawBaseHp * hpMultiplier * totalChaosScale));
-  const scaledAtk = Math.max(1, Math.floor(rawBaseAtk * atkMultiplier * Math.sqrt(totalChaosScale)));
-  const scaledDef = Math.max(0, Math.floor(rawBaseDef + defBonus + (chaosTier * 1)));
+  // Non-linear ATK scaling so late game high-tier armor doesn't trivialize combat
+  let scaledHp = Math.max(1, Math.floor(rawBaseHp * hpMultiplier * totalScale));
+  let scaledAtk = Math.max(1, Math.floor(rawBaseAtk * atkMultiplier * Math.pow(totalScale, 0.82)));
+  let scaledDef = Math.max(0, Math.floor(rawBaseDef + defBonus + (chaosTier * 1) + Math.floor(calculatedTier * 0.8)));
+
+  // Difficulty Tier Bounds Enforcement
+  if (difficultyTier === 'easy') {
+    // Easy critters/scouts: 5-15 HP, 1-3 ATK, 0-1 DEF max to ensure accessible, fast kills
+    scaledHp = Math.max(3, Math.min(16, Math.floor(rawBaseHp * 0.75)));
+    scaledAtk = Math.max(1, Math.min(3, Math.floor(rawBaseAtk * 0.75)));
+    scaledDef = Math.min(1, rawBaseDef);
+  } else if (difficultyTier === 'tough') {
+    scaledHp = Math.max(35, scaledHp);
+    scaledAtk = Math.max(5, scaledAtk);
+    scaledDef = Math.max(2, scaledDef);
+  }
+
+  // Armor penetration calculation (up to 50% for high threat levels)
+  const armorPen = difficultyTier === 'easy' ? 0 : Math.min(0.50, Math.max(0, (calculatedTier * 0.05) + (isBoss ? 0.15 : enemy.isElite ? 0.10 : 0)));
+
+  // --- 4. CORRUPTED AFFIX ROLL FOR LONG RUNS / ELITES / HIGH THREAT ---
+  // Prevent early-game affix roll until Player Level >= 3 or Dungeon Depth >= 2 (unless explicitly set or Boss)
+  const isEarlyGame = (playerLvl < 3 && depth < 2);
+  const assignedAffixes: EnemyAffix[] = [...(enemy.affixes || [])];
+  const maxAffixes = isBoss ? 2 : enemy.isElite ? 1 : 1;
+  const rollAffixChance = (difficultyTier === 'easy' || (isEarlyGame && !isBoss))
+    ? 0
+    : Math.min(0.85, threatInfo.affixChance + (enemy.isElite ? 0.35 : 0) + (isBoss ? 0.50 : 0));
+
+  if (!isEarlyGame || isBoss) {
+    if (assignedAffixes.length < maxAffixes && (enemy.isElite || isBoss || Math.random() < rollAffixChance)) {
+      const pool: EnemyAffix[] = ['vampiric', 'shieldbreaker', 'venomous', 'thorns', 'arcane_pulse', 'berserker', 'phasing'];
+      // Filter out already assigned
+      const available = pool.filter(a => !assignedAffixes.includes(a));
+      if (available.length > 0) {
+        const rolled = available[Math.floor(Math.random() * available.length)];
+        assignedAffixes.push(rolled);
+      }
+    }
+  }
+
+  // Format prefix titles in enemy name if affixes present
+  let nameWithAffix = enemy.name;
+  if (assignedAffixes.length > 0 && !nameWithAffix.includes('⚡') && !nameWithAffix.includes('🩸') && !nameWithAffix.includes('🧛') && !nameWithAffix.includes('☠️')) {
+    const prefixes = assignedAffixes.map(a => getAffixMeta(a).icon + ' ' + getAffixMeta(a).name).join(' ');
+    nameWithAffix = `${prefixes} ${enemy.name}`;
+  }
 
   let traitDescription = profile.trait;
+  if (assignedAffixes.length > 0) {
+    const affixDesc = assignedAffixes.map(a => `${getAffixMeta(a).icon} ${getAffixMeta(a).name}`).join(', ');
+    traitDescription += ` | Affixes: ${affixDesc}`;
+  }
   if (isAnomaly && !isBoss) {
     traitDescription = `⚡ [TRIANGLE ANOMALY]: GM Storyteller corrupted entity cheating Golden Triangle constraints (+35% stats & feral power)!`;
   }
 
   return {
     ...enemy,
+    name: nameWithAffix,
     hp: scaledHp,
     maxHp: scaledHp,
     atk: scaledAtk,
@@ -203,7 +269,10 @@ export function applyCombatArchetypeAndChaosScaling(
     archetype: profile.archetype,
     archetypeTrait: traitDescription,
     chaosTier,
-    isAnomaly
+    difficultyTier,
+    isAnomaly,
+    affixes: assignedAffixes,
+    armorPenetrationPercent: armorPen
   };
 }
 

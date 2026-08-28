@@ -241,5 +241,65 @@
     "baseDamageMod": 1,
     "critMod": 0.01,
     "speedMod": 1.0
+  },
+  {
+    "id": "mat_berry",
+    "name": "Sweet Wild Berries 🍓",
+    "description": "Juicy forest berries plucked from wild bushes. Mild restorative nutritional properties.",
+    "category": "Tier1",
+    "color": "#f43f5e",
+    "baseDamageMod": 1,
+    "critMod": 0.01,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_forest_truffle",
+    "name": "Earthy Forest Truffle 🍄",
+    "description": "A rare fragrant underground fungi gathered under old oak roots. Highly valued for restorative mushroom stews.",
+    "category": "Tier2",
+    "color": "#a16207",
+    "baseDamageMod": 1,
+    "critMod": 0.02,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_honeycomb",
+    "name": "Wild Gold Honeycomb 🍯",
+    "description": "Rich, amber honeycomb gathered from wild hollow tree trunks. Restores great focus and stamina.",
+    "category": "Tier1",
+    "color": "#eab308",
+    "baseDamageMod": 1,
+    "critMod": 0.02,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_frostbloom",
+    "name": "Glacial Frostbloom ❄️🌸",
+    "description": "A delicate, crystalline flower that thrives only in sub-zero snowdrifts and mountain peaks.",
+    "category": "Tier2",
+    "color": "#7dd3fc",
+    "baseDamageMod": 1,
+    "critMod": 0.04,
+    "speedMod": 1.1
+  },
+  {
+    "id": "mat_sun_aloe",
+    "name": "Sun-Blossom Aloe 🌵🪻",
+    "description": "Thick succulent gel and blossom gathered from arid desert cacti. Potent anti-exhaustion and hydration properties.",
+    "category": "Tier1",
+    "color": "#f59e0b",
+    "baseDamageMod": 1,
+    "critMod": 0.02,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_swamp_nightshade",
+    "name": "Bioluminescent Nightshade 🌿✨",
+    "description": "Glowing purple wetland herb with potent alchemical enzymes. Imparts dark-vision and elemental shielding.",
+    "category": "Tier2",
+    "color": "#c084fc",
+    "baseDamageMod": 1,
+    "critMod": 0.05,
+    "speedMod": 1.1
   }
 ]

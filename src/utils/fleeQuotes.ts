@@ -1,6 +1,6 @@
 import fleeData from '../data/fleeQuotes.json';
 
-export function getEnemyFleeQuote(name: string, type: string): string {
+export function getEnemyFleeQuote(name: string, _type: string): string {
   const lowercaseName = name.toLowerCase();
 
   for (const group of fleeData.archetypes) {

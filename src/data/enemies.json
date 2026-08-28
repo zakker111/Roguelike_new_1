@@ -238,5 +238,125 @@
     "speed": 0.9,
     "char": "💀",
     "color": "#a855f7"
+  },
+  "CoralGolem": {
+    "name": "Living Coral Golem",
+    "baseHp": 48,
+    "baseAtk": 7,
+    "baseDef": 6,
+    "range": 1,
+    "speed": 1.2,
+    "char": "🪸",
+    "color": "#ec4899"
+  },
+  "AbyssalSiren": {
+    "name": "Abyssal Siren",
+    "baseHp": 32,
+    "baseAtk": 8,
+    "baseDef": 2,
+    "range": 3,
+    "speed": 0.9,
+    "char": "🧜‍♀️",
+    "color": "#38bdf8"
+  },
+  "Tidecaller": {
+    "name": "Tidecaller Shaman",
+    "baseHp": 36,
+    "baseAtk": 9,
+    "baseDef": 3,
+    "range": 4,
+    "speed": 1.0,
+    "char": "🌊",
+    "color": "#0284c7"
+  },
+  "Kraken": {
+    "name": "Sunken Dread Kraken",
+    "baseHp": 240,
+    "baseAtk": 16,
+    "baseDef": 9,
+    "range": 2,
+    "speed": 1.0,
+    "char": "🦑",
+    "color": "#0369a1"
+  },
+  "MagmaWurm": {
+    "name": "Molten Magma Wurm",
+    "baseHp": 42,
+    "baseAtk": 9,
+    "baseDef": 4,
+    "range": 2,
+    "speed": 0.9,
+    "char": "🐛",
+    "color": "#ea580c"
+  },
+  "CinderFiend": {
+    "name": "Cinder Fiend",
+    "baseHp": 30,
+    "baseAtk": 11,
+    "baseDef": 2,
+    "range": 1,
+    "speed": 0.8,
+    "char": "🔥",
+    "color": "#f97316"
+  },
+  "ObsidianBehemoth": {
+    "name": "Obsidian Behemoth",
+    "baseHp": 70,
+    "baseAtk": 13,
+    "baseDef": 8,
+    "range": 1,
+    "speed": 1.3,
+    "char": "🗿",
+    "color": "#475569"
+  },
+  "IgnisWyrm": {
+    "name": "Ignis the Caldera Wyrm",
+    "baseHp": 280,
+    "baseAtk": 18,
+    "baseDef": 11,
+    "range": 3,
+    "speed": 0.9,
+    "char": "🐲",
+    "color": "#dc2626"
+  },
+  "CryoStalker": {
+    "name": "Cryo Stalker",
+    "baseHp": 34,
+    "baseAtk": 8,
+    "baseDef": 3,
+    "range": 1,
+    "speed": 0.8,
+    "char": "🐺",
+    "color": "#38bdf8"
+  },
+  "GlacialColossus": {
+    "name": "Glacial Colossus",
+    "baseHp": 65,
+    "baseAtk": 11,
+    "baseDef": 7,
+    "range": 1,
+    "speed": 1.3,
+    "char": "🧊",
+    "color": "#93c5fd"
+  },
+  "FrostbiteSpider": {
+    "name": "Frostbite Arachnid",
+    "baseHp": 28,
+    "baseAtk": 7,
+    "baseDef": 2,
+    "range": 3,
+    "speed": 0.9,
+    "char": "🕷️",
+    "color": "#67e8f9"
+  },
+  "FrostfangTitan": {
+    "name": "Frostfang the Glacial Titan",
+    "baseHp": 270,
+    "baseAtk": 17,
+    "baseDef": 10,
+    "range": 2,
+    "speed": 1.0,
+    "char": "❄️",
+    "color": "#0284c7"
   }
 }

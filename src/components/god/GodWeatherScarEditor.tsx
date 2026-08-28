@@ -54,7 +54,7 @@ export const GodWeatherScarEditor: React.FC<GodWeatherScarEditorProps> = ({
         <div className="flex items-center justify-between bg-slate-950 border border-slate-850 p-1.5 px-2.5 rounded text-[10px] font-mono">
           <span className="text-slate-400">Ritual Turn Interval:</span>
           <select
-            value={gameState.gmWeatherInterval || 25}
+            value={gameState.gmWeatherInterval || 120}
             onChange={(e) => {
               const val = parseInt(e.target.value, 10);
               setGameState(prev => ({ ...prev, gmWeatherInterval: val }));
@@ -62,11 +62,11 @@ export const GodWeatherScarEditor: React.FC<GodWeatherScarEditorProps> = ({
             }}
             className="bg-slate-900 border border-slate-800 text-slate-200 rounded px-1.5 py-0.5 outline-none cursor-pointer text-[10px] font-bold"
           >
-            <option value="10">10 Turns</option>
-            <option value="25">25 Turns (Default)</option>
-            <option value="40">40 Turns</option>
-            <option value="60">60 Turns</option>
-            <option value="100">100 Turns</option>
+            <option value="30">30 Turns (Short)</option>
+            <option value="60">60 Turns (Medium)</option>
+            <option value="120">120 Turns (Default - Long)</option>
+            <option value="200">200 Turns (Extended)</option>
+            <option value="300">300 Turns (Marathon)</option>
           </select>
         </div>
       </div>

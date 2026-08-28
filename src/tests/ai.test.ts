@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bresenhamLine, computeFOV, getNextStepTowards } from '../utils/ai';
+import { bresenhamLine, computeFOV, getNextStepTowards, getNextStepAwayFrom } from '../utils/ai';
 import { TileType } from '../types';
 
 describe('12.1 Core AI, Movement & Pathfinding Verification', () => {
@@ -68,5 +68,33 @@ describe('12.1 Core AI, Movement & Pathfinding Verification', () => {
     const newFollowerPos = { x: 5, y: 5 };
     expect(newPlayerPos).toEqual(followerPos);
     expect(newFollowerPos).toEqual(playerPos);
+  });
+
+  it('Town Guard AI targets and chases hostiles across town and alerts nearby guards', () => {
+    const guard = { id: 'g1', name: 'Town Guard', x: 10, y: 10, hp: 50, maxHp: 50, atk: 12, def: 5, isTownGuard: true };
+    const sleepingGuard = { id: 'g2', name: 'Sentry Guard', x: 15, y: 10, hp: 50, maxHp: 50, atk: 12, def: 5, isTownGuard: true, state: 'Sleeping' };
+    const bandit = { id: 'b1', name: 'Bandit Raider', x: 10, y: 18, hp: 30, maxHp: 30, atk: 10, def: 2, isTownGuard: false, isFollower: false };
+
+    // Threat detection calculates town-wide distance
+    const distToBandit = Math.abs(bandit.x - guard.x) + Math.abs(bandit.y - guard.y);
+    expect(distToBandit).toBe(8);
+
+    // Alarm alerts nearby dormant guards within 30 tiles
+    const distToOtherGuard = Math.abs(sleepingGuard.x - guard.x) + Math.abs(sleepingGuard.y - guard.y);
+    expect(distToOtherGuard <= 30).toBe(true);
+
+    // Pathfinding moves guard toward bandit
+    const map: TileType[][] = Array(20).fill(null).map(() => Array(20).fill(TileType.Floor));
+    const step = getNextStepTowards(guard.x, guard.y, bandit.x, bandit.y, map, true, []);
+    expect(step).toEqual({ x: 10, y: 11 });
+  });
+
+  it('Villagers flee away from threats and Heroes for Hire charge toward threats', () => {
+    const map: TileType[][] = Array(20).fill(null).map(() => Array(20).fill(TileType.Floor));
+    const villager = { x: 10, y: 10 };
+    const threat = { x: 10, y: 8 };
+
+    const fleeStep = getNextStepAwayFrom(villager.x, villager.y, threat.x, threat.y, map, true, []);
+    expect(fleeStep).toEqual({ x: 11, y: 11 }); // Moves further diagonally away from threat at y=8 (distance 4 vs 3)
   });
 });

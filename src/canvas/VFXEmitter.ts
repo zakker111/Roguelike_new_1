@@ -52,6 +52,14 @@ export class VFXEmitter {
     });
   }
 
+  public emitWaterRipple(x: number, y: number, color: string = 'rgba(56, 189, 248, 0.75)') {
+    this.particleSystem.spawnWaterRipple(x, y, color);
+  }
+
+  public emitFootstepSplash(x: number, y: number, count: number = 6) {
+    this.particleSystem.spawnFootstepSplash(x, y, count);
+  }
+
   public flushAndRender(ctx: CanvasRenderingContext2D, dt: number) {
     // Process queued events
     while (this.queue.length > 0) {

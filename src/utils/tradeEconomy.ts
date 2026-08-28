@@ -1,5 +1,6 @@
-import { GameState, EquipmentItem, Quest } from '../types';
+import { GameState, EquipmentItem, Quest, BiomeType } from '../types';
 import economyData from '../data/economy.json';
+import guildJson from '../data/guildData.json';
 
 export const ECONOMY_CONFIG = economyData;
 
@@ -30,32 +31,7 @@ export interface GuildUpgrade {
   maxLevel: number;
 }
 
-export const GUILD_UPGRADES: GuildUpgrade[] = [
-  {
-    id: 'up_supply_deals',
-    name: 'Sunder Logistics Deals',
-    desc: 'Permanently increases all raw material sell values by +20% per tier.',
-    costGold: 550,
-    costMaterials: { 'mat_iron': 4 },
-    maxLevel: 3
-  },
-  {
-    id: 'up_expeditions',
-    name: 'Expedition Map Room',
-    desc: 'Reduces companion dispatch quest durations by 25% per tier.',
-    costGold: 450,
-    costMaterials: { 'mat_berry': 8 },
-    maxLevel: 3
-  },
-  {
-    id: 'up_guild_discounts',
-    name: 'Cooperative Bargaining',
-    desc: 'Unlocks a passive 5% discount on merchant purchases per tier.',
-    costGold: 650,
-    costMaterials: { 'mat_mithril': 2 },
-    maxLevel: 3
-  }
-];
+export const GUILD_UPGRADES: GuildUpgrade[] = guildJson.guildUpgrades as GuildUpgrade[];
 
 // Guild HQ Sanctuary Decor
 export interface GuildDecor {
@@ -67,40 +43,7 @@ export interface GuildDecor {
   bonusText: string;
 }
 
-export const GUILD_DECORS: GuildDecor[] = [
-  {
-    id: 'dec_trophy',
-    name: 'Champion Trophy Pedestal',
-    desc: 'Display a shining emblem of heroic achievements.',
-    costGold: 320,
-    icon: '🏆',
-    bonusText: '+15 Town Reputation and +10% maximum Renown gains.'
-  },
-  {
-    id: 'dec_hearth',
-    name: 'Ambient Leystone Hearth',
-    desc: 'A glowing warm central fire pit infused with restorative magic.',
-    costGold: 480,
-    icon: '🔥',
-    bonusText: '+10 Max HP and complete immunity to winter freezing while outdoors.'
-  },
-  {
-    id: 'dec_crystal',
-    name: 'Oracle Crystal Orb',
-    desc: 'A swirling cyan orb predicting weather patterns.',
-    costGold: 560,
-    icon: '🔮',
-    bonusText: '+10 Max MP and reveals adjacent hidden chests on the world map.'
-  },
-  {
-    id: 'dec_banner',
-    name: 'Royal Sunder Vanguard Banner',
-    desc: 'A heavy embroidered banner representing safety and law.',
-    costGold: 390,
-    icon: '🚩',
-    bonusText: 'Grants +2 passive Defense and +10% Attack against hostile Goblins.'
-  }
-];
+export const GUILD_DECORS: GuildDecor[] = guildJson.guildDecors as GuildDecor[];
 
 // Companion Dispatch Quest
 export interface CompanionQuest {
@@ -113,44 +56,7 @@ export interface CompanionQuest {
   rewardMaterials?: { [matId: string]: number };
 }
 
-export const COMPANION_QUEST_BOARD: CompanionQuest[] = [
-  {
-    id: 'cq_patrol',
-    title: '🛡️ Border Patrol Sweep',
-    desc: 'Clear out creeping spiders and scout bandits surrounding Oakhaven Hamlet.',
-    turnsRequired: 40,
-    rewardGold: 120,
-    rewardXp: 100,
-    rewardMaterials: { 'mat_iron': 2 }
-  },
-  {
-    id: 'cq_mining',
-    title: '⛏️ Crimson Canyon Excavation',
-    desc: 'Gather rare volcanic minerals and raw iron ore from unstable rock beds.',
-    turnsRequired: 60,
-    rewardGold: 80,
-    rewardXp: 150,
-    rewardMaterials: { 'mat_iron': 5, 'mat_obsidian': 2 }
-  },
-  {
-    id: 'cq_harvest',
-    title: '🍓 Wilds Apothecary Supply',
-    desc: 'Forage for deep forest wild berries and sample local swamp flora.',
-    turnsRequired: 30,
-    rewardGold: 70,
-    rewardXp: 80,
-    rewardMaterials: { 'mat_berry': 12 }
-  },
-  {
-    id: 'cq_monster_hunt',
-    title: '⚔️ High-Danger Beast Extermination',
-    desc: 'Hunt a rare wild alpha predator terrorizing local nomadic farmers.',
-    turnsRequired: 75,
-    rewardGold: 250,
-    rewardXp: 220,
-    rewardMaterials: { 'mat_dragonscale': 1, 'mat_thick_hide': 3 }
-  }
-];
+export const COMPANION_QUEST_BOARD: CompanionQuest[] = guildJson.companionQuests as CompanionQuest[];
 
 // Faction blueprints and gear
 export interface FactionGear {
@@ -168,84 +74,9 @@ export interface FactionGear {
   color: string;
 }
 
-export const SYNDICATE_GEAR: FactionGear[] = [
-  {
-    id: 'fac_syndicate_dirk',
-    name: 'Moonshadow Assassin Dirk',
-    type: 'weapon',
-    subType: 'Sword',
-    damage: 13,
-    critChance: 0.35,
-    range: 1,
-    costGold: 300,
-    costMaterials: { 'mat_iron': 3, 'mat_obsidian': 1 },
-    desc: 'Highly toxic, weighted silent dagger crafted from black obsidian steel.',
-    color: '#a78bfa'
-  },
-  {
-    id: 'fac_syndicate_cloak',
-    name: 'Syndicate Shadow Cowl',
-    type: 'armor',
-    subType: 'Helmet',
-    defense: 4,
-    costGold: 220,
-    costMaterials: { 'mat_thick_hide': 4 },
-    desc: 'Conceals features in pitch darkness. Sells for massive gold among outlaws.',
-    color: '#8b5cf6'
-  }
-];
-
-export const VANGUARD_GEAR: FactionGear[] = [
-  {
-    id: 'fac_vanguard_shield',
-    name: 'Dawn Vanguard Aegis Shield',
-    type: 'shield',
-    subType: 'Shield',
-    defense: 8,
-    costGold: 320,
-    costMaterials: { 'mat_iron': 5, 'mat_mithril': 1 },
-    desc: 'Holy crested steel shield glowing with persistent restorative light.',
-    color: '#fbbf24'
-  },
-  {
-    id: 'fac_vanguard_plate',
-    name: 'Dawn Vanguard Sunplate',
-    type: 'armor',
-    subType: 'HeavyArmor',
-    defense: 11,
-    costGold: 430,
-    costMaterials: { 'mat_iron': 8, 'mat_mithril': 2 },
-    desc: 'Imposing golden steel battle armor forged with the power of the morning sun.',
-    color: '#fbbf24'
-  }
-];
-
-export const BANDIT_GEAR: FactionGear[] = [
-  {
-    id: 'fac_bandit_cleaver',
-    name: 'Rust-Raider Spiked Cleaver',
-    type: 'weapon',
-    subType: 'Sword',
-    damage: 15,
-    critChance: 0.22,
-    range: 1,
-    costGold: 280,
-    costMaterials: { 'mat_iron': 4, 'mat_wood': 2 },
-    desc: 'Hefty crude cleaver welded with rusty metal teeth. Deadly in raw strength encounters.',
-    color: '#f97316'
-  },
-  {
-    id: 'fac_bandit_vest',
-    name: 'Outlaw Spiked Harness',
-    type: 'armor',
-    subType: 'LightArmor',
-    defense: 6,
-    costGold: 240,
-    costMaterials: { 'mat_thick_hide': 4, 'mat_iron': 2 },
-    desc: 'Reinforced leather vest lined with rusted iron spikes. Protects the torso and intimidates foes.',
-    color: '#ea580c'
-  }
-];
+export const SYNDICATE_GEAR: FactionGear[] = guildJson.syndicateGear as FactionGear[];
+export const VANGUARD_GEAR: FactionGear[] = guildJson.vanguardGear as FactionGear[];
+export const BANDIT_GEAR: FactionGear[] = guildJson.banditGear as FactionGear[];
 
 /**
  * Calculates dynamic biome-based trade multipliers for buying and selling items.
@@ -253,7 +84,7 @@ export const BANDIT_GEAR: FactionGear[] = [
  * @param biome The current chunk biome ('forest', 'desert', 'tundra', 'swamp')
  * @returns A multiplier to be applied to the base value
  */
-export const getBiomePriceMultiplier = (itemId: string, biome: 'forest' | 'desert' | 'tundra' | 'swamp' | 'town'): number => {
+export const getBiomePriceMultiplier = (itemId: string, biome: BiomeType): number => {
   // 1. Wood values skyrocket in Arid Deserts (3.5x) and Tundras (1.5x)
   if (itemId === 'mat_wood') {
     if (biome === 'desert') return 3.5;

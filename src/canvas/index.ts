@@ -11,3 +11,5 @@ export * from './spriteRenderer';
 export * from './tileMapRenderer';
 export * from './visualFxParticleSystem';
 export * from './weatherLightingRenderer';
+export * from './waterShimmerRenderer';
+export * from './biomeAtmosphereRenderer';

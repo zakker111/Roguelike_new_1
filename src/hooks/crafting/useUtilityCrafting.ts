@@ -4,7 +4,27 @@ import { playSound } from "../../utils/audio";
 import { formatGameTime } from "../../utils/overworld";
 import { addEquipmentItemToInventory } from "../../utils/scrollUtils";
 import { CraftingSubEngineProps } from "./types";
-const METAL_KEYS = ['mat_iron', 'mat_iron_ore', 'mat_steel', 'mat_copper_ore', 'mat_royal_iron', 'mat_mithril'];
+const WOOD_KEYS = ['mat_wood', 'mat_pine_log', 'mat_birch_log', 'mat_ship_pitch'];
+const METAL_KEYS = ['mat_iron', 'mat_iron_ore', 'mat_steel', 'mat_copper_ore', 'mat_royal_iron', 'mat_mithril', 'mat_obsidian'];
+
+function getTotalWoodCount(materials: Record<string, number>): number {
+  return WOOD_KEYS.reduce((sum, key) => sum + (materials[key] || 0), 0);
+}
+
+function deductWoodCount(materials: Record<string, number>, required: number): Record<string, number> {
+  const next = { ...materials };
+  let needed = required;
+  for (const key of WOOD_KEYS) {
+    if (needed <= 0) break;
+    const have = next[key] || 0;
+    if (have > 0) {
+      const take = Math.min(have, needed);
+      next[key] = have - take;
+      needed -= take;
+    }
+  }
+  return next;
+}
 
 function getTotalMetalCount(materials: Record<string, number>): number {
   return METAL_KEYS.reduce((sum, key) => sum + (materials[key] || 0), 0);
@@ -98,15 +118,16 @@ export function useUtilityCrafting({
 
   const handleCraftFishingPole = useCallback(() => {
     setGameState((prev) => {
-      const woodCount = prev.inventoryMaterials['mat_wood'] || 0;
+      const woodCount = getTotalWoodCount(prev.inventoryMaterials);
+      const metalCount = getTotalMetalCount(prev.inventoryMaterials);
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
       const truncatedLogs = prev.logs.length > 40 ? prev.logs.slice(1) : prev.logs;
 
-      if (woodCount < 3) {
+      if (woodCount < 2 || metalCount < 1) {
         const errorMsg: GameLogMessage = {
           id: `log_${Date.now()}_${Math.random()}`,
-          text: "❌ You need at least 3 Scrap Wood logs to assemble a Fishing Pole!",
+          text: "❌ You need 2x Wood and 1x Metal to assemble an Ancient Fishing Pole!",
           type: "system",
           timestamp: timeStr,
         };
@@ -116,17 +137,15 @@ export function useUtilityCrafting({
         };
       }
 
-      const nextMats = {
-        ...prev.inventoryMaterials,
-        'mat_wood': woodCount - 3,
-        'mat_fishing_pole': (prev.inventoryMaterials['mat_fishing_pole'] || 0) + 1
-      };
+      let nextMats = deductMetalCount(prev.inventoryMaterials, 1);
+      nextMats = deductWoodCount(nextMats, 2);
+      nextMats['mat_fishing_pole'] = (nextMats['mat_fishing_pole'] || 0) + 1;
 
       playSound('craft');
       
       const successMsg: GameLogMessage = {
         id: `log_${Date.now()}_${Math.random()}`,
-        text: `🎣 You successfully shape 3x Scrap Wood into an Ancient Fishing Pole! Feel free to angle next to lakes or rivers!`,
+        text: `🎣 You successfully shape wood and metal into an Ancient Fishing Pole! Feel free to angle next to lakes or rivers!`,
         type: 'craft',
         timestamp: timeStr,
       };
@@ -191,7 +210,7 @@ export function useUtilityCrafting({
 
   const handleCraftHatchet = useCallback(() => {
     setGameState((prev) => {
-      const woodCount = prev.inventoryMaterials['mat_wood'] || 0;
+      const woodCount = getTotalWoodCount(prev.inventoryMaterials);
       const metalCount = getTotalMetalCount(prev.inventoryMaterials);
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
@@ -211,7 +230,7 @@ export function useUtilityCrafting({
       }
 
       let nextMats = deductMetalCount(prev.inventoryMaterials, 1);
-      nextMats['mat_wood'] = Math.max(0, woodCount - 2);
+      nextMats = deductWoodCount(nextMats, 2);
 
       const newHatchet: EquipmentItem = {
         id: `tool_hatchet_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -256,7 +275,7 @@ export function useUtilityCrafting({
 
   const handleCraftPickaxe = useCallback(() => {
     setGameState((prev) => {
-      const woodCount = prev.inventoryMaterials['mat_wood'] || 0;
+      const woodCount = getTotalWoodCount(prev.inventoryMaterials);
       const metalCount = getTotalMetalCount(prev.inventoryMaterials);
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
@@ -276,7 +295,7 @@ export function useUtilityCrafting({
       }
 
       let nextMats = deductMetalCount(prev.inventoryMaterials, 2);
-      nextMats['mat_wood'] = Math.max(0, woodCount - 2);
+      nextMats = deductWoodCount(nextMats, 2);
 
       const newPickaxe: EquipmentItem = {
         id: `tool_pickaxe_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,

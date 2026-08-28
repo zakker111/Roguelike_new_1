@@ -273,8 +273,8 @@ export function getNextStepTowards(
           (tile === TileType.Water && !isWaterWalkable) ||
           tile === TileType.Campfire ||
           tile === TileType.Anvil ||
-          tile === TileType.Bed ||
           tile === TileType.Empty ||
+          (tile === TileType.Bed && idx !== targetIdx) ||
           (tile === TileType.Door && !canOpenDoors);
 
         if (isTileBlocked) {
@@ -319,8 +319,8 @@ export function getNextStepTowards(
         (tile === TileType.Water && !isWaterWalkable) ||
         tile === TileType.Campfire ||
         tile === TileType.Anvil ||
-        tile === TileType.Bed ||
         tile === TileType.Empty ||
+        (tile === TileType.Bed && (step.nx !== clampedTargetX || step.ny !== clampedTargetY)) ||
         (tile === TileType.Door && !canOpenDoors);
       if (isTileBlocked) return false;
       return !occupiedSet.has(step.ny * width + step.nx);
@@ -329,3 +329,76 @@ export function getNextStepTowards(
 
   return bestDir ? { x: bestDir.nx, y: bestDir.ny } : null;
 }
+
+/**
+ * Calculates the next step moving away from a threat position.
+ */
+export function getNextStepAwayFrom(
+  startX: number,
+  startY: number,
+  threatX: number,
+  threatY: number,
+  map: TileType[][],
+  canOpenDoors: boolean,
+  otherEntities: { x: number; y: number }[]
+): { x: number; y: number } | null {
+  if (!map || map.length === 0 || !map[0] || map[0].length === 0) return null;
+  const height = map.length;
+  const width = map[0].length;
+
+  const dirs = [
+    { dx: 0, dy: -1 },
+    { dx: 0, dy: 1 },
+    { dx: -1, dy: 0 },
+    { dx: 1, dy: 0 },
+    { dx: 1, dy: 1 },
+    { dx: -1, dy: 1 },
+    { dx: 1, dy: -1 },
+    { dx: -1, dy: -1 }
+  ];
+
+  const occupiedSet = new Set<string>();
+  if (otherEntities) {
+    for (let i = 0; i < otherEntities.length; i++) {
+      const e = otherEntities[i];
+      if (e) occupiedSet.add(`${e.x},${e.y}`);
+    }
+  }
+
+  let bestStep: { x: number; y: number } | null = null;
+  let maxDist = Math.abs(startX - threatX) + Math.abs(startY - threatY);
+
+  for (const dir of dirs) {
+    const nx = startX + dir.dx;
+    const ny = startY + dir.dy;
+    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+      const tile = map[ny][nx];
+      const isTileBlocked =
+        tile === TileType.Wall ||
+        tile === TileType.Window ||
+        tile === TileType.Table ||
+        tile === TileType.Tree ||
+        tile === TileType.PineTree ||
+        tile === TileType.BirchTree ||
+        tile === TileType.WatchtowerWall ||
+        tile === TileType.WatchtowerBarricade ||
+        tile === TileType.Water ||
+        tile === TileType.Campfire ||
+        tile === TileType.Anvil ||
+        tile === TileType.Bed ||
+        tile === TileType.Empty ||
+        (tile === TileType.Door && !canOpenDoors);
+
+      if (isTileBlocked || occupiedSet.has(`${nx},${ny}`)) continue;
+
+      const dist = Math.abs(nx - threatX) + Math.abs(ny - threatY);
+      if (dist > maxDist) {
+        maxDist = dist;
+        bestStep = { x: nx, y: ny };
+      }
+    }
+  }
+
+  return bestStep;
+}
+

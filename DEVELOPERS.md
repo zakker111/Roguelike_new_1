@@ -2,128 +2,396 @@
 
 Welcome, Sovereign Creator! This guide is designed to help you, or any developer, understand the core architecture of the **Cosmic Abyss Roguelike Engine** and easily extend its gameplay, weather, items, combat, or AI systems.
 
+### 🌐 Live Testing & Playable Links
+- **Development App (Live Environment)**: [https://ais-dev-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app](https://ais-dev-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app)
+- **Shared Production Preview**: [https://ais-pre-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app](https://ais-pre-glz2sadkrfnpw5wllszk7w-939355296758.europe-west2.run.app)
+
 ---
 
 ## 📂 Project Structure Overview
 
 ```bash
 /src
-  ├── App.tsx                    # Core Game Loop & Orchestration State Engine
+  ├── App.tsx                    # Core Game Loop & UI Orchestration Shell
   ├── main.tsx                   # React Entry Point
   ├── index.css                  # Tailwind Styling Entry Point
+  ├── types.ts                   # Global Type Aggregator & Re-exports
   │
-  ├── 📂 types                   # Modular Type Definitions (v4.2.3)
+  ├── 📂 types                   # Modular Type Definitions
   │   ├── game.ts                # Main GameState, UI & Navigation Enums
   │   ├── entities.ts            # PlayerStats, Enemy, Companion, Scar & NPC Types
   │   ├── map.ts                 # TileType, Chunk, POI & Map Coordinate Types
   │   └── items.ts               # EquipmentItem, Recipe & Material Types
   │
-  ├── 📂 hooks                   # Custom Domain Engine Hooks (v5.2.0)
+  ├── 📂 hooks                   # Custom Domain Engine Hooks
+  │   ├── 📂 ai                  # Modular AI Behavior & Enemy/Civilian Decision Trees
+  │   │   ├── types.ts           # AI parameter context and state interfaces
+  │   │   ├── aiTurnEnvironment.ts # Status ticks, weather/season modifiers, roaming spawns
+  │   │   ├── useFollowerAI.ts   # Companion follow logic, ranged positioning, defensive assist
+  │   │   ├── useTownGuardAI.ts  # Town defense threat response, 30-tile alarm broadcast, day/night shifts
+  │   │   ├── useHostileAI.ts    # Stagger posture, telegraphed attacks, wagon targeting, BRACE/DODGE
+  │   │   ├── useCivilianAI.ts   # Cat wandering, civilian schedules, weather shelter, hero counter-attacks
+  │   │   ├── aiCombatAggregator.ts # Aggregated floating combat text & caravan skirmish resolution
+  │   │   └── useEnemyAI.ts      # Turnkey AI coordinator executing turn-based AI resolution
+  │   ├── 📂 god                 # God Mode & Developer Sandbox Orchestration
+  │   │   └── useGodPanelState.ts # Centralized cheats, arena warp, spawn dispatch & sim runners
+  │   ├── 📂 app                 # Extracted App-Level Orchestration Hooks
+  │   │   ├── usePlayerTurnMovement.ts # Turn steps, chunk loading, terrain hazards, traps, and looting
+  │   │   ├── useGKeyInteraction.ts    # Multi-context G-key interaction router (signs, beds, bushes, shrines, NPCs)
+  │   │   ├── useAutoplayAgent.ts      # Autonomous playtesting AI agent for automated runs
+  │   │   ├── useShopAndTradeHandlers.ts # Merchant shopping, regional trade buy/sell, tariffs
+  │   │   ├── useQuestAndGuildHandlers.ts # Guild missions, quest turn-ins, rank progression
+  │   │   ├── useShrineAndChestHandlers.ts # Dungeon shrines, chest unlocking, lockpick consumption
+  │   │   ├── useConsumablesAndCatalysts.ts # Meat eating, catalyst shifting, reactor surges, stats
+  │   │   ├── useDungeonStairsAndTransitions.ts # Multi-depth stair climbs and overworld transitions
+  │   │   ├── useTownInteractions.ts   # Town doors, resting, and resource harvesting
+  │   │   └── useCombatAndSpells.ts    # Attack dispatch, spellcasting, and scroll execution
+  │   ├── usePlayerAttack.ts     # Decoupled player melee/ranged attack resolution & follower intercepts
+  │   ├── useCombatEngine.ts     # Attack calculations, scar triggers, overforge heat recoil
+  │   ├── useEnemyAI.ts          # Backward-compatible AI facade delegating to /src/hooks/ai/
+  │   ├── usePlayerMovement.ts   # Movement logic, tile collisions, stamina consumption
+  │   ├── useKeyboardInput.ts    # Key bindings, hotkey actions, and modal input suppression
+  │   ├── useAppHotkeys.ts       # Global shortcut routing & modal dismissal
   │   ├── useGameLoop.ts         # Real-time difficulty escalation & watchtower siege ticker
-  │   ├── useCaravanTravel.ts    # Caravan travel initialization, step progression, D20 encounter resolution & rewards
-  │   ├── useTownServices.ts     # Forge upgrades, Apothecary labs, Bartender gossip, Inn rests & Mercenary recruitment
+  │   ├── useCaravanTravel.ts    # Caravan travel progression, D20 encounter resolution & rewards
+  │   ├── useTownServices.ts     # Forge upgrades, Apothecary labs, Bartender gossip, Inn rests & Mercenaries
   │   ├── useOverworldEvents.ts  # Weather ticks, dynamic daylight/night cycles, seasonal environmental events
   │   ├── useTradeEconomy.ts     # Merchant transactions, town economy scaling, buy/sell haggling
   │   ├── useQuestsAndGuild.ts   # Faction guild contracts, quest tracking & reward claims
   │   ├── useCraftingEngine.ts   # Forging, cooking, campfires, anvils, repairs & mutation forge
   │   ├── useSpellcasting.ts     # Spell casting, mana verification, projectile targeting & scroll consumption
   │   ├── useWorldInteraction.ts # Overworld stairs, resource harvesting (trees/ore), door opening
-  │   ├── useEnemyAI.ts          # Pathfinding, faction chase algorithms, and enemy turn solver
-  │   ├── useCombatEngine.ts     # Attack calculations, scar triggers, overforge heat recoil
-  │   ├── usePlayerMovement.ts   # Movement logic, tile collisions, stamina consumption
-  │   ├── useKeyboardInput.ts    # Key bindings, hotkey actions, and modal input suppression
+  │   ├── usePoiAndWilderness.ts # Landmark interactions, waystone network, and wilderness events
+  │   ├── useNpcInteraction.ts   # NPC dialogue routing, merchant trading, and crime witness checks
+  │   ├── useModalManager.ts     # Modal router state and overlay lifecycle management
   │   ├── useEquipmentHandlers.ts# Equipment equipping, unequipping, swapping, durability & stat hooks
-  │   └── useSaveLoad.ts         # LocalStorage serialization, auto-save timers
+  │   ├── useSaveLoad.ts         # LocalStorage serialization, auto-save timers
+  │   ├── useAmbientAudio.ts     # Dynamic ambient audio triggers & environmental soundscapes
+  │   ├── useWorldEventHandlers.ts# Overworld POI and landmark event dispatchers
+  │   ├── 📂 crafting            # Crafting Sub-Engine Hooks
+  │   │   ├── useEquipmentCrafting.ts # Weapon/Armor forging, repairs, mutations & upgrades
+  │   │   ├── useSurvivalCrafting.ts  # Deployable structures, campfire cooking & fishing
+  │   │   ├── useUtilityCrafting.ts   # Potion brewing & survival tools crafting
+  │   │   └── types.ts           # Crafting sub-engine interfaces
+  │   └── 📂 input               # Input Sub-Hooks
+  │       ├── useKeyboardControls.ts  # WASD/Arrow/Numpad key routing
+  │       └── useHotkeys.ts      # Menu & action hotkey bindings
   │
-  ├── 📂 canvas                  # Hybrid Graphics Engine & Animation System (v5.0.0)
+  ├── 📂 canvas                  # Hybrid Graphics Engine & Animation System
   │   ├── IGraphicsRenderer.ts   # Unified rendering controller interface
   │   ├── TextRenderer.ts        # Fast, lightweight unicode text & emoji fallback renderer
   │   ├── TilesetRenderer.ts     # Texture atlas sprite-slicing tile renderer
   │   ├── HybridGraphicsEngine.ts# Singleton graphics engine for dynamic mode switching
   │   ├── tileMapRenderer.ts     # Viewport-culled tile map grid renderer
   │   ├── entityLayerRenderer.ts # Entities, enemies, player, projectiles & floating text layer
-  │   ├── weatherLightingRenderer.ts# Day-night lighting shaders & seasonal/weather particle systems
+  │   ├── shadowRenderer.ts      # Dynamic sun/moon 24h directional drop shadow renderer
+  │   ├── visualFxParticleSystem.ts# Particle system: water ripples, rain footstep splashes, spell bursts
+  │   ├── weatherLightingRenderer.ts# Weather lighting shaders, weather overlay cross-fades & transition fog
+  │   ├── spriteAnimationManager.ts# Multi-frame 4-directional sprite state machine
+  │   ├── spriteRenderer.ts      # Optimized sprite rendering & emoji regex caching
   │   ├── AssetPreloader.ts      # Asynchronous tile-sheet & sprite image loader
   │   ├── TilesetAtlasManager.ts # Sprite sheet grid & autotile coordinate mapper
   │   └── VFXEmitter.ts          # Decoupled real-time particle VFX emitter queue
   │
-  ├── 📂 world                   # Isolated World & Dungeon Generators (v5.2.0)
-  │   ├── dungeonGen.ts          # Procedural Cave/Dungeon Generator
+  ├── 📂 world                   # Isolated World & Dungeon Generators
+  │   ├── 📂 dungeon              # Modular Dungeon Generation Sub-Engine
+  │   │   ├── types.ts           # Dungeon room types, level contracts & boss templates
+  │   │   ├── dungeonRooms.ts    # Multi-archetype rooms (rectangular, circular, cross) & lava pools
+  │   │   ├── dungeonCorridors.ts# Wide corridors, loop connections & doorway thresholds
+  │   │   ├── dungeonTrapsAndChests.ts # Archetype traps (Geyser, Magma Eruption, Frostbite Vent, Icicle) & chest loot
+  │   │   ├── dungeonEntities.ts # Boss templates, threat factor math & elite perk spawns
+  │   │   ├── dungeonPropsAndShrines.ts # Double-edged interactive shrines & dungeon props
+  │   │   ├── dungeonGenerator.ts# Master generateLevel orchestrator (standard, sunken_ruins, volcanic_caldera, glacial_caverns)
+  │   │   └── index.ts           # Dungeon sub-engine barrel export
+  │   ├── 📂 town                 # Modular Town & Settlement Generation Sub-Engine
+  │   │   ├── types.ts           # Town building coordinates & generation contracts
+  │   │   ├── townPerimeter.ts   # Fortress walls, gatehouses & harbor port features
+  │   │   ├── townGuards.ts      # Castle sentries & village defense patrols
+  │   │   ├── townNpcs.ts        # Blacksmiths, Merchants, Apothecaries, Taverns & Quest Boards
+  │   │   ├── townOutskirts.ts   # Border pest spawns & clear grass placement
+  │   │   ├── townChunkGenerator.ts # Master generateTownChunk orchestrator
+  │   │   └── index.ts           # Town sub-engine barrel export
+  │   ├── 📂 organic              # Modular Organic World Generation Sub-Engine
+  │   │   ├── biomeNoiseEngine.ts# Multi-octave continuous Simplex-like noise generator
+  │   │   ├── naturalRiverCarver.ts # Natural continuous river splines & pathway bridges
+  │   │   ├── vegetationClusterGen.ts # Cellular automata forest groves & mineral ore lodes
+  │   │   ├── roadNetworkGen.ts  # Cross-chunk meandering highway trails
+  │   │   └── index.ts           # Organic world sub-engine barrel export
   │   ├── overworldGen.ts        # Overworld chunk generation & landmark placement
+  │   ├── overworldBiomes.ts     # Whittaker biome distribution (7 biomes) & noise matrices
+  │   ├── overworldStructures.ts # Settlement tier layouts (Hamlets, Towns, Citadel Capitals)
+  │   ├── structureGenerators.ts # Blueprint generation & modular building carving
+  │   ├── poiGenerators.ts       # Landmark POI generators & Finnish mythology shrines
+  │   ├── caravanSkirmishGen.ts  # Tactical "Defend the Wagon" Skirmish Map Generator
   │   ├── overworldNpcSpawning.ts# Safe tile locator & NPC coordinate validator
   │   └── overworldPoiGenerator.ts# Chunk point-of-interest generator wrappers
   │
   ├── 📂 components              # Modular UI Components & Screens
-  │   ├── MainAppLayout.tsx      # Top-level shell layout, HUD & log viewports (v4.2.1)
+  │   ├── MainAppLayout.tsx      # Top-level shell layout, HUD & log viewports
+  │   ├── AppHeaderBar.tsx       # Header controls, volume/mute toggles, mode switcher
+  │   ├── AppNavigationTabs.tsx  # Bottom tab navigation bar with responsive arrows
   │   ├── AppOverlays.tsx        # Central modal overlay router & manager
-  │   ├── 📂 god                 # Sovereign Developer Console Panels (v5.2.0)
+  │   ├── ModalRouter.tsx        # High-performance overlay switcher
+  │   ├── GameCanvas.tsx         # Canvas-based Grid Rendering Engine
+  │   ├── GameLog.tsx            # Animated adventure log with filter chips & auto-scroll
+  │   ├── CraftingPanel.tsx      # Modular Arcanum Workbench Panel
+  │   ├── UnifiedInventoryPanel.tsx # Decoupled composer coordinating modular sub-components
+  │   ├── 📂 inventory           # Modular Inventory Sub-Components & Panels
+  │   │   ├── types.ts                # Inventory interfaces & item rarity evaluators
+  │   │   ├── HeroBiometricsCard.tsx  # Hero profile & Core RPG Attribute point allocation
+  │   │   ├── EquipmentPaperdoll.tsx  # 8-slot equipped gear display & durability renderer
+  │   │   ├── CombatStatsSummary.tsx  # Integrated combat stats, Cat Lover & Battle Scars
+  │   │   ├── BackpackSlotGrid.tsx    # Weight bar, sorting, and Allies/Gear/Food/Mats tabs
+  │   │   ├── AlchemicalTransmuterPanel.tsx # Portable Wild Alchemical Transmuter UI
+  │   │   └── index.ts                # Inventory components barrel export
+  │   ├── ChunkMinimap.tsx       # Overworld 2D Canvas Minimap & POI visualizer
+  │   ├── DifficultyTracker.tsx  # Dynamic Chaos Matrix & Adaptive Threat Level HUD
+  │   ├── ChaosConsole.tsx       # Chaos surge visualizer & mitigation dashboard
+  │   ├── OverforgeGauge.tsx     # Over-forging heat gauge & bellows risk/reward engine
+  │   ├── MutationSynergyPanel.tsx # Dual-element mutation synergy matrix & strain gauge
+  │   ├── AudioSettingsModal.tsx # Volume sliders & sound preferences modal
+  │   ├── AudioOscilloscopeStudio.tsx # 60 FPS WebAudio oscilloscope & synth studio
+  │   ├── 📂 god                 # Sovereign Developer Console Panels
   │   │   ├── GodStorytellerPanel.tsx # GM Storyteller mood, boredom & encounter console
   │   │   ├── GodItemSpawner.tsx      # Declarative item & equipment spawner
   │   │   ├── GodEntitySpawner.tsx    # Enemy, boss & companion spawner
   │   │   ├── GodWorldEditor.tsx      # Tile painter & map generator
+  │   │   ├── GodDungeonEditor.tsx    # Grid-Based Custom Dungeon Editor & Painter
+  │   │   ├── GodModdingTab.tsx       # Live JSON Schema Mod Manager & Plugin Console
+  │   │   ├── GodCheatsTab.tsx        # Developer cheats, stat overrides & God Mode
+  │   │   ├── GodAdminEditor.tsx      # Raw game state JSON import/export
+  │   │   ├── GodEnemyBlueprintEditor.tsx # Custom enemy blueprint designer
+  │   │   ├── GodReplaySimulator.tsx  # Turn action replay scrubber
   │   │   └── GodSmoketestTab.tsx     # Client-side virtual smoke test suite panel
-  │   ├── 📂 crafting            # Crafting Arcanum Sub-Tabs (v4.2.2)
+  │   ├── 📂 crafting            # Crafting Arcanum Sub-Tabs
   │   │   ├── CookingTab.tsx      # Hearth & campfire culinary recipes
   │   │   ├── AlchemyTab.tsx      # Apothecary potion brewing & tier upgrades
   │   │   ├── CampAndToolsTab.tsx # Survival tools & recall scroll scribing
   │   │   └── ScrollScriptoriumTab.tsx # Spell scroll scribing arcanum
   │   ├── 📂 guild               # Guild HQ Treasury & Mission Board Panels
-  │   ├── GameCanvas.tsx         # Canvas-based Grid Rendering Engine
-  │   ├── CraftingPanel.tsx      # Modular Arcanum Workbench Panel
-  │   ├── GodPanelOverlay.tsx    # Sovereign Developer Console Tab Shell
-  │   └── ChunkMinimap.tsx       # Overworld Map & Fog of War Visualizer
+  │   └── 📂 modals              # Standalone Modal Overlays
+  │       ├── TradeModal.tsx     # Merchant trading & caravan departures
+  │       ├── DialogueModal.tsx  # NPC conversation trees & tavern gossip
+  │       ├── CaravanActiveOverlay.tsx # Caravan travel progress & wagon HP
+  │       └── DiscardItemModal.tsx # Item discard & ground loot drop gump
   │
-  ├── 📂 data                    # Static Game Databases & Declarative JSON Schemas (v4.2.4)
-  │   ├── shops.json             # Blacksmith, Merchant, Tavern & Apothecary items catalog (NEW)
+  ├── 📂 data                    # Static Game Databases & Declarative JSON Schemas
   │   ├── balance.ts             # Centralized XP leveling formulas, armor mitigation, & combat curves
-  │   ├── economy.json           # Settlement trade tables, reputation tiers, & biome pricing
+  │   ├── recipes.ts             # Recipe exports & typed accessors
+  │   ├── items.ts               # Equipment, materials, and catalysts data exports
+  │   ├── monsters.ts            # Monster catalog & bestiary definitions
+  │   ├── soundCatalog.ts        # Sound type mappings & audio metadata
+  │   ├── worldHistory.ts        # Lore chapters & mythic world history
+  │   ├── combatFlavors.ts       # Weapon-specific narrative striking verbs
+  │   ├── bestiary.json          # Declarative creature templates & stats
+  │   ├── caravanBosses.json     # World Threat Boss Ambush templates & stat checks
+  │   ├── caravanEvents.json     # Declarative caravan events & chance thresholds
+  │   ├── catalysts.json         # Elemental catalyst crystal definitions
+  │   ├── combatFlavors.json     # Weapon combat narrative strings
+  │   ├── decorTemplates.json    # Interactive level decor prop configurations
   │   ├── dialogues.json         # Externalized NPC dialogue trees & quest matrices
-  │   ├── combatFlavors.ts       # Text generators for rich narrative combat
+  │   ├── economy.json           # Settlement trade tables, reputation tiers, & biome pricing
   │   ├── enemies.json           # Declarative base monster stats
+  │   ├── enemyBlueprints.json   # Modifiable enemy templates
+  │   ├── fleeQuotes.json        # Procedural coward fleeing quotes
   │   ├── gameConfig.json        # Engine tuning constants
-  │   ├── townTemplates.json     # Town layouts and merchant spawn configs
-  │   ├── worldConfig.json       # Biome thresholds, climate occurrence weights, and hazards
+  │   ├── guildData.json         # Guild upgrades, sanctuary decors & faction gear
+  │   ├── materials.json         # Base crafting alloys & ore types
+  │   ├── quests.json            # Guild missions & companion expeditions
+  │   ├── recipes.json           # Declarative JSON recipes for culinary, alchemy, and tools
   │   ├── relics.json            # Externalized Relic definitions and properties
-  │   ├── spellScrolls.json      # Externalized Spell Scroll templates and mana costs
-  │   └── scars.json             # Externalized Scar definitions and severity tables
+  │   ├── safehouse.json         # Safehouse upgrades & stash storage configs
+  │   ├── scars.json             # Battle scar templates & modifier tables
+  │   ├── shops.json             # Blacksmith, Merchant, Tavern & Apothecary items catalog
+  │   ├── soundCatalog.json      # Structured sound effect catalog
+  │   ├── spellScrolls.json      # Spell scroll templates and mana costs
+  │   ├── spellsCatalog.json     # Active spells catalog & elemental schools
+  │   ├── storyEvents.json       # Game Master event templates & interventions
+  │   ├── structures.json        # World structure presets & blueprint layouts
+  │   ├── townTemplates.json     # Town layouts and merchant spawn configs
+  │   ├── weaponTemplates.json   # Base weapon archetypes & attributes
+  │   ├── worldConfig.json       # Biome thresholds, climate occurrence weights, and hazards
+  │   └── worldHistory.json      # Lore chronicles & Finnish landmark records
   │
-  └── 📂 utils                   # Pure Functional Engine Sub-Systems
-      ├── weatherEngine.ts       # Data-driven weather effects & modifiers
-      ├── spellsAndEquipment.ts  # Spell lists, starting gear, and magical spell structures
-      ├── shopData.ts            # Merchant stock generators and trade config utilities
-      ├── fleeQuotes.ts          # Procedural enemy fleeing dialogue quotes
-      ├── caravanAndTerritory.ts # Caravan schedules, traveling guards, and territory conquest maps
-      ├── itemsData.ts           # Item Templates, Catalysts, and Materials
-      ├── dungeon.ts             # Procedural Cave/Dungeon Generator
-      ├── overworld.ts           # Deterministic Chunk Generator with Seeds
-      ├── ai.ts                  # Pathfinding (Bresenham, FOV, A*)
-      ├── audio.ts               # WebAudio procedural synthesizer, spatial attenuation & ambient soundscapes
-      ├── buildingAudio.ts       # Building interior detection & acoustic filtering rules (v4.3.6)
-      ├── itemWeight.ts          # Encumbrance & Inventory Weight Calculator
-      ├── scars.ts               # Permadeath "Scars of the Defeated" Generator
-      └── tradeEconomy.ts        # Guild Upgrades, Commerce & Caravans
-
-  ├── 📂 tests                   # Automated Vitest Engine Test Suites (v4.3.3)
+  ├── 📂 utils                   # Pure Functional Engine Sub-Systems
+  │   ├── ai.ts                  # Pathfinding (Bresenham, FOV, A*, Uint8Array BFS)
+  │   ├── audio.ts               # Backward-compatible WebAudio synthesizer engine facade
+  │   ├── 📂 audio               # Modular WebAudio Synthesizer Sub-Engine
+  │   │   ├── types.ts           # Audio context interfaces, tone definitions, SFX registries, sound params
+  │   │   ├── synthEngine.ts     # WebAudio node graphs, oscillators, ADSR envelopes, filters & gain control
+  │   │   ├── spatialAudio.ts    # 2D tile coordinate panning, low-pass distance muffling & volume falloff
+  │   │   ├── ambientSoundscapes.ts # Continuous environmental audio layers (rain, blizzards, winds, caves)
+  │   │   ├── soundCatalog.ts    # Procedural sound design definitions for UI, spells, combat, loot, crafting
+  │   │   └── index.ts           # Unified audio barrel export
+  │   ├── bestiary.ts            # Bestiary lookup utilities & monster categorizer
+  │   ├── buildingAudio.ts       # Building interior detection & acoustic filtering rules
+  │   ├── caravanAndTerritory.ts # Caravan schedules, traveling guards, and territory conquest maps
+  │   ├── caravanEncounters.ts   # D20 road encounter resolver & reward calculations
+  │   ├── combatArchetypes.ts    # Golden Triangle combat archetypes & anomalies
+  │   ├── combatFloaterDrift.ts  # Directional outward drift & projectile impact alignment
+  │   ├── companionAdvice.ts     # Companion tactical advice & narrative triggers
+  │   ├── decorEngine.ts         # Interactive Level Decor Props Engine
+  │   ├── dungeon.ts             # Procedural Cave/Dungeon Generator
+  │   ├── fleeQuotes.ts          # Procedural enemy fleeing dialogue quotes
+  │   ├── gameUtils.ts           # Safe stairs finder, coordinate helpers & math utilities
+  │   ├── gmNarrator.ts          # Offline storytelling AI & ambient direction nudges
+  │   ├── gmStoryteller.ts       # Backward-compatible GM Storyteller facade
+  │   ├── 📂 storyteller         # Modular Game Master Storyteller Sub-Engine
+  │   │   ├── types.ts           # Storyteller interfaces, memory state, and catalog loaders
+  │   │   ├── storytellerFlavor.ts # Narrative prompt and placeholder token interpolators
+  │   │   ├── storytellerEncountersData.ts # Master registry of 26 dynamic GM encounters
+  │   │   ├── storytellerChaos.ts# Chaos score math & 20-tier periodic Chaos Core Surge matrices
+  │   │   ├── storytellerRescue.ts# Autonomous pity system & emergency savior triggers
+  │   │   ├── storytellerEngine.ts # Tension pacing, boredom curves & turn tick runner
+  │   │   └── index.ts           # Storyteller barrel export index
+  │   ├── itemWeight.ts          # Encumbrance & Inventory Weight Calculator
+  │   ├── itemsData.ts           # Item Templates, Catalysts, and Materials
+  │   ├── moddingEngine.ts       # Runtime Modding API & Custom Dungeon Generator
+  │   ├── mutationSynergy.ts     # Dual-element synergy chain engine & mutagenic strain
+  │   ├── npcDialogue.ts         # Weather and time reactive NPC dialogue trees
+  │   ├── overworld.ts           # Unified overworld generation re-export
+  │   ├── 📂 overworld           # Modular Overworld Generation Sub-Modules
+  │   │   ├── overworldCore.ts   # PRNG seeds, Whittaker biomes, noise maps
+  │   │   ├── overworldTownGen.ts# Settlement layouts, harbors & castle keeps
+  │   │   ├── overworldWildernessGen.ts # Wilderness terrain, lakes & hazards
+  │   │   ├── overworldLivelySpawners.ts# Traveling merchants & bandit camps
+  │   │   └── overworldChunkGen.ts # Chunk assembler orchestrator
+  │   ├── questData.ts           # Quest tracking helpers & status validators
+  │   ├── relics.ts              # Relic lookup and passive effect evaluators
+  │   ├── scars.ts               # Permadeath "Scars of the Defeated" Generator
+  │   ├── scrollUtils.ts         # Spell scroll scribing & inventory merge utilities
+  │   ├── shopData.ts            # Merchant stock generators and trade config utilities
+  │   ├── siegeUtils.ts          # Watchtower siege combatant spawning & timers
+  │   ├── spellScrolls.ts        # Spell scroll casting handlers & mana verification
+  │   ├── spellsAndEquipment.ts  # Spell lists, starting gear, and magical spell structures
+  │   ├── structurePlacer.ts     # Modular blueprint carver & legend mapper
+  │   ├── tradeEconomy.ts        # Guild Upgrades, Commerce & Caravans
+  │   ├── weatherEngine.ts       # Data-driven weather effects & modifiers
+  │   ├── wildernessCamping.ts   # Wilderness Campsite Quality, Insulation & Night-Watch Sentry Engine
+  │   └── worldThreat.ts         # Adaptive world threat & chaos calculation
+  │
+  └── 📂 tests                   # Automated Vitest Engine Test Suites (50 test files, 308 tests)
       ├── ai.test.ts             # Pathfinding, Bresenham line of sight & enemy AI tests
+      ├── berryBushAndRegenBatching.test.ts # Berry bush harvesting & regen batching
+      ├── caravanEncounters.test.ts # D20 caravan road encounter triggers & rewards
       ├── combat.test.ts         # Combat damage, armor mitigation & attack resolution
+      ├── combatBatching.test.ts # Turn combat batching & performance tests
+      ├── combatFloaterDrift.test.ts # Directional outward drift & projectile impact alignment
+      ├── combatSimulation.test.ts # Simulated combat encounters and multi-turn balance
+      ├── companionAdvice.test.ts# Companion tactical advice & narrative triggers
+      ├── comprehensiveGameplayScalingSimulation.test.ts # End-to-end 100-turn scaling simulation
       ├── craftingAndAlchemy.test.ts # Recipe matrix, brewing, catalysts & over-forge heat
+      ├── dataCatalogs.test.ts   # JSON catalog validation and schema checks
+      ├── dustDevils.test.ts     # Desert dust devil vortex particle physics
       ├── economyAndEvents.test.ts # Settlement trade, reputation & caravan event triggers
-      ├── endToEndGameplaySimulation.test.ts # End-to-end 50-turn gameplay, commerce, guild & save validation
+      ├── endToEndGameplaySimulation.test.ts # End-to-end 50-turn gameplay, commerce, guild & save
+      ├── fallingLeaves.test.ts  # Ambient falling leaf, blossom & spore particles
       ├── gameplaySimulation.test.ts # Simulated multi-turn dungeon crawls & turn solver
+      ├── harborPort.test.ts     # Coastal harbor towns, docks & nautical trades
+      ├── hooksIntegration.test.ts # Domain hook integration & state synchronization
       ├── itemsAndInventory.test.ts # Inventory stacking, weight encumbrance & item durability
       ├── logAndDiagnostics.test.ts # Combat log formatting, diagnostic events & level scaling
+      ├── npcDialogue.test.ts    # Weather and time reactive NPC dialogue trees
+      ├── npcSchedulesAndShelter.test.ts # NPC daily routines, weather shelter & tavern drinking
       ├── saveLoad.test.ts       # Serialization, save integrity validation & corruption handling
+      ├── settlementScalingAndTaverns.test.ts # Settlement tier scaling & tavern layouts
+      ├── shadowRenderer.test.ts # Dynamic sun & moon 24h directional drop shadows
       ├── spellsAndMana.test.ts  # Active spells catalog, mana costs & scroll conversions
       ├── storytellerAI.test.ts  # GM state, personality shifts & encounter triggers
       ├── weatherAndMutations.test.ts # Weather effects, catalyst multipliers & dual-element synergies
+      ├── wildernessEnemyTierVariance.test.ts # Wilderness monster tier variance & affix scaling
       └── worldGen.test.ts       # Chunk generation, biomes & dungeon floor layouts
+```
+
+---
+
+## 📦 Zero-Friction Modular Data & Content Architecture (`/src/data`)
+
+The engine strictly separates **gameplay systems** from **game content**. All game entities, items, recipes, quests, dialogues, spells, scars, and encounters live inside structured JSON catalogs under `/src/data/`, with high-performance, type-safe accessor functions exported through `/src/data/index.ts`.
+
+### 🗂️ Master Content Registry & JSON Catalogs
+
+| JSON Catalog | Data Loader / Module | Description & Accessor Functions |
+|---|---|---|
+| `bestiary.json` / `enemies.json` | `src/data/monsters.ts` | Base creature templates, boss blueprints, squad presets (`getMonsterDefinitionByKey`, `getMonstersByCategory`) |
+| `materials.json` / `catalysts.json` | `src/data/items.ts` | Crafting alloys, ores, gems, elemental catalysts (`getMaterialById`, `getCatalystById`) |
+| `weaponTemplates.json` | `src/data/items.ts` | Master weapon templates, damage profiles, ranges, attack speeds (`WEAPON_TEMPLATES`) |
+| `relics.json` | `src/data/items.ts` | Draftable sanctum relics and passive modifiers (`getRelicById`, `RELIC_CATALOG`) |
+| `recipes.json` | `src/data/recipes.ts` | Culinary dishes, apothecary potions, and survival tools (`COOKING_RECIPES`, `BREWING_RECIPES`, `TOOL_RECIPES`) |
+| `quests.json` | `src/data/quests.ts` | Town bounties, gathering missions, faction contracts (`getQuestById`, `getQuestsByTown`, `getAvailableQuests`) |
+| `spellsCatalog.json` | `src/data/spells.ts` | Active combat spells, elements, mana costs, formulas (`getSpellById`, `getSpellsByElement`) |
+| `scars.json` | `src/data/scars.ts` | Battle scars, permanent stat penalties & veteran bonuses (`getScarByName`, `getRandomScar`) |
+| `shops.json` | `src/data/shops.ts` | Blacksmith, Merchant, Tavern, and Apothecary inventories (`getShopItemsByType`) |
+| `dialogues.json` / `fleeQuotes.json` | `src/data/dialogues.ts` | NPC conversation trees, atmospheric barks, cowardly fleeing quotes (`getDialoguesForCategory`, `getRandomDialogue`, `getRandomFleeQuote`) |
+| `guildData.json` / `safehouse.json` | `src/data/guild.ts` | Sunder Guild laboratory upgrades, decor installments, faction war gear, safehouses (`getGuildUpgradeById`, `getCompanionQuestById`) |
+| `caravanEvents.json` / `caravanBosses.json` | `src/data/caravan.ts` | D20 caravan road encounters, bandit blockades, world threat bosses (`getCaravanEventByThreshold`, `getRandomCaravanBoss`) |
+| `storyEvents.json` | `src/data/storyEvents.ts` | Autonomous GM story interventions, chaos surges, emergency rescues (`getChaosSurgeByRoll`, `getStoryEncounterById`) |
+| `decorTemplates.json` | `src/data/decor.ts` | Level interactive decor props for dungeons, ruins, and settlements (`getDecorPropsByCategory`) |
+| `townTemplates.json` / `structures.json` | `src/data/structures.ts` | Settlement layouts, building interiors, town squares (`getTownSquareById`, `BUILDING_INTERIORS`) |
+| `soundCatalog.json` | `src/data/soundCatalog.ts` | Procedural WebAudio sound parameters and SFX catalogs (`SOUND_CATALOG`) |
+| `worldHistory.json` | `src/data/worldHistory.ts` | Mythic lore chronologue and historic lore book entries (`WORLD_HISTORY_CHAPTERS`) |
+
+### 🚀 Developer Quick Start: Adding New Content in Seconds
+
+Because data is decoupled from the UI, adding new game elements requires **zero UI rewrites**. Simply add an entry to the JSON file:
+
+#### 1. Adding a New Crafting Recipe in `src/data/recipes.json`
+```json
+{
+  "id": "recipe_void_infused_stew",
+  "name": "🌌 Void-Infused Astral Stew",
+  "description": "Brewed with void mushrooms and shadow crystals. Grants +15 Max MP and +4 Magic Damage for 80 turns.",
+  "restoringHp": 60,
+  "restoringMp": 45,
+  "materials": { "mat_berry": 4, "mat_meat": 2 },
+  "catalysts": { "cat_shadow": 1 },
+  "buff": {
+    "name": "Astral Resonance",
+    "description": "+4 Magic Damage & Mana Regeneration",
+    "atkBonus": 4,
+    "defBonus": 0,
+    "critBonus": 0.15,
+    "speedBonus": 1,
+    "turnsRemaining": 80
+  }
+}
+```
+
+#### 2. Adding a New Active Spell in `src/data/spellsCatalog.json`
+```json
+{
+  "id": "solar_flare",
+  "name": "Solar Flare",
+  "icon": "☀️",
+  "manaCost": 7,
+  "damageMultiplier": 1.45,
+  "element": "Fire",
+  "description": "Blinds and incinerates all foes in a radius of 2.",
+  "effectDescription": "Deals 145% fire damage to all adjacent enemies and blinds them for 2 turns."
+}
+```
+
+#### 3. Accessing Data Anywhere in Code
+```typescript
+import { 
+  getMonsterDefinitionByKey, 
+  getQuestById, 
+  getSpellById, 
+  getRandomScar,
+  COOKING_RECIPES 
+} from '../data';
+
+// All functions are fully typed with TypeScript autocompletion:
+const dragon = getMonsterDefinitionByKey('dragon');
+const activeQuest = getQuestById('q_pest_control');
+const spell = getSpellById('solar_flare');
 ```
 
 ---
 
 ## 🧪 Automated Unit & Engine Test Suite (Vitest)
 
-The engine features 21 test suites (86 unit tests passing 100% green) covering procedural generation, pathfinding AI, combat balance, save/load validation, crafting, weather mechanics, dual-element synergies, GM Storyteller performance evaluation, and watchtower siege mechanics.
+The engine features 50 test suites (308 unit & simulation tests passing 100% green) covering procedural generation, pathfinding AI, player combat execution (`usePlayerAttack`), directional shadows, water ripples, ambient particles, save/load validation and state migration, crafting, weather mechanics, dual-element synergies, GM Storyteller performance evaluation, and watchtower siege mechanics.
 
 Run all automated unit tests:
 ```bash
@@ -209,7 +477,8 @@ The engine will **automatically** parse your configuration for combat buffs, mov
 
 - **Centralized Balance Constants (`src/data/balance.ts`)**: Tweak XP formulas (`getXpForLevel`), damage mitigation curves (`calculateNetDamage`), critical hit multipliers (`calculateCritDamage`), and exhaustion thresholds in one central configuration.
 - **Basic Weapons & Crafting Materials**: Managed inside `src/utils/itemsData.ts`. Customize base templates, durability, range, and material modifiers.
-- **Spells & Spellcast**: Cast costs and custom magic projectiles are handled under `handleCastSpell` in `src/App.tsx`.
+- **Player Attacks & Combat Resolution (`src/hooks/usePlayerAttack.ts`)**: Core player melee/ranged attack resolution, weapon durability wear, directional floater drift triggering, companion assistance intercepts, and bump-to-attack routing.
+- **Spells & Spellcast (`src/hooks/useSpellcasting.ts`)**: Cast costs, custom magic projectiles, mana verification, and scroll scribing conversions are handled under `useSpellcasting`.
 - **Combat Narratives**: If you want to change how fights feel, modify `src/data/combatFlavors.ts` to add custom striking verbs, damage descriptions, and funny failure modes.
 - **Economy & Price Rules (`src/data/economy.json`)**: Configure settlement reputation discounts, charisma trade scaling, caravan multipliers, and regional biome pricing tables.
 - **NPC Dialogues & Quests (`src/data/dialogues.json`)**: Externalize and edit NPC dialogue trees, town rumors, and quest matrices.
@@ -240,6 +509,11 @@ For example, our high-tier **Scroll of Recall** is integrated under the **Camp &
   - `1x` Withered Fey Bone (`mat_feybone` - harvested from woodland/mystic undead)
   - `1x` Null Echo Stone (`cat_shadow` - shadow alchemical catalyst)
 - **Output**: A consumable, single-use `scroll_recall_town` item that allows rapid spatial displacement back to any unlocked hub or wilderness sanctuary.
+
+#### Declarative `recipes.json` & Flexible Tool Crafting
+All recipes (Cooking, Alchemy, and Survival Tools) are defined in `/src/data/recipes.json` and exported via `/src/data/recipes.ts`:
+- **Flexible Material Matching**: Survival tool recipes (such as Lumberjack Hatchet 🪓, Prospector Pickaxe ⛏️, and Ancient Fishing Pole 🎣) allow deducting **ANY** material belonging to category sets (e.g., `WOOD_KEYS`: `mat_wood`, `mat_pine_log`, `mat_birch_log`; `METAL_KEYS`: `mat_iron`, `mat_iron_ore`, `mat_steel`, `mat_copper_ore`, `mat_royal_iron`, `mat_mithril`, `mat_obsidian`).
+- **Tree Stump Harvesting**: Chopping down overworld trees replaces the tree tile with a walkable `TileType.TreeStump` (🪵) graphics tile, preserving terrain movement while indicating harvested flora.
 
 ### Step 2: Modifying Ally & Companion Interactions
 To ensure companion safety and enrich the world, friendly units intercept default weapon strikes or collision attacks. If the player attempts to move into or click a tile containing a freed captive, follower, or allied unit, the engine diverts the combat action:
@@ -663,6 +937,25 @@ setGameState((prev) => ({
 
 ---
 
+## 🏰 Special Themed Dungeon Types & Overworld Lairs
+
+The dungeon generator (`src/world/dungeonGen.ts`, `src/world/poiGenerators.ts`) supports **10 specialized dungeon types & procedural overworld lairs**, each equipped with custom tile palettes, specialized lighting filters, unique monster spawn tables, and tailored boss encounters:
+
+| Dungeon Type | ID Token | Theme & Architecture | Specific Monster Spawns & Bosses | Tilemap & Visual Palette |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tuonela's Sunken Keep** | `sunken_keep` | Submerged undead fortress flooded with dark water channels and ancient stone pillars. | Skeleton Archmages, Nakki Water Spirits, Iku-Turso, Tuoni's Shadow Guardians. | Dark navy slate, indigo walls, luminous blue water reflections. |
+| **Ancient Tomb & Crypt** | `ancient_tomb` | Pillar-lined catacombs containing ancestral sarcophagi, urns, and secret trapdoors. | Skeleton Warriors, Void Cultists, Mummy Champions, Tomb Specters. | Obsidian & purple floor tiles with smoldering void torches. |
+| **Ilmarinen's Forge Hearth** | `forge_hearth` | Subterranean volcanic workshop with flowing lava channels, anvils, and elemental hearths. | Magma Golems, Fire Elementals, Corrupted Forge Smiths. | Crimson & fiery orange basalt stone tilemap with lava glow. |
+| **Tapio's Ley-Well Shrine** | `leywell_shrine` | Overgrown mystical botanical sanctuary surrounding a central shimmering mana well. | Forest Spirits, Treants, Celestial Ley-Guardians. | Emerald moss, floral vines, and luminous crystal tiles. |
+| **Väinämöinen's Rune Monolith**| `runic_monolith` | High-magic stone circle spires humming with Finnish mythology rune song chants (*Laulu*). | Arcane Constructs, Void Spell-singers, Rune Stalkers. | Golden-etched rune stone tiles with magic particle emitters. |
+| **Antero Vipunen's Fossil** | `tectonic_fossil` | Cavern built inside the fossilized ribcage of an ancient primordial giant. | Earth Elementals, Cave Bears, Stone Golems, Tectonic Wurms. | Terracotta brown, bone-white, and amber crystal cavern tiles. |
+| **Bandit Lair & Outlaw Camp** | `bandit_lair` / `outlaw_camp` | Wooden palisade outposts, roasting spits, barricades, and locked treasure vaults. | Bandit Crossbowmen, Outlaw Chiefs, Highway Barons. | Timber log walls, campfires, and dirt floor pathways. |
+| **Tactical Caravan Skirmish** | `skirmish` | 24x18 open road map generated during caravan ambushes with a central Merchant Wagon (`🛒`). | Highway Terror Bosses, Bandit Ambushers, Dire Wolves. | Dirt crossroads with wagon props and guard campfire. |
+| **Sanctum Boss Floor** | `boss_floor` | Grand single-room boss arena with entrance pillars, boss HUD health bars, and relic altars. | Act Bosses (*Abyssal Void Lord*, *Thunder Warlord Volkan*). | High-contrast floor marble with glowing relic draft altars. |
+| **Rogue Cave Network** | `cave` | Classic cellular automata cave network populated with dynamic loot, traps, and monsters. | Goblins, Cave Spiders, Orc Warriors, Slimes. | Standard stone cavern tiles with dynamic lighting. |
+
+---
+
 ## 🌌 Autonomous GM Engine Architecture & Controls
 
 The **Autonomous GM (Game Master) Engine** (`src/utils/gmStoryteller.ts`) is an intelligent, reactive narrative controller running natively inside the game loop. It monitors battlefield tension, player HP ratios, movement patterns, and idle turns to dynamically steer gameplay events.
@@ -674,13 +967,23 @@ The **Autonomous GM (Game Master) Engine** (`src/utils/gmStoryteller.ts`) is an 
 
 ### 🌀 Dynamic Storyteller Interventions
 When active, the Autonomous GM monitors each turn step and automatically invokes narrative interventions when specific battlefield conditions are met:
-1. **Divine Protection Aura**: Casts a protective shield when player HP drops into critical danger (< 15% max HP).
-2. **Guardian Paladin Spawn**: Summons an Ethereal Holy Templar follower during extreme battlefield pressure or boss fights.
-3. **Ether Mana Surge**: Channels raw MP directly to the player when their mana reservoir reaches 0.
-4. **Alchemical Sprite Manifestation**: Drops a Volatile Alchemical Sprite near the player carrying high-tier elemental catalysts.
-5. **Ore Thief & Bandit Camp Spawns**: Summons Ilmarinen's Ore Thieves carrying rare metals or outlaw encampments around campfires.
-6. **Spike Traps & Chaos Surges**: Sadistic or mischievous moods trigger local floor spike hazards or passive chaos rolls.
-7. **Global Weather Rituals**: Autonomously invokes Solar Cleansings, Storm Callings, Shadow Fog Chants, Frostfalls, Sandstorms, and Glacial Blizzards.
+1. **Autonomous Weather Modulations (`gm_harsh_tempest`, `gm_benevolent_clear_skies`, `weather_mutation`)**:
+   - Dynamically mutates overworld weather based on GM personality mood (*Sadistic* / *Mischievous* vs. *Benevolent*).
+   - Biome-aware tempest escalations: calls down Blizzards in Tundra, Sandstorms in Deserts, and Torrential Rain in Forests/Swamps when tension surges.
+   - Benevolent solar cleansings clear skies and dispense warm protective light when player HP is critical (< 35% max HP).
+2. **Dynamic World Threat & Chaos Escalations (`gm_threat_escalation_surge`, `gm_celestial_eclipse_event`, `gm_triangle_cheater`)**:
+   - Temporary Threat Tier surges increase elite monster affixes (*Shieldbreaker*, *Vampiric*, *Thorns*, *Reflective*).
+   - Celestial Eclipses align celestial phases into Blood Moon surges when chaos spikes.
+   - Golden Triangle Anomaly Corruptions mutate nearby enemies beyond standard class constraints into terrifying tactical anomalies.
+3. **Autonomous Caravan Injections & Road Blockades (`gm_caravan_traveler_injection`, `gm_road_blockade_skirmish`)**:
+   - Intrigued/Benevolent GM spawns travelling merchant wagons (`🛒`) in overworld wilderness chunks offering trade stock or escort contracts.
+   - Sadistic GM triggers outlaw road blockades and highwayman ambushes commanded by Corrupted Road Barons on active trade routes.
+4. **Divine Protection Aura**: Casts a protective shield when player HP drops into critical danger (< 15% max HP).
+5. **Guardian Paladin Spawn**: Summons an Ethereal Holy Templar follower during extreme battlefield pressure or boss fights.
+6. **Ether Mana Surge**: Channels raw MP directly to the player when their mana reservoir reaches 0.
+7. **Alchemical Sprite Manifestation**: Drops a Volatile Alchemical Sprite near the player carrying high-tier elemental catalysts.
+8. **Ore Thief & Bandit Camp Spawns**: Summons Ilmarinen's Ore Thieves carrying rare metals or outlaw encampments around campfires.
+9. **Spike Traps & Chaos Surges**: Sadistic or mischievous moods trigger local floor spike hazards or passive chaos rolls.
 
 ### 🛠️ Developer Inspection & Controls
 Developers can inspect and adjust the Autonomous GM Engine in real time through multiple tools:
@@ -690,6 +993,21 @@ Developers can inspect and adjust the Autonomous GM Engine in real time through 
 2. **GM Storyteller Panel (`/` Console or GM Metrics Button)**:
    - Provides live readouts of the GM's internal monologue thoughts feed, active personality, boredom %, and tension rating.
    - Allows forcing specific interventions (e.g., Immediate Rift Spawn, Lightning Smite, Paladin Summoning) on demand.
+
+---
+
+## 🛡️ Town Guard Active Defense & Alarm AI Architecture
+
+Town Guards (`isTownGuard: true`) feature a proactive multi-tier town defense system in `src/hooks/useEnemyAI.ts`:
+
+### 1. Proactive Town-Wide Threat Detection & Alarm Network
+- **Town-Wide Threat Scan**: On every enemy turn, town guards scan the entire settlement map for hostile entities (e.g. bandits, rogue monsters, or hostile invaders).
+- **Active Pursuit & Pathfinding**: When a threat is detected anywhere in town, town guards immediately enter active pursuit, utilizing BFS pathfinding (`getNextStepTowards`) to march directly toward the hostile target.
+- **Defensive Alarm Broadcast**: Detecting or engaging a hostile target causes the guard to sound an alarm, automatically waking up and alerting all dormant town guards within a 30-tile radius (e.g. sentries or guards resting in barracks beds) to form a coordinated defensive response force.
+
+### 2. Multi-Target Combat & Defense
+- **Target Selection & Reciprocal Attacks**: Guards engage hostiles using Chebyshev range calculations (`dx <= enemyRange && dy <= enemyRange`) and deal persistent damage using `applyDamageToEnemy`.
+- **Hostile Target Prioritization**: Hostile monsters prioritize attacking active defenders (Town Guards and Followers) in their line of sight, allowing town guards to shield player settlements and engage in full multi-unit tactical combat.
 
 ---
 
@@ -733,15 +1051,69 @@ The engine relies on pure **procedural WebAudio synthesis** in `src/utils/audio.
 
 ## 🧪 Automated QA, Import Health Audit & Testing Suite
 
-The codebase is protected by an automated QA & testing suite with 100% passing status across **20 Vitest test suites (80 total unit & end-to-end simulation tests)**.
+The codebase is protected by an automated QA & testing suite with 100% passing status across **49 Vitest test suites (295 total unit, simulation & automated interaction tests)**.
 
 ### 🛠️ Developer Scripts
-- **`npm run audit`**: Launches the comprehensive codebase auditor (`scripts/auditCodebase.cjs`), verifying 200+ source files, 22 JSON data catalog files, and relative import resolutions across all TypeScript files. It then runs TypeScript type checking (`tsc --noEmit`) and all 20 Vitest unit test suites.
-- **`npm test`**: Runs all 20 Vitest unit and integration test suites (`vitest run`).
+- **`npm run audit`**: Launches the comprehensive codebase auditor (`scripts/auditCodebase.cjs`), verifying 378 source files, 29 JSON data catalog files, and relative import resolutions across all TypeScript files. It then runs TypeScript type checking (`tsc --noEmit`) and all 49 Vitest test suites.
+- **`npm test`**: Runs all 49 Vitest test suites (`vitest run`).
 - **`npm run lint`**: Performs TypeScript type verification without emitting build artifacts (`tsc --noEmit`).
 - **`npm run build`**: Compiles the application for production deployment with Vite (`vite build`).
 
-[diff_block_end]
+---
+
+## 🎮 Developer Cheats, GM Commands & Debugging Tools Reference
+
+The game engine provides an extensive suite of developer hotkeys, GM cheat commands, visual tilemap painters, and live diagnostics designed for rapid testing, balance tweaking, and content creation.
+
+### 1. Global Developer Hotkeys
+- **`G` Key**: Toggles the **Sovereign God Panel & GM Narrator Overlay** (`GodPanelOverlay.tsx`) instantly from anywhere in the game.
+- **`F12` / `~` Key**: Opens the Developer Console overlay.
+- **`/` Key**: Focuses the GM Console Input field inside the God Panel.
+
+---
+
+### 2. GM Cheat Commands Catalog (`src/data/gmCommands.ts`)
+
+The God Panel features an interactive command line that accepts GM slash commands. Commands can be executed by typing in the input box or clicking the quick-action command pills.
+
+| Command Name | Usage | Description |
+| :--- | :--- | :--- |
+| **`/god`** | `/god` | Toggles absolute Invincibility and unlimited carrying weight (`9999` kg). |
+| **`/heal`** | `/heal` | Instantly restores player HP, Mana, and clears Fatigue/Injury debuffs. |
+| **`/max_stats`** | `/max_stats` | Sets all player primary stats (STR, DEX, INT, CON, LCK, CHA) to `99`. |
+| **`/gold`** | `/gold <amount>` | Grants specified gold pouch amount directly to the player (default: `1000`). |
+| **`/xp`** | `/xp <amount>` | Awards experience points to trigger immediate level ups (default: `500`). |
+| **`/spawn_boss`** | `/spawn_boss <name>` | Spawns a World Threat Boss Ambush enemy on adjacent canvas tiles. |
+| **`/spawn_caravan`** | `/spawn_caravan` | Spawns a traveling merchant wagon group nearby. |
+| **`/repair_wagon`** | `/repair_wagon` | Instantly restores active Merchant Caravan Wagon Hull HP to `100%`. |
+| **`/teleport_town`** | `/teleport_town` | Fast-travels the player to the nearest overworld settlement chunk. |
+| **`/clear_fog`** | `/clear_fog` | Completely reveals Fog of War across the current overworld chunk or dungeon floor. |
+| **`/trigger_weather`** | `/trigger_weather <type>` | Forces immediate weather transition (`rain`, `blizzard`, `ashfall`, `sandstorm`, `void_fog`, `clear`). |
+| **`/force_eclipse`** | `/force_eclipse` | Triggers a celestial Blood Moon / Eclipse phase for high-threat monster spawns. |
+| **`/threat_level`** | `/threat_level <1-5>` | Directly overrides the global World Threat Tier (1 = Peaceful, 5 = Apocalypse). |
+| **`/add_item`** | `/add_item <id>` | Spawns any equipment, scroll, or material directly into player inventory by ID. |
+| **`/add_catalyst`** | `/add_catalyst <type>` | Grants 5x specified Elemental Catalyst (`fire`, `ice`, `lightning`, `holy`, `void`). |
+| **`/add_relic`** | `/add_relic <id>` | Drafts and equips a Sanctum Relic by ID. |
+
+---
+
+### 3. Visual Developer Editors & Debuggers (`src/components/god/`)
+
+1. **Visual Dungeon & Tilemap Painter (`GodDungeonEditor.tsx`)**:
+   - 2D grid painter for visually designing dungeon rooms and skirmish battlegrounds.
+   - Brush tools: **Wall**, **Floor**, **Water**, **Chasm**, **Chest**, **Monster**, **Torch**, **Guard**, **Wagon**.
+   - Click **"Export Blueprint to Mod Manager"** to convert the painted layout directly into a JSON mod for runtime spawning.
+
+2. **Runtime Mod Manager (`GodModdingTab.tsx`)**:
+   - Live JSON editor featuring real-time syntax highlighting, error overlays, and mod toggle switches.
+   - Allows importing, exporting, creating, and hot-reloading custom monsters, weapons, armor, spells, and dungeon blueprints.
+
+3. **Item & Monster Spawners (`GodItemSpawner.tsx`, `GodMonsterSpawner.tsx`)**:
+   - Dropdown catalog UI allowing developers to spawn any item, spell scroll, crafting material, or monster directly onto adjacent canvas tiles.
+
+4. **Performance & Diagnostics Monitor (`GodDiagnosticsTab.tsx`)**:
+   - Real-time performance readouts: active FPS, canvas draw calls per frame, particle count, active entity count, overworld chunk memory footprint, and WebAudio synthesizer node usage.
+
 
 
 

@@ -1,29 +1,49 @@
 {
   "dialogues": {
     "merchant": [
-      "Welcome, adventurer! Browse my fine selection of wares and materials.",
-      "The trade routes have been dangerous lately, but my inventory remains unmatched.",
-      "Bring me rare materials, and I'll make sure you get a fair price in gold."
+      "Welcome, adventurer! Browse my fine selection of wares, rare metals, and catalysts.",
+      "The overworld trade routes have been perilous lately, but my inventory remains unmatched in Sunder.",
+      "Bring me rare monster shards and refined ingots, and I'll ensure you get top coin.",
+      "A sharp blade is good, but a well-stocked pack of provisions is what keeps you breathing out there.",
+      "Trade caravans bring exotic goods from the Vanguard Hold—have a look before stock runs dry!"
     ],
     "blacksmith": [
-      "Looking for sturdy steel or a sharp edge? You came to the right forge.",
-      "Good metal isn't cheap, but it will save your life out in the wilderness.",
-      "Keep your gear repaired. A dull blade is a dangerous thing in Sunder."
+      "Looking for sturdy steel, tempered plate, or a razor edge? You came to the right anvil.",
+      "Good metal isn't cheap, but it's cheaper than a tombstone out in the monster-infested wilds.",
+      "Keep your gear repaired. A dull blade or cracked chestplate is a death sentence in the Abyss.",
+      "Infusing elemental catalysts into raw ore turns ordinary steel into legendary weapons. Try it at the forge!",
+      "The furnace burns night and day. Hammering steel is the only melody that keeps Sunder standing."
     ],
     "apothecary": [
-      "Potions, catalysts, and alchemical remedies... what ails you?",
-      "Harvesting wild plants and monster shards yields potent concoctions.",
-      "A single health potion can be the difference between victory and defeat."
+      "Potions, elemental catalysts, and alchemical remedies... what ails your soul, traveler?",
+      "Harvesting wild mandrake roots and monster shards yields remarkably potent concoctions.",
+      "A single health potion or mana elixir can be the thin line between triumph and disaster.",
+      "Alchemical catalysts can empower your crafted gear with burning flame, frozen frost, or crackling shock!",
+      "Handle those crystal phials with care—one misstep with volatile catalysts will singe your eyebrows!"
     ],
     "tavern_master": [
-      "Pull up a bench! Have a cold mug of frothy beer or warm hearth bread.",
-      "Travelers pass through here daily. Ask around if you're looking for rumors.",
-      "Nothing cures overworld fatigue quite like a good meal and a rest."
+      "Pull up a oak bench! Have a cold mug of frothy dwarven ale or warm hearth stew.",
+      "Travelers pass through here daily. Sit by the fire if you're hunting for regional rumors and bounty tips.",
+      "Nothing cures overworld exhaustion or blizzard chills quite like a hot meal and a good night's rest.",
+      "Bards sing tales of the Deep Abyss and its mythical guardians... most are tall tales, but some are true!",
+      "Keep the peace in my tavern, friend! The guards don't take kindly to brawls near the bar."
     ],
     "guard": [
-      "Keep your weapon sheathed in settlement bounds, traveler.",
-      "Watchtowers keep Sunder safe from outlaw raids. Support your local faction.",
-      "Report any suspicious activity or wild beast sightings directly to us."
+      "Keep your weapon sheathed within settlement boundaries, traveler. Order is maintained here.",
+      "Watchtowers keep Sunder safe from outlaw raids and beast swarms. Support your local faction!",
+      "Report any suspicious activity, outlaw cultists, or wild beast sightings directly to the watch commander.",
+      "The roads beyond the gates grow dark at dusk. Keep a torch lit and your shield ready.",
+      "Sunder's walls have stood for generations against the Abyss monsters. We'll hold the line."
+    ],
+    "scholar": [
+      "Fascinating! The ancient runes etched upon the Abyss obelisks predate the Great Fracture.",
+      "Did you know? Moon phases deeply influence monster aggression and rare catalyst spawn rates!",
+      "Knowledge is the sharpest weapon of all. Study your enemy's archetype before striking."
+    ],
+    "relic_hunter": [
+      "Ah, a fellow seeker of forgotten treasures! The deep dungeons hide relics of unmatched power.",
+      "If you stumble upon Sanctum Relics on your dungeon delves, hold onto them—they grant passive miracles!",
+      "I've searched ruined temples across Sunder. Danger is high, but the spoils are divine."
     ]
   },
   "quests": [

@@ -251,7 +251,7 @@ export default function LockpickingMiniGame({
         }
 
         // Check success condition: reaching 90 degrees
-        if (screwdriverRotation >= MAXIMUM_ROTATION && currentStatus !== 'SUCCESS') {
+        if (screwdriverRotation >= MAXIMUM_ROTATION) {
           handleSuccess();
           animationFrameId = requestAnimationFrame(tick);
           return;

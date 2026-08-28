@@ -1,4 +1,4 @@
-import { TileType, Chest, Enemy, WatchtowerState } from '../types';
+import { TileType, BiomeType } from '../types';
 import { generatePointsOfInterest, generateWatchtowerPOI } from './poiGenerators';
 import { POI_BLUEPRINTS, getPOIBlueprint } from '../data/worldHistory';
 
@@ -16,7 +16,7 @@ export function generateChunkPOIs(
   map: TileType[][],
   chunkX: number,
   chunkY: number,
-  biome: 'forest' | 'desert' | 'tundra' | 'swamp',
+  biome: BiomeType,
   width: number,
   height: number,
   prng: (x: number, y: number, seed?: number) => number

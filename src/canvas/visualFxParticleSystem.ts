@@ -87,6 +87,47 @@ export class VisualFxParticleSystem {
     });
   }
 
+  public spawnWaterRipple(x: number, y: number, color: string = 'rgba(56, 189, 248, 0.75)') {
+    if (this.particles.length > 250) return;
+    this.particles.push({
+      id: `ripple_${Math.random()}`,
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      size: 4,
+      color,
+      alpha: 0.85,
+      decay: 0.025,
+      life: 0,
+      maxLife: 35,
+      shape: 'ring',
+    });
+  }
+
+  public spawnFootstepSplash(x: number, y: number, count: number = 6) {
+    if (this.particles.length > 250) return;
+    const colors = ['#38bdf8', '#7dd3fc', '#60a5fa', '#93c5fd'];
+    for (let i = 0; i < count; i++) {
+      const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * 1.2;
+      const speed = 1.0 + Math.random() * 2.2;
+      this.particles.push({
+        id: `splash_${Math.random()}`,
+        x: x + (Math.random() - 0.5) * 12,
+        y: y + (Math.random() - 0.5) * 6,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 1.2 + Math.random() * 1.8,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: 0.9,
+        decay: 0.04 + Math.random() * 0.02,
+        life: 0,
+        maxLife: 22 + Math.random() * 10,
+        shape: 'circle',
+      });
+    }
+  }
+
   public updateAndRender(ctx: CanvasRenderingContext2D, dt: number) {
     if (this.particles.length === 0) return;
 
@@ -119,6 +160,14 @@ export class VisualFxParticleSystem {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
+      } else if (p.shape === 'ring') {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        const rx = p.size + p.life * 0.65;
+        const ry = (p.size + p.life * 0.65) * 0.5;
+        ctx.ellipse(p.x, p.y, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
       } else {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);

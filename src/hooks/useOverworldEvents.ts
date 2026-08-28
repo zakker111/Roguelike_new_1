@@ -44,7 +44,15 @@ export function useOverworldEvents({ setGameState, addLog }: UseOverworldEventsP
     setGameState((prev) => ({
       ...prev,
       weather: newWeather,
-      logs: [`🌤️ The sky shifts... Weather is now ${newWeather.toUpperCase()}.`, ...prev.logs.slice(0, 99)],
+      logs: [
+        {
+          id: `weather_${Date.now()}`,
+          text: `🌤️ The sky shifts... Weather is now ${newWeather.toUpperCase()}.`,
+          type: 'info',
+          timestamp: 'WORLD'
+        },
+        ...prev.logs.slice(0, 99)
+      ],
     }));
   }, [setGameState]);
 
