@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TileType, Enemy, Trap, Chest, GameState, PlayerStats, GameLogMessage, WeaponBaseType, EnemyState, EnemyType, EquipmentItem, LootPile, NPC, OverworldChunk, Follower, DungeonProp, DungeonLevelState } from './types';
+import { TileType, Enemy, Trap, Chest, GameState, PlayerStats, GameLogMessage, WeaponBaseType, EnemyState, EnemyType, EquipmentItem, LootPile, NPC, OverworldChunk, Follower, DungeonProp, DungeonLevelState, GlyphScribingResult } from './types';
 import { generateLevel, spawnFollowersOnLevelLoadByReset, generateDungeonProps } from './utils/dungeon';
 import { computeFOV, bresenhamLine } from './utils/ai';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './utils/itemsData';
@@ -54,6 +54,7 @@ import { consumeItemFromInventory } from './utils/scrollUtils';
 import { SanctumRelic } from './utils/relics';
 import { DEFAULT_QUESTS } from './utils/questData';
 import { getMerchantConfig } from './utils/shopData';
+import { appendBoundedLogs } from './utils/logBuffer';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
@@ -169,6 +170,8 @@ export default function App() {
   const [isBestiaryOpen, setIsBestiaryOpen] = useState(false);
   const [isFishingOpen, setIsFishingOpen] = useState(false);
   const [isLockpickingOpen, setIsLockpickingOpen] = useState(false);
+  const [isScriptoriumOpen, setIsScriptoriumOpen] = useState(false);
+  const [activeScriptoriumScrollTemplateId, setActiveScriptoriumScrollTemplateId] = useState<string | null>(null);
   const [isWeatherControlOpen, setIsWeatherControlOpen] = useState(false);
   const [activeLockpickingChestIndex, setActiveLockpickingChestIndex] = useState<number | null>(null);
   const [unlawfulGuardTarget, setUnlawfulGuardTarget] = useState<{ enemy: Enemy, index: number, pathPoints: any[] } | null>(null);
@@ -235,12 +238,12 @@ export default function App() {
       setGameState((prev) => {
         // compute initial visibility mask around the player
         const visibleMask = computeFOV(prev.playerX, prev.playerY, updatedChunk.map, 6);
-        const nextLogs = [...prev.logs, {
+        const nextLogs = appendBoundedLogs(prev.logs, {
           id: `regen_${Date.now()}`,
           text: `⚡ SYSTEM: Live-regenerated Overworld Chunk (${prev.currentChunkX}, ${prev.currentChunkY}) using modified JSON configurations!`,
           type: 'system' as const,
           timestamp: 'GOD'
-        }];
+        }, 200);
         const nextSpawnedCats = prev.spawnedCats ? [...prev.spawnedCats] : [];
         updatedChunk.npcs.forEach(n => {
           if (n.id?.startsWith('npc_cat_')) {
@@ -273,12 +276,12 @@ export default function App() {
       const newDungeon = generateLevel(LEVEL_WIDTH, LEVEL_HEIGHT, gameState.playerStats.depth, gameState.playerStats.turnsPlayed, gameState.playerStats.realTimeSeconds, gameState.playerStats, gameState.currentWeapon, gameState.defeatedEnemiesCount, gameState.clearedCamps?.length || 0);
       setGameState((prev) => {
         const visibleMask = computeFOV(newDungeon.playerX, newDungeon.playerY, newDungeon.map, 6);
-        const nextLogs = [...prev.logs, {
+        const nextLogs = appendBoundedLogs(prev.logs, {
           id: `regen_${Date.now()}`,
           text: `⚡ SYSTEM: Live-regenerated Dungeon Level ${prev.playerStats.depth} using modified JSON enemy templates!`,
           type: 'system' as const,
           timestamp: 'GOD'
-        }];
+        }, 200);
         return {
           ...prev,
           map: newDungeon.map,
@@ -335,11 +338,9 @@ export default function App() {
         timestamp: timeStr,
       };
       
-      // Limit to 45 logs to avoid memory lags
-      const truncatedLogs = prev.logs.length > 40 ? prev.logs.slice(1) : prev.logs;
       return {
         ...prev,
-        logs: [...truncatedLogs, newMsg],
+        logs: appendBoundedLogs(prev.logs, newMsg, 200),
       };
     });
   };
@@ -478,6 +479,100 @@ export default function App() {
     addLogMessage,
   });
 
+  const handleTriggerScriptorium = (scrollTemplateId?: string) => {
+    setActiveScriptoriumScrollTemplateId(scrollTemplateId || 'scroll_fireball');
+    setIsScriptoriumOpen(true);
+  };
+
+  const handleScriptoriumSuccess = (result: GlyphScribingResult) => {
+    const template = SPELL_SCROLLS.find((t) => t.id === activeScriptoriumScrollTemplateId || t.id.includes(activeScriptoriumScrollTemplateId || '')) || SPELL_SCROLLS[0];
+    const isMasterwork = result.isMasterwork || result.outcome === 'flawless';
+
+    // Deduct recipe materials and catalysts
+    const nextMats = { ...gameState.inventoryMaterials };
+    const nextCats = { ...gameState.inventoryCatalysts };
+
+    if (template.recipe) {
+      if (template.recipe.materials) {
+        Object.entries(template.recipe.materials).forEach(([matId, req]) => {
+          nextMats[matId] = Math.max(0, (nextMats[matId] || 0) - req.required);
+        });
+      }
+      if (template.recipe.catalysts) {
+        Object.entries(template.recipe.catalysts).forEach(([catId, req]) => {
+          nextCats[catId] = Math.max(0, (nextCats[catId] || 0) - req.required);
+        });
+      }
+    } else {
+      const parchmentKey = (nextMats['mat_parchment'] || 0) > 0 ? 'mat_parchment' : 'mat_leather';
+      nextMats[parchmentKey] = Math.max(0, (nextMats[parchmentKey] || 0) - 1);
+    }
+
+    const newScroll: EquipmentItem = {
+      id: `scroll_${template.id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      name: isMasterwork ? `Masterwork ${template.name} 🌟` : `${template.name} 📜`,
+      type: 'scroll' as any,
+      subType: 'Scroll' as any,
+      defense: 0,
+      damage: isMasterwork ? Math.round(template.baseDamage * 1.3) : template.baseDamage,
+      critChance: isMasterwork ? 0.25 : 0.1,
+      range: 6,
+      color: isMasterwork ? '#f59e0b' : '#38bdf8',
+      description: isMasterwork
+        ? `[MASTERWORK INKED] ${template.description} (0 MP cast cost, +30% potency, crafted with precision in the Arcane Scriptorium!)`
+        : template.description,
+      value: isMasterwork ? 300 : 150,
+      durability: 100,
+      maxDurability: 100,
+      isMasterwork: isMasterwork,
+      scrollTemplateId: template.id,
+    };
+
+    playSound('spell');
+
+    setGameState((prev) => ({
+      ...prev,
+      inventoryMaterials: nextMats,
+      inventoryCatalysts: nextCats,
+      equipmentInventory: [...prev.equipmentInventory, newScroll],
+      logs: appendBoundedLogs(prev.logs, {
+        id: `script_${Date.now()}`,
+        text: isMasterwork
+          ? `🌟 [ARCANUM MASTERWORK]: You have flawlessly inscribed ${newScroll.name}! (${result.accuracyScore}% accuracy, 0 MP cost, +30% spell power)`
+          : `📜 [ARCANUM INKED]: You successfully inscribed ${newScroll.name} onto enchanted parchment!`,
+        type: 'loot' as const,
+        timestamp: formatGameTime(prev.gameTime).timeStr,
+      }, 200),
+    }));
+
+    window.dispatchEvent(
+      new CustomEvent('spawn-game-effect', {
+        detail: {
+          x: gameState.playerX,
+          y: gameState.playerY,
+          text: isMasterwork ? `🌟 Masterwork Scroll!` : `+1 Spell Scroll 📜`,
+          type: 'heal',
+        },
+      })
+    );
+  };
+
+  const handleScriptoriumFailure = () => {
+    addLogMessage(`💥 [ARCANUM FIZZLE]: The glyph destabilized and dissolved into ash. Your parchment was lost to the ether.`, 'danger');
+    const parchmentKey =
+      gameState.inventoryMaterials['mat_parchment'] !== undefined &&
+      gameState.inventoryMaterials['mat_parchment'] > 0
+        ? 'mat_parchment'
+        : 'mat_leather';
+    setGameState((prev) => ({
+      ...prev,
+      inventoryMaterials: {
+        ...prev.inventoryMaterials,
+        [parchmentKey]: Math.max(0, (prev.inventoryMaterials[parchmentKey] || 0) - 1),
+      },
+    }));
+  };
+
   const {
     performPlayerAttack,
     getCombatFlavorText,
@@ -528,7 +623,8 @@ export default function App() {
 
     if (activeTargetedScroll) {
       const template = SPELL_SCROLLS.find(t => activeTargetedScroll.id.includes(t.id));
-      const requiredMp = template ? template.mpCost : 20;
+      const isMasterwork = activeTargetedScroll.isMasterwork || activeTargetedScroll.name?.includes('Masterwork');
+      const requiredMp = isMasterwork ? 0 : (template ? template.mpCost : 20);
 
       if (gameState.playerStats.mp < requiredMp) {
         addLogMessage(`❌ Insufficient Mana! You need at least ${requiredMp} MP to channel the scroll.`, 'system');
@@ -609,15 +705,12 @@ export default function App() {
       return {
         ...prev,
         areGuardsHostile: true,
-        logs: [
-          ...prev.logs,
-          {
-            id: `unlawful_${Date.now()}`,
-            text: `⚖️ [CRIMINAL OFFENSE]: You have assaulted a peacekeeper of the crown! Town guards are now hostile!`,
-            type: 'danger' as const,
-            timestamp: formatGameTime(prev.gameTime).timeStr
-          }
-        ]
+        logs: appendBoundedLogs(prev.logs, {
+          id: `unlawful_${Date.now()}`,
+          text: `⚖️ [CRIMINAL OFFENSE]: You have assaulted a peacekeeper of the crown! Town guards are now hostile!`,
+          type: 'danger' as const,
+          timestamp: formatGameTime(prev.gameTime).timeStr
+        }, 200)
       };
     });
 
@@ -918,6 +1011,13 @@ export default function App() {
           setIsFishingOpen={setIsFishingOpen}
           isLockpickingOpen={isLockpickingOpen}
           setIsLockpickingOpen={setIsLockpickingOpen}
+          isScriptoriumOpen={isScriptoriumOpen}
+          setIsScriptoriumOpen={setIsScriptoriumOpen}
+          activeScriptoriumScrollTemplateId={activeScriptoriumScrollTemplateId}
+          setActiveScriptoriumScrollTemplateId={setActiveScriptoriumScrollTemplateId}
+          handleScriptoriumSuccess={handleScriptoriumSuccess}
+          handleScriptoriumFailure={handleScriptoriumFailure}
+          onTriggerScriptorium={handleTriggerScriptorium}
           activeLockpickingChestIndex={activeLockpickingChestIndex}
           setActiveLockpickingChestIndex={setActiveLockpickingChestIndex}
           activePoi={activePoi}
@@ -1026,6 +1126,7 @@ export default function App() {
           handleUpgradeItem={handleUpgradeItem}
           handleCraftRecallScroll={handleCraftRecallScroll}
           handleCraftSpellScroll={handleCraftSpellScroll}
+          onTriggerScriptorium={handleTriggerScriptorium}
           handleCookRecipe={handleCookRecipe}
           handleBrewPotion={handleBrewPotion}
           handleUpgradeApothecary={handleUpgradeApothecary}

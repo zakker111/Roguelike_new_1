@@ -2,6 +2,7 @@ import React from 'react';
 import {
   X,
   Zap,
+  Palette,
   Home,
   Sliders,
   Hammer,
@@ -12,7 +13,8 @@ import {
   ShieldAlert,
   Skull,
   History,
-  Grid
+  Grid,
+  Dice5
 } from 'lucide-react';
 import { GameState } from '../types';
 import { playSound } from '../utils/audio';
@@ -43,6 +45,8 @@ import { GodItemCreatorTab } from './god/GodItemCreatorTab';
 import { GodAdminEditorTab } from './god/GodAdminEditorTab';
 import { GodDungeonEditor } from './god/GodDungeonEditor';
 import { GodModdingTab } from './god/GodModdingTab';
+import { GodMinigamesTab } from './god/GodMinigamesTab';
+import { TilesetTesterTab } from './god/TilesetTesterTab';
 
 export { DESIGNER_LEGEND };
 
@@ -81,6 +85,8 @@ export interface GodPanelOverlayProps {
   onClose: () => void;
   onRegenerateCurrentLocation?: () => void;
   onTriggerLockpicking?: () => void;
+  onTriggerFishing?: () => void;
+  onTriggerScriptorium?: (scrollTemplateId?: string) => void;
   isAutoplayActive?: boolean;
   setIsAutoplayActive?: (active: boolean) => void;
   addLogMessage?: (msg: string, type?: string) => void;
@@ -92,6 +98,8 @@ function GodPanelOverlayComponent({
   onClose,
   onRegenerateCurrentLocation,
   onTriggerLockpicking,
+  onTriggerFishing,
+  onTriggerScriptorium,
   isAutoplayActive = false,
   setIsAutoplayActive,
   addLogMessage
@@ -102,6 +110,8 @@ function GodPanelOverlayComponent({
     onClose,
     onRegenerateCurrentLocation,
     onTriggerLockpicking,
+    onTriggerFishing,
+    onTriggerScriptorium,
     isAutoplayActive,
     setIsAutoplayActive,
     addLogMessage
@@ -172,6 +182,7 @@ function GodPanelOverlayComponent({
     handleWipeEnemies,
     handleRevealFullMap,
     handleRevealWholeWorldMap,
+    handleExportWorldMapPng,
     handleToggleInvinciblePlayer,
     handleSpawnDecorCluster,
     handleResetLevelDecor,
@@ -327,19 +338,19 @@ function GodPanelOverlayComponent({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-5xl bg-slate-900 border border-red-500/50 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 pt-10 sm:pt-6 pb-4 sm:pb-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden">
+      <div className="relative w-full max-w-5xl bg-slate-900 border border-red-500/50 rounded-xl shadow-2xl overflow-hidden flex flex-col h-full max-h-[86vh] sm:max-h-[88vh]">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-red-500/30 bg-slate-950">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-red-500/30 bg-slate-950 shrink-0">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-red-400" />
-            <h2 className="text-sm font-black tracking-wider text-red-400 uppercase">
+            <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+            <h2 className="text-xs sm:text-sm font-black tracking-wider text-red-400 uppercase truncate">
               SOVEREIGN DEVELOPER CONSOLE & GOD SUITE
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -347,20 +358,22 @@ function GodPanelOverlayComponent({
 
         {/* Global Notifications */}
         {jsonSuccess && (
-          <div className="bg-emerald-950/90 border-b border-emerald-500/50 px-4 py-2 text-xs text-emerald-300 font-mono">
+          <div className="bg-emerald-950/90 border-b border-emerald-500/50 px-4 py-2 text-xs text-emerald-300 font-mono shrink-0">
             {jsonSuccess}
           </div>
         )}
         {jsonError && (
-          <div className="bg-red-950/90 border-b border-red-500/50 px-4 py-2 text-xs text-red-300 font-mono">
+          <div className="bg-red-950/90 border-b border-red-500/50 px-4 py-2 text-xs text-red-300 font-mono shrink-0">
             {jsonError}
           </div>
         )}
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap border-b border-slate-800 bg-slate-950/40 text-xs overflow-x-auto">
+        <div className="flex flex-nowrap border-b border-slate-800 bg-slate-950/60 text-xs overflow-x-auto shrink-0 scrollbar-thin">
           {[
             { id: 'sovereign', label: 'Cheats', icon: Zap, color: 'text-yellow-400' },
+            { id: 'tileset_tester', label: 'Tileset Studio', icon: Palette, color: 'text-amber-400' },
+            { id: 'minigames', label: 'Minigames', icon: Dice5, color: 'text-amber-400' },
             { id: 'arena', label: 'Arena Tweaker', icon: Sliders, color: 'text-blue-400' },
             { id: 'structures', label: 'Structure Placer', icon: Hammer, color: 'text-green-400' },
             { id: 'house_editor', label: 'House Painter', icon: Home, color: 'text-emerald-400' },
@@ -400,6 +413,15 @@ function GodPanelOverlayComponent({
 
         {/* Scrollable Tab Views */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-900/50">
+          {/* Tileset & Sprite Studio Tester */}
+          {activeTab === 'tileset_tester' && (
+            <TilesetTesterTab
+              gameState={gameState}
+              setGameState={setGameState}
+              addLogMessage={addLogMessage}
+            />
+          )}
+
           {/* Sovereign Cheats & World Warps */}
           {activeTab === 'sovereign' && (
             <div className="space-y-6">
@@ -413,10 +435,10 @@ function GodPanelOverlayComponent({
                 handleWipeEnemies={handleWipeEnemies}
                 handleRevealFullMap={handleRevealFullMap}
                 handleRevealWholeWorldMap={handleRevealWholeWorldMap}
+                handleExportWorldMapPng={handleExportWorldMapPng}
                 handleToggleInvinciblePlayer={handleToggleInvinciblePlayer}
                 godModeActive={godModeActive}
                 TeleportToEmptyArena={TeleportToEmptyArena}
-                onTriggerLockpicking={onTriggerLockpicking}
                 handleSpawnDecorCluster={handleSpawnDecorCluster}
                 handleResetLevelDecor={handleResetLevelDecor}
                 handleFastForwardTime={handleFastForwardTime}
@@ -443,6 +465,19 @@ function GodPanelOverlayComponent({
                 triggerSuccessLog={triggerSuccessLog}
               />
             </div>
+          )}
+
+          {/* Minigames Testbed */}
+          {activeTab === 'minigames' && (
+            <GodMinigamesTab
+              gameState={gameState}
+              setGameState={setGameState}
+              onTriggerLockpicking={onTriggerLockpicking}
+              onTriggerFishing={onTriggerFishing}
+              onTriggerScriptorium={onTriggerScriptorium}
+              addLogMessage={addLogMessage}
+              triggerSuccessLog={triggerSuccessLog}
+            />
           )}
 
           {/* Arena Tweaker */}

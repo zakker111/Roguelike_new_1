@@ -48,6 +48,7 @@ interface CraftingPanelProps {
   blacksmithForgeLevel?: number;
   onCraftRecallScroll?: () => void;
   onCraftSpellScroll?: (scrollTemplateId: string) => void;
+  onTriggerScriptorium?: (scrollTemplateId: string) => void;
   gameState: GameState;
   onCookRecipe: (
     recipeId: string,
@@ -126,6 +127,7 @@ function CraftingPanelComponent({
   blacksmithForgeLevel = 1,
   onCraftRecallScroll,
   onCraftSpellScroll,
+  onTriggerScriptorium,
   gameState,
   onCookRecipe,
   onBrewPotion,
@@ -392,6 +394,7 @@ function CraftingPanelComponent({
             inventoryCatalysts={inventoryCatalysts}
             onCraftSpellScroll={onCraftSpellScroll}
             onCraftRecallScroll={onCraftRecallScroll}
+            onTriggerScriptorium={onTriggerScriptorium}
             searchQuery={searchQuery}
           />
         )}

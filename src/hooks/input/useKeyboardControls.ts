@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, Dispatch, SetStateAction, MutableRefObject } from 'react';
 import { GameState, TileType } from '../../types';
+import { hybridGraphicsEngine } from '../../canvas/HybridGraphicsEngine';
 
 export interface UseKeyboardControlsParams {
   gameStateRef: MutableRefObject<GameState>;
@@ -187,6 +188,21 @@ export function useKeyboardControls({
         e.preventDefault();
         setActiveTab((prev) => (prev === 'bestiary' ? 'dungeon' : 'bestiary'));
         return;
+      case 'f8':
+        e.preventDefault();
+        {
+          const res = hybridGraphicsEngine.cycleVisualMode();
+          addLogMessage(`🎨 Graphics Mode switched to: ${res.label}`, 'system');
+        }
+        return;
+      case 't':
+        if (e.altKey) {
+          e.preventDefault();
+          const res = hybridGraphicsEngine.cycleVisualMode();
+          addLogMessage(`🎨 Graphics Mode switched to: ${res.label}`, 'system');
+          return;
+        }
+        break;
       case 'm':
         e.preventDefault();
         if (setIsWorldMapOpen) {

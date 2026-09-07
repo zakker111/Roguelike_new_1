@@ -5,6 +5,7 @@
 
 import { Enemy, CombatArchetype, EnemyType, PlayerStats, EnemyAffix } from '../types';
 import { calculateWorldThreatTier, getThreatTierInfo, getAffixMeta } from './worldThreat';
+import { factionMatrix } from '../factions/FactionMatrix';
 
 export interface GoldenTriangleProfile {
   resilience: number;  // 0.0 to 1.0+ (Defensive HP/armor density)
@@ -258,9 +259,19 @@ export function applyCombatArchetypeAndChaosScaling(
     traitDescription = `⚡ [TRIANGLE ANOMALY]: GM Storyteller corrupted entity cheating Golden Triangle constraints (+35% stats & feral power)!`;
   }
 
+  const factionInfo = factionMatrix.resolveEntityFaction(
+    String(enemy.type),
+    nameWithAffix,
+    enemy.faction,
+    enemy.factionRank
+  );
+
   return {
     ...enemy,
     name: nameWithAffix,
+    faction: enemy.faction || factionInfo.factionId,
+    factionId: enemy.factionId || factionInfo.factionId,
+    factionRank: enemy.factionRank || factionInfo.factionRank,
     hp: scaledHp,
     maxHp: scaledHp,
     atk: scaledAtk,

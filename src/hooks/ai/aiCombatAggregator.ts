@@ -1,4 +1,4 @@
-import { Enemy, CaravanTravelState, PlayerStats } from '../../types';
+import { Enemy, CaravanTravelState, PlayerStats, SavedOverworldSkirmishState } from '../../types';
 
 export interface CombatAggregatorParams {
   px: number;
@@ -56,6 +56,7 @@ export function checkTacticalCaravanVictory(
 ): {
   nextCaravanTravel?: CaravanTravelState;
   updatedStats: PlayerStats;
+  savedOverworldState?: SavedOverworldSkirmishState;
 } {
   if (!nextCaravanTravel?.active || !nextCaravanTravel.isTacticalCombat) {
     return { nextCaravanTravel, updatedStats };
@@ -76,10 +77,12 @@ export function checkTacticalCaravanVictory(
         xp: updatedStats.xp + bonusXp
       };
 
+      const savedState = nextCaravanTravel.savedOverworldState;
       const updatedTravel: CaravanTravelState = {
         ...nextCaravanTravel,
         isTacticalCombat: false,
         rewardGold: nextCaravanTravel.rewardGold + bonusGold,
+        savedOverworldState: undefined,
         currentEncounter: {
           ...curEnc,
           resolved: true,
@@ -89,7 +92,8 @@ export function checkTacticalCaravanVictory(
 
       return {
         nextCaravanTravel: updatedTravel,
-        updatedStats: newStats
+        updatedStats: newStats,
+        savedOverworldState: savedState
       };
     }
   }

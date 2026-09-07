@@ -17,6 +17,49 @@ export interface PlaySoundOptions {
   volume?: number;
   pitch?: number;
   isIndoor?: boolean;
+  priority?: number;
+}
+
+export enum SoundPriority {
+  LOW = 0,
+  MEDIUM = 1,
+  HIGH = 2,
+  CRITICAL = 3,
+}
+
+export interface VoiceAllocationOptions {
+  volume?: number;
+  panX?: number;
+  lowpassFreq?: number;
+  filterType?: BiquadFilterType;
+  filterQ?: number;
+  priority?: SoundPriority | number;
+}
+
+export interface VoiceChannel {
+  id: number;
+  filterNode: BiquadFilterNode;
+  gainNode: GainNode;
+  pannerNode: StereoPannerNode | null;
+  isActive: boolean;
+  currentSound: string;
+  currentPriority: number;
+  startTime: number;
+  endTime: number;
+  sourceNodes: (AudioScheduledSourceNode | AudioNode)[];
+  timerId: any;
+  registerSource: (node: AudioScheduledSourceNode | AudioNode) => void;
+  release: () => void;
+  steal: () => void;
+}
+
+export interface VoiceManagerStats {
+  maxVoices: number;
+  activeVoices: number;
+  totalAllocations: number;
+  voiceThefts: number;
+  throttledCount: number;
+  activeChannelSounds: string[];
 }
 
 export interface AudioSettings {

@@ -77,6 +77,18 @@ export interface CaravanEncounter {
   bossAffixes?: string[];
 }
 
+export interface SavedOverworldSkirmishState {
+  map: TileType[][];
+  discovered: boolean[][];
+  visible: boolean[][];
+  enemies: Enemy[];
+  dungeonProps: DungeonProp[];
+  playerX: number;
+  playerY: number;
+  currentChunkX: number;
+  currentChunkY: number;
+}
+
 export interface CaravanTravelState {
   active: boolean;
   originX: number;
@@ -93,6 +105,9 @@ export interface CaravanTravelState {
   maxWagonHp: number;
   isTacticalCombat?: boolean;
   isBossAmbush?: boolean;
+  wagonX?: number;
+  wagonY?: number;
+  savedOverworldState?: SavedOverworldSkirmishState;
 }
 
 export interface GameState {

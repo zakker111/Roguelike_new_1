@@ -1,4 +1,4 @@
-import { Enemy, GameState, TileType } from '../../types';
+import { Enemy, EnemyState, GameState, TileType } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
 import { getNextStepTowards, hasLineOfSight } from '../../utils/ai';
 import { incrementDefeatedEnemyCount } from '../../utils/bestiary';
@@ -7,6 +7,13 @@ import { FollowerAIParams, FollowerActionResult } from './types';
 function safeDispatchEffect(detail: any) {
   if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
     const ev = new CustomEvent('spawn-game-effect', { detail });
+    window.dispatchEvent(ev);
+  }
+}
+
+function safeDispatchProjectile(detail: any) {
+  if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+    const ev = new CustomEvent('spawn-projectile', { detail });
     window.dispatchEvent(ev);
   }
 }
@@ -37,6 +44,18 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
   const isArcher = folNameLower.includes('archer') || folNameLower.includes('ranger') || folNameLower.includes('hunter') || folNameLower.includes('marksman') || folNameLower.includes('bow');
   const isMage = folNameLower.includes('mage') || folNameLower.includes('wizard') || folNameLower.includes('sorcerer') || folNameLower.includes('warlock') || folNameLower.includes('druid') || folNameLower.includes('cleric');
   const isSpearman = folNameLower.includes('spear') || folNameLower.includes('pikeman') || folNameLower.includes('halberd') || folNameLower.includes('lancer');
+  const isCat = folNameLower.includes('cat') || e.char === '🐈' || folNameLower.includes('jekku') || folNameLower.includes('pulla') || folNameLower.includes('alli') || folNameLower.includes('leevi');
+  const isThiefOrRogue = folNameLower.includes('thief') || folNameLower.includes('rogue') || folNameLower.includes('scout') || folNameLower.includes('assassin');
+
+  // Follower health & personality fleeing evaluation
+  const hpRatio = e.maxHp > 0 ? e.hp / e.maxHp : 1.0;
+  const isFleeing = (isCat && hpRatio < 0.5) || (isThiefOrRogue && hpRatio < 0.4) || (hpRatio < 0.25);
+
+  if (isFleeing) {
+    e.state = EnemyState.Retreating;
+  } else if (e.state === EnemyState.Retreating && hpRatio >= 0.6) {
+    e.state = EnemyState.Chasing;
+  }
 
   if (isArcher) {
     followerRange = Math.max(followerRange, 5);
@@ -97,18 +116,38 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
           if (rangedType === 'bow') {
             staticLogs.push(`🏹 [COMPANION RANGED]: ${e.name} shoots an arrow at ${target.name} for ${followerDmg} damage!`);
             playSound('arrow', { x: target.x, y: target.y, playerX: px, playerY: py });
+            safeDispatchProjectile({
+              startX: e.x,
+              startY: e.y,
+              targetX: target.x,
+              targetY: target.y,
+              color: '#d97706',
+              projectileType: 'arrow',
+              impactText: `-${followerDmg}`,
+              impactType: isFolCrit ? 'crit' : 'dmg',
+            });
           } else if (rangedType === 'magic') {
             staticLogs.push(`✨ [COMPANION SPELL]: ${e.name} launches an elemental bolt at ${target.name} for ${followerDmg} damage!`);
             playSound('spell', { x: target.x, y: target.y, playerX: px, playerY: py });
+            safeDispatchProjectile({
+              startX: e.x,
+              startY: e.y,
+              targetX: target.x,
+              targetY: target.y,
+              color: '#38bdf8',
+              projectileType: 'magic_staff',
+              impactText: `-${followerDmg}`,
+              impactType: isFolCrit ? 'crit' : 'dmg',
+            });
           } else if (rangedType === 'spear') {
             staticLogs.push(`🔱 [COMPANION REACH]: ${e.name} thrusts their spear at ${target.name} for ${followerDmg} damage!`);
             playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
+            safeDispatchEffect({ x: target.x, y: target.y, sourceX: e.x, sourceY: e.y, text: `-${followerDmg}`, type: isFolCrit ? 'crit' : 'dmg' });
           } else {
             staticLogs.push(`🛡️ [COMPANION]: ${e.name} strikes ${target.name} for ${followerDmg} damage!`);
             playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
+            safeDispatchEffect({ x: target.x, y: target.y, sourceX: e.x, sourceY: e.y, text: `-${followerDmg}`, type: isFolCrit ? 'crit' : 'dmg' });
           }
-
-          safeDispatchEffect({ x: target.x, y: target.y, sourceX: e.x, sourceY: e.y, text: `-${followerDmg}`, type: 'dmg' });
         }
 
         attackedEnemy = true;
@@ -128,7 +167,23 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
     let targetX = px;
     let targetY = py;
 
-    if (nearestTarget && minTargetDist <= 8 && distToPlayer <= 10) {
+    if (isFleeing && nearestTarget) {
+      // Flee away from hostile enemy towards player's rear / safety
+      const dirX = Math.sign(e.x - nearestTarget.x);
+      const dirY = Math.sign(e.y - nearestTarget.y);
+      targetX = Math.max(0, Math.min(LEVEL_WIDTH - 1, e.x + (dirX !== 0 ? dirX * 3 : (px > e.x ? 2 : -2))));
+      targetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + (dirY !== 0 ? dirY * 3 : (py > e.y ? 2 : -2))));
+
+      if (Math.random() < 0.25 && ((prev.visible[e.y]?.[e.x] ?? false) || (prev.visible[py]?.[px] ?? false))) {
+        if (isCat) {
+          staticLogs.push(`🐾 [COMPANION FLEEING]: ${e.name} hisses in terror and scurries away! (${e.hp}/${e.maxHp} HP)`);
+        } else if (isThiefOrRogue) {
+          staticLogs.push(`🗡️ [COMPANION RETREAT]: ${e.name}: "Disengaging, taking cover!" (${e.hp}/${e.maxHp} HP)`);
+        } else {
+          staticLogs.push(`🛡️ [COMPANION RETREAT]: ${e.name} is critically wounded (${e.hp}/${e.maxHp} HP) and falls back!`);
+        }
+      }
+    } else if (nearestTarget && minTargetDist <= 8 && distToPlayer <= 10) {
       if (followerRange > 1) {
         if (minTargetDist < 2) {
           // Tactical Retreat: Back away from melee attackers to maintain optimal firing distance

@@ -5,11 +5,19 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { TileType, Enemy, Trap, Chest, GameState } from '../types';
+import { GraphicsVisualMode } from '../canvas/types';
 import { renderTileMap } from '../canvas/tileMapRenderer';
 import { renderEntityLayer, GameVisualEffect } from '../canvas/entityLayerRenderer';
 import { renderWeatherAndLighting } from '../canvas/weatherLightingRenderer';
 import { hybridGraphicsEngine } from '../canvas/HybridGraphicsEngine';
+import { assetPreloader } from '../canvas/AssetPreloader';
+import { mockupAtlasGenerator } from '../canvas/MockupAtlasGenerator';
+import { tilesetAtlasManager } from '../canvas/TilesetAtlasManager';
+import { cameraController } from '../canvas/cameraController';
+import { entityInterpolationManager } from '../canvas/entityInterpolationManager';
+import { combatVfxEngine } from '../canvas/combatVfxEngine';
 import { calculateDirectionalDrift } from '../utils/combatFloaterDrift';
+import { chunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 
 export interface SpriteSheetTileMapping {
   /** Column index on the sprite sheet (0-indexed) */
@@ -51,73 +59,24 @@ export interface SpriteSheetConfig {
 export const DEFAULT_TILESET_CONFIG: SpriteSheetConfig = {
   enabled: false, // Defaulting to false to preserve the current high-contrast text/emoji tiles
   imageSrc: '/assets/tileset.png', // Placeholder URL for future artist assets
-  spriteSize: 16, // Typical retro 16x16 pixel grids
-  tileMappings: {
-    [TileType.Wall]: { sx: 1, sy: 0 },
-    [TileType.Floor]: { sx: 2, sy: 0 },
-    [TileType.Door]: { sx: 3, sy: 0, frameCount: 2, ticksPerFrame: 10 }, // doors can transition open/closed
-    [TileType.StairsDown]: { sx: 4, sy: 0 },
-    [TileType.StairsUp]: { sx: 5, sy: 0 },
-    [TileType.Path]: { sx: 6, sy: 0 },
-    [TileType.DungeonEntrance]: { sx: 7, sy: 0 },
-    [TileType.TownGate]: { sx: 8, sy: 0 },
-    [TileType.Table]: { sx: 9, sy: 0 },
-    [TileType.Chair]: { sx: 10, sy: 0 },
-    [TileType.Bed]: { sx: 11, sy: 0 },
-    [TileType.Campfire]: { sx: 12, sy: 0, frameCount: 4, ticksPerFrame: 6 }, // Animated campfire
-    [TileType.Anvil]: { sx: 5, sy: 1 },
-    [TileType.Fireplace]: { sx: 13, sy: 0, frameCount: 4, ticksPerFrame: 6 },
-    [TileType.Window]: { sx: 14, sy: 0 },
-    [TileType.Sign]: { sx: 15, sy: 0 },
-    [TileType.Torch]: { sx: 0, sy: 1, frameCount: 3, ticksPerFrame: 8 }, // Animated flickering torch
-    [TileType.PineTree]: { sx: 1, sy: 1 },
-    [TileType.BirchTree]: { sx: 2, sy: 1 },
-    [TileType.TreeStump]: { sx: 6, sy: 1 },
-    [TileType.CopperVein]: { sx: 3, sy: 1 },
-    [TileType.IronVein]: { sx: 4, sy: 1 },
-  },
-  biomeMappings: {
-    desert: {
-      [TileType.Grass]: { sx: 0, sy: 2 }, // Sand dunes
-      [TileType.Tree]: { sx: 1, sy: 2 }, // Cactus
-      [TileType.Water]: { sx: 2, sy: 2, frameCount: 4, ticksPerFrame: 12 }, // Shimmering Oasis Water
-      [TileType.Bush]: { sx: 3, sy: 2 }, // Tumbleweed
-    },
-    tundra: {
-      [TileType.Grass]: { sx: 0, sy: 3 }, // Snowy ground
-      [TileType.Tree]: { sx: 1, sy: 3 }, // Snowy pine tree
-      [TileType.Water]: { sx: 2, sy: 3 }, // Frozen ice cracks
-      [TileType.Bush]: { sx: 3, sy: 3 }, // Ice shrub
-    },
-    swamp: {
-      [TileType.Grass]: { sx: 0, sy: 4 }, // Murky bog mud
-      [TileType.Tree]: { sx: 1, sy: 4 }, // Purple willow tree
-      [TileType.Water]: { sx: 2, sy: 4, frameCount: 3, ticksPerFrame: 10 }, // Bubbling bog water
-      [TileType.Bush]: { sx: 3, sy: 4 }, // Berry bush
-    },
-    forest: {
-      [TileType.Grass]: { sx: 0, sy: 0 }, // Grass ground
-      [TileType.Tree]: { sx: 1, sy: 0 }, // Standard forest tree
-      [TileType.Water]: { sx: 5, sy: 1, frameCount: 4, ticksPerFrame: 10 }, // Animated river
-      [TileType.Bush]: { sx: 6, sy: 1 }, // Berry bush
-    }
-  },
+  spriteSize: 32, // HD 32x32 pixel grids
+  tileMappings: {},
+  biomeMappings: {},
   trapMappings: {
-    'Spikes': { sx: 0, sy: 5, frameCount: 2, ticksPerFrame: 1 }, // Spikes frame transitions
-    'FireVent': { sx: 1, sy: 5, frameCount: 4, ticksPerFrame: 5 }, // Animated heat/fire
-    'PoisonGas': { sx: 2, sy: 5, frameCount: 4, ticksPerFrame: 8 } // Pulsing gas clouds
+    'Spikes': { sx: 5, sy: 5, frameCount: 1 },
+    'FireVent': { sx: 6, sy: 5, frameCount: 1 },
+    'PoisonGas': { sx: 7, sy: 5, frameCount: 1 }
   },
   chestMappings: {
-    closed: { sx: 3, sy: 5 },
-    opened: { sx: 4, sy: 5 }
+    closed: { sx: 13, sy: 4, frameCount: 1 },
+    opened: { sx: 14, sy: 4, frameCount: 1 }
   },
   entityMappings: {
-    '@': { sx: 0, sy: 6, frameCount: 4, ticksPerFrame: 8 }, // Player walking/idle loop
-    'S': { sx: 1, sy: 6, frameCount: 4, ticksPerFrame: 10 }, // Skeleton minion
-    'O': { sx: 2, sy: 6, frameCount: 4, ticksPerFrame: 10 }, // Brutal Orc warrior
-    'Z': { sx: 3, sy: 6, frameCount: 4, ticksPerFrame: 12 }, // Sluggish Zombie
-    'G': { sx: 4, sy: 6, frameCount: 4, ticksPerFrame: 10 }, // Agile Goblin robber
-    'D': { sx: 5, sy: 6, frameCount: 4, ticksPerFrame: 8 }, // Dragon Boss
+    '@': { sx: 0, sy: 0, frameCount: 4, ticksPerFrame: 12 },
+    'S': { sx: 0, sy: 20, frameCount: 4, ticksPerFrame: 12 },
+    'O': { sx: 0, sy: 24, frameCount: 4, ticksPerFrame: 12 },
+    'G': { sx: 0, sy: 16, frameCount: 4, ticksPerFrame: 12 },
+    'D': { sx: 0, sy: 32, frameCount: 4, ticksPerFrame: 12 },
   }
 };
 
@@ -125,7 +84,7 @@ interface GameCanvasProps {
   gameState: GameState;
   onTileClick: (x: number, y: number) => void;
   shakeTrigger: number; // increments on damage to trigger screen shake
-  graphicsMode?: 'text' | 'tileset';
+  graphicsMode?: GraphicsVisualMode | 'text' | 'tileset';
 }
 
 const TILE_SIZE = 28;
@@ -139,30 +98,33 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
   // Synchronize graphics mode with HybridGraphicsEngine
   useEffect(() => {
     if (graphicsMode) {
-      hybridGraphicsEngine.setMode(graphicsMode);
+      if (graphicsMode === 'text' || graphicsMode === 'classic_glyph') {
+        hybridGraphicsEngine.setMode('classic_glyph');
+      } else {
+        hybridGraphicsEngine.setMode('animated_tileset');
+      }
+      chunkBackgroundCache.invalidate();
     }
   }, [graphicsMode]);
 
-  // --- Future-Proof Tileset & Animation System Body hooks ---
+  // --- Tileset & Atlas Synchronization Hook ---
   const [tilesetImage, setTilesetImage] = useState<HTMLImageElement | null>(null);
-  const tilesetConfig = DEFAULT_TILESET_CONFIG; // Easily swappable or configurable via props in the future
+  const tilesetConfig = DEFAULT_TILESET_CONFIG; // Managed centrally by AssetPreloader
   const animationTickRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!tilesetConfig.enabled) {
-      setTilesetImage(null);
-      return;
+    if (assetPreloader.getSource() === 'classic_png') {
+      assetPreloader.preloadAllPngs();
     }
-    const img = new Image();
-    img.src = tilesetConfig.imageSrc;
-    img.onload = () => {
-      setTilesetImage(img);
-    };
-    img.onerror = () => {
-      console.warn(`Failed to load tileset image at ${tilesetConfig.imageSrc}. Falling back to default ASCII tiles.`);
-      setTilesetImage(null);
-    };
-  }, [tilesetConfig.enabled, tilesetConfig.imageSrc]);
+    if (!assetPreloader.isCodeLoaded('main_tileset')) {
+      mockupAtlasGenerator.generateAllAtlases('classic', tilesetAtlasManager.getSpriteSize());
+    }
+
+    const unsubscribe = assetPreloader.onAtlasChange(() => {
+      chunkBackgroundCache.invalidate();
+    });
+    return unsubscribe;
+  }, []);
 
   // Unified renderer supporting high-fidelity tileset sprites, animated loops, and retro ASCII glyph fallback
   const drawSpriteOrAscii = (
@@ -293,6 +255,7 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
   } | null>(null);
   const lastRenderedCamRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const lastDimensionsRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
+  const lastCssCamRef = useRef<{ x: number; y: number }>({ x: -9999, y: -9999 });
 
   // Listen to shake trigger
   useEffect(() => {
@@ -376,160 +339,167 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         shakeRef.current.intensity = 0;
       }
 
-      // 2. Update particle/number effects (texts float slower and decay significantly slower!)
+      // 2. Update combat VFX engine (projectiles, slashes, decals, floating numbers)
+      combatVfxEngine.update();
+
+      // 2b. Update legacy/canvas particle effects in-place without creating new array instances
+      const fxList = effectsRef.current;
       const newTrailParticles: GameVisualEffect[] = [];
-      effectsRef.current = effectsRef.current
-        .map((fx) => {
-          if (fx.type === 'projectile') {
-            const nextProgress = (fx.progress || 0) + (fx.speed || 0.08);
-            const startX = fx.startX ?? fx.x;
-            const startY = fx.startY ?? fx.y;
-            const targetX = fx.targetX ?? fx.x;
-            const targetY = fx.targetY ?? fx.y;
+      let i = fxList.length - 1;
+      while (i >= 0) {
+        const fx = fxList[i];
+        if (fx.type === 'projectile') {
+          const nextProgress = (fx.progress || 0) + (fx.speed || 0.08);
+          const startX = fx.startX ?? fx.x;
+          const startY = fx.startY ?? fx.y;
+          const targetX = fx.targetX ?? fx.x;
+          const targetY = fx.targetY ?? fx.y;
 
-            const currentX = startX + (targetX - startX) * Math.min(1, nextProgress);
-            const currentY = startY + (targetY - startY) * Math.min(1, nextProgress);
+          const currentX = startX + (targetX - startX) * Math.min(1, nextProgress);
+          const currentY = startY + (targetY - startY) * Math.min(1, nextProgress);
 
-            if (nextProgress >= 1.0) {
-              // LANDED! Spawn impact visual effects
-              if (fx.impactText) {
-                let col = '#f87171'; // pale red default
-                let fxType: 'damage_num' | 'crit_num' | 'heal_num' = 'damage_num';
+          if (nextProgress >= 1.0) {
+            // LANDED! Spawn impact visual effects
+            if (fx.impactText) {
+              let col = '#f87171'; // pale red default
+              let fxType: 'damage_num' | 'crit_num' | 'heal_num' = 'damage_num';
 
-                if (fx.impactType === 'crit') {
-                  col = '#fbbf24'; // bright gold
-                  fxType = 'crit_num';
-                } else if (fx.impactType === 'heal') {
-                  col = '#22c55e'; // green
-                  fxType = 'heal_num';
-                } else if (fx.impactType === 'mana') {
-                  col = '#60a5fa'; // blue
-                  fxType = 'heal_num';
-                }
-
-                const drift = calculateDirectionalDrift({
-                  targetX,
-                  targetY,
-                  sourceX: startX,
-                  sourceY: startY,
-                  isCrit: fx.impactType === 'crit',
-                });
-
-                newTrailParticles.push({
-                  id: `proj_impact_dmg_${Math.random()}`,
-                  type: fxType,
-                  x: drift.spawnX,
-                  y: drift.spawnY,
-                  text: fx.impactText,
-                  color: col,
-                  vx: drift.vx,
-                  vy: drift.vy,
-                  life: 1.0,
-                  size: fx.impactType === 'crit' ? 14 : 10,
-                });
-
-                // Splatters
-                const splatterCount = fx.impactType === 'crit' ? 10 : 5;
-                for (let i = 0; i < splatterCount; i++) {
-                  newTrailParticles.push({
-                    id: `proj_splat_${Math.random()}`,
-                    type: 'particle',
-                    x: targetX + 0.5,
-                    y: targetY + 0.5,
-                    color: fx.color || col,
-                    vx: (Math.random() - 0.5) * 0.16,
-                    vy: (Math.random() - 0.5) * 0.16,
-                    life: 0.8,
-                    size: Math.random() * 2 + 1,
-                  });
-                }
-
-                // Shake intensity trigger
-                shakeRef.current.intensity = fx.impactType === 'crit' ? 14 : 7;
+              if (fx.impactType === 'crit') {
+                col = '#fbbf24'; // bright gold
+                fxType = 'crit_num';
+              } else if (fx.impactType === 'heal') {
+                col = '#22c55e'; // green
+                fxType = 'heal_num';
+              } else if (fx.impactType === 'mana') {
+                col = '#60a5fa'; // blue
+                fxType = 'heal_num';
               }
 
-              if (fx.impactHealingText) {
-                newTrailParticles.push({
-                  id: `proj_impact_heal_${Math.random()}`,
-                  type: 'heal_num',
-                  x: startX + 0.5 + (Math.random() - 0.5) * 0.2,
-                  y: startY + 0.2,
-                  text: fx.impactHealingText,
-                  color: '#22c55e',
-                  vx: (Math.random() - 0.5) * 0.04,
-                  vy: -0.06 - Math.random() * 0.04,
-                  life: 1.0,
-                  size: 10,
-                });
-              }
-
-              return {
-                ...fx,
-                x: targetX,
-                y: targetY,
-                progress: 1.0,
-                life: 0.0 // dies immediately
-              };
-            }
-
-            // Spawn trail particles during flight
-            if (Math.random() < 0.65) {
-              let trailColor = fx.color || '#38bdf8';
-              let trailSize = Math.random() * 1.5 + 0.8;
-              let trailVx = (Math.random() - 0.5) * 0.04;
-              let trailVy = (Math.random() - 0.5) * 0.04;
-
-              if (fx.projectileType === 'magic_staff') {
-                trailColor = Math.random() > 0.5 ? '#a78bfa' : '#f472b6';
-                trailSize = Math.random() * 2.2 + 1.2;
-              } else if (fx.projectileType === 'electric_wand') {
-                trailColor = Math.random() > 0.4 ? '#fbbf24' : '#f59e0b';
-                trailSize = Math.random() * 1.6 + 0.6;
-                trailVx = (Math.random() - 0.5) * 0.08;
-                trailVy = (Math.random() - 0.5) * 0.08;
-              } else if (fx.projectileType === 'skeleton_bolt') {
-                trailColor = Math.random() > 0.5 ? '#93c5fd' : '#cbd5e1';
-                trailSize = Math.random() * 1.8 + 0.8;
-              } else if (fx.projectileType === 'arrow') {
-                trailColor = Math.random() > 0.6 ? '#b45309' : '#cbd5e1';
-                trailSize = Math.random() * 1.2 + 0.5;
-              }
+              const drift = calculateDirectionalDrift({
+                targetX,
+                targetY,
+                sourceX: startX,
+                sourceY: startY,
+                isCrit: fx.impactType === 'crit',
+              });
 
               newTrailParticles.push({
-                id: `proj_trail_${Math.random()}`,
-                type: 'particle',
-                x: currentX + 0.5,
-                y: currentY + 0.5,
-                color: trailColor,
-                vx: trailVx,
-                vy: trailVy,
-                life: 0.6,
-                size: trailSize,
+                id: `proj_impact_dmg_${Math.random()}`,
+                type: fxType,
+                x: drift.spawnX,
+                y: drift.spawnY,
+                text: fx.impactText,
+                color: col,
+                vx: drift.vx,
+                vy: drift.vy,
+                life: 1.0,
+                size: fx.impactType === 'crit' ? 14 : 10,
+              });
+
+              // Splatters
+              const splatterCount = fx.impactType === 'crit' ? 10 : 5;
+              for (let s = 0; s < splatterCount; s++) {
+                newTrailParticles.push({
+                  id: `proj_splat_${Math.random()}`,
+                  type: 'particle',
+                  x: targetX + 0.5,
+                  y: targetY + 0.5,
+                  color: fx.color || col,
+                  vx: (Math.random() - 0.5) * 0.16,
+                  vy: (Math.random() - 0.5) * 0.16,
+                  life: 0.8,
+                  size: Math.random() * 2 + 1,
+                });
+              }
+
+              // Shake intensity trigger
+              shakeRef.current.intensity = fx.impactType === 'crit' ? 14 : 7;
+            }
+
+            if (fx.impactHealingText) {
+              newTrailParticles.push({
+                id: `proj_impact_heal_${Math.random()}`,
+                type: 'heal_num',
+                x: startX + 0.5 + (Math.random() - 0.5) * 0.2,
+                y: startY + 0.2,
+                text: fx.impactHealingText,
+                color: '#22c55e',
+                vx: (Math.random() - 0.5) * 0.04,
+                vy: -0.06 - Math.random() * 0.04,
+                life: 1.0,
+                size: 10,
               });
             }
 
-            return {
-              ...fx,
-              x: currentX,
-              y: currentY,
-              progress: nextProgress
-            };
+            // Remove dead projectile via swap-and-pop
+            fxList[i] = fxList[fxList.length - 1];
+            fxList.pop();
+            i--;
+            continue;
           }
 
+          // Spawn trail particles during flight
+          if (Math.random() < 0.65) {
+            let trailColor = fx.color || '#38bdf8';
+            let trailSize = Math.random() * 1.5 + 0.8;
+            let trailVx = (Math.random() - 0.5) * 0.04;
+            let trailVy = (Math.random() - 0.5) * 0.04;
+
+            if (fx.projectileType === 'magic_staff') {
+              trailColor = Math.random() > 0.5 ? '#a78bfa' : '#f472b6';
+              trailSize = Math.random() * 2.2 + 1.2;
+            } else if (fx.projectileType === 'electric_wand') {
+              trailColor = Math.random() > 0.4 ? '#fbbf24' : '#f59e0b';
+              trailSize = Math.random() * 1.6 + 0.6;
+              trailVx = (Math.random() - 0.5) * 0.08;
+              trailVy = (Math.random() - 0.5) * 0.08;
+            } else if (fx.projectileType === 'skeleton_bolt') {
+              trailColor = Math.random() > 0.5 ? '#93c5fd' : '#cbd5e1';
+              trailSize = Math.random() * 1.8 + 0.8;
+            } else if (fx.projectileType === 'arrow') {
+              trailColor = Math.random() > 0.6 ? '#b45309' : '#cbd5e1';
+              trailSize = Math.random() * 1.2 + 0.5;
+            }
+
+            newTrailParticles.push({
+              id: `proj_trail_${Math.random()}`,
+              type: 'particle',
+              x: currentX + 0.5,
+              y: currentY + 0.5,
+              color: trailColor,
+              vx: trailVx,
+              vy: trailVy,
+              life: 0.6,
+              size: trailSize,
+            });
+          }
+
+          fx.x = currentX;
+          fx.y = currentY;
+          fx.progress = nextProgress;
+        } else {
           const isText = fx.type !== 'particle';
           const speedMultiplier = isText ? 0.28 : 0.40;
           const decayRate = isText ? 0.018 : 0.016; // ~55 frames of crisp, clear lifetime (~0.9s)
-          return {
-            ...fx,
-            x: fx.x + fx.vx * speedMultiplier,
-            y: fx.y + fx.vy * speedMultiplier,
-            life: fx.life - decayRate,
-          };
-        })
-        .filter((fx) => fx.life > 0);
+          fx.x += fx.vx * speedMultiplier;
+          fx.y += fx.vy * speedMultiplier;
+          fx.life -= decayRate;
+
+          if (fx.life <= 0) {
+            fxList[i] = fxList[fxList.length - 1];
+            fxList.pop();
+            i--;
+            continue;
+          }
+        }
+        i--;
+      }
 
       if (newTrailParticles.length > 0) {
-        effectsRef.current.push(...newTrailParticles);
+        fxList.push(...newTrailParticles);
+        if (fxList.length > 100) {
+          fxList.splice(0, fxList.length - 100);
+        }
       }
 
       // 3. Clear Canvas
@@ -537,12 +507,8 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
       ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
       ctx.save();
-      // Apply shake translations
-      ctx.translate(shakeRef.current.x, shakeRef.current.y);
-
-      // Camera Tracking player: always center focused on player position with responsive lerping
-      const targetCamX = gameState.playerX * TILE_SIZE - dimensions.width / 2 + TILE_SIZE / 2;
-      const targetCamY = gameState.playerY * TILE_SIZE - dimensions.height / 2 + TILE_SIZE / 2;
+      // Camera Tracking: Focus on player's interpolated render position with responsive lerping
+      const playerPos = entityInterpolationManager.getRenderPosition('player', gameState.playerX, gameState.playerY);
 
       const contextChanged = !prevContextRef.current || 
         prevContextRef.current.isOverworld !== gameState.isOverworld ||
@@ -564,26 +530,32 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         chunkY: gameState.currentChunkY
       };
 
-      const currentDist = cameraRef.current ? Math.hypot(targetCamX - cameraRef.current.x, targetCamY - cameraRef.current.y) : 0;
+      const camState = cameraController.update(
+        playerPos.renderX,
+        playerPos.renderY,
+        dimensions.width,
+        dimensions.height,
+        TILE_SIZE,
+        contextChanged || dimsChanged
+      );
 
-      if (contextChanged || dimsChanged || !cameraRef.current || currentDist > 96) {
-        cameraRef.current = { x: targetCamX, y: targetCamY };
-      } else {
-        // Highly responsive smooth interpolation focusing on player
-        cameraRef.current.x += (targetCamX - cameraRef.current.x) * 0.35;
-        cameraRef.current.y += (targetCamY - cameraRef.current.y) * 0.35;
-      }
+      const camX = camState.x;
+      const camY = camState.y;
 
-      const camX = cameraRef.current.x;
-      const camY = cameraRef.current.y;
+      // Apply shake translations
+      ctx.translate(camState.shakeX, camState.shakeY);
 
       // Persist the real coordinates for pinpoint exact clicking
       lastRenderedCamRef.current = { x: camX, y: camY };
 
-      // Update CSS custom properties for absolute positioned overlays (eliminates React re-render lag)
-      if (containerRef.current) {
-        containerRef.current.style.setProperty('--cam-x', `${camX}px`);
-        containerRef.current.style.setProperty('--cam-y', `${camY}px`);
+      // Update CSS custom properties for absolute positioned overlays only when camera shifts (eliminates DOM style recalc lag)
+      if (lastCssCamRef.current.x !== camX || lastCssCamRef.current.y !== camY) {
+        lastCssCamRef.current.x = camX;
+        lastCssCamRef.current.y = camY;
+        if (containerRef.current) {
+          containerRef.current.style.setProperty('--cam-x', `${camX}px`);
+          containerRef.current.style.setProperty('--cam-y', `${camY}px`);
+        }
       }
 
       // 4. Render Tile Map Layer
@@ -621,6 +593,9 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         ctx,
         gameState,
         dimensions,
+        camX,
+        camY,
+        tileSize: TILE_SIZE,
       });
 
       animId = requestAnimationFrame(render);
@@ -674,56 +649,19 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
   useEffect(() => {
     const handleAddEffect = (event: CustomEvent<{ x: number; y: number; text: string; type: 'dmg' | 'crit' | 'heal' | 'mana'; sourceX?: number; sourceY?: number }>) => {
       const { x, y, text, type, sourceX, sourceY } = event.detail;
-      let color = '#f87171'; // pale red
-      let fxType: 'damage_num' | 'crit_num' | 'heal_num' = 'damage_num';
 
-      if (type === 'crit') {
-        color = '#f59e0b'; // golden crit
-        fxType = 'crit_num';
-      } else if (type === 'heal') {
-        color = '#22c55e'; // green heal
-        fxType = 'heal_num';
-      } else if (type === 'mana') {
-        color = '#60a5fa'; // blue mana
-        fxType = 'heal_num';
-      }
-
-      const drift = calculateDirectionalDrift({
-        targetX: x,
-        targetY: y,
+      // Dispatch to modern unified combat VFX engine
+      combatVfxEngine.dispatchEffect({
+        x,
+        y,
         sourceX,
         sourceY,
-        isCrit: type === 'crit',
-      });
-
-      effectsRef.current.push({
-        id: `damage_fx_${Math.random()}`,
-        type: fxType,
-        x: drift.spawnX,
-        y: drift.spawnY,
         text,
-        color,
-        vx: drift.vx,
-        vy: drift.vy,
-        life: 1.0,
-        size: type === 'crit' ? 12 : 9,
+        type,
+        onImpactShake: (intensity) => {
+          shakeRef.current.intensity = Math.max(shakeRef.current.intensity, intensity);
+        },
       });
-
-      // Spawn splatter burst particles as well!
-      const splatterCount = type === 'crit' ? 8 : 4;
-      for (let i = 0; i < splatterCount; i++) {
-        effectsRef.current.push({
-          id: `blood_${Math.random()}`,
-          type: 'particle',
-          x: x + 0.5,
-          y: y + 0.5,
-          color,
-          vx: (Math.random() - 0.5) * 0.15,
-          vy: (Math.random() - 0.5) * 0.15,
-          life: 0.8,
-          size: Math.random() * 2 + 1,
-        });
-      }
 
       // 💥 Handle CSS Shake for damage taking!
       if (type === 'dmg' || type === 'crit') {
@@ -788,41 +726,25 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
       targetX: number;
       targetY: number;
       color: string;
-      projectileType: 'arrow' | 'magic_staff' | 'electric_wand' | 'skeleton_bolt' | 'enemy_spell' | 'throwable';
+      projectileType: string;
       impactText?: string;
       impactType?: 'dmg' | 'crit' | 'heal' | 'mana';
       impactHealingText?: string | null;
     }>) => {
       const { startX, startY, targetX, targetY, color, projectileType, impactText, impactType, impactHealingText } = event.detail;
 
-      // Determine projectile travel speed based on projectileType (expanded weapon physics!)
-      let speed = 0.08;
-      if (projectileType === 'electric_wand') speed = 0.15; // fast voltage crackle
-      if (projectileType === 'arrow') speed = 0.11; // fast arrow string launch
-      if (projectileType === 'magic_staff') speed = 0.06; // heavy celestial magic charge
-      if (projectileType === 'skeleton_bolt') speed = 0.075; // chilly ice blast progress
-      if (projectileType === 'throwable') speed = 0.085; // spinning axes
-
-      effectsRef.current.push({
-        id: `projectile_${Math.random()}`,
-        type: 'projectile',
-        x: startX,
-        y: startY,
-        color,
-        vx: 0,
-        vy: 0,
-        life: 1.0,
-        size: 3.0,
+      combatVfxEngine.spawnProjectile({
         startX,
         startY,
         targetX,
         targetY,
-        progress: 0,
-        speed,
+        color,
         projectileType,
         impactText,
         impactType,
-        impactHealingText
+        impactHealingText,
+      }, (intensity) => {
+        shakeRef.current.intensity = Math.max(shakeRef.current.intensity, intensity);
       });
     };
 

@@ -8,7 +8,8 @@ export const LEVEL_HEIGHT = 40;
 export function findNearestSafePlayerTile(
   startX: number,
   startY: number,
-  map: TileType[][]
+  map: TileType[][],
+  carveNaturalObstacles: boolean = true
 ): { x: number; y: number } {
   const isSafe = (x: number, y: number): boolean => {
     if (y < 0 || y >= map.length || x < 0 || x >= map[y].length) return false;
@@ -40,6 +41,25 @@ export function findNearestSafePlayerTile(
 
   if (isSafe(startX, startY)) {
     return { x: startX, y: startY };
+  }
+
+  // If the target entry point is blocked by natural vegetation/woods/bushes,
+  // carve out a safe path rather than warping the player away across the map
+  if (carveNaturalObstacles && startY >= 0 && startY < map.length && startX >= 0 && startX < map[startY].length) {
+    const obstacle = map[startY][startX];
+    const carvable = (
+      obstacle === TileType.Tree ||
+      obstacle === TileType.PineTree ||
+      obstacle === TileType.BirchTree ||
+      obstacle === TileType.Bush ||
+      obstacle === TileType.CopperVein ||
+      obstacle === TileType.IronVein ||
+      obstacle === TileType.TreeStump
+    );
+    if (carvable) {
+      map[startY][startX] = TileType.Grass;
+      return { x: startX, y: startY };
+    }
   }
 
   // Spiral search out to a radius of 25 tiles

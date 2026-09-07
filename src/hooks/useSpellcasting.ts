@@ -6,7 +6,7 @@ import { CatalystType } from '../types/items';
 import { consumeItemFromInventory } from '../utils/scrollUtils';
 import { playSound } from '../utils/audio';
 import { formatGameTime } from '../utils/overworld';
-import { bresenhamLine } from '../utils/ai';
+import { hasLineOfSight } from '../utils/ai';
 import { calculateArchetypeDamageAdjustment, checkBossPhaseEnrage } from '../utils/combatArchetypes';
 
 export interface UseSpellcastingProps {
@@ -130,19 +130,10 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
         return false;
       }
 
-      // Check line of sight
-      const bresenline = bresenhamLine(gameState.playerX, gameState.playerY, tx, ty);
-      let obscured = false;
-      for (let i = 1; i < bresenline.length - 1; i++) {
-        const pt = bresenline[i];
-        const tile = gameState.map[pt.y]?.[pt.x];
-        if (tile === TileType.Wall || tile === TileType.Door) {
-          obscured = true;
-          break;
-        }
-      }
+      // Check line of sight with zero allocations
+      const hasClearPath = hasLineOfSight(gameState.playerX, gameState.playerY, tx, ty, gameState.map);
 
-      if (obscured) {
+      if (!hasClearPath) {
         addLogMessage(`❌ Spell trajectory to ${enemy.name} is obscured by solid barriers.`, 'system');
         return false;
       }
@@ -167,16 +158,20 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
       let comboEffectText = '';
 
       if (template) {
-        baseDmg = template.baseDamage + gameState.playerStats.int * 2;
+        const isMasterwork = activeTargetedScroll.isMasterwork || activeTargetedScroll.name?.includes('Masterwork');
+        const dmgMultiplier = isMasterwork ? 1.3 : 1.0;
+        baseDmg = Math.round((template.baseDamage * dmgMultiplier) + gameState.playerStats.int * 2);
         const icon = template.name.split(' ').slice(-1)[0] || '✨';
         const rawName = template.name.replace('Scroll of ', '');
-        effectText = `${icon} ${rawName.toUpperCase()}!`;
+        effectText = isMasterwork ? `🌟 MASTERWORK ${rawName.toUpperCase()}!` : `${icon} ${rawName.toUpperCase()}!`;
         debuffToApply = {
           type: template.debuff.type,
-          duration: template.debuff.duration,
-          damagePerTurn: template.debuff.damagePerTurn,
+          duration: template.debuff.duration + (isMasterwork ? 1 : 0),
+          damagePerTurn: template.debuff.damagePerTurn + (isMasterwork ? 2 : 0),
         };
-        msgText = `📜 [SCROLL SPELL]: You read the ${template.name}, unleashing its arcanum at ${enemy.name}! Deals ${baseDmg} elemental damage and afflicts them!`;
+        msgText = isMasterwork
+          ? `🌟 [MASTERWORK SCROLL SPELL]: You read the ${activeTargetedScroll.name}, unleashing amplified arcanum at ${enemy.name}! Deals ${baseDmg} damage!`
+          : `📜 [SCROLL SPELL]: You read the ${template.name}, unleashing its arcanum at ${enemy.name}! Deals ${baseDmg} elemental damage and afflicts them!`;
 
         // Check current debuffs on enemy for combo triggers!
         const activeCombo = template.combos.find((c) => nextDebuffs.some((d) => d.type === c.onDebuff));
@@ -233,16 +228,37 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
 
       playSound('spell');
 
-      // Floating damage text
+      // Dispatch arcane scroll projectile
+      let scrollProjType = 'magic_staff';
+      let scrollProjColor = '#38bdf8';
+      if (debuffToApply?.type === CatalystType.Fire || /fire|flame|pyro|meteor/i.test(template?.name || '')) {
+        scrollProjType = 'fireball';
+        scrollProjColor = '#f97316';
+      } else if (debuffToApply?.type === CatalystType.Frost || /frost|ice|blizzard|glacier/i.test(template?.name || '')) {
+        scrollProjType = 'frostbolt';
+        scrollProjColor = '#38bdf8';
+      } else if (debuffToApply?.type === CatalystType.Lightning || /lightning|thunder|shock|storm/i.test(template?.name || '')) {
+        scrollProjType = 'electric_wand';
+        scrollProjColor = '#fbbf24';
+      } else if (debuffToApply?.type === CatalystType.Poison || /poison|venom|toxic|decay/i.test(template?.name || '')) {
+        scrollProjType = 'nature_dart';
+        scrollProjColor = '#4ade80';
+      } else if (/void|shadow|dark|chaos/i.test(template?.name || '')) {
+        scrollProjType = 'void_siphon';
+        scrollProjColor = '#c084fc';
+      }
+
       window.dispatchEvent(
-        new CustomEvent('spawn-game-effect', {
-          detail: { 
-            x: enemy.x, 
-            y: enemy.y, 
-            sourceX: gameState.playerX, 
-            sourceY: gameState.playerY, 
-            text: `-${totalDmg} Spell Dmg 📜`, 
-            type: 'damage' 
+        new CustomEvent('spawn-projectile', {
+          detail: {
+            startX: gameState.playerX,
+            startY: gameState.playerY,
+            targetX: enemy.x,
+            targetY: enemy.y,
+            color: scrollProjColor,
+            projectileType: scrollProjType,
+            impactText: `-${totalDmg} Spell Dmg 📜`,
+            impactType: 'dmg',
           },
         })
       );

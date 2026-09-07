@@ -134,7 +134,12 @@ export function resolvePlayerStatusAndEnvironment(
     });
   }
 
-  const nextCorpses = prev.corpses ? [...prev.corpses] : [];
+  const nextCorpses = (prev.corpses || [])
+    .map((c) => {
+      const turns = (c.decayTurns !== undefined ? c.decayTurns : 70) - 1;
+      return { ...c, decayTurns: turns };
+    })
+    .filter((c) => c.decayTurns > 0);
   const nextSplatters = (prev.bloodSplatters || [])
     .map((spl) => {
       if (Math.random() < 0.04) {

@@ -153,6 +153,8 @@ export interface EquipmentItem {
     lck?: number;
     cha?: number;
   };
+  isMasterwork?: boolean;
+  scrollTemplateId?: string;
 }
 
 export interface Chest {

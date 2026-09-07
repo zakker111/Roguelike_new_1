@@ -1,14 +1,14 @@
-import { IGraphicsRenderer, TileRenderDetails, EntityRenderDetails } from './IGraphicsRenderer';
+import { IGraphicsRenderer, TileRenderDetails, EntityRenderDetails, GraphicsVisualMode } from './IGraphicsRenderer';
 import { vfxEmitter } from './VFXEmitter';
 
 export class TextRenderer implements IGraphicsRenderer {
-  public mode: 'text' | 'tileset' = 'text';
+  public mode: GraphicsVisualMode = 'classic_glyph';
 
-  public setMode(mode: 'text' | 'tileset'): void {
+  public setMode(mode: GraphicsVisualMode): void {
     this.mode = mode;
   }
 
-  public getMode(): 'text' | 'tileset' {
+  public getMode(): GraphicsVisualMode {
     return this.mode;
   }
 

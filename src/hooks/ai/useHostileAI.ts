@@ -17,11 +17,20 @@ import { evaluateScarAcquisition, getEffectiveStats } from '../../utils/scars';
 import { getItemDurabilityDecay } from '../../utils/spellsAndEquipment';
 import { calculateArchetypeDamageAdjustment } from '../../utils/combatArchetypes';
 import { isPlayerInvincible } from '../../utils/invincibility';
+import { isHostileBetween } from '../../factions/FactionMatrix';
+import { SpatialEntityGrid } from '../../utils/spatial';
 import { DefeatedEnemyCounts } from './types';
 
 function safeDispatchEffect(detail: any) {
   if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
     const ev = new CustomEvent('spawn-game-effect', { detail });
+    window.dispatchEvent(ev);
+  }
+}
+
+function safeDispatchProjectile(detail: any) {
+  if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
+    const ev = new CustomEvent('spawn-projectile', { detail });
     window.dispatchEvent(ev);
   }
 }
@@ -220,6 +229,126 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
     }
   }
 
+  // Decrement support spell cooldown
+  const isHostile = !e.isFollower && (!e.isTownGuard || nextGuardsHostile);
+
+  if (e.supportSpellCooldown && e.supportSpellCooldown > 0) {
+    e.supportSpellCooldown -= 1;
+  }
+
+  // Support Healer / Buffer AI Phase
+  const isSupportUnit = e.aiRole === 'support_healer' ||
+                        e.aiRole === 'support_buffer' ||
+                        e.type === EnemyType.Necromancer ||
+                        e.type === EnemyType.Tidecaller ||
+                        /shaman|cleric|priest|druid|healer|apothecary|witch/i.test(e.name);
+
+  if (isHostile && isSupportUnit && (!e.supportSpellCooldown || e.supportSpellCooldown <= 0)) {
+    // 1. Scan for wounded allies to heal
+    let mostWoundedAlly: Enemy | null = null;
+    let lowestHpRatio = 0.75;
+
+    for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
+      if (targetIdx === i) continue;
+      const ally = nextEnemies[targetIdx];
+      if (ally.hp > 0 && !ally.isFollower && !ally.isTownGuard) {
+        const allyDist = Math.abs(ally.x - e.x) + Math.abs(ally.y - e.y);
+        if (allyDist <= 6) {
+          const ratio = ally.hp / ally.maxHp;
+          if (ratio < lowestHpRatio) {
+            lowestHpRatio = ratio;
+            mostWoundedAlly = ally;
+          }
+        }
+      }
+    }
+
+    if (mostWoundedAlly) {
+      const healAmt = Math.max(8, Math.round(e.atk * 1.5 + (e.isBoss ? 25 : 8)));
+      mostWoundedAlly.hp = Math.min(mostWoundedAlly.maxHp, mostWoundedAlly.hp + healAmt);
+      
+      const ueIdx = updatedEnemiesList.findIndex(item => item.id === mostWoundedAlly!.id);
+      if (ueIdx !== -1) {
+        updatedEnemiesList[ueIdx].hp = mostWoundedAlly.hp;
+      }
+      
+      e.supportSpellCooldown = 3;
+      const isVisible = (prev.visible[e.y]?.[e.x] ?? false) || (prev.visible[mostWoundedAlly.y]?.[mostWoundedAlly.x] ?? false);
+      if (isVisible) {
+        staticLogs.push(`✨ [SUPPORT HEAL]: ${e.name} channels restorative healing into ${mostWoundedAlly.name} (+${healAmt} HP)!`);
+        playSound('potion', { x: mostWoundedAlly.x, y: mostWoundedAlly.y, playerX: px, playerY: py });
+        safeDispatchEffect({ x: mostWoundedAlly.x, y: mostWoundedAlly.y, sourceX: e.x, sourceY: e.y, text: `+${healAmt} HP`, type: 'heal' });
+      }
+
+      return {
+        e,
+        playerHp,
+        nextArmor,
+        nextHelmet,
+        nextGloves,
+        nextBoots,
+        nextShield,
+        activeScars,
+        updatedEffects,
+        nextCaravanTravel,
+        nextDefeatedCounts,
+        incomingPlayerDamage,
+        incomingPlayerHits,
+        hadPlayerCrit,
+        hadPlayerBrace,
+        lastAttackerX,
+        lastAttackerY
+      };
+    }
+
+    // 2. Scan for heavy/elite allies to buff
+    if (Math.random() < 0.45) {
+      let buffTarget: Enemy | null = null;
+      for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
+        const ally = nextEnemies[targetIdx];
+        if (ally.hp > 0 && !ally.isFollower && !ally.isTownGuard) {
+          const allyDist = Math.abs(ally.x - e.x) + Math.abs(ally.y - e.y);
+          if (allyDist <= 5 && (ally.isBoss || ally.isElite || ally.maxHp >= 30 || ally.id === e.id)) {
+            buffTarget = ally;
+            break;
+          }
+        }
+      }
+
+      if (buffTarget) {
+        buffTarget.atk = Math.round(buffTarget.atk + 2);
+        buffTarget.def = Math.round(buffTarget.def + 2);
+        e.supportSpellCooldown = 4;
+        const isVisible = (prev.visible[e.y]?.[e.x] ?? false) || (prev.visible[buffTarget.y]?.[buffTarget.x] ?? false);
+        if (isVisible) {
+          staticLogs.push(`🔮 [SUPPORT BUFF]: ${e.name} chants an incantation of Bloodlust on ${buffTarget.name} (+2 ATK, +2 DEF)!`);
+          playSound('magic', { x: buffTarget.x, y: buffTarget.y, playerX: px, playerY: py });
+          safeDispatchEffect({ x: buffTarget.x, y: buffTarget.y, sourceX: e.x, sourceY: e.y, text: `⚡ BUFFED!`, type: 'heal' });
+        }
+
+        return {
+          e,
+          playerHp,
+          nextArmor,
+          nextHelmet,
+          nextGloves,
+          nextBoots,
+          nextShield,
+          activeScars,
+          updatedEffects,
+          nextCaravanTravel,
+          nextDefeatedCounts,
+          incomingPlayerDamage,
+          incomingPlayerHits,
+          hadPlayerCrit,
+          hadPlayerBrace,
+          lastAttackerX,
+          lastAttackerY
+        };
+      }
+    }
+  }
+
   // Telegraphed Attack Resolution
   if (e.telegraphedAttack) {
     const attack = e.telegraphedAttack;
@@ -291,7 +420,6 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
   const dyToPlayer = Math.abs(e.y - py);
   const hasLOS = hasLineOfSight(e.x, e.y, px, py, prev.map);
   const isWithinAttackRange = sameZ && dxToPlayer <= enemyRange && dyToPlayer <= enemyRange && (dxToPlayer > 0 || dyToPlayer > 0) && (enemyRange === 1 || hasLOS);
-  const isHostile = !e.isFollower && (!e.isTownGuard || nextGuardsHostile);
 
   // Perception check
   const isInPerceptionRange = distToPlayer <= 10;
@@ -350,40 +478,110 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
     }
   }
 
-  // Target Defenders (Followers & Town Guards)
+  // Build unified registry of all living active entities with latest turn states
+  const updatedMap = new Map<string, Enemy>();
+  for (const ue of updatedEnemiesList) {
+    updatedMap.set(ue.id, ue);
+  }
+  const allActiveEntities = nextEnemies
+    .map(ne => updatedMap.get(ne.id) || ne)
+    .filter(item => item && item.hp > 0 && item.id !== e.id);
+
+  // Build unified spatial index of all living active entities with latest turn states
+  const entitySpatialGrid = SpatialEntityGrid.fromEnemies(allActiveEntities);
+
+  // Target Defenders (Followers, Town Guards & Rival Faction Enemies)
   let targetDefender: Enemy | null = null;
+  let isRivalFactionCombat = false;
+  let bestDefenderPriority = Infinity;
+
   if (isHostile) {
-    for (const defender of updatedEnemiesList) {
+    const atkRange = e.range || 1;
+    // O(K) spatial query instead of O(N) full array scan
+    const localCandidates = entitySpatialGrid.getNearby(e.x, e.y, atkRange);
+
+    // 1. First check followers and town guards within reach
+    for (const defender of localCandidates) {
       if ((defender.isFollower || (defender.isTownGuard && !nextGuardsHostile)) && defender.hp > 0) {
         const fDistX = Math.abs(defender.x - e.x);
         const fDistY = Math.abs(defender.y - e.y);
-        const atkRange = e.range || 1;
         const inAtkRange = atkRange === 1 ? (fDistX <= 1 && fDistY <= 1 && (fDistX > 0 || fDistY > 0)) : (fDistX <= atkRange && fDistY <= atkRange && (fDistX > 0 || fDistY > 0));
         if (inAtkRange) {
           if (atkRange === 1 || hasLineOfSight(e.x, e.y, defender.x, defender.y, prev.map)) {
-            targetDefender = defender;
-            break;
+            const dist = fDistX + fDistY;
+            const priority = dist + (defender.hp / defender.maxHp);
+            if (priority < bestDefenderPriority) {
+              bestDefenderPriority = priority;
+              targetDefender = defender;
+              isRivalFactionCombat = false;
+            }
+          }
+        }
+      }
+    }
+
+    // 2. If no defender found, check for hostile rival faction enemies within attack range
+    if (!targetDefender) {
+      for (const rival of localCandidates) {
+        if (rival.id !== e.id && rival.hp > 0 && isHostileBetween(e.faction, rival.faction)) {
+          const rDistX = Math.abs(rival.x - e.x);
+          const rDistY = Math.abs(rival.y - e.y);
+          const inAtkRange = atkRange === 1 ? (rDistX <= 1 && rDistY <= 1 && (rDistX > 0 || rDistY > 0)) : (rDistX <= atkRange && rDistY <= atkRange && (rDistX > 0 || rDistY > 0));
+          if (inAtkRange) {
+            if (atkRange === 1 || hasLineOfSight(e.x, e.y, rival.x, rival.y, prev.map)) {
+              targetDefender = rival;
+              isRivalFactionCombat = true;
+              break;
+            }
           }
         }
       }
     }
   }
 
-  if (isHostile && targetDefender && (!isWithinAttackRange || Math.random() < 0.6)) {
+  // Dynamic target swapping between player, followers, town guards, and rivals
+  let shouldAttackDefender = false;
+  if (targetDefender) {
+    if (!isWithinAttackRange) {
+      // Player is not in reach, but defender is: attack defender immediately!
+      shouldAttackDefender = true;
+    } else {
+      // Both player and defender/follower are within attack reach: swap targets dynamically!
+      const distToDefender = Math.abs(targetDefender.x - e.x) + Math.abs(targetDefender.y - e.y);
+      const isDefenderWounded = targetDefender.hp < targetDefender.maxHp * 0.5;
+
+      if (distToDefender < distToPlayer) {
+        shouldAttackDefender = Math.random() < 0.75;
+      } else if (isDefenderWounded) {
+        shouldAttackDefender = Math.random() < 0.65;
+      } else {
+        // Equal proximity: 50% chance to target follower vs player
+        shouldAttackDefender = Math.random() < 0.50;
+      }
+    }
+  }
+
+  if (isHostile && targetDefender && shouldAttackDefender) {
     const fDmg = Math.max(1, e.atk - (targetDefender.def || 0));
     const isKilled = applyDamageToEnemy(targetDefender, fDmg);
     const isVisible = (prev.visible[targetDefender.y]?.[targetDefender.x] ?? false) || (prev.visible[e.y]?.[e.x] ?? false);
     if (isVisible) {
-      const defLabel = targetDefender.isTownGuard ? 'Town Guard' : 'companion';
-      staticLogs.push(`⚔️ [HOSTILE ATTACK]: ${e.name} strikes ${defLabel} ${targetDefender.name} for -${fDmg} HP! (${Math.max(0, targetDefender.hp)}/${targetDefender.maxHp} HP remaining)`);
+      if (isRivalFactionCombat) {
+        staticLogs.push(`⚔️ [FACTION SKIRMISH]: ${e.name} strikes rival ${targetDefender.name} for -${fDmg} HP! (${Math.max(0, targetDefender.hp)}/${targetDefender.maxHp} HP remaining)`);
+      } else {
+        const defLabel = targetDefender.isTownGuard ? 'Town Guard' : 'companion';
+        staticLogs.push(`⚔️ [HOSTILE ATTACK]: ${e.name} strikes ${defLabel} ${targetDefender.name} for -${fDmg} HP! (${Math.max(0, targetDefender.hp)}/${targetDefender.maxHp} HP remaining)`);
+      }
       playSound('injury');
       safeDispatchEffect({ x: targetDefender.x, y: targetDefender.y, sourceX: e.x, sourceY: e.y, text: `-${fDmg} HP`, type: 'dmg' });
     }
     if (isKilled && isVisible) {
-      if (targetDefender.isTownGuard) {
+      if (isRivalFactionCombat) {
+        staticLogs.push(`💀 [TURF CASUALTY]: ${targetDefender.name} was slain by ${e.name} in the faction clash!`);
+      } else if (targetDefender.isTownGuard) {
         staticLogs.push(`☠️ [TOWN GUARD FALLEN]: ${targetDefender.name} was slain defending the town!`);
       } else {
-        staticLogs.push(`💔 [COMPANION FALLEN]: ${targetDefender.name} has been wounded and fell in combat!`);
+        staticLogs.push(`💔 [COMPANION FALLEN]: ${targetDefender.name} has been slain in combat!`);
       }
     }
     return {
@@ -407,8 +605,21 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
     };
   }
 
+  const isRangedKiterUnit = (e.range && e.range > 1) ||
+                            e.aiRole === 'skirmisher_kiting' ||
+                            e.type === EnemyType.SkeletonMage ||
+                            e.type === EnemyType.Necromancer ||
+                            e.type === EnemyType.Tidecaller ||
+                            e.type === EnemyType.AbyssalSiren ||
+                            e.type === EnemyType.Trapmaster ||
+                            /archer|bowman|ranger|marksman|sorcerer|mage|wizard|warlock|shaman|tidecaller|spellflinger|trapsmith/i.test(e.name);
+
+  // When a ranged kiter is in melee range (<= 2 tiles), prioritize retreating to optimal firing range unless trapped
+  const isTooCloseInMeleeToKite = isRangedKiterUnit && distToPlayer <= 2;
+  const shouldAttackNow = isHostile && isWithinAttackRange && !isTooCloseInMeleeToKite;
+
   // Hostile Attacks Player
-  if (isHostile && isWithinAttackRange) {
+  if (shouldAttackNow) {
     const isHeavy = e.isBoss || e.isElite || e.type === EnemyType.OrcBrute || e.type === EnemyType.Dragon || e.type === EnemyType.DreadKnight || e.type === EnemyType.Louhi || e.type === EnemyType.IkuTurso;
     const telegraphChance = isHeavy ? 0.35 : 0.18;
 
@@ -529,6 +740,33 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
       staticLogs.push(`⚔️ ${e.name} attacks you for -${strikeDmg} HP!`);
       playSound('injury');
 
+      const distToP = Math.hypot(px - e.x, py - e.y);
+      if (distToP > 1.5) {
+        let enemyProjType = 'arrow';
+        let enemyProjColor = '#d97706';
+        if (e.type === EnemyType.SkeletonMage || /mage|wizard|sorcerer|spell/i.test(e.name)) {
+          enemyProjType = 'skeleton_bolt';
+          enemyProjColor = '#38bdf8';
+        } else if (e.type === EnemyType.Necromancer || /void|warlock|cultist|shadow/i.test(e.name)) {
+          enemyProjType = 'void_siphon';
+          enemyProjColor = '#a855f7';
+        } else if (/fire|dragon|imp|demon/i.test(e.name)) {
+          enemyProjType = 'fireball';
+          enemyProjColor = '#f97316';
+        }
+
+        safeDispatchProjectile({
+          startX: e.x,
+          startY: e.y,
+          targetX: px,
+          targetY: py,
+          color: enemyProjColor,
+          projectileType: enemyProjType,
+          impactText: isCritHit ? `CRIT! -${strikeDmg} HP` : `-${strikeDmg} HP`,
+          impactType: isCritHit ? 'crit' : 'dmg',
+        });
+      }
+
       if (e.affixes?.includes('vampiric') && strikeDmg > 0) {
         const leech = Math.max(1, Math.floor(strikeDmg * 0.40));
         e.hp = Math.min(e.maxHp, e.hp + leech);
@@ -621,63 +859,146 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
       }
     }
 
-    for (const defender of updatedEnemiesList) {
+    for (const defender of allActiveEntities) {
       if (defender.hp > 0 && (defender.isFollower || (defender.isTownGuard && !nextGuardsHostile))) {
         const defDist = Math.abs(defender.x - e.x) + Math.abs(defender.y - e.y);
-        if (defDist < minDefenderDist) {
+        const isDefenderWoundedOrFleeing = defender.state === EnemyState.Retreating || (defender.hp < defender.maxHp * 0.4);
+        
+        // Predatory pursuit: enemies chase retreating/wounded defenders or closer targets
+        if (isDefenderWoundedOrFleeing ? (defDist <= minDefenderDist + 2) : (defDist <= minDefenderDist)) {
           minDefenderDist = defDist;
           chaseTargetX = defender.x;
           chaseTargetY = defender.y;
         }
-      }
-    }
-
-    const packTypes: (EnemyType | string)[] = [EnemyType.Goblin, EnemyType.Bandit, EnemyType.LootGoblin, EnemyType.OrcBrute, EnemyType.Hiisi];
-    const isPackUnit = packTypes.includes(e.type) ||
-                       /goblin|wolf|bandit|outlaw|raider|pack|beast|rogue|hiisi|orc/i.test(e.name);
-
-    if (isPackUnit) {
-      const flankAngles = [
-        { x: px, y: py - 1 },
-        { x: px + 1, y: py },
-        { x: px, y: py + 1 },
-        { x: px - 1, y: py },
-        { x: px + 1, y: py - 1 },
-        { x: px + 1, y: py + 1 },
-        { x: px - 1, y: py + 1 },
-        { x: px - 1, y: py - 1 }
-      ];
-
-      let chosenFlank: { x: number; y: number } | null = null;
-      for (const pos of flankAngles) {
-        if (pos.x >= 0 && pos.x < LEVEL_WIDTH && pos.y >= 0 && pos.y < LEVEL_HEIGHT) {
-          const tile = prev.map[pos.y]?.[pos.x];
-          const isWall = tile === TileType.Wall || tile === TileType.Water;
-          if (!isWall) {
-            const isOccupied = updatedEnemiesList.some(other => other.x === pos.x && other.y === pos.y) ||
-                               nextEnemies.some((other, idx) => idx > i && other.x === pos.x && other.y === pos.y);
-            if (!isOccupied) {
-              chosenFlank = pos;
-              break;
-            }
+      } else if (defender.hp > 0 && defender.id !== e.id && isHostileBetween(e.faction, defender.faction)) {
+        // Pursuit of rival faction enemies in turf wars
+        const rivalDist = Math.abs(defender.x - e.x) + Math.abs(defender.y - e.y);
+        if (rivalDist <= 7 && hasLineOfSight(e.x, e.y, defender.x, defender.y, prev.map)) {
+          if (rivalDist < minDefenderDist) {
+            minDefenderDist = rivalDist;
+            chaseTargetX = defender.x;
+            chaseTargetY = defender.y;
           }
         }
       }
-
-      if (chosenFlank) {
-        chaseTargetX = chosenFlank.x;
-        chaseTargetY = chosenFlank.y;
-      }
     }
 
-    const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
-    if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
-      const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
-                                   nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-      const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
-      if (!isTileBlockedByEnemy && isTileWalkable) {
-        e.x = nextStep.x;
-        e.y = nextStep.y;
+    const isRangedKiter = (e.range && e.range > 1) ||
+                          e.aiRole === 'skirmisher_kiting' ||
+                          e.type === EnemyType.SkeletonMage ||
+                          e.type === EnemyType.Necromancer ||
+                          e.type === EnemyType.Tidecaller ||
+                          e.type === EnemyType.AbyssalSiren ||
+                          e.type === EnemyType.Trapmaster ||
+                          /archer|bowman|ranger|marksman|sorcerer|mage|wizard|warlock|shaman|tidecaller|spellflinger|trapsmith/i.test(e.name);
+
+    if (isRangedKiter) {
+      const preferredRange = Math.min(4, Math.max(3, e.range || 3));
+      const curDistToTarget = Math.abs(chaseTargetX - e.x) + Math.abs(chaseTargetY - e.y);
+      const targetHasLOS = hasLineOfSight(e.x, e.y, chaseTargetX, chaseTargetY, prev.map);
+
+      // If target is too close in melee (<= 2 tiles), kite backwards/away to maintain firing distance
+      if (curDistToTarget <= 2) {
+        const retreatDirs = [
+          { x: e.x + (e.x > chaseTargetX ? 1 : e.x < chaseTargetX ? -1 : 0), y: e.y + (e.y > chaseTargetY ? 1 : e.y < chaseTargetY ? -1 : 0) },
+          { x: e.x + (e.x > chaseTargetX ? 1 : -1), y: e.y },
+          { x: e.x, y: e.y + (e.y > chaseTargetY ? 1 : -1) },
+          { x: e.x + 1, y: e.y },
+          { x: e.x - 1, y: e.y },
+          { x: e.x, y: e.y + 1 },
+          { x: e.x, y: e.y - 1 }
+        ];
+
+        let bestKiteStep: { x: number; y: number } | null = null;
+        let maxKiteDist = curDistToTarget;
+
+        for (const step of retreatDirs) {
+          if (step.x >= 0 && step.x < LEVEL_WIDTH && step.y >= 0 && step.y < LEVEL_HEIGHT) {
+            const tile = prev.map[step.y]?.[step.x];
+            const isWalkable = tile !== TileType.Wall && tile !== TileType.Water;
+            const isBlocked = (step.x === px && step.y === py) ||
+                              updatedEnemiesList.some(other => other.x === step.x && other.y === step.y) ||
+                              nextEnemies.some((other, idx) => idx > i && other.x === step.x && other.y === step.y);
+            if (isWalkable && !isBlocked) {
+              const newDist = Math.abs(chaseTargetX - step.x) + Math.abs(chaseTargetY - step.y);
+              if (newDist > maxKiteDist) {
+                maxKiteDist = newDist;
+                bestKiteStep = step;
+              }
+            }
+          }
+        }
+
+        if (bestKiteStep) {
+          e.x = bestKiteStep.x;
+          e.y = bestKiteStep.y;
+          if (Math.random() < 0.20 && prev.visible[e.y]?.[e.x]) {
+            staticLogs.push(`🏹 [TACTICAL KITE]: ${e.name} steps backward to maintain firing distance!`);
+          }
+        }
+      } else if (curDistToTarget >= 3 && curDistToTarget <= preferredRange && targetHasLOS) {
+        // Ideal sweet spot firing position with clear line-of-sight: hold ground to shoot rather than walking into melee
+      } else {
+        // Outside firing range or LOS broken by obstacles: advance towards firing range
+        const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, true, updatedEnemiesList, false);
+        if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
+          const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
+                                       nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
+          const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+          if (!isTileBlockedByEnemy && isTileWalkable) {
+            e.x = nextStep.x;
+            e.y = nextStep.y;
+          }
+        }
+      }
+    } else {
+      const packTypes: (EnemyType | string)[] = [EnemyType.Goblin, EnemyType.Bandit, EnemyType.LootGoblin, EnemyType.OrcBrute, EnemyType.Hiisi];
+      const isPackUnit = packTypes.includes(e.type) ||
+                         /goblin|wolf|bandit|outlaw|raider|pack|beast|rogue|hiisi|orc/i.test(e.name);
+
+      if (isPackUnit) {
+        const flankAngles = [
+          { x: px, y: py - 1 },
+          { x: px + 1, y: py },
+          { x: px, y: py + 1 },
+          { x: px - 1, y: py },
+          { x: px + 1, y: py - 1 },
+          { x: px + 1, y: py + 1 },
+          { x: px - 1, y: py + 1 },
+          { x: px - 1, y: py - 1 }
+        ];
+
+        let chosenFlank: { x: number; y: number } | null = null;
+        for (const pos of flankAngles) {
+          if (pos.x >= 0 && pos.x < LEVEL_WIDTH && pos.y >= 0 && pos.y < LEVEL_HEIGHT) {
+            const tile = prev.map[pos.y]?.[pos.x];
+            const isWall = tile === TileType.Wall || tile === TileType.Water;
+            if (!isWall) {
+              const isOccupied = updatedEnemiesList.some(other => other.x === pos.x && other.y === pos.y) ||
+                                 nextEnemies.some((other, idx) => idx > i && other.x === pos.x && other.y === pos.y);
+              if (!isOccupied) {
+                chosenFlank = pos;
+                break;
+              }
+            }
+          }
+        }
+
+        if (chosenFlank) {
+          chaseTargetX = chosenFlank.x;
+          chaseTargetY = chosenFlank.y;
+        }
+      }
+
+      const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+      if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
+        const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
+                                     nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
+        const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+        if (!isTileBlockedByEnemy && isTileWalkable) {
+          e.x = nextStep.x;
+          e.y = nextStep.y;
+        }
       }
     }
   } else if (e.state === EnemyState.Retreating) {

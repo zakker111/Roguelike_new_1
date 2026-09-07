@@ -8,6 +8,7 @@ import { WorldMapPinsList } from './WorldMapPinsList';
 import { ChunkMapInfo, WorldMapFilterState, CustomMapPin } from './types';
 import { GameState, OverworldChunk } from '../../types';
 import { getOrganicBiome } from '../../world/overworldBiomes';
+import { asyncChunkBatcher } from '../../utils/overworld';
 
 interface WorldMapModalProps {
   isOpen: boolean;
@@ -77,7 +78,13 @@ export const WorldMapModal: React.FC<WorldMapModalProps> = ({
     Object.keys(overworldChunks).forEach(k => set.add(k));
 
     if (gameState.visitedChunks) {
-      gameState.visitedChunks.forEach((c: string) => set.add(c));
+      if (Array.isArray(gameState.visitedChunks)) {
+        gameState.visitedChunks.forEach((c: string) => set.add(c));
+      } else if (gameState.visitedChunks instanceof Set) {
+        gameState.visitedChunks.forEach((c: string) => set.add(c));
+      } else if (typeof gameState.visitedChunks === 'object') {
+        Object.keys(gameState.visitedChunks).forEach((c: string) => set.add(c));
+      }
     }
 
     if (gameState.worldMapFullyRevealed) {
@@ -87,6 +94,9 @@ export const WorldMapModal: React.FC<WorldMapModalProps> = ({
         }
       }
     }
+
+    // Proactively pre-cache surrounding chunks for fast rendering
+    asyncChunkBatcher.pregenerateSurroundingChunks(currentChunkX, currentChunkY, 2);
 
     return set;
   }, [currentChunkX, currentChunkY, overworldChunks, gameState.visitedChunks, gameState.worldMapFullyRevealed]);
@@ -288,6 +298,7 @@ export const WorldMapModal: React.FC<WorldMapModalProps> = ({
               recenterTrigger={recenterTrigger}
               isOverworld={gameState.isOverworld}
               dungeonLevel={gameState.dungeonLevel}
+              selectedChunkCoord={activeInspectedChunk ? { x: activeInspectedChunk.chunkX, y: activeInspectedChunk.chunkY } : null}
               onHoverChunk={setHoveredChunk}
               onSelectChunk={setSelectedChunk}
               onRightClickChunk={(cx, cy) => {
@@ -297,20 +308,22 @@ export const WorldMapModal: React.FC<WorldMapModalProps> = ({
             />
 
             {/* Floating Chunk Tooltip Inspector */}
-            <div className="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-auto sm:max-w-md pointer-events-auto z-20">
-              <WorldMapChunkTooltip
-                chunk={activeInspectedChunk}
-                isCurrentHeroChunk={isCurrentHeroChunk}
-                currentChunkX={currentChunkX}
-                currentChunkY={currentChunkY}
-                onFastTravel={handleFastTravel}
-                onOpenPinEditor={(cx, cy, pin) => handleOpenPinEditor(cx, cy, pin)}
-                onClose={() => {
-                  setSelectedChunk(null);
-                  setHoveredChunk(null);
-                }}
-              />
-            </div>
+            {activeInspectedChunk && (
+              <div className="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-auto sm:max-w-md pointer-events-auto z-20 animate-fade-in">
+                <WorldMapChunkTooltip
+                  chunk={activeInspectedChunk}
+                  isCurrentHeroChunk={isCurrentHeroChunk}
+                  currentChunkX={currentChunkX}
+                  currentChunkY={currentChunkY}
+                  onFastTravel={handleFastTravel}
+                  onOpenPinEditor={(cx, cy, pin) => handleOpenPinEditor(cx, cy, pin)}
+                  onClose={() => {
+                    setSelectedChunk(null);
+                    setHoveredChunk(null);
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Collapsible Waystone & Pins Drawer Ledger */}

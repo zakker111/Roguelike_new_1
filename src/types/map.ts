@@ -147,6 +147,13 @@ export interface OverworldChunk {
   corpses?: Corpse[];
   bloodSplatters?: BloodSplatter[];
   visitedTiles?: { [coordString: string]: boolean };
+  compressedData?: {
+    compressedMap: string;
+    compressedDiscovered?: string;
+    compressedSecondFloorMap?: string;
+    compressedSecondFloorDiscovered?: string;
+  };
+  isCompressed?: boolean;
 }
 
 export interface DungeonLevelState {

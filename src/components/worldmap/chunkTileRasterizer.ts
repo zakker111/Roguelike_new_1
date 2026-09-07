@@ -1,5 +1,5 @@
 import { TileType, OverworldChunk } from '../../types';
-import { generateOverworldChunk } from '../../utils/overworld';
+import { generateOverworldChunk, asyncChunkBatcher, getChunkMapGrid } from '../../utils/overworld';
 import { multiOctaveNoise } from '../../world/organic/biomeNoiseEngine';
 
 // Cache for rendered chunk canvases with LRU (Least Recently Used) tracking
@@ -147,14 +147,23 @@ export function getOrCreateChunkCanvas(
   let biome = predictedBiome;
 
   try {
-    if (chunk && chunk.map && chunk.map.length > 0) {
-      mapGrid = chunk.map;
+    if (chunk) {
+      mapGrid = getChunkMapGrid(chunk);
       biome = chunk.biome || predictedBiome;
-    } else {
+    } else if (asyncChunkBatcher.hasCachedChunk(chunkX, chunkY)) {
+      const cached = asyncChunkBatcher.getCachedChunkSync(chunkX, chunkY);
+      if (cached) {
+        mapGrid = getChunkMapGrid(cached);
+        biome = cached.biome || predictedBiome;
+      }
+    }
+    
+    if (mapGrid.length === 0) {
       // Generate chunk map on the fly
       const generated = generateOverworldChunk(chunkX, chunkY, 64, 40);
       mapGrid = generated.map;
       biome = generated.biome || predictedBiome;
+      asyncChunkBatcher.storeChunkInCache(generated);
     }
   } catch (err) {
     console.warn(`[Rasterizer] Chunk map fallback for (${chunkX},${chunkY}):`, err);
@@ -302,8 +311,8 @@ export function getOrCreateChunkMacroCanvas(
   let biome = predictedBiome;
 
   try {
-    if (chunk && chunk.map && chunk.map.length > 0) {
-      mapGrid = chunk.map;
+    if (chunk) {
+      mapGrid = getChunkMapGrid(chunk);
       biome = chunk.biome || predictedBiome;
     } else {
       const generated = generateOverworldChunk(chunkX, chunkY, 64, 40);

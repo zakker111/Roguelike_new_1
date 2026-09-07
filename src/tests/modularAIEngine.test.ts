@@ -331,6 +331,143 @@ describe('Modular AI Engine (src/hooks/ai/)', () => {
     expect(npcs[0].id).toBe('npc_cat_1');
   });
 
+  it('handles support healer allies restoring HP to wounded teammates', () => {
+    const gs = createMockGameState();
+    const shaman = {
+      id: 'shaman_1',
+      x: 10,
+      y: 10,
+      type: EnemyType.Necromancer,
+      name: 'Goblin Witch Doctor',
+      hp: 20,
+      maxHp: 20,
+      atk: 6,
+      def: 1,
+      range: 4,
+      speed: 1,
+      color: '#a855f7',
+      char: '🧙',
+      state: EnemyState.Chasing,
+      aiRole: 'support_healer' as const,
+      isElite: false,
+      patrolPath: [],
+      patrolIndex: 0,
+      debuffs: []
+    };
+
+    const woundedTank = {
+      id: 'tank_1',
+      x: 11,
+      y: 10,
+      type: EnemyType.OrcBrute,
+      name: 'Orc Vanguard',
+      hp: 10,
+      maxHp: 50,
+      atk: 10,
+      def: 4,
+      range: 1,
+      speed: 1,
+      color: '#ea580c',
+      char: 'O',
+      state: EnemyState.Chasing,
+      isElite: false,
+      patrolPath: [],
+      patrolIndex: 0,
+      debuffs: []
+    };
+
+    const playSound = vi.fn();
+    const applyDamage = vi.fn();
+    const staticLogs: string[] = [];
+
+    const res = processHostileTurn({
+      e: shaman,
+      i: 0,
+      px: 5,
+      py: 5,
+      playerHp: 100,
+      prev: gs,
+      nextGuardsHostile: false,
+      nextEnemies: [shaman, woundedTank],
+      updatedEnemiesList: [shaman, woundedTank],
+      updatedStats: gs.playerStats,
+      activeScars: [],
+      updatedEffects: [],
+      nextDefeatedCounts: {},
+      incomingPlayerDamage: 0,
+      incomingPlayerHits: 0,
+      hadPlayerCrit: false,
+      hadPlayerBrace: false,
+      staticLogs,
+      playSound,
+      applyDamageToEnemy: applyDamage
+    });
+
+    expect(woundedTank.hp).toBeGreaterThan(10);
+    expect(res.e?.supportSpellCooldown).toBe(3);
+    expect(staticLogs.some(l => l.includes('[SUPPORT HEAL]'))).toBe(true);
+  });
+
+  it('handles ranged skirmishers kiting backward when player steps into melee range', () => {
+    const gs = createMockGameState();
+    const archer = {
+      id: 'archer_1',
+      x: 10,
+      y: 10,
+      type: EnemyType.SkeletonMage,
+      name: 'Elven Marksman',
+      hp: 20,
+      maxHp: 20,
+      atk: 6,
+      def: 1,
+      range: 4,
+      speed: 1,
+      color: '#60a5fa',
+      char: 'S',
+      state: EnemyState.Chasing,
+      aiRole: 'skirmisher_kiting' as const,
+      isElite: false,
+      patrolPath: [],
+      patrolIndex: 0,
+      debuffs: []
+    };
+
+    const playSound = vi.fn();
+    const applyDamage = vi.fn();
+    const staticLogs: string[] = [];
+
+    // Player is at (10, 9), directly adjacent (1 tile away)
+    const initialDist = Math.abs(archer.x - 10) + Math.abs(archer.y - 9);
+    expect(initialDist).toBe(1);
+
+    const res = processHostileTurn({
+      e: archer,
+      i: 0,
+      px: 10,
+      py: 9,
+      playerHp: 100,
+      prev: gs,
+      nextGuardsHostile: false,
+      nextEnemies: [archer],
+      updatedEnemiesList: [],
+      updatedStats: gs.playerStats,
+      activeScars: [],
+      updatedEffects: [],
+      nextDefeatedCounts: {},
+      incomingPlayerDamage: 0,
+      incomingPlayerHits: 0,
+      hadPlayerCrit: false,
+      hadPlayerBrace: false,
+      staticLogs,
+      playSound,
+      applyDamageToEnemy: applyDamage
+    });
+
+    // Archer should have kited backwards or away from (10, 9)
+    const newDist = Math.abs((res.e?.x ?? 10) - 10) + Math.abs((res.e?.y ?? 10) - 9);
+    expect(newDist).toBeGreaterThan(initialDist);
+  });
+
   it('checks tactical caravan combat victory and awards bonus gold and xp', () => {
     const playSound = vi.fn();
     const staticLogs: string[] = [];

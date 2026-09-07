@@ -3,6 +3,8 @@ import { SpriteSheetConfig } from '../components/GameCanvas';
 import { drawSpriteOrAscii } from './spriteRenderer';
 import { getDirectionalShadowParams, renderEntityDirectionalShadow } from './shadowRenderer';
 import { visualFxParticleSystem } from './visualFxParticleSystem';
+import { entityInterpolationManager } from './entityInterpolationManager';
+import { combatVfxEngine } from './combatVfxEngine';
 
 const lastEntityPositions = new Map<string, { x: number; y: number }>();
 
@@ -50,6 +52,8 @@ export interface RenderEntityLayerParams {
   shakersMap: Record<string, boolean>;
 }
 
+let staleCleanupTick = 0;
+
 export function renderEntityLayer({
   ctx,
   gameState,
@@ -75,6 +79,27 @@ export function renderEntityLayer({
 
   const shadowParams = getDirectionalShadowParams(gameState.gameTime || 720, gameState.weather);
 
+  // Active entities cleanup for interpolation (throttled to every 120 frames to eliminate 60fps Set allocations)
+  if (++staleCleanupTick % 120 === 0) {
+    const activeIds = new Set<string>();
+    activeIds.add('player');
+    const enemyCount = gameState.enemies.length;
+    for (let eIdx = 0; eIdx < enemyCount; eIdx++) {
+      activeIds.add(`enemy_${gameState.enemies[eIdx].id}`);
+    }
+    if (gameState.npcs) {
+      const npcCount = gameState.npcs.length;
+      for (let nIdx = 0; nIdx < npcCount; nIdx++) {
+        const n = gameState.npcs[nIdx];
+        activeIds.add(`npc_${n.id || n.name}`);
+      }
+    }
+    entityInterpolationManager.cleanupStale(activeIds);
+  }
+
+  // 4a. Render Ground Decals (blood, scorch marks, frost patches, stone cracks)
+  combatVfxEngine.renderUnderLayer(ctx, camX, camY, tileSize);
+
   // 4b. Render Corpses (on top of blood, under living units/traps)
   if (gameState.corpses) {
     gameState.corpses.forEach((corpse) => {
@@ -88,7 +113,10 @@ export function renderEntityLayer({
       const isVisible = gameState.visible[y]?.[x] ?? false;
 
       ctx.save();
-      ctx.globalAlpha = isVisible ? 0.75 : 0.35;
+      const fade = corpse.decayTurns !== undefined && corpse.decayTurns < 20
+        ? Math.max(0.1, corpse.decayTurns / 20)
+        : 1.0;
+      ctx.globalAlpha = (isVisible ? 0.75 : 0.35) * fade;
 
       let corpseGlyph = '%';
       if (corpse.type === 'animal') {
@@ -259,8 +287,10 @@ export function renderEntityLayer({
       if (gameState.isOverworld && npcZ !== (gameState.overworldZ || 0)) return;
       if (!gameState.visible[y]?.[x]) return;
 
-      const rx = x * tileSize - camX;
-      const ry = y * tileSize - camY;
+      const npcKey = `npc_${npc.id || npc.name}`;
+      const npcInterp = entityInterpolationManager.getRenderPosition(npcKey, x, y);
+      const rx = npcInterp.renderX * tileSize - camX;
+      const ry = npcInterp.renderY * tileSize - camY;
 
       // Directional drop shadow for Town NPCs
       renderEntityDirectionalShadow(ctx, rx, ry, tileSize, shadowParams, 0.9);
@@ -271,15 +301,28 @@ export function renderEntityLayer({
       ctx.arc(rx + tileSize / 2, ry + tileSize / 2, tileSize * 0.45, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = npc.color;
-      if (npc.char === '🛌' || ['🌿', '🏹', '🚶'].includes(npc.char)) {
-        ctx.font = '14px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+      if (tilesetConfig.enabled && tilesetImage && npc.char !== '🛌') {
+        const npcAnim = npcInterp.isMoving ? 'walk' : 'idle';
+        const npcDir = npcInterp.facing;
+        const npcId = npc.role ? npc.role.toLowerCase() : 'civilian';
+        drawSpriteOrAscii(ctx, rx, ry, npc.char, 'transparent', npc.color, {
+          entityChar: npc.char,
+          entityId: npcId,
+          direction: npcDir,
+          animState: npcAnim,
+          fontSize: 'bold 14px "JetBrains Mono", monospace'
+        }, tilesetConfig, tilesetImage, animationTick, tileSize);
       } else {
-        ctx.font = 'bold 14px "JetBrains Mono", monospace';
+        ctx.fillStyle = npc.color;
+        if (npc.char === '🛌' || ['🌿', '🏹', '🚶'].includes(npc.char)) {
+          ctx.font = '14px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+        } else {
+          ctx.font = 'bold 14px "JetBrains Mono", monospace';
+        }
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(npc.char, rx + tileSize / 2, ry + tileSize / 2);
       }
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(npc.char, rx + tileSize / 2, ry + tileSize / 2);
 
       if (npc.char === '🛌') {
         ctx.fillStyle = '#94a3b8';
@@ -296,7 +339,6 @@ export function renderEntityLayer({
       ctx.fillText(npc.role.toUpperCase(), rx + tileSize / 2, ry + tileSize - 4);
 
       // Check movement for water ripples & rain splashes
-      const npcKey = `npc_${npc.id || npc.name}`;
       const prevNpcPos = lastEntityPositions.get(npcKey);
       if (prevNpcPos && (prevNpcPos.x !== x || prevNpcPos.y !== y)) {
         const tile = gameState.map[y]?.[x];
@@ -345,8 +387,10 @@ export function renderEntityLayer({
     if (!isTileInViewport(x, y)) return;
     if (!gameState.visible[y]?.[x]) return;
 
-    const rx = x * tileSize - camX;
-    const ry = y * tileSize - camY;
+    const enemyKey = `enemy_${enemy.id}`;
+    const enemyInterp = entityInterpolationManager.getRenderPosition(enemyKey, x, y);
+    const rx = enemyInterp.renderX * tileSize - camX;
+    const ry = enemyInterp.renderY * tileSize - camY;
 
     const isApex = enemy.isBoss || enemy.difficultyTier === 'apex';
     const isTough = enemy.isElite || enemy.difficultyTier === 'tough';
@@ -399,8 +443,19 @@ export function renderEntityLayer({
         ? `bold 18px "JetBrains Mono", Menlo, monospace`
         : `bold 15px "JetBrains Mono", Menlo, monospace`;
 
-      drawSpriteOrAscii(ctx, rx, ry, enemy.char, 'transparent', enemy.color, {
-        entityChar: enemy.char,
+      const enemyDir = enemyInterp.facing;
+      let enemyAnim: 'idle' | 'walk' | 'attack' | 'hurt' = enemyInterp.isMoving ? 'walk' : 'idle';
+      if (enemy.isStaggered) enemyAnim = 'hurt';
+
+      const isGuard = (enemy as any).isTownGuard || (enemy.name && enemy.name.toLowerCase().includes('guard')) || (enemy.name && enemy.name.toLowerCase().includes('sentry'));
+      const resolvedEntityId = isGuard ? 'town_guard' : enemy.id;
+      const resolvedChar = isGuard ? '🛡' : enemy.char;
+
+      drawSpriteOrAscii(ctx, rx, ry, resolvedChar, 'transparent', enemy.color, {
+        entityChar: resolvedChar,
+        entityId: resolvedEntityId,
+        direction: enemyDir,
+        animState: enemyAnim,
         fontSize: enemyFontSize
       }, tilesetConfig, tilesetImage, animationTick, tileSize);
 
@@ -460,7 +515,6 @@ export function renderEntityLayer({
     }
 
     // Check movement for water ripples & rain splashes
-    const enemyKey = `enemy_${enemy.id}`;
     const prevEnemyPos = lastEntityPositions.get(enemyKey);
     if (prevEnemyPos && (prevEnemyPos.x !== x || prevEnemyPos.y !== y)) {
       const tile = gameState.map[y]?.[x];
@@ -475,26 +529,12 @@ export function renderEntityLayer({
   });
 
   // 8. Render Player
-  const prx = gameState.playerX * tileSize - camX;
-  const pry = gameState.playerY * tileSize - camY;
+  const playerInterp = entityInterpolationManager.getRenderPosition('player', gameState.playerX, gameState.playerY);
+  const prx = playerInterp.renderX * tileSize - camX;
+  const pry = playerInterp.renderY * tileSize - camY;
 
   // Directional drop shadow for Player
   renderEntityDirectionalShadow(ctx, prx, pry, tileSize, shadowParams, 1.0);
-
-  const torchGrad = ctx.createRadialGradient(
-    prx + tileSize / 2,
-    pry + tileSize / 2,
-    4,
-    prx + tileSize / 2,
-    pry + tileSize / 2,
-    tileSize * 1.5
-  );
-  torchGrad.addColorStop(0, 'rgba(251, 191, 36, 0.15)');
-  torchGrad.addColorStop(1, 'rgba(251, 191, 36, 0)');
-  ctx.fillStyle = torchGrad;
-  ctx.beginPath();
-  ctx.arc(prx + tileSize / 2, pry + tileSize / 2, tileSize * 1.5, 0, Math.PI * 2);
-  ctx.fill();
 
   if (!shakersMap['player']) {
     let playerChar = '@';
@@ -512,9 +552,22 @@ export function renderEntityLayer({
       playerColor = '#10b981';
     }
 
+    const playerDir = playerInterp.facing;
+    const playerAnim = playerInterp.isMoving ? 'walk' : 'idle';
+
     drawSpriteOrAscii(ctx, prx, pry, playerChar, 'transparent', playerColor, {
       entityChar: playerChar,
-      fontSize: `900 16px "JetBrains Mono", Menlo, monospace`
+      entityId: 'player',
+      direction: playerDir,
+      animState: playerAnim,
+      fontSize: `900 16px "JetBrains Mono", Menlo, monospace`,
+      paperdollEquipment: {
+        helmet: gameState.equippedHelmet,
+        armor: gameState.equippedArmor,
+        weapon: gameState.currentWeapon,
+        shield: gameState.equippedShield,
+        boots: gameState.equippedBoots,
+      }
     }, tilesetConfig, tilesetImage, animationTick, tileSize);
   }
 
@@ -743,4 +796,7 @@ export function renderEntityLayer({
       ctx.restore();
     }
   });
+
+  // 12. Render Active Projectiles, Melee Slashes, and Floating Damage Numbers
+  combatVfxEngine.renderOverLayer(ctx, camX, camY, tileSize);
 }

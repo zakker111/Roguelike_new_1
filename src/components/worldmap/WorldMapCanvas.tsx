@@ -5,6 +5,20 @@ import { getOrganicBiome } from '../../world/overworldBiomes';
 import { hasTownAtChunk, getDeterministicTownName, isCastleTownAtChunk } from '../../world/overworldStructures';
 import { OverworldChunk } from '../../types';
 import { getOrCreateChunkCanvas, getOrCreateChunkMacroCanvas } from './chunkTileRasterizer';
+import {
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Crosshair,
+  Home,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Compass,
+  ChevronUp,
+  ChevronDown
+} from 'lucide-react';
 
 interface WorldMapCanvasProps {
   currentChunkX: number;
@@ -19,6 +33,7 @@ interface WorldMapCanvasProps {
   recenterTrigger?: number;
   isOverworld?: boolean;
   dungeonLevel?: number;
+  selectedChunkCoord?: { x: number; y: number } | null;
   onHoverChunk: (chunk: ChunkMapInfo | null) => void;
   onSelectChunk: (chunk: ChunkMapInfo) => void;
   onRightClickChunk?: (chunkX: number, chunkY: number) => void;
@@ -37,6 +52,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
   recenterTrigger = 0,
   isOverworld = true,
   dungeonLevel = 0,
+  selectedChunkCoord = null,
   onHoverChunk,
   onSelectChunk,
   onRightClickChunk
@@ -50,9 +66,13 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [pulseAnim, setPulseAnim] = useState<number>(0);
+  const [showMobileNav, setShowMobileNav] = useState<boolean>(false);
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasDraggedRef = useRef<boolean>(false);
   const hoveredChunkRef = useRef<ChunkMapInfo | null>(null);
+
+  // Animation and momentum frame tracker
+  const inertiaRafRef = useRef<number | null>(null);
 
   // Touch tracking references
   const touchStateRef = useRef<{
@@ -60,6 +80,11 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
     startY: number;
     startPanX: number;
     startPanY: number;
+    lastX: number;
+    lastY: number;
+    lastTime: number;
+    velocityX: number;
+    velocityY: number;
     initialDistance: number;
     initialZoom: number;
     startTime: number;
@@ -67,9 +92,24 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
   } | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const stopInertia = useCallback(() => {
+    if (inertiaRafRef.current) {
+      cancelAnimationFrame(inertiaRafRef.current);
+      inertiaRafRef.current = null;
+    }
+  }, []);
+
   // Dynamic Base Chunk Size scaled by zoom
   const baseChunkSize = 88; // Base pixel dimensions per chunk on map
   const chunkSize = baseChunkSize * zoomLevel;
+
+  // Safe normalized discovered chunks set
+  const safeDiscoveredSet = useMemo<Set<string>>(() => {
+    if (discoveredChunks instanceof Set) return discoveredChunks as Set<string>;
+    if (Array.isArray(discoveredChunks)) return new Set<string>(discoveredChunks);
+    if (discoveredChunks && typeof discoveredChunks === 'object') return new Set<string>(Object.keys(discoveredChunks));
+    return new Set<string>();
+  }, [discoveredChunks]);
 
   // Compute dynamic expanding realm frontier bounding box
   const realmBounds = useMemo(() => {
@@ -78,7 +118,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
     let minY = currentChunkY;
     let maxY = currentChunkY;
 
-    discoveredChunks.forEach(k => {
+    safeDiscoveredSet.forEach((k: string) => {
       const [x, y] = k.split(',').map(Number);
       if (!isNaN(x) && !isNaN(y)) {
         if (x < minX) minX = x;
@@ -88,7 +128,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
       }
     });
 
-    Object.keys(overworldChunks).forEach(k => {
+    Object.keys(overworldChunks || {}).forEach(k => {
       const [x, y] = k.split(',').map(Number);
       if (!isNaN(x) && !isNaN(y)) {
         if (x < minX) minX = x;
@@ -109,7 +149,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
       minX, maxX, minY, maxY,
       renderMinX, renderMaxX, renderMinY, renderMaxY
     };
-  }, [discoveredChunks, overworldChunks, currentChunkX, currentChunkY]);
+  }, [safeDiscoveredSet, overworldChunks, currentChunkX, currentChunkY]);
 
   // Center pan on player
   const centerOnPlayer = useCallback(() => {
@@ -164,10 +204,10 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
     if (cached) return cached;
 
     const isDiscovered =
-      discoveredChunks.has(key) ||
+      safeDiscoveredSet.has(key) ||
       (cx === currentChunkX && cy === currentChunkY) ||
       (cx === 0 && cy === 0) ||
-      Boolean(overworldChunks[key]);
+      Boolean(overworldChunks?.[key]);
 
     const metrics = getContinuousTerrainMetrics(cx * 64, cy * 40);
     const existingChunk = overworldChunks[key];
@@ -385,7 +425,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
 
     chunkDataCacheRef.current.set(key, result);
     return result;
-  }, [discoveredChunks, overworldChunks, currentChunkX, currentChunkY, customPins, attunedWaystones]);
+  }, [safeDiscoveredSet, overworldChunks, currentChunkX, currentChunkY, customPins, attunedWaystones]);
 
   // Main Render Loop for Canvas
   useEffect(() => {
@@ -866,7 +906,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
     ctx.fillText('1 Sector (64x40)', scaleBarX + scaleBarW / 2, scaleBarY - 6);
 
     ctx.restore();
-  }, [panOffset, chunkSize, zoomLevel, discoveredChunks, currentChunkX, currentChunkY, filters, getChunkData, realmBounds, overworldChunks, isOverworld, dungeonLevel]);
+  }, [panOffset, chunkSize, zoomLevel, safeDiscoveredSet, currentChunkX, currentChunkY, filters, getChunkData, realmBounds, overworldChunks, isOverworld, dungeonLevel]);
 
   // Dynamic Layer Loop: Hero Beacon Pulse & Animated Leylines (Runs on dynamic top canvas)
   useEffect(() => {
@@ -931,12 +971,116 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
       ctx.stroke();
     }
 
+    // Render Selected Chunk Reticle Frame
+    if (selectedChunkCoord) {
+      const { x: selX, y: selY } = selectedChunkCoord;
+      if (selX >= visibleMinX && selX <= visibleMaxX && selY >= visibleMinY && selY <= visibleMaxY) {
+        const x = selX * chunkSize;
+        const y = selY * chunkSize;
+        const cornerLen = Math.max(10, Math.min(22, 16 * zoomLevel));
+        const pad = 2;
+
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = Math.max(1.8, 2.4 * zoomLevel);
+        ctx.shadowColor = '#0284c7';
+        ctx.shadowBlur = 8;
+
+        // Top-left
+        ctx.beginPath();
+        ctx.moveTo(x - pad, y - pad + cornerLen);
+        ctx.lineTo(x - pad, y - pad);
+        ctx.lineTo(x - pad + cornerLen, y - pad);
+        ctx.stroke();
+
+        // Top-right
+        ctx.beginPath();
+        ctx.moveTo(x + chunkSize + pad - cornerLen, y - pad);
+        ctx.lineTo(x + chunkSize + pad, y - pad);
+        ctx.lineTo(x + chunkSize + pad, y - pad + cornerLen);
+        ctx.stroke();
+
+        // Bottom-left
+        ctx.beginPath();
+        ctx.moveTo(x - pad, y + chunkSize + pad - cornerLen);
+        ctx.lineTo(x - pad, y + chunkSize + pad);
+        ctx.lineTo(x - pad + cornerLen, y + chunkSize + pad);
+        ctx.stroke();
+
+        // Bottom-right
+        ctx.beginPath();
+        ctx.moveTo(x + chunkSize + pad - cornerLen, y + chunkSize + pad);
+        ctx.lineTo(x + chunkSize + pad, y + chunkSize + pad);
+        ctx.lineTo(x + chunkSize + pad, y + chunkSize + pad - cornerLen);
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+      }
+    }
+
     ctx.restore();
     ctx.restore();
-  }, [panOffset, chunkSize, zoomLevel, currentChunkX, currentChunkY, filters, pulseAnim, realmBounds, getChunkData]);
+  }, [panOffset, chunkSize, zoomLevel, currentChunkX, currentChunkY, filters, pulseAnim, realmBounds, getChunkData, selectedChunkCoord]);
+
+  // Smooth Pan Animation Helpers
+  const smoothPanBy = useCallback((deltaX: number, deltaY: number) => {
+    stopInertia();
+    const startX = panOffset.x;
+    const startY = panOffset.y;
+    const targetX = startX + deltaX;
+    const targetY = startY + deltaY;
+    const startTime = performance.now();
+    const duration = 240;
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setPanOffset({
+        x: startX + (targetX - startX) * ease,
+        y: startY + (targetY - startY) * ease
+      });
+      if (progress < 1) {
+        inertiaRafRef.current = requestAnimationFrame(animate);
+      } else {
+        inertiaRafRef.current = null;
+      }
+    };
+    inertiaRafRef.current = requestAnimationFrame(animate);
+  }, [panOffset.x, panOffset.y, stopInertia]);
+
+  const centerOnChunk = useCallback((cx: number, cy: number) => {
+    if (!containerRef.current) return;
+    stopInertia();
+    const w = containerRef.current.clientWidth;
+    const h = containerRef.current.clientHeight;
+    const targetX = w / 2 - (cx * chunkSize + chunkSize / 2);
+    const targetY = h / 2 - (cy * chunkSize + chunkSize / 2);
+
+    const startX = panOffset.x;
+    const startY = panOffset.y;
+    const startTime = performance.now();
+    const duration = 260;
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setPanOffset({
+        x: startX + (targetX - startX) * ease,
+        y: startY + (targetY - startY) * ease
+      });
+      if (progress < 1) {
+        inertiaRafRef.current = requestAnimationFrame(animate);
+      } else {
+        inertiaRafRef.current = null;
+      }
+    };
+    inertiaRafRef.current = requestAnimationFrame(animate);
+  }, [chunkSize, panOffset.x, panOffset.y, stopInertia]);
 
   // Handle Drag & Pan
   const handleMouseDown = (e: React.MouseEvent) => {
+    stopInertia();
     if (e.button === 0 || e.button === 1) { // Left or middle click
       setIsDragging(true);
       setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
@@ -958,7 +1102,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
       return;
     }
 
-    // Hover chunk evaluation
+    // Hover chunk evaluation (Desktop mouse only)
     if (canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
       const mouseX = e.clientX - rect.left - panOffset.x;
@@ -999,7 +1143,6 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
       if (cx >= renderMinX && cx <= renderMaxX && cy >= renderMinY && cy <= renderMaxY) {
         const chunkData = getChunkData(cx, cy);
         onSelectChunk(chunkData);
-        onHoverChunk(chunkData);
       }
     }
   };
@@ -1061,6 +1204,7 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
 
   // Touch Gesture Handling: Pan, Tap-Select, Long-Press Pin, Pinch-to-Zoom
   const handleTouchStart = (e: React.TouchEvent) => {
+    stopInertia();
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -1068,14 +1212,20 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
 
     if (e.touches.length === 1) {
       const touch = e.touches[0];
+      const now = performance.now();
       touchStateRef.current = {
         startX: touch.clientX,
         startY: touch.clientY,
         startPanX: panOffset.x,
         startPanY: panOffset.y,
+        lastX: touch.clientX,
+        lastY: touch.clientY,
+        lastTime: now,
+        velocityX: 0,
+        velocityY: 0,
         initialDistance: 0,
         initialZoom: zoomLevel,
-        startTime: performance.now(),
+        startTime: now,
         hasMoved: false
       };
 
@@ -1097,14 +1247,20 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
       const t1 = e.touches[0];
       const t2 = e.touches[1];
       const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const now = performance.now();
       touchStateRef.current = {
         startX: (t1.clientX + t2.clientX) / 2,
         startY: (t1.clientY + t2.clientY) / 2,
         startPanX: panOffset.x,
         startPanY: panOffset.y,
+        lastX: (t1.clientX + t2.clientX) / 2,
+        lastY: (t1.clientY + t2.clientY) / 2,
+        lastTime: now,
+        velocityX: 0,
+        velocityY: 0,
         initialDistance: dist,
         initialZoom: zoomLevel,
-        startTime: performance.now(),
+        startTime: now,
         hasMoved: true
       };
     }
@@ -1115,33 +1271,39 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
 
     if (e.touches.length === 1) {
       const touch = e.touches[0];
+      const now = performance.now();
       const dx = touch.clientX - touchStateRef.current.startX;
       const dy = touch.clientY - touchStateRef.current.startY;
 
-      if (Math.hypot(dx, dy) > 8) {
-        touchStateRef.current.hasMoved = true;
+      // Track movement threshold
+      if (Math.hypot(dx, dy) > 6) {
+        if (!touchStateRef.current.hasMoved) {
+          touchStateRef.current.hasMoved = true;
+          // Clear any hover tooltip immediately on touch drag so it doesn't get in the way
+          onHoverChunk(null);
+        }
         if (longPressTimerRef.current) {
           clearTimeout(longPressTimerRef.current);
           longPressTimerRef.current = null;
         }
       }
 
+      // Calculate instantaneous touch velocity for momentum
+      const dt = now - touchStateRef.current.lastTime;
+      if (dt > 5) {
+        const vx = (touch.clientX - touchStateRef.current.lastX) / dt;
+        const vy = (touch.clientY - touchStateRef.current.lastY) / dt;
+        touchStateRef.current.velocityX = touchStateRef.current.velocityX * 0.4 + vx * 0.6;
+        touchStateRef.current.velocityY = touchStateRef.current.velocityY * 0.4 + vy * 0.6;
+        touchStateRef.current.lastX = touch.clientX;
+        touchStateRef.current.lastY = touch.clientY;
+        touchStateRef.current.lastTime = now;
+      }
+
       const newPanX = touchStateRef.current.startPanX + dx;
       const newPanY = touchStateRef.current.startPanY + dy;
       setPanOffset({ x: newPanX, y: newPanY });
-
-      // Update hover for tooltip
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const touchX = touch.clientX - rect.left - newPanX;
-        const touchY = touch.clientY - rect.top - newPanY;
-        const cx = Math.floor(touchX / chunkSize);
-        const cy = Math.floor(touchY / chunkSize);
-        const { renderMinX, renderMaxX, renderMinY, renderMaxY } = realmBounds;
-        if (cx >= renderMinX && cx <= renderMaxX && cy >= renderMinY && cy <= renderMaxY) {
-          onHoverChunk(getChunkData(cx, cy));
-        }
-      }
+      // NOTE: We deliberately do NOT call onHoverChunk here on mobile touch dragging
     } else if (e.touches.length === 2 && setZoomLevel && containerRef.current) {
       touchStateRef.current.hasMoved = true;
       if (longPressTimerRef.current) {
@@ -1178,20 +1340,48 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
       longPressTimerRef.current = null;
     }
 
-    if (touchStateRef.current && !touchStateRef.current.hasMoved && containerRef.current) {
-      const duration = performance.now() - touchStateRef.current.startTime;
-      if (duration < 350) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const touchX = touchStateRef.current.startX - rect.left - panOffset.x;
-        const touchY = touchStateRef.current.startY - rect.top - panOffset.y;
-        const cx = Math.floor(touchX / chunkSize);
-        const cy = Math.floor(touchY / chunkSize);
+    if (touchStateRef.current) {
+      if (!touchStateRef.current.hasMoved && containerRef.current) {
+        const duration = performance.now() - touchStateRef.current.startTime;
+        if (duration < 350) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const touchX = touchStateRef.current.startX - rect.left - panOffset.x;
+          const touchY = touchStateRef.current.startY - rect.top - panOffset.y;
+          const cx = Math.floor(touchX / chunkSize);
+          const cy = Math.floor(touchY / chunkSize);
 
-        const { renderMinX, renderMaxX, renderMinY, renderMaxY } = realmBounds;
-        if (cx >= renderMinX && cx <= renderMaxX && cy >= renderMinY && cy <= renderMaxY) {
-          const chunkData = getChunkData(cx, cy);
-          onSelectChunk(chunkData);
-          onHoverChunk(chunkData);
+          const { renderMinX, renderMaxX, renderMinY, renderMaxY } = realmBounds;
+          if (cx >= renderMinX && cx <= renderMaxX && cy >= renderMinY && cy <= renderMaxY) {
+            const chunkData = getChunkData(cx, cy);
+            onSelectChunk(chunkData);
+          }
+        }
+      } else if (touchStateRef.current.hasMoved) {
+        // Apply smooth inertia on release if velocity is noticeable
+        const vx = touchStateRef.current.velocityX;
+        const vy = touchStateRef.current.velocityY;
+        const speed = Math.hypot(vx, vy);
+
+        if (speed > 0.2) {
+          let currentVx = vx * 12;
+          let currentVy = vy * 12;
+          let currentPanX = panOffset.x;
+          let currentPanY = panOffset.y;
+
+          const stepInertia = () => {
+            currentVx *= 0.88;
+            currentVy *= 0.88;
+            currentPanX += currentVx;
+            currentPanY += currentVy;
+            setPanOffset({ x: currentPanX, y: currentPanY });
+
+            if (Math.hypot(currentVx, currentVy) > 0.3) {
+              inertiaRafRef.current = requestAnimationFrame(stepInertia);
+            } else {
+              inertiaRafRef.current = null;
+            }
+          };
+          inertiaRafRef.current = requestAnimationFrame(stepInertia);
         }
       }
     }
@@ -1222,8 +1412,11 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
     };
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      stopInertia();
+    };
+  }, [stopInertia]);
 
   return (
     <div
@@ -1244,8 +1437,116 @@ export const WorldMapCanvas: React.FC<WorldMapCanvasProps> = ({
     >
       {/* Layer 1: Static Terrain, Roads & High-Visibility POI Markers */}
       <canvas ref={canvasRef} className="absolute inset-0 block w-full h-full pointer-events-none" />
-      {/* Layer 2: Dynamic Animated FX (Hero Beacon Pulse & Leyline Auras) */}
+      {/* Layer 2: Dynamic Animated FX (Hero Beacon Pulse & Leyline Auras & Selected Chunk Reticle) */}
       <canvas ref={dynamicCanvasRef} className="absolute inset-0 block w-full h-full pointer-events-none" />
+
+      {/* Floating Mobile Navigator & Precision Controls (Top-Right) */}
+      <div className="absolute top-2 right-2 flex flex-col items-end gap-1.5 z-10 select-none pointer-events-auto">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMobileNav(prev => !prev);
+          }}
+          className="p-1.5 sm:p-2 bg-slate-950/90 hover:bg-slate-900 active:scale-95 text-amber-400 border border-slate-800/90 rounded-xl shadow-lg backdrop-blur-md flex items-center gap-1.5 text-xs font-bold cursor-pointer transition-all"
+          title={showMobileNav ? "Hide Map Controls" : "Show Map Controls"}
+        >
+          <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+          <span className="text-[10px] sm:text-[11px] font-mono text-slate-200">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+          {showMobileNav ? <ChevronUp className="w-3 h-3 text-slate-400" /> : <ChevronDown className="w-3 h-3 text-slate-400" />}
+        </button>
+
+        {showMobileNav && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="p-2 bg-slate-950/95 border border-slate-800/90 rounded-2xl shadow-2xl backdrop-blur-md flex flex-col items-center gap-2 animate-fade-in"
+          >
+            {/* D-Pad Directional Controls */}
+            <div className="grid grid-cols-3 gap-1 w-28 h-28 p-1 bg-slate-900/80 border border-slate-800 rounded-xl">
+              <div />
+              <button
+                onClick={() => smoothPanBy(0, chunkSize * 1.5)}
+                className="w-full h-full bg-slate-800/90 hover:bg-amber-500/20 active:bg-amber-500/40 text-slate-200 hover:text-amber-300 rounded-lg flex items-center justify-center font-bold transition-all active:scale-95 cursor-pointer"
+                title="Pan North"
+              >
+                <ArrowUp className="w-4 h-4" />
+              </button>
+              <div />
+
+              <button
+                onClick={() => smoothPanBy(chunkSize * 1.5, 0)}
+                className="w-full h-full bg-slate-800/90 hover:bg-amber-500/20 active:bg-amber-500/40 text-slate-200 hover:text-amber-300 rounded-lg flex items-center justify-center font-bold transition-all active:scale-95 cursor-pointer"
+                title="Pan West"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => centerOnChunk(currentChunkX, currentChunkY)}
+                className="w-full h-full bg-amber-500/20 hover:bg-amber-500/30 active:bg-amber-500/50 text-amber-300 rounded-lg flex items-center justify-center font-bold transition-all active:scale-90 border border-amber-500/40 cursor-pointer"
+                title="Center on Hero"
+              >
+                <Crosshair className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => smoothPanBy(-chunkSize * 1.5, 0)}
+                className="w-full h-full bg-slate-800/90 hover:bg-amber-500/20 active:bg-amber-500/40 text-slate-200 hover:text-amber-300 rounded-lg flex items-center justify-center font-bold transition-all active:scale-95 cursor-pointer"
+                title="Pan East"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <div />
+              <button
+                onClick={() => smoothPanBy(0, -chunkSize * 1.5)}
+                className="w-full h-full bg-slate-800/90 hover:bg-amber-500/20 active:bg-amber-500/40 text-slate-200 hover:text-amber-300 rounded-lg flex items-center justify-center font-bold transition-all active:scale-95 cursor-pointer"
+                title="Pan South"
+              >
+                <ArrowDown className="w-4 h-4" />
+              </button>
+              <div />
+            </div>
+
+            {/* Quick Presets & Zoom Buttons */}
+            <div className="flex items-center gap-1 w-full justify-between">
+              <button
+                onClick={() => centerOnChunk(0, 0)}
+                className="flex-1 py-1 px-1 bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-amber-300 border border-slate-800 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                title="Center on Starting Town (Oakhaven [0,0])"
+              >
+                <Home className="w-3 h-3 text-amber-400" />
+                <span>[0,0]</span>
+              </button>
+
+              {setZoomLevel && (
+                <>
+                  <button
+                    onClick={() => setZoomLevel(prev => Math.min(3.5, Math.round((prev + 0.25) * 100) / 100))}
+                    className="p-1.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-sky-300 border border-slate-800 rounded-lg cursor-pointer transition-colors"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setZoomLevel(prev => Math.max(0.4, Math.round((prev - 0.25) * 100) / 100))}
+                    className="p-1.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-sky-300 border border-slate-800 rounded-lg cursor-pointer transition-colors"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setZoomLevel(1.0)}
+                    className="p-1.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-amber-300 border border-slate-800 rounded-lg cursor-pointer transition-colors"
+                    title="Reset Zoom to 100%"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

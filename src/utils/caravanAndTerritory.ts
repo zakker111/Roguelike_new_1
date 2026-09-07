@@ -1,5 +1,5 @@
-import { NPC, Enemy, EnemyType, EnemyState } from '../types';
-import { hasTownAtChunk } from './overworld';
+import { NPC, Enemy, EnemyType, EnemyState, TileType } from '../types';
+import { hasTownAtChunk, findNearestSafeNpcTile, isTileSafeForNpc } from './overworld';
 
 export const syncCaravanState = (prev: any, nextTimeVal: number, nextNpcs: NPC[], nextEnemies: Enemy[]): { npcs: NPC[], enemies: Enemy[] } => {
   let finalNpcs = [...nextNpcs];
@@ -19,20 +19,25 @@ export const syncCaravanState = (prev: any, nextTimeVal: number, nextNpcs: NPC[]
       const midX = Math.floor((prev.levelWidth || 64) / 2);
       const midY = Math.floor((prev.levelHeight || 40) / 2);
 
+      const safeCaravanPos = prev.map ? findNearestSafeNpcTile(midX - 2, midY + 2, prev.map) : { x: midX - 2, y: midY + 2 };
+      const safeGuard1Pos = prev.map ? findNearestSafeNpcTile(midX - 3, midY + 2, prev.map) : { x: midX - 3, y: midY + 2 };
+      const safeGuard2Pos = prev.map ? findNearestSafeNpcTile(midX - 1, midY + 2, prev.map) : { x: midX - 1, y: midY + 2 };
+
       // Inject Lead Caravaneer
-      if (!finalNpcs.some(n => n.id === 'npc_caravan_merchant')) {
+      const existingCaravanIdx = finalNpcs.findIndex(n => n.id === 'npc_caravan_merchant');
+      if (existingCaravanIdx === -1) {
         finalNpcs.push({
           id: 'npc_caravan_merchant',
           name: 'Baron Tobias (Caravan)',
           role: 'merchant',
           char: 'C',
           color: '#fbbf24',
-          x: midX - 2,
-          y: midY + 2,
-          homeX: midX - 2,
-          homeY: midY + 2,
-          workX: midX - 2,
-          workY: midY + 2,
+          x: safeCaravanPos.x,
+          y: safeCaravanPos.y,
+          homeX: safeCaravanPos.x,
+          homeY: safeCaravanPos.y,
+          workX: safeCaravanPos.x,
+          workY: safeCaravanPos.y,
           scheduleState: 'work',
           dialogue: [
             "Greetings! My traveled merchant caravan has parked here in the town center square. I buy raw ores and sell fine supplies!",
@@ -40,6 +45,21 @@ export const syncCaravanState = (prev: any, nextTimeVal: number, nextNpcs: NPC[]
             "We sleep inside our caravan covered wagons. Check out our fresh Bread and Frothy Beers!"
           ]
         });
+      } else if (prev.map) {
+        // Relocate existing caravan merchant if situated on an invalid or window tile
+        const cNpc = finalNpcs[existingCaravanIdx];
+        if (prev.map[cNpc.y]?.[cNpc.x] === TileType.Window || !isTileSafeForNpc(prev.map[cNpc.y]?.[cNpc.x])) {
+          const relocated = findNearestSafeNpcTile(cNpc.x, cNpc.y, prev.map);
+          finalNpcs[existingCaravanIdx] = {
+            ...cNpc,
+            x: relocated.x,
+            y: relocated.y,
+            homeX: relocated.x,
+            homeY: relocated.y,
+            workX: relocated.x,
+            workY: relocated.y
+          };
+        }
       }
 
       // Inject Caravaneer Sentry guards (allied)
@@ -54,11 +74,11 @@ export const syncCaravanState = (prev: any, nextTimeVal: number, nextNpcs: NPC[]
           atk: 5,
           def: 4,
           type: EnemyType.OrcBrute,
-          x: midX - 3,
-          y: midY + 2,
+          x: safeGuard1Pos.x,
+          y: safeGuard1Pos.y,
           state: EnemyState.Patrolling,
           isElite: false,
-          patrolPath: [{ x: midX - 5, y: midY + 2 }, { x: midX - 1, y: midY + 2 }],
+          patrolPath: [{ x: safeGuard1Pos.x - 2, y: safeGuard1Pos.y }, { x: safeGuard1Pos.x + 2, y: safeGuard1Pos.y }],
           patrolIndex: 0,
           debuffs: [],
           isTownGuard: true,
@@ -75,11 +95,11 @@ export const syncCaravanState = (prev: any, nextTimeVal: number, nextNpcs: NPC[]
           atk: 5,
           def: 4,
           type: EnemyType.OrcBrute,
-          x: midX - 1,
-          y: midY + 2,
+          x: safeGuard2Pos.x,
+          y: safeGuard2Pos.y,
           state: EnemyState.Patrolling,
           isElite: false,
-          patrolPath: [{ x: midX - 2, y: midY + 1 }, { x: midX - 2, y: midY + 3 }],
+          patrolPath: [{ x: safeGuard2Pos.x, y: safeGuard2Pos.y - 1 }, { x: safeGuard2Pos.x, y: safeGuard2Pos.y + 1 }],
           patrolIndex: 0,
           debuffs: [],
           isTownGuard: true,

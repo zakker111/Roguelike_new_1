@@ -7,6 +7,8 @@ import SleepOverlay from './SleepOverlay';
 import BestiaryOverlay from './BestiaryOverlay';
 import FishingMiniGame from './FishingMiniGame';
 import LockpickingMiniGame from './LockpickingMiniGame';
+import ScriptoriumMiniGame from './ScriptoriumMiniGame';
+import { GlyphScribingResult } from '../types';
 import PoiInteractionOverlay, { PoiType } from './PoiInteractionOverlay';
 import DrunkInteractionOverlay from './DrunkInteractionOverlay';
 import TravelerInteractionOverlay from './TravelerInteractionOverlay';
@@ -48,6 +50,12 @@ export interface AppOverlaysProps {
 
   isLockpickingOpen: boolean;
   setIsLockpickingOpen: (val: boolean) => void;
+
+  isScriptoriumOpen?: boolean;
+  setIsScriptoriumOpen?: (val: boolean) => void;
+
+  activeScriptoriumScrollTemplateId?: string | null;
+  setActiveScriptoriumScrollTemplateId?: (val: string | null) => void;
 
   activeLockpickingChestIndex: number | null;
   setActiveLockpickingChestIndex: (val: number | null) => void;
@@ -104,6 +112,9 @@ export interface AppOverlaysProps {
   handleCompleteCaravanTravel?: () => void;
   isAudioSettingsOpen?: boolean;
   setIsAudioSettingsOpen?: (val: boolean) => void;
+  handleScriptoriumSuccess?: (result: GlyphScribingResult) => void;
+  handleScriptoriumFailure?: () => void;
+  onTriggerScriptorium?: (scrollTemplateId?: string) => void;
 }
 
 export const AppOverlays = React.memo<AppOverlaysProps>(({
@@ -125,6 +136,10 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
   setIsFishingOpen,
   isLockpickingOpen,
   setIsLockpickingOpen,
+  isScriptoriumOpen = false,
+  setIsScriptoriumOpen,
+  activeScriptoriumScrollTemplateId = null,
+  setActiveScriptoriumScrollTemplateId,
   activeLockpickingChestIndex,
   setActiveLockpickingChestIndex,
   activePoi,
@@ -164,6 +179,9 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
   onAttuneWaystone,
   onWaystoneFastTravel,
   onChallengeGuardian,
+  handleScriptoriumSuccess,
+  handleScriptoriumFailure,
+  onTriggerScriptorium,
 }) => {
   return (
     <>
@@ -209,8 +227,20 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
             setActiveLockpickingChestIndex(-1);
             setIsLockpickingOpen(true);
           }}
+          onTriggerFishing={() => {
+            setIsFishingOpen(true);
+          }}
+          onTriggerScriptorium={(scrollTemplateId) => {
+            if (setActiveScriptoriumScrollTemplateId) {
+              setActiveScriptoriumScrollTemplateId(scrollTemplateId || 'scroll_fireball');
+            }
+            if (setIsScriptoriumOpen) {
+              setIsScriptoriumOpen(true);
+            }
+          }}
           isAutoplayActive={isAutoplayActive}
           setIsAutoplayActive={setIsAutoplayActive}
+          addLogMessage={addLogMessage}
         />
       )}
 
@@ -304,6 +334,33 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
               ? `Abyss Floor ${gameState.playerStats.depth} Dungeon Vault`
               : "Locked Treasure Chest"
           }
+        />
+      )}
+
+      {isScriptoriumOpen && (
+        <ScriptoriumMiniGame
+          targetScrollTemplateId={activeScriptoriumScrollTemplateId || undefined}
+          onClose={() => {
+            if (setIsScriptoriumOpen) setIsScriptoriumOpen(false);
+            if (setActiveScriptoriumScrollTemplateId) setActiveScriptoriumScrollTemplateId(null);
+            addLogMessage("📜 You set aside the arcane parchment and quill.", "info");
+          }}
+          onSuccess={(result) => {
+            if (handleScriptoriumSuccess) {
+              handleScriptoriumSuccess(result);
+            }
+            if (setIsScriptoriumOpen) setIsScriptoriumOpen(false);
+            if (setActiveScriptoriumScrollTemplateId) setActiveScriptoriumScrollTemplateId(null);
+          }}
+          onFail={() => {
+            if (handleScriptoriumFailure) {
+              handleScriptoriumFailure();
+            } else {
+              addLogMessage("💥 The glyph destabilized and fizzled into ethereal smoke.", "danger");
+            }
+            if (setIsScriptoriumOpen) setIsScriptoriumOpen(false);
+            if (setActiveScriptoriumScrollTemplateId) setActiveScriptoriumScrollTemplateId(null);
+          }}
         />
       )}
 

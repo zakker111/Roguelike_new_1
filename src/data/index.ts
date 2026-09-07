@@ -9,6 +9,8 @@ export * from './caravan';
 export * from './combatFlavors';
 export * from './decor';
 export * from './dialogues';
+export * from './factions';
+export * from './glyphs';
 export * from './gmCommands';
 export * from './guild';
 export * from './items';

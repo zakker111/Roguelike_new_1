@@ -155,6 +155,7 @@ This document is the authoritative structural reference for the entire **Soverei
 - `src/world/overworldNpcSpawning.ts`: Townspeople, guards, merchants, and roaming fauna.
 - `src/world/caravanSkirmishGen.ts`: Road blockades and roadside ambush encounters.
 - `src/utils/overworld/overworldChunkGen.ts`: Dynamic streaming chunk generator for the infinite world.
+- `src/utils/overworld/asyncChunkBatcher.ts`: Asynchronous chunk streaming, time-sliced background pre-generation, and cache integration service.
 - `src/utils/dungeon.ts` / `src/utils/overworld/overworldTownGen.ts`: Backward-compatible facade barrels re-exporting modular world sub-engines.
 
 ---
@@ -226,8 +227,8 @@ This document is the authoritative structural reference for the entire **Soverei
   - `types.ts`: World map POIs, chunk map info, custom map pins, filter state contracts, and biome models.
   - `chunkTileRasterizer.ts`: High-performance micro-tile surface rasterizer for discovered chunks with offscreen canvas caching.
   - `WorldMapHeader.tsx`: Compass header with coordinate tracking, chunk inspect breadcrumbs, zoom stepper, recenter hero button, custom pins/waystone ledger counters, dynamic frontier bounds indicator, and filter toggles.
-  - `WorldMapCanvas.tsx`: Deep-zoom interactive canvas with parchment burnt fog-of-war edges, leyline waystones, custom pin markers, and smooth pan/drag.
-  - `WorldMapChunkTooltip.tsx`: Floating tactical sector intelligence card (threat rating, mineral lodes, structures, dungeons, and leyline waystone travel).
+  - `WorldMapCanvas.tsx`: Deep-zoom interactive canvas with parchment burnt fog-of-war edges, leyline waystones, custom pin markers, smooth pan/drag with momentum inertia, touch deadzones, selected sector reticles, and floating mobile Compass D-Pad navigator.
+  - `WorldMapChunkTooltip.tsx`: Floating tactical sector intelligence card with collapsible minimize/expand pill toggle, close button, threat rating, mineral lodes, structures, dungeons, and leyline waystone travel.
   - `CustomPinEditorModal.tsx`: Custom landmark pin editor with color picker and icon glyph palette.
   - `index.ts`: World map barrel export.
 - `src/components/guild/`: Modular Sunder Guild Sub-Engine & Decoupled Panels:
@@ -251,11 +252,11 @@ This document is the authoritative structural reference for the entire **Soverei
 - `src/components/screens/`:
   - `StartScreen.tsx`: Title screen, class selection, and new game initializer.
   - `GameOverScreen.tsx` / `VictoryScreen.tsx`: Permadeath summary, run statistics, and restart triggers.
-- `src/components/god/`: 24 modular God Mode developer tools (`GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherTab`, `GodStorytellerTab`, `GodReplayTab`, etc.).
+- `src/components/god/`: 25 modular God Mode developer tools (`GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
 - `src/components/modals/`: Dialogue modals, town shops, bed resting, and fishing/lockpicking minigames.
 
 ---
 
 ### 10. `/src/tests/` — Automated Test Suite
-- 50 comprehensive Vitest test suites (308 unit, simulation, and integration tests) covering button interactions across all phases (`automatedButtonSuite.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), combat, AI pathfinding, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
+- 57 comprehensive Vitest test suites (353 unit, simulation, and integration tests passing 100% green) covering button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
 

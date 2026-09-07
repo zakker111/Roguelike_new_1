@@ -78,8 +78,20 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
               onClick={() => {
                 setGameState(prev => {
                   if (!prev.caravanTravel) return prev;
+                  const saved = prev.caravanTravel.savedOverworldState;
                   return {
                     ...prev,
+                    ...(saved ? {
+                      map: saved.map,
+                      discovered: saved.discovered,
+                      visible: saved.visible,
+                      enemies: saved.enemies,
+                      dungeonProps: saved.dungeonProps,
+                      playerX: saved.playerX,
+                      playerY: saved.playerY,
+                      currentChunkX: saved.currentChunkX,
+                      currentChunkY: saved.currentChunkY,
+                    } : {}),
                     caravanTravel: {
                       ...prev.caravanTravel,
                       isTacticalCombat: false,
@@ -89,7 +101,8 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
                         isTacticalCombat: false,
                         resolved: true,
                         resultLog: '🛡️ You rallied the guards and forced a chaotic withdrawal back to the convoy carriage.'
-                      } : null
+                      } : null,
+                      savedOverworldState: undefined
                     }
                   };
                 });

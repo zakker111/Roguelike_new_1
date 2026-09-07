@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AudioSettings, CustomSynthParams } from './types';
+import { AudioSettings, CustomSynthParams, SoundPriority } from './types';
+import { getVoiceManager } from './voiceManager';
 
 // Master Audio Context and Master Gain Nodes
 let audioCtx: AudioContext | null = null;
@@ -123,6 +124,9 @@ export function getAudioContext(): AudioContext | null {
       sfxGainNode.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
       sfxGainNode.connect(masterGainNode);
 
+      // Initialize persistent voice channels
+      getVoiceManager(audioCtx, sfxGainNode);
+
       ambientMuffleFilterNode = audioCtx.createBiquadFilter();
       ambientMuffleFilterNode.type = 'lowpass';
       ambientMuffleFilterNode.frequency.setValueAtTime(20000, audioCtx.currentTime);
@@ -192,6 +196,17 @@ export function playCustomSynthesizer(params: CustomSynthParams): void {
   const attackEnd = now + Math.max(0.005, params.attack);
   const decayEnd = attackEnd + Math.max(0.005, params.decay);
   const totalDuration = decayEnd + Math.max(0.005, params.release);
+  const durationSec = Math.max(0.02, totalDuration - now);
+
+  const voiceManager = getVoiceManager(ctx, sfxGainNode);
+  const channel = voiceManager.allocateVoice('custom_synth', durationSec, SoundPriority.MEDIUM, {
+    volume: 1.0,
+    filterType: params.filterType !== 'none' ? (params.filterType as BiquadFilterType) : 'lowpass',
+    lowpassFreq: params.filterType !== 'none' ? params.filterFreq : 20000,
+    filterQ: params.filterQ,
+  });
+
+  if (!channel) return;
 
   const gain = ctx.createGain();
   const peakVol = Math.max(0.001, params.volume);
@@ -202,24 +217,15 @@ export function playCustomSynthesizer(params: CustomSynthParams): void {
   gain.gain.linearRampToValueAtTime(sustainVol, decayEnd);
   gain.gain.exponentialRampToValueAtTime(0.0001, totalDuration);
 
-  // Optional Biquad Filter
-  let destNode: AudioNode = gain;
-  if (params.filterType !== 'none') {
-    const filter = ctx.createBiquadFilter();
-    filter.type = params.filterType;
-    filter.frequency.setValueAtTime(params.filterFreq, now);
-    filter.Q.setValueAtTime(params.filterQ, now);
-    gain.connect(filter);
-    destNode = filter;
-  }
-
-  destNode.connect(sfxGainNode);
+  // Connect into channel's reused filter/gain/panner pipeline
+  gain.connect(channel.filterNode);
 
   if (params.type === 'noise') {
     const noiseBuf = createNoiseBuffer(ctx, totalDuration - now + 0.1);
     const source = ctx.createBufferSource();
     source.buffer = noiseBuf;
     source.connect(gain);
+    channel.registerSource(source);
     source.start(now);
     source.stop(totalDuration);
   } else {
@@ -232,6 +238,7 @@ export function playCustomSynthesizer(params: CustomSynthParams): void {
       osc.frequency.linearRampToValueAtTime(Math.max(20, params.endFreq), totalDuration);
     }
     osc.connect(gain);
+    channel.registerSource(osc);
     osc.start(now);
     osc.stop(totalDuration);
   }

@@ -128,11 +128,11 @@ export function tickActiveGMStoryteller(
   const slainInInterval = Math.max(0, totalSlain - (mem.monstersSlain || 0));
 
   // Chaos Threat Scaling & Adaptive GM Intervention
-  const isChaosEpochMilestone = turn > 0 && turn % 350 === 0 && (mem.lastChaosRollTurn !== turn);
+  const isChaosEpochMilestone = turn > 0 && turn % 350 === 0 && (mem.lastChaosRollTurn !== turn) && slainInInterval > 0;
   const isPlayerPeril = hpRatio < 0.25 && currentChaos > 15;
   const isPlayerDominance = slainInInterval >= 3 && hpRatio >= 0.7;
   const isSpontaneousGMMercy = isPlayerPeril && (turn % 20 === 0 || Math.random() < 0.2);
-  const isSpontaneousGMEscalation = (isPlayerDominance && turn % 10 === 0) || (calculatedBoredom > 85 && currentChaos < 85 && Math.random() < 0.05);
+  const isSpontaneousGMEscalation = isPlayerDominance && (turn % 10 === 0 || Math.random() < 0.2);
 
   if (isChaosEpochMilestone || isSpontaneousGMMercy || isSpontaneousGMEscalation) {
     mem.lastChaosRollTurn = turn;
@@ -141,7 +141,7 @@ export function tickActiveGMStoryteller(
     // Determine whether to escalate, lessen, or harmonize Chaos
     const randomRoll = Math.random();
     
-    // Scenario 1: GM Escalates Chaos (Player dominant slaughtering enemies with high HP, or GM boredom escalation)
+    // Scenario 1: GM Escalates Chaos (Player dominant slaughtering enemies with high HP) - Never escalate if idling
     if (isPlayerDominance || isSpontaneousGMEscalation) {
       const delta = Math.floor(Math.random() * 5) + 5; // 5 to 9 escalation
       const oldScore = currentChaos;

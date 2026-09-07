@@ -294,10 +294,11 @@ export function calculateGlobalThreatFactor(
   defeatedEnemiesCount?: { [key: string]: number },
   clearedCampsCount?: number
 ): number {
-  const timeHours = realTimeSeconds / 3600;
-  const turnIntensity = turnsPlayed / 100;
+  const timeHours = Math.min(2.0, realTimeSeconds / 3600);
+  const turnIntensity = Math.min(5.0, turnsPlayed / 200);
   
-  let baseThreatFactor = 1.0 + (depth - 1) * 0.32 + turnIntensity * 0.06 + timeHours * 0.3;
+  // Moderate, predictable depth scaling so lower dungeon depths are accessible and balanced
+  let baseThreatFactor = 1.0 + Math.max(0, depth - 1) * 0.18 + turnIntensity * 0.03 + timeHours * 0.15;
 
   let chaosMitigation = 0;
   if (defeatedEnemiesCount) {
@@ -321,15 +322,22 @@ export function calculateGlobalThreatFactor(
                         (playerStats.cha || 10) + 
                         (playerStats.lck || 10);
     const statExcess = Math.max(0, totalStats - 50);
-    const statBonusFactor = statExcess * 0.015;
-    const levelBonusFactor = Math.max(0, pLevel - 1) * 0.08;
+    const statBonusFactor = statExcess * 0.01;
+    const levelBonusFactor = Math.max(0, pLevel - 1) * 0.05;
     playerScaleCoeff += levelBonusFactor + statBonusFactor;
   }
   
   if (currentWeapon) {
-    const weaponVal = Math.max(0, currentWeapon.damage || 0);
-    const weaponBonusFactor = weaponVal * 0.04;
+    const weaponVal = Math.max(0, (currentWeapon.damage || 0) - 5);
+    const weaponBonusFactor = weaponVal * 0.02;
     playerScaleCoeff += weaponBonusFactor;
+  }
+
+  // Cap early depth threat factor so depth 1 remains fair and killable
+  if (depth === 1) {
+    return Math.min(1.20, baseThreatFactor * playerScaleCoeff);
+  } else if (depth === 2) {
+    return Math.min(1.45, baseThreatFactor * playerScaleCoeff);
   }
 
   return baseThreatFactor * playerScaleCoeff;
@@ -516,18 +524,20 @@ export function spawnDungeonStandardEnemies(
         let char = template.char;
         let color = template.color;
 
-        const isEarlyGameDungeon = (depth < 2 && (playerStats?.level || 1) < 3);
-        const isElite = !isEarlyGameDungeon && Math.random() < (0.10 + (globalThreatFactor - 1) * 0.12);
-        let finalHp = Math.floor(baseHp * globalThreatFactor);
-        let finalAtk = Math.max(1, Math.floor(baseAtk * Math.sqrt(globalThreatFactor)));
-        let finalDef = Math.floor(baseDef + (depth / 2));
+        const isEarlyGameDungeon = depth <= 2;
+        const isElite = !isEarlyGameDungeon && Math.random() < (0.08 + (globalThreatFactor - 1) * 0.08);
+
+        let difficultyTier: 'easy' | 'standard' | 'tough' | 'apex' = 'standard';
+        if (depth === 1) {
+          difficultyTier = (type === EnemyType.Rat || type === EnemyType.Slime || type === EnemyType.Goblin) ? 'easy' : 'standard';
+        } else if (depth === 2) {
+          difficultyTier = (type === EnemyType.Rat || type === EnemyType.Slime) ? 'easy' : 'standard';
+        }
+
         let eliteEffect: string | undefined = undefined;
 
         if (isElite) {
-          finalHp = Math.floor(finalHp * 1.8);
-          finalAtk = Math.floor(finalAtk * 1.4);
-          finalDef += 2;
-          
+          difficultyTier = 'tough';
           const perks = ['Noxious', 'Ignited', 'Regenerative', 'Stonewall', 'Scurrying'];
           const perk = perks[Math.floor(Math.random() * perks.length)];
           name = `★ ${perk} ${name} ★`;
@@ -548,10 +558,11 @@ export function spawnDungeonStandardEnemies(
           y: ey,
           type,
           name,
-          hp: finalHp,
-          maxHp: finalHp,
-          atk: finalAtk,
-          def: finalDef,
+          hp: baseHp,
+          maxHp: baseHp,
+          atk: baseAtk,
+          def: baseDef,
+          difficultyTier,
           range,
           speed,
           color,
@@ -570,6 +581,21 @@ export function spawnDungeonStandardEnemies(
           playerStats || undefined,
           depth
         );
+
+        // Ensure early dungeon depth enemies are killable and do not have absurd defense or overwhelming HP
+        if (depth <= 2 && !isElite) {
+          scaledEnemy.def = Math.min(1, scaledEnemy.def);
+          // Moderate HP for early depths so novice adventurers have a fair fighting chance
+          if (depth === 1) {
+            scaledEnemy.hp = Math.min(38, Math.round(scaledEnemy.hp * 0.75));
+            scaledEnemy.maxHp = scaledEnemy.hp;
+          } else if (depth === 2) {
+            scaledEnemy.hp = Math.min(50, Math.round(scaledEnemy.hp * 0.85));
+            scaledEnemy.maxHp = scaledEnemy.hp;
+          }
+        } else if (depth <= 4 && !isElite) {
+          scaledEnemy.def = Math.min(2, scaledEnemy.def);
+        }
 
         enemies.push(scaledEnemy);
       }
@@ -697,7 +723,7 @@ export function spawnFollowersOnLevelLoadByReset(
     .map((q: any) => q.followerId);
 
   const safeFollowers = fList || [];
-  const availableFollowers = safeFollowers.filter(fol => fol && !activeQuestFollowerIds.includes(fol.id));
+  const availableFollowers = safeFollowers.filter(fol => fol && fol.hp > 0 && !activeQuestFollowerIds.includes(fol.id));
 
   availableFollowers.forEach((fol) => {
     const spots = [

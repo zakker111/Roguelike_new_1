@@ -8,6 +8,7 @@ import { processTownGuardTurn } from './useTownGuardAI';
 import { processHostileTurn } from './useHostileAI';
 import { resolveCivilianNpcTurns } from './useCivilianAI';
 import { emitAggregatedDamageFloater, checkTacticalCaravanVictory } from './aiCombatAggregator';
+import { appendBoundedLogs } from '../../utils/logBuffer';
 
 export function useEnemyAI({
   setGameState,
@@ -49,6 +50,7 @@ export function useEnemyAI({
       let nextBoots = prev.equippedBoots;
       let nextShield = prev.equippedShield;
       let nextNpcs = prev.npcs ? [...prev.npcs] : [];
+      let nextFollowers = prev.followers ? prev.followers.map(f => ({ ...f })) : [];
       const nextTraps = prev.traps ? [...prev.traps] : [];
 
       // 2. Sync Caravan and Roaming Merchants
@@ -96,7 +98,7 @@ export function useEnemyAI({
       let lastAttackerX: number | undefined = undefined;
       let lastAttackerY: number | undefined = undefined;
 
-      // Helper to apply damage to an enemy and synchronously update both nextEnemies and updatedEnemiesList
+      // Helper to apply damage to an enemy and synchronously update both nextEnemies, updatedEnemiesList, and followers
       const applyDamageToEnemy = (target: Enemy, damage: number): boolean => {
         target.hp -= damage;
         const ne = nextEnemies.find(item => item.id === target.id);
@@ -106,6 +108,16 @@ export function useEnemyAI({
           updatedEnemiesList[ueIndex].hp = target.hp;
           if (target.hp <= 0) {
             updatedEnemiesList.splice(ueIndex, 1);
+          }
+        }
+        if (target.isFollower) {
+          const fol = nextFollowers.find(f => f.id === target.followerId || target.id.includes(f.id));
+          if (fol) {
+            fol.hp = target.hp;
+          }
+          if (target.hp <= 0) {
+            nextCorpses.push({ x: target.x, y: target.y, char: '%', color: '#94a3b8', name: `${target.name} (Corpse)` });
+            nextSplatters.push({ x: target.x, y: target.y, color: '#ef4444' });
           }
         }
         return target.hp <= 0;
@@ -246,6 +258,7 @@ export function useEnemyAI({
       );
       nextCaravanTravel = caravanVictory.nextCaravanTravel;
       updatedStats = caravanVictory.updatedStats;
+      const restoredOverworld = caravanVictory.savedOverworldState;
 
       // 8. Format Game Event Logs
       let finalLogs = prev.logs;
@@ -256,12 +269,23 @@ export function useEnemyAI({
           type: 'system' as const,
           timestamp: 'TURN'
         }));
-        finalLogs = [...prev.logs, ...formattedLogs].slice(-45);
+        finalLogs = appendBoundedLogs(prev.logs, formattedLogs, 200);
       }
 
       return {
         ...prev,
         ...gmStateUpdates,
+        ...(restoredOverworld ? {
+          map: restoredOverworld.map,
+          discovered: restoredOverworld.discovered,
+          visible: restoredOverworld.visible,
+          enemies: restoredOverworld.enemies,
+          dungeonProps: restoredOverworld.dungeonProps,
+          playerX: restoredOverworld.playerX,
+          playerY: restoredOverworld.playerY,
+          currentChunkX: restoredOverworld.currentChunkX,
+          currentChunkY: restoredOverworld.currentChunkY,
+        } : {}),
         isBraced: false,
         equippedArmor: nextArmor,
         equippedHelmet: nextHelmet,
@@ -280,6 +304,7 @@ export function useEnemyAI({
         corpses: nextCorpses,
         bloodSplatters: nextSplatters,
         caravanTravel: nextCaravanTravel,
+        followers: nextFollowers.filter(f => f && f.hp > 0),
         enemies: nextEnemies,
         npcs: nextNpcs,
         traps: nextTraps,

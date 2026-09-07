@@ -8,3 +8,4 @@ export * from './synthEngine';
 export * from './spatialAudio';
 export * from './soundCatalog';
 export * from './ambientSoundscapes';
+export * from './voiceManager';

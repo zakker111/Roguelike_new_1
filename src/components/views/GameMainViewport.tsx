@@ -63,6 +63,7 @@ export interface GameMainViewportProps {
   handleUpgradeItem: any;
   handleCraftRecallScroll: any;
   handleCraftSpellScroll: any;
+  onTriggerScriptorium?: (templateId: string) => void;
   handleCookRecipe: any;
   handleBrewPotion: any;
   handleUpgradeApothecary: any;
@@ -139,6 +140,7 @@ export const GameMainViewport: React.FC<GameMainViewportProps> = ({
   handleUpgradeItem,
   handleCraftRecallScroll,
   handleCraftSpellScroll,
+  onTriggerScriptorium,
   handleCookRecipe,
   handleBrewPotion,
   handleUpgradeApothecary,
@@ -420,6 +422,7 @@ export const GameMainViewport: React.FC<GameMainViewportProps> = ({
                     blacksmithForgeLevel={gameState.blacksmithForgeLevel ?? 1}
                     onCraftRecallScroll={handleCraftRecallScroll}
                     onCraftSpellScroll={handleCraftSpellScroll}
+                    onTriggerScriptorium={onTriggerScriptorium}
                     gameState={gameState}
                     onCookRecipe={handleCookRecipe}
                     onBrewPotion={handleBrewPotion}

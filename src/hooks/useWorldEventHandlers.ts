@@ -52,18 +52,19 @@ export function useWorldEventHandlers({
     }
   }, [gameState.spawnedCats, gameState.playerStats.hasCatLover, setGameState]);
 
-  // Sync all session logs for replay / download
+  // Sync all session logs for replay / download (bounded to last 500 entries)
   useEffect(() => {
     if (gameState.logs && gameState.logs.length > 0) {
       const seenIds = new Set(allSessionLogsRef.current.map((l) => l.id));
       const newLogs = gameState.logs.filter((l) => !seenIds.has(l.id));
       if (newLogs.length > 0) {
-        allSessionLogsRef.current = [...allSessionLogsRef.current, ...newLogs];
+        const combined = [...allSessionLogsRef.current, ...newLogs];
+        allSessionLogsRef.current = combined.length > 500 ? combined.slice(combined.length - 500) : combined;
       }
     }
   }, [gameState.logs]);
 
-  // Record playthrough state snapshots
+  // Record playthrough state snapshots (bounded to last 50 snapshots for session stability)
   useEffect(() => {
     if (!isPlaying) return;
     
@@ -89,13 +90,15 @@ export function useWorldEventHandlers({
           isOverworld: gameState.isOverworld,
           currentChunkX: gameState.currentChunkX,
           currentChunkY: gameState.currentChunkY,
-          logs: gameState.logs ? [...gameState.logs] : [],
-          enemies: gameState.enemies ? [...gameState.enemies] : [],
-          map: gameState.map,
-          visible: gameState.visible,
-          discovered: gameState.discovered
+          logs: gameState.logs ? gameState.logs.slice(-50) : [],
+          enemies: gameState.enemies ? gameState.enemies.length : 0,
         }
       });
+
+      // Keep only the last 50 snapshots
+      if (allSessionStateSnapshotsRef.current.length > 50) {
+        allSessionStateSnapshotsRef.current = allSessionStateSnapshotsRef.current.slice(-50);
+      }
     }
   }, [isPlaying, gameState, formatGameTime]);
 

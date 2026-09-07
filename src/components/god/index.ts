@@ -22,3 +22,4 @@ export * from './GodItemCreatorTab';
 export * from './GodAdminEditorTab';
 export * from './GodDungeonEditor';
 export * from './GodModdingTab';
+export * from './GodMinigamesTab';

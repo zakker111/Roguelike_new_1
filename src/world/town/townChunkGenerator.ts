@@ -10,6 +10,8 @@ import {
   getBuildingCoordinates,
   buildModularTownSquare,
   buildCastleKeep,
+  findNearestSafeNpcTile,
+  isTileSafeForNpc,
 } from '../../utils/overworld/overworldCore';
 import { buildHouse } from '../structureGenerators';
 import { generateTownHouseDecorProps } from '../../utils/decorEngine';
@@ -147,6 +149,35 @@ export function generateTownChunk(ctx: OverworldGenContext): void {
 
   // 10. Town NPCs
   spawnTownNpcs(npcs, chunkX, chunkY, width, height, midX, midY, housesList, secondFloorBuildings, !!isPortTown, spawnedCats);
+
+  // 10b. Comprehensive NPC tile safety sanitization (strictly prevent spawning inside windows, walls, or solid obstacles)
+  for (let i = 0; i < npcs.length; i++) {
+    const npc = npcs[i];
+    const targetMap = (npc.z === 1 && secondFloorMap) ? secondFloorMap : map;
+    const currentTile = targetMap[npc.y]?.[npc.x];
+    if (currentTile === TileType.Window || !isTileSafeForNpc(currentTile)) {
+      const safePos = findNearestSafeNpcTile(npc.x, npc.y, targetMap);
+      npc.x = safePos.x;
+      npc.y = safePos.y;
+    }
+    if (npc.homeX !== undefined && npc.homeY !== undefined) {
+      const homeMap = (npc.homeZ === 1 && secondFloorMap) ? secondFloorMap : map;
+      const homeTile = homeMap[npc.homeY]?.[npc.homeX];
+      if (homeTile === TileType.Window || !isTileSafeForNpc(homeTile)) {
+        const safeHome = findNearestSafeNpcTile(npc.homeX, npc.homeY, homeMap);
+        npc.homeX = safeHome.x;
+        npc.homeY = safeHome.y;
+      }
+    }
+    if (npc.workX !== undefined && npc.workY !== undefined) {
+      const workTile = map[npc.workY]?.[npc.workX];
+      if (workTile === TileType.Window || !isTileSafeForNpc(workTile)) {
+        const safeWork = findNearestSafeNpcTile(npc.workX, npc.workY, map);
+        npc.workX = safeWork.x;
+        npc.workY = safeWork.y;
+      }
+    }
+  }
 
   // 11. Visual touches in Town Center
   map[midY - 3][midX - 3] = TileType.Floor;

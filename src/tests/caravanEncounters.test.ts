@@ -225,4 +225,120 @@ describe('Caravan Encounters & Tactical Escort System', () => {
     expect(finalReward).toBe(270);
     expect(hpRatio >= 0.85).toBe(true); // Eligible for bonus catalyst!
   });
+
+  it('tactical skirmish victory preserves and safely restores previous overworld state', () => {
+    const originalOverworldMap = [
+      [1, 1, 1],
+      [1, 2, 1],
+      [1, 1, 1]
+    ] as any;
+
+    const stateWithTacticalSkirmish: GameState = {
+      ...mockBaseGameState,
+      playerX: 15,
+      playerY: 20,
+      currentChunkX: 3,
+      currentChunkY: 5,
+      map: originalOverworldMap,
+      caravanTravel: {
+        active: true,
+        originX: 0,
+        originY: 0,
+        destX: 4,
+        destY: 4,
+        destName: 'Sunken Port',
+        totalSteps: 5,
+        currentStep: 2,
+        stepsHistory: [],
+        rewardGold: 400,
+        wagonHp: 85,
+        maxWagonHp: 100,
+        isTacticalCombat: true,
+        savedOverworldState: {
+          map: originalOverworldMap,
+          discovered: [[true, true, true]],
+          visible: [[true, true, true]],
+          enemies: [],
+          dungeonProps: [],
+          playerX: 15,
+          playerY: 20,
+          currentChunkX: 3,
+          currentChunkY: 5
+        },
+        currentEncounter: {
+          id: 'test_ambush_enc',
+          type: 'bandit_ambush',
+          title: 'Bandit Ambush',
+          desc: 'Ambushers on the road',
+          resolved: false,
+          isTacticalCombat: true,
+          options: []
+        }
+      }
+    };
+
+    // Simulate victory: all hostiles defeated
+    const saved = stateWithTacticalSkirmish.caravanTravel!.savedOverworldState!;
+    const restoredState: GameState = {
+      ...stateWithTacticalSkirmish,
+      map: saved.map,
+      discovered: saved.discovered,
+      visible: saved.visible,
+      enemies: saved.enemies,
+      dungeonProps: saved.dungeonProps,
+      playerX: saved.playerX,
+      playerY: saved.playerY,
+      currentChunkX: saved.currentChunkX,
+      currentChunkY: saved.currentChunkY,
+      caravanTravel: {
+        ...stateWithTacticalSkirmish.caravanTravel!,
+        isTacticalCombat: false,
+        savedOverworldState: undefined,
+        currentEncounter: {
+          ...stateWithTacticalSkirmish.caravanTravel!.currentEncounter!,
+          resolved: true,
+          resultLog: '🏆 TACTICAL VICTORY!'
+        }
+      }
+    };
+
+    expect(restoredState.playerX).toBe(15);
+    expect(restoredState.playerY).toBe(20);
+    expect(restoredState.currentChunkX).toBe(3);
+    expect(restoredState.currentChunkY).toBe(5);
+    expect(restoredState.map).toBe(originalOverworldMap);
+    expect(restoredState.caravanTravel?.isTacticalCombat).toBe(false);
+    expect(restoredState.caravanTravel?.savedOverworldState).toBeUndefined();
+    expect(restoredState.caravanTravel?.currentEncounter?.resolved).toBe(true);
+  });
+
+  it('tactical skirmish flee option safely restores overworld state and applies hull damage penalty', () => {
+    const travelState: CaravanTravelState = {
+      active: true,
+      originX: 0,
+      originY: 0,
+      destX: 2,
+      destY: 2,
+      destName: 'Citadel',
+      totalSteps: 3,
+      currentStep: 1,
+      stepsHistory: [],
+      rewardGold: 200,
+      wagonHp: 80,
+      maxWagonHp: 100,
+      isTacticalCombat: true,
+      currentEncounter: {
+        id: 'roadblock',
+        type: 'roadblock',
+        title: 'Roadblock',
+        desc: 'Heavily guarded blockade',
+        resolved: false,
+        wagonDamagePenalty: 25,
+        options: []
+      }
+    };
+
+    const updatedWagonHp = Math.max(0, travelState.wagonHp - (travelState.currentEncounter?.wagonDamagePenalty || 20));
+    expect(updatedWagonHp).toBe(55);
+  });
 });

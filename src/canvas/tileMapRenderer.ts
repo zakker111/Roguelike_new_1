@@ -3,6 +3,8 @@ import { SpriteSheetConfig } from '../components/GameCanvas';
 import { drawSpriteOrAscii } from './spriteRenderer';
 import { getDirectionalShadowParams, isShadowCastingTile, renderTileDirectionalShadow } from './shadowRenderer';
 import { renderWaterTileShimmer } from './waterShimmerRenderer';
+import { tilesetAtlasManager } from './TilesetAtlasManager';
+import { chunkBackgroundCache } from './chunkBackgroundCache';
 
 export interface RenderTileMapParams {
   ctx: CanvasRenderingContext2D;
@@ -416,13 +418,78 @@ export function renderTileMap({
   tilesetImage,
   animationTick,
 }: RenderTileMapParams) {
-  // 4. Render Grid Map (Viewport Culling optimized to render only tiles visible in the camera)
+  // 1. High-Performance Offscreen Background Blit
+  const bgCanvas = chunkBackgroundCache.getOrRenderBackground({
+    gameState,
+    tileSize,
+    tilesetConfig,
+    tilesetImage,
+    animationTick,
+  });
+
+  const isOverworld = gameState.isOverworld;
+  const biome = gameState.biome;
+  const shadowParams = getDirectionalShadowParams(gameState.gameTime || 720, gameState.weather);
+
   const startX = Math.max(0, Math.floor(camX / tileSize));
   const endX = Math.min(gameState.levelWidth, Math.ceil((camX + dimensions.width) / tileSize));
   const startY = Math.max(0, Math.floor(camY / tileSize));
   const endY = Math.min(gameState.levelHeight, Math.ceil((camY + dimensions.height) / tileSize));
 
-  // Set baseline font & alignment ONCE before tile grid rendering loop
+  if (bgCanvas) {
+    const bgWidth = bgCanvas.width;
+    const bgHeight = bgCanvas.height;
+
+    const sourceX = Math.max(0, Math.min(camX, bgWidth));
+    const sourceY = Math.max(0, Math.min(camY, bgHeight));
+    const sourceW = Math.max(0, Math.min(dimensions.width, bgWidth - sourceX));
+    const sourceH = Math.max(0, Math.min(dimensions.height, bgHeight - sourceY));
+
+    if (sourceW > 0 && sourceH > 0) {
+      ctx.drawImage(
+        bgCanvas,
+        sourceX,
+        sourceY,
+        sourceW,
+        sourceH,
+        sourceX - camX,
+        sourceY - camY,
+        sourceW,
+        sourceH
+      );
+    }
+
+    // 2. Render only dynamic overlays (water shimmers & sun/moon directional shadows) for visible viewport tiles
+    for (let y = startY; y < endY; y++) {
+      const mapRow = gameState.map[y];
+      const visRow = gameState.visible[y];
+      if (!mapRow || !visRow) continue;
+
+      const ry = y * tileSize - camY;
+
+      for (let x = startX; x < endX; x++) {
+        const isVisible = visRow[x] ?? false;
+        if (!isVisible) continue;
+
+        const tile = mapRow[x];
+        const rx = x * tileSize - camX;
+
+        // Render procedural sine-wave water shimmer ripples and shoreline sparkle
+        if (tile === TileType.Water) {
+          renderWaterTileShimmer(ctx, rx, ry, tileSize, x, y, isOverworld ? biome : undefined, false);
+        }
+
+        // Render dynamic sun & moon directional drop shadows for trees, walls, and structures
+        if (isShadowCastingTile(tile)) {
+          renderTileDirectionalShadow(ctx, rx, ry, tileSize, tile, shadowParams);
+        }
+      }
+    }
+
+    return;
+  }
+
+  // Fallback: Direct per-tile rasterization if offscreen canvas unavailable
   ctx.font = `bold 14px "JetBrains Mono", Menlo, monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -430,11 +497,7 @@ export function renderTileMap({
   const chunkKey = `${gameState.currentChunkX},${gameState.currentChunkY}`;
   const activeWatchtower = gameState.isOverworld ? gameState.overworldChunks?.[chunkKey]?.watchtower : undefined;
   const controller = activeWatchtower?.controller || 'neutral';
-  const isOverworld = gameState.isOverworld;
-  const biome = gameState.biome;
   const depth = gameState.playerStats.depth;
-
-  const shadowParams = getDirectionalShadowParams(gameState.gameTime || 720, gameState.weather);
 
   for (let y = startY; y < endY; y++) {
     const mapRow = gameState.map[y];
@@ -450,29 +513,32 @@ export function renderTileMap({
       const isDiscovered = discRow ? discRow[x] ?? false : false;
 
       if (!isDiscovered) {
-        // Draw pure dark fog of war
         ctx.fillStyle = '#020617';
         ctx.fillRect(rx, ry, tileSize, tileSize);
         continue;
       }
 
       const isVisible = visRow ? visRow[x] ?? false : false;
-
       const style = resolveTileStyle(tile, isVisible, isOverworld, biome, depth, controller, x, y);
 
-      // Draw tile background and character glyph (or animated tileset sprite if enabled)
+      let bitmask: number | undefined;
+      if (tile === TileType.Wall || tile === TileType.Water || tile === TileType.Path) {
+        bitmask = tilesetAtlasManager.calculateCardinalBitmask(x, y, gameState.map, tile);
+      }
+      const variant = tilesetAtlasManager.getTileVariant(x, y, 4);
+
       drawSpriteOrAscii(ctx, rx, ry, style.char, style.tileColor, style.glyphColor, {
         tileType: tile,
         biome: isOverworld ? biome : undefined,
-        fontSize: `bold 14px "JetBrains Mono", Menlo, monospace`
+        fontSize: `bold 14px "JetBrains Mono", Menlo, monospace`,
+        bitmask,
+        variant,
       }, tilesetConfig, tilesetImage, animationTick, tileSize);
 
-      // Render procedural sine-wave water shimmer ripples and shoreline sparkle
       if (isVisible && tile === TileType.Water) {
         renderWaterTileShimmer(ctx, rx, ry, tileSize, x, y, isOverworld ? biome : undefined, false);
       }
 
-      // Render dynamic sun & moon directional drop shadows for trees, walls, and structures
       if (isVisible && isShadowCastingTile(tile)) {
         renderTileDirectionalShadow(ctx, rx, ry, tileSize, tile, shadowParams);
       }

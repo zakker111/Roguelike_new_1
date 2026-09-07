@@ -1,25 +1,41 @@
-import { IGraphicsRenderer, TileRenderDetails, EntityRenderDetails } from './IGraphicsRenderer';
+import { IGraphicsRenderer, TileRenderDetails, EntityRenderDetails, GraphicsVisualMode } from './IGraphicsRenderer';
 import { TextRenderer } from './TextRenderer';
 import { assetPreloader } from './AssetPreloader';
 import { tilesetAtlasManager } from './TilesetAtlasManager';
+import { mockupAtlasGenerator } from './MockupAtlasGenerator';
 import { vfxEmitter } from './VFXEmitter';
 
 export class TilesetRenderer implements IGraphicsRenderer {
-  public mode: 'text' | 'tileset' = 'tileset';
+  public mode: GraphicsVisualMode = 'animated_tileset';
   private fallbackTextRenderer: TextRenderer = new TextRenderer();
+  private hasInitializedMockups: boolean = false;
 
-  public setMode(mode: 'text' | 'tileset'): void {
+  private ensureMockupsLoaded() {
+    if (!this.hasInitializedMockups) {
+      this.hasInitializedMockups = true;
+      if (assetPreloader.getSource() === 'classic_png') {
+        assetPreloader.preloadAllPngs();
+      }
+      if (!assetPreloader.isCodeLoaded('main_tileset')) {
+        mockupAtlasGenerator.generateAllAtlases('classic', tilesetAtlasManager.getSpriteSize());
+      }
+    }
+  }
+
+  public setMode(mode: GraphicsVisualMode): void {
     this.mode = mode;
   }
 
-  public getMode(): 'text' | 'tileset' {
+  public getMode(): GraphicsVisualMode {
     return this.mode;
   }
 
   public drawTile(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, details: TileRenderDetails): void {
-    const atlasImage = assetPreloader.getImage('main_tileset');
+    this.ensureMockupsLoaded();
 
-    if (!atlasImage || !assetPreloader.isLoaded('main_tileset')) {
+    const atlasSource = assetPreloader.getAtlasSource('main_tileset');
+
+    if (!atlasSource || !assetPreloader.isLoaded('main_tileset')) {
       // Automatic fallback to symbolic glyph / emoji rendering
       this.fallbackTextRenderer.drawTile(ctx, screenX, screenY, details);
       return;
@@ -32,7 +48,7 @@ export class TilesetRenderer implements IGraphicsRenderer {
     }
 
     ctx.drawImage(
-      atlasImage,
+      atlasSource,
       tileCoord.sx,
       tileCoord.sy,
       tileCoord.sw,
@@ -50,15 +66,50 @@ export class TilesetRenderer implements IGraphicsRenderer {
   }
 
   public drawEntity(ctx: CanvasRenderingContext2D, screenX: number, screenY: number, details: EntityRenderDetails): void {
-    const atlasImage = assetPreloader.getImage('entity_tileset');
+    this.ensureMockupsLoaded();
 
-    if (!atlasImage || !assetPreloader.isLoaded('entity_tileset')) {
+    const size = details.size || 28;
+
+    // 1. Check for oversized boss / multi-tile creature config
+    const oversized = tilesetAtlasManager.getOversizedEntityConfig(details.id) ||
+      (details.symbol ? tilesetAtlasManager.getOversizedEntityConfig(details.symbol) : null);
+
+    if (oversized) {
+      const bossAtlas = assetPreloader.getAtlasSource(oversized.atlasKey);
+      if (bossAtlas) {
+        const renderW = oversized.widthTiles * size;
+        const renderH = oversized.heightTiles * size;
+        const offsetX = screenX - (renderW - size) * 0.5;
+        const offsetY = screenY - (renderH - size) * oversized.anchorY;
+
+        ctx.drawImage(
+          bossAtlas,
+          oversized.sx,
+          oversized.sy,
+          oversized.pixelWidth,
+          oversized.pixelHeight,
+          offsetX,
+          offsetY,
+          renderW,
+          renderH
+        );
+        return;
+      }
+    }
+
+    // 2. Standard entity rendering from entity_tileset
+    const atlasSource = assetPreloader.getAtlasSource('entity_tileset');
+
+    if (!atlasSource || !assetPreloader.isLoaded('entity_tileset')) {
       this.fallbackTextRenderer.drawEntity(ctx, screenX, screenY, details);
       return;
     }
 
-    const size = details.size || 24;
-    const spriteCoord = tilesetAtlasManager.getSpriteCoords(details.id, details.animState || 'idle', details.direction || 'south');
+    const spriteCoord = tilesetAtlasManager.getSpriteCoords(
+      details.id || details.symbol || 'warrior',
+      details.animState || 'idle',
+      details.direction || 'south'
+    );
 
     if (!spriteCoord) {
       this.fallbackTextRenderer.drawEntity(ctx, screenX, screenY, details);
@@ -66,7 +117,7 @@ export class TilesetRenderer implements IGraphicsRenderer {
     }
 
     ctx.drawImage(
-      atlasImage,
+      atlasSource,
       spriteCoord.sx,
       spriteCoord.sy,
       spriteCoord.sw,

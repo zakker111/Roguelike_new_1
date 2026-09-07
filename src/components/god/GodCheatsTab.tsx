@@ -12,10 +12,10 @@ interface GodCheatsTabProps {
   handleWipeEnemies: () => void;
   handleRevealFullMap: () => void;
   handleRevealWholeWorldMap?: () => void;
+  handleExportWorldMapPng?: () => void;
   handleToggleInvinciblePlayer?: () => void;
   godModeActive?: boolean;
   TeleportToEmptyArena: () => void;
-  onTriggerLockpicking?: () => void;
   handleSpawnDecorCluster?: () => void;
   handleResetLevelDecor?: () => void;
   handleFastForwardTime?: () => void;
@@ -33,10 +33,10 @@ export const GodCheatsTab: React.FC<GodCheatsTabProps> = ({
   handleWipeEnemies,
   handleRevealFullMap,
   handleRevealWholeWorldMap,
+  handleExportWorldMapPng,
   handleToggleInvinciblePlayer,
   godModeActive = false,
   TeleportToEmptyArena,
-  onTriggerLockpicking,
   handleSpawnDecorCluster,
   handleResetLevelDecor,
   handleFastForwardTime,
@@ -172,19 +172,6 @@ export const GodCheatsTab: React.FC<GodCheatsTabProps> = ({
         )}
 
         <button
-          onClick={() => {
-            if (onTriggerLockpicking) {
-              onTriggerLockpicking();
-              onClose();
-            }
-          }}
-          className="py-2.5 px-3 bg-purple-950/35 hover:bg-purple-900/40 border border-purple-850 text-purple-300 font-bold rounded cursor-pointer transition-colors text-left flex items-center justify-between"
-        >
-          <span>Test Lockpicking Minigame</span>
-          <span>🔑</span>
-        </button>
-
-        <button
           onClick={handleMaxUpgradeEquipped}
           className="py-2.5 px-3 bg-emerald-950/35 hover:bg-emerald-900/40 border border-emerald-850 text-emerald-300 font-bold rounded cursor-pointer transition-colors text-left flex items-center justify-between"
         >
@@ -214,6 +201,27 @@ export const GodCheatsTab: React.FC<GodCheatsTabProps> = ({
           </div>
           <span className="text-xs">🗺️</span>
         </button>
+
+        {/* Save Whole Map to PNG (40% Scale) Button */}
+        {handleExportWorldMapPng && (
+          <button
+            onClick={handleExportWorldMapPng}
+            className="py-2.5 px-3 bg-gradient-to-r from-emerald-950/60 via-teal-950/60 to-emerald-900/50 hover:from-emerald-900/70 hover:to-teal-900/70 border border-emerald-500/70 hover:border-emerald-400 text-emerald-200 font-bold rounded cursor-pointer transition-all text-left flex items-center justify-between shadow-md active:scale-95 col-span-1 sm:col-span-2"
+          >
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-emerald-300 font-black">
+                <span>📸 Save Whole Map to PNG (40% Scale)</span>
+                <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded font-mono">
+                  40% SCALE
+                </span>
+              </div>
+              <div className="text-[10px] text-emerald-200/80 font-normal">
+                High-fidelity full realm cartography export: renders all discovered and generated sectors, topography, roads, and settlements into a downloadable PNG image.
+              </div>
+            </div>
+            <span className="text-base">🖼️</span>
+          </button>
+        )}
 
         <button
           onClick={TeleportToEmptyArena}

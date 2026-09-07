@@ -6,6 +6,139 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.2.0] — Dual Instinct Classic Tileset System & Merchant Caravan Tactical Skirmish Sub-Engine (September 7, 2026)
+*Introduced dual authoritative tileset sourcing ('classic_png' pre-rendered mockups vs. 'classic_code' procedural canvas) with full 16×16 grid expansions across both pipelines. Delivered the merchant caravan escort and tactical skirmish sub-engine with lossless overworld state preservation, tactical victory/flee resolution, and zero-crash test coverage.*
+
+- **1. Dual Instinct Classic Tileset Sources (`src/canvas/types.ts` & `src/canvas/HybridGraphicsEngine.ts`)**:
+  - Implemented seamless runtime hot-swapping between **Instinct Classic (PNG Mockups)** and **Instinct Classic (Procedural Code)** via `HybridGraphicsEngine.setTilesetSource(...)` and `TilesetStudio` (`F1` -> Tileset Studio).
+  - Persisted tileset source preferences in `localStorage` under `abyss_rogue_tileset_source`.
+  - Expanded `scripts/generateMockupPngs.cjs` and `MockupAtlasGenerator.ts` to cover the complete 16×16 tile grid contract:
+    - Chests (wooden, iron, gilded, mimic).
+    - Interactive Shrines (vitality, arcane, wrath, fortune, ancient stone monoliths).
+    - Hazard pools (bubbling magma/lava, glacial frost rime, desert sand dunes).
+    - World Props (wooden crossroads signposts, campfire fire pits, merchant covered wagons).
+    - Dungeon floor traps (spike vents, poison gas, fire jets).
+- **2. Merchant Caravan Escort & Tactical Skirmish Sub-Engine (`src/world/caravanSkirmishGen.ts` & `src/types/game.ts`)**:
+  - Added `SavedOverworldSkirmishState` interface capturing current chunk map, discovery/visibility matrices, active enemies, dungeon props, player coordinates, and chunk indices.
+  - Snapshotting on tactical deployment in `ModalRouter.tsx` (`handleDeployTacticalBattle`).
+  - Implemented lossless overworld restoration upon tactical victory in `aiCombatAggregator.ts`, `useEnemyAI.ts`, and `usePlayerAttack.ts`.
+  - Added tactical retreat resolution in `CaravanActiveOverlay.tsx`, penalizing carriage hull integrity while cleanly returning the player and companions to the overland trade route.
+  - Added comprehensive unit tests in `src/tests/caravanEncounters.test.ts` verifying victory restoration, penalty calculations, and zero state corruption.
+- **3. Documentation & Architectural Alignment**:
+  - Updated `DEVELOPERS.md`, `README.md`, and `VERSIONS.md` with complete developer guides for tileset modding, dual source pipelines, and caravan battle orchestration.
+  - Passed complete codebase audit (`auditCodebase.cjs`), JSON validation (`validateJson.cjs`), and test suites.
+
+## [v7.9.7] — ASCII Default Launch Guarantee & Nature Procedural Pixel Art (September 2, 2026)
+*Guaranteed that the game unconditionally launches and starts in classic ASCII glyph mode by default across all sessions while retaining fluid runtime switching to Animated HD Tileset (`🎨 Tileset` button / `F8` / `Alt+T`). Handcrafted distinct procedural pixel-art structures for foliage, mineral ore veins, and locked doors to single-frame static tiles.*
+
+- **1. ASCII Mode Startup Guarantee (`src/canvas/types.ts` & `src/canvas/HybridGraphicsEngine.ts`)**:
+  - Configured `getStoredGraphicsMode()` and `HybridGraphicsEngine` to always initialize with `'classic_glyph'` (ASCII) mode on game launch, ensuring clean retro presentation out-of-the-box.
+  - Seamless in-game toggle to animated HD tileset mode at any point via header bar or keyboard shortcuts.
+- **2. Nature Foliage & Tree Redesign (`src/canvas/MockupAtlasGenerator.ts`)**:
+  - Handcrafted distinct pixel-art foliage structures for **Oak Trees** (multi-lobed leafy canopy with rooted trunk), **Pine Trees** (sharp tiered dark-spruce needle boughs with highlighted tips), **Birch Trees** (slender white notched bark with bright crown), and **Berry Bushes** (lush shrubbery with bright ruby berries).
+- **3. Ore Veins & Crystal Clusters (`src/canvas/MockupAtlasGenerator.ts`)**:
+  - Redesigned **Copper Ore Veins** and **Iron Ore Veins** with craggy faceted slate-rock boulder bases embedded with gleaming metallic copper and lustrous silver-steel crystal clusters with specular sparkle highlights.
+- **4. Door Animation Stabilization (`src/canvas/spriteRenderer.ts`)**:
+  - Standardized **Wooden Doors** (closed timber plank with wrought-iron bands and open stone doorway threshold) as strictly static single-frame tiles (`frameCount: 1`), eliminating door animation cycling.
+- **5. Calm Water Shimmering (`src/canvas/waterShimmerRenderer.ts`)**:
+  - Refined autotiled water with serene deep-blue surfaces, soft calm horizontal ripple lines, and subtle ambient glints.
+
+## [v7.9.6] — Procedural Tileset Simplification, Animation Stabilization & Soft Ambient Glow (September 2, 2026)
+*Redesigned procedural pixel-art atlas synthesis with clean, instantly recognizable, high-contrast tile iconography for all walls, terrain, water, roads, harvestables, stairs, doors, and props. Tamed entity bobbing and arm sway animations to prevent frantic motion, and dimmed all ambient and personal light sources for an atmospheric, eye-friendly experience.*
+
+- **1. Procedural Tileset Iconography & Legibility Overhaul (`src/canvas/MockupAtlasGenerator.ts` & `src/canvas/TilesetAtlasManager.ts`)**:
+  - Rebuilt the main 16x16 tile atlas generator with explicit, high-contrast, recognizable pixel art for all biomes (stone bricks, cobblestone paths, deep blue ripple water, lush grass, pine/birch trees, dungeon stairwells, chests, and wooden doors).
+  - Synchronized exact autotiling bitmask configurations (cols 0..3 for walls, cols 4..7 for water, cols 8..11 for paths) and static coordinates across `TilesetAtlasManager.ts`.
+  - Fixed variant column indexing in `spriteRenderer.ts` so static props and terrain do not shift into unintended adjacent tiles.
+- **2. Animation Stabilization (`src/canvas/MockupAtlasGenerator.ts`)**:
+  - Tamed frantic entity bobbing ($4\text{px} \to 1\text{px}$) and arm swing motion ($4\text{px} \to 1\text{px}$) to provide smooth, natural, and readable idle/movement loops.
+- **3. Dimmer & Softer Lighting Engine (`src/canvas/lightingEngine.ts`)**:
+  - Dimmed player lantern intensity ($0.60 \to 0.40$) and reduced radius ($3.4\times \to 2.8\times$) with subtle micro-flickering.
+  - Softened campfires ($0.65$), torches ($0.55$), dungeon portals ($0.45$), and shrines ($0.50$).
+  - Re-tuned the additive halo pass with soft transparent color stops to completely eliminate harsh glare or washed-out backgrounds.
+- **4. Codebase & Markdown Alignment**:
+  - Passed complete 415-file codebase audit, JSON validation, TypeScript typechecks, and 52 test suites.
+
+## [v7.9.5] — Lighting Engine Balance & Organic Player Lantern Glow Refinement (September 2, 2026)
+*Refined the dynamic 2D lighting engine to balance ambient illumination and eliminate excessive player glare. Tuned player personal lantern radius, intensity, and additive halo blending for a clean, organic atmospheric look while preserving dungeon darkness and environmental clarity.*
+
+- **1. Player Lantern Illumination Refinement (`src/canvas/lightingEngine.ts`)**:
+  - Decreased the player personal lantern radius from $5.2\times$ tile size (~145px) to a balanced $3.4\times$ tile size (~95px).
+  - Adjusted illumination intensity from $0.95$ down to $0.60$ with gentle micro-flicker ($0.03$ magnitude at $0.8$ speed).
+  - Reduced additive screen-blended halo alpha on player light from $0.28$ to a soft $0.12$ with tighter halo radius scaling ($0.65\times$).
+- **2. Redundant Entity Layer Overlay Cleanup (`src/canvas/entityLayerRenderer.ts`)**:
+  - Removed duplicate hardcoded radial torch gradient beneath the player character sprite, unifying all lighting through the dynamic multi-light point shader.
+- **3. Documentation & System Alignment**:
+  - Verified architectural alignment across `AGENTS.md`, `DEVELOPERS.md`, `BUGS.md`, and `FEATURES.md`.
+
+## [v7.9.0] — Arcane Scriptorium Minigame, Glyph Rune Tracing & Masterwork Spell Scrolls (August 31, 2026)
+*Integrated the Arcane Scriptorium interactive vector rune tracing minigame and Masterwork spell scroll crafting engine. Players can trace elemental leyline glyph matrices with mouse/touch or keyboard to forge Masterwork Spell Scrolls with 0 MP Cast Cost and +30% spell damage potency. Added sandbox controls in Dev God Panel for immediate test-play and template switching.*
+
+- **1. Arcane Scriptorium Glyph Minigame (`src/components/ScriptoriumMiniGame.tsx` & `src/types/minigames/glyphGame.ts`)**:
+  - Interactive vector slate displaying numbered elemental runic nodes (0-9) organized in geometric configurations.
+  - Supports continuous mouse/touch dragging with glowing conduit beams and number key (0-9) node chaining.
+  - Features real-time Arcane Instability (overheat) meter, acoustic WebAudio harmonic node frequencies, mistake penalties (+15% instability), screen shake, and multi-stage matrix chaining.
+- **2. Masterwork Spell Scroll Inscription & Combat Mechanics (`src/App.tsx` & `src/types/items.ts`)**:
+  - High accuracy scribing (score >= 90%, 0 errors) produces Masterwork Spell Scrolls (`🌟`).
+  - Masterwork scrolls feature waived mana cost (0 MP), +30% spell damage multiplier, +15% critical strike chance, and increased gold valuation.
+  - Integrated with inventory material deductions (parchment/leather and elemental catalysts) and floating game effect celebrations.
+- **3. Dev God Panel Sandbox Testing (`src/components/god/GodMinigamesTab.tsx`)**:
+  - Added dedicated Arcane Scriptorium test card with template selection, reagent granting button (`+10 Inks 📜`), and difficulty tier switching.
+- **4. Full Documentation & Automated Verification**:
+  - Updated `README.md`, `FEATURES.md`, `AGENTS.md`, and `VERSIONS.md`.
+
+## [v7.8.0] — Enemy AI Behavioral Roles & Async Background Chunk Batching (August 30, 2026)
+*Implemented comprehensive Enemy AI Behavioral Archetypes featuring smart tactical ranged kiting for archers/mages and support healing/buffing spells for backline medics and shamans. Built high-performance non-blocking asynchronous chunk streaming and background pre-generation queue (AsyncChunkBatcherService) with requestIdleCallback time-slicing. All 52 test suites and 315 tests pass 100% green.*
+
+- **1. Enemy AI Behavioral Roles & Smart Kiting (`src/hooks/ai/useHostileAI.ts` & `src/types/entities.ts`)**:
+  - Added `aiRole` (`'melee' | 'skirmisher_kiting' | 'support_healer' | 'support_buffer' | 'tank' | 'ambusher'`) and `supportSpellCooldown` to the `Enemy` domain model.
+  - Implemented Tactical Kiting AI: Ranged marksmen and spellcasters (`SkeletonMage`, `Trapmaster`, `FrostbiteSpider`, `AbyssalSiren`) detect when targets close into melee range ($\le 2$ tiles) and dynamically retreat to re-establish an optimal 3–4 tile firing line before attacking.
+  - Implemented Support Unit AI: Healers (`Necromancer`, Shamans) scan for wounded allies ($HP < 75\%$) within 6 tiles to cast restorative spells (+25% HP) with cooldown tracking, while buffers (`Tidecaller`) bestow offensive/defensive buffs upon nearby elite and boss allies.
+- **2. Async Background Chunk Batching & Non-blocking Pre-generation (`src/utils/overworld/asyncChunkBatcher.ts`)**:
+  - Engineered `AsyncChunkBatcherService` utilizing `requestIdleCallback` (with 8ms time-slicing budget per frame and fallback to micro-tasks) to eliminate frame stutters during massive world discovery.
+  - Automatically schedules background pre-generation for the surrounding ring of adjacent sectors upon player chunk boundary transitions in `usePlayerTurnMovement.ts`.
+  - Integrated with `chunkTileRasterizer.ts` and `WorldMapModal.tsx` to cache and query chunk matrices seamlessly.
+- **3. Full Automated Verification**:
+  - Expanded test coverage with `modularAIEngine.test.ts` and `asyncChunkBatcher.test.ts`. 52 test suites and 315 tests passing 100% green.
+
+## [v7.7.7] — World Map Mobile Touch Gestures, Smooth Inertia, Collapsible Inspector & Floating D-Pad (August 29, 2026)
+*Refined the world map cartography system for mobile devices and small viewports with physics-based momentum inertia, touch gesture deadzones, non-intrusive collapsible sector inspections, selected chunk glowing reticles, and a floating Compass Navigator overlay with D-pad directional panning and instant centering controls.*
+
+- **1. Mobile Touch Deadzones & Physics-Based Momentum (`src/components/worldmap/WorldMapCanvas.tsx`)**:
+  - Implemented 6px touch movement threshold to prevent accidental taps and eliminate jitter when initiating pan gestures.
+  - Added velocity tracking (`velocityX`, `velocityY`) and smooth ease-out inertia animation on touch release (`stepInertia`), providing natural drag-and-scroll dynamics.
+  - Suppressed hover tooltip events while actively dragging on touch screens.
+- **2. Collapsible Sector Inspection Card (`src/components/worldmap/WorldMapChunkTooltip.tsx`)**:
+  - Added minimize/expand toggle button (`ChevronDown`/`ChevronUp`), allowing players on smaller screens to collapse the detailed sector card into a sleek single-line summary pill displaying coordinates and biome.
+  - Added dedicated close (`✕`) button to quickly dismiss inspections.
+- **3. Canvas Reticle Frame for Selected Sectors (`src/components/worldmap/WorldMapCanvas.tsx`)**:
+  - Rendered a glowing bracket reticle (`#38bdf8`) on the dynamic animated canvas layer directly framing the currently selected chunk, making the active target clearly identifiable without relying on an intrusive overlay card.
+- **4. Floating Mobile Compass Navigator (`src/components/worldmap/WorldMapCanvas.tsx`)**:
+  - Introduced a collapsible top-right Compass Navigator widget featuring smooth D-pad directional panning buttons (North, South, East, West), quick **Center on Hero** (`Crosshair`), quick **Center on Oakhaven [0,0]** (`Home`), and zoom presets.
+- **5. Full Automated Test Suite Verification**:
+  - All 51 test suites and 310 tests passing 100% green.
+
+## [v7.7.6] — Follower Tactical AI, Dead State Persistence, Dev Cartography Exporter & UI Resilience (August 29, 2026)
+*Implemented comprehensive follower combat damage and vulnerability mechanics with personality-aware tactical retreating, predatory hostile enemy pursuit, and permanent dead follower state persistence across chunk borders and dungeon transitions. Added 40% scale high-resolution World Map PNG Exporter to the Developer Suite, resolved UI clipping on desktop and mobile viewports, prevented idle Chaos Matrix threat inflation, and hardened world map discovery structures against heterogeneous typing.*
+
+- **1. Follower Combat Damage & Personality-Based Fleeing (`src/hooks/ai/`)**:
+  - `useHostileAI.ts`: Implemented dynamic proximity and priority targeting between player and companions. Hostile monsters now attack followers within reach, dealing combat damage, displaying combat floaters, and triggering fallen status.
+  - Added `predatoryChaser` behavior for aggressive predators to chase down retreating or wounded targets.
+  - `useFollowerAI.ts`: Timid and agile followers (cats and rogues) tactically flee when damaged (cats <50% HP, rogues <40% HP, general companions <25% HP), automatically resuming engagement once safely healed (>=60% HP).
+- **2. Dead Follower State Persistence (`src/world/dungeon/dungeonEntities.ts` & `src/hooks/ai/useEnemyAI.ts`)**:
+  - Strictly filtered out fallen companions (`!f.isDead && f.hp > 0`) during dungeon stair transitions and overworld chunk crossing, ensuring deceased followers do not inadvertently respawn.
+- **3. Dev Suite Whole Realm PNG Exporter (`src/utils/worldmap/worldMapPngExporter.ts`)**:
+  - Created high-performance offscreen cartography exporter capable of rendering the entire discovered or revealed world map at 40% scale into a downloadable PNG image (`realm_map_40pct_*.png`).
+  - Integrated export trigger in `GodCheatsTab.tsx` and `useGodPanelState.ts`.
+- **4. Dev Panel UI Safe-Area & Viewport Resilience (`src/components/GodPanelOverlay.tsx`)**:
+  - Added responsive padding and flexible container boundaries (`max-h-[86vh] sm:max-h-[88vh]`, `p-2 sm:p-4 pt-10 sm:pt-6 pb-4 sm:pb-6`) preventing dev console clipping across mobile screens and desktop viewports.
+- **5. Idle Chaos Matrix Gating (`src/utils/storyteller/storytellerEngine.ts`)**:
+  - Gated Storyteller Chaos threat escalation to active engagement epochs (`slainInInterval > 0`), preventing threat spikes while players rest or explore safely.
+- **6. World Map Heterogeneous visitedChunks Normalization (`src/components/worldmap/WorldMapCanvas.tsx` & `WorldMapModal.tsx`)**:
+  - Normalized `gameState.visitedChunks` input format (Sets, Arrays, and Record objects) into a strongly typed `Set<string>` via `safeDiscoveredSet` with boundary guards.
+- **7. Automated Unit Test Verification (`src/tests/worldMapPngExporter.test.ts`)**:
+  - Added test suite validating PNG export calculations and safe headless rendering fallbacks. 51 test suites and 310 tests passing 100% green.
+
 ## [v7.7.5] — Save/Load, State Migration Resilience & Telemetry Diagnostics (Phase 8) (August 26, 2026)
 *Completed Phase 8 implementation of comprehensive Save/Load persistence middleware, multi-version state schema migration (v1.0.0 through v7.7.4+), material storage normalization, equipment durability clamping, and explicit verification of run logs, adventure journals, and developer simulation replay telemetry diagnostics. All 50 test suites and 308 automated tests pass 100% green.*
 

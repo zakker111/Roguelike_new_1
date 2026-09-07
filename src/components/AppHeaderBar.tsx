@@ -1,7 +1,9 @@
-import React from 'react';
-import { Swords, Compass, Volume2, VolumeX, Sliders, HelpCircle, ShieldAlert, Sparkles, LogOut, Radio } from 'lucide-react';
+import React, { useState } from 'react';
+import { Swords, Compass, Volume2, VolumeX, Sliders, HelpCircle, ShieldAlert, Sparkles, LogOut, Radio, Palette, Activity } from 'lucide-react';
 import { GameState } from '../types';
 import { calculateWorldThreatTier, getThreatTierInfo } from '../utils/worldThreat';
+import { hybridGraphicsEngine } from '../canvas/HybridGraphicsEngine';
+import { entityInterpolationManager } from '../canvas/entityInterpolationManager';
 
 interface AppHeaderBarProps {
   isPlaying: boolean;
@@ -49,6 +51,7 @@ export const AppHeaderBar: React.FC<AppHeaderBarProps> = ({
   setIsGmPanelOpen,
   setIsGameOver
 }) => {
+  const [, setGraphicsTick] = useState(0);
   const threatTier = calculateWorldThreatTier(gameState.playerStats, gameState.chaosScore);
   const threatInfo = getThreatTierInfo(threatTier);
 
@@ -188,6 +191,51 @@ export const AppHeaderBar: React.FC<AppHeaderBarProps> = ({
                 <span className="text-[8px] bg-amber-500/20 px-1 rounded text-amber-200 font-mono hidden sm:inline">M</span>
               </button>
             )}
+
+            {/* Graphics Visual Mode Toggle (Classic ASCII vs Classic PNG vs Classic Code) */}
+            <button
+              onClick={() => {
+                hybridGraphicsEngine.cycleVisualMode();
+                playSound('click');
+                setGraphicsTick(t => t + 1);
+              }}
+              className={`px-2 py-1 text-[10px] rounded-lg border flex items-center gap-1 cursor-pointer font-bold transition-all ${
+                !hybridGraphicsEngine.isTilesetMode()
+                  ? 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800'
+                  : hybridGraphicsEngine.getTilesetSource() === 'classic_png'
+                  ? 'bg-indigo-950/60 border-indigo-500/40 text-indigo-300 shadow-sm'
+                  : 'bg-purple-950/60 border-purple-500/40 text-purple-300 shadow-sm'
+              }`}
+              title={`Visual Mode: ${hybridGraphicsEngine.getModeLabel()} [F8 / Alt+T]. Click to cycle modes (ASCII -> Classic PNG -> Classic Code).`}
+            >
+              <Palette className={`w-3 h-3 ${
+                !hybridGraphicsEngine.isTilesetMode()
+                  ? 'text-slate-400'
+                  : hybridGraphicsEngine.getTilesetSource() === 'classic_png'
+                  ? 'text-indigo-400'
+                  : 'text-purple-400'
+              }`} />
+              <span>{hybridGraphicsEngine.getShortModeLabel()}</span>
+            </button>
+
+            {/* Smooth Movement Lerp Toggle */}
+            <button
+              onClick={() => {
+                const newState = !entityInterpolationManager.isEnabled();
+                entityInterpolationManager.setEnabled(newState);
+                playSound('click');
+                setGraphicsTick(t => t + 1);
+              }}
+              className={`px-2 py-1 text-[10px] rounded-lg border flex items-center gap-1 cursor-pointer font-bold transition-all ${
+                entityInterpolationManager.isEnabled()
+                  ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:bg-slate-800'
+              }`}
+              title={`Movement Style: ${entityInterpolationManager.isEnabled() ? 'Smooth Interpolation (Lerp)' : 'Instant Turn-Based Grid Snapping'}. Click to toggle.`}
+            >
+              <Activity className="w-3 h-3 text-emerald-400" />
+              <span>{entityInterpolationManager.isEnabled() ? '⚡ Smooth' : '⏹ Snap'}</span>
+            </button>
 
             {/* Layout Mode Toggle */}
             <button

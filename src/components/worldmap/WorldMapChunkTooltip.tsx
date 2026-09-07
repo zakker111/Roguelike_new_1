@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChunkMapInfo, CustomMapPin } from './types';
-import { Skull, MapPin, Navigation, Sparkles, Plus, Edit3, X, Compass, Wind, Mountain, Droplets, ShieldAlert, Trees, Package, Route, Gauge } from 'lucide-react';
+import { Skull, MapPin, Navigation, Sparkles, Plus, Edit3, X, Compass, Wind, Mountain, Droplets, ShieldAlert, Trees, Package, Route, Gauge, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface WorldMapChunkTooltipProps {
   chunk: ChunkMapInfo | null;
@@ -10,6 +10,7 @@ export interface WorldMapChunkTooltipProps {
   onFastTravel?: (chunkX: number, chunkY: number, name: string) => void;
   onOpenPinEditor?: (chunkX: number, chunkY: number, existingPin?: CustomMapPin | null) => void;
   onClose?: () => void;
+  defaultMinimized?: boolean;
 }
 
 interface BiomeDetail {
@@ -201,15 +202,13 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
   currentChunkY,
   onFastTravel,
   onOpenPinEditor,
-  onClose
+  onClose,
+  defaultMinimized = false
 }) => {
+  const [isMinimized, setIsMinimized] = useState<boolean>(defaultMinimized);
+
   if (!chunk) {
-    return (
-      <div className="p-3 bg-slate-950/95 border border-slate-800 rounded-xl text-xs text-slate-400 flex items-center gap-2 shadow-2xl backdrop-blur-md">
-        <Compass className="w-4 h-4 text-amber-500/80 animate-spin-slow shrink-0" />
-        <span className="leading-tight">Tap or hover on any regional sector to inspect cartographic intelligence.</span>
-      </div>
-    );
+    return null;
   }
 
   // Calculate distance from hero chunk if known
@@ -217,9 +216,46 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
     ? Math.max(Math.abs(chunk.chunkX - currentChunkX), Math.abs(chunk.chunkY - currentChunkY))
     : null;
 
+  const biomeDetail = getBiomeDetail(chunk.biome, chunk);
+  const primaryPin = chunk.customPins && chunk.customPins.length > 0 ? chunk.customPins[0] : null;
+
+  // Uncharted frontier chunk presentation
   if (!chunk.isDiscovered) {
+    if (isMinimized) {
+      return (
+        <div className="p-2 sm:p-2.5 bg-slate-950/95 border border-slate-800 rounded-xl shadow-2xl backdrop-blur-md text-slate-200 flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm">🌫️</span>
+            <span className="font-bold text-slate-300 truncate text-[11px] sm:text-xs">Uncharted Frontier</span>
+            <span className="font-mono text-[10px] text-amber-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 shrink-0">
+              [{chunk.chunkX}, {chunk.chunkY}]
+            </span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setIsMinimized(false)}
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+              title="Expand details"
+            >
+              <ChevronUp className="w-3 h-3 text-amber-400" />
+              <span className="hidden sm:inline">Info</span>
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded transition-colors cursor-pointer"
+                title="Dismiss inspector"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="p-3.5 sm:p-4 bg-slate-950/95 border border-slate-800 rounded-2xl text-xs text-slate-300 shadow-2xl backdrop-blur-md max-h-[60vh] sm:max-h-[70vh] overflow-y-auto">
+      <div className="p-3 sm:p-3.5 bg-slate-950/95 border border-slate-800 rounded-2xl text-xs text-slate-300 shadow-2xl backdrop-blur-md max-h-[46vh] sm:max-h-[60vh] overflow-y-auto">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div>
             <div className="flex items-center gap-2 font-bold text-slate-200">
@@ -237,13 +273,20 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-md transition-colors cursor-pointer"
+              title="Minimize panel"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </button>
             {onOpenPinEditor && (
               <button
                 onClick={() => onOpenPinEditor(chunk.chunkX, chunk.chunkY, null)}
-                className="px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/40 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm"
+                className="px-2 py-1 bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm"
                 title="Add a custom explorer pin to this sector"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" />
                 <span>Mark Pin</span>
               </button>
             )}
@@ -266,14 +309,64 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
     );
   }
 
-  const biomeDetail = getBiomeDetail(chunk.biome, chunk);
+  // Minimized compact pill for discovered chunk
+  if (isMinimized) {
+    return (
+      <div className="p-2 sm:p-2.5 bg-slate-950/95 border border-slate-800/90 rounded-xl shadow-2xl backdrop-blur-md text-slate-200 flex items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="text-sm shrink-0">{biomeDetail.emoji}</span>
+          <span className="font-bold text-slate-100 truncate text-[11px] sm:text-xs">{chunk.regionName}</span>
+          <span className="font-mono text-[10px] text-amber-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 shrink-0">
+            [{chunk.chunkX}, {chunk.chunkY}]
+          </span>
+          {isCurrentHeroChunk && (
+            <span className="hidden sm:inline-block text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded-full font-bold">
+              📍 Hero
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          {chunk.isWaystoneAttuned && !isCurrentHeroChunk && onFastTravel && (
+            <button
+              onClick={() => onFastTravel(chunk.chunkX, chunk.chunkY, chunk.waystoneName || chunk.regionName)}
+              className="px-2 py-1 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              title="Fast travel to this Waystone"
+            >
+              <Navigation className="w-2.5 h-2.5" />
+              <span>Teleport</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setIsMinimized(false)}
+            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+            title="Expand full chunk details"
+          >
+            <ChevronUp className="w-3 h-3 text-amber-400" />
+            <span className="hidden sm:inline">Details</span>
+          </button>
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded transition-colors cursor-pointer"
+              title="Dismiss inspector"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const threatInfo = getThreatInfo(chunk.threatTier);
-  const primaryPin = chunk.customPins && chunk.customPins.length > 0 ? chunk.customPins[0] : null;
 
   return (
-    <div className="p-3.5 sm:p-4 bg-slate-950/95 border border-slate-800/90 rounded-2xl shadow-2xl backdrop-blur-md text-slate-200 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto space-y-3">
+    <div className="p-3 sm:p-3.5 bg-slate-950/95 border border-slate-800/90 rounded-2xl shadow-2xl backdrop-blur-md text-slate-200 max-h-[46vh] sm:max-h-[60vh] overflow-y-auto space-y-2.5">
       {/* Top Header Row */}
-      <div className="flex items-start justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+      <div className="flex items-start justify-between gap-2 border-b border-slate-800/80 pb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-1.5 truncate">
@@ -284,7 +377,7 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {/* Biome Badge */}
             <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold flex items-center gap-1 ${biomeDetail.badgeClass}`}>
               <span>{biomeDetail.emoji}</span>
@@ -318,10 +411,18 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
 
         {/* Header Action Controls */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => setIsMinimized(true)}
+            className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-md transition-colors cursor-pointer"
+            title="Minimize panel"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+
           {onOpenPinEditor && (
             <button
               onClick={() => onOpenPinEditor(chunk.chunkX, chunk.chunkY, primaryPin)}
-              className="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm"
+              className="px-2 py-1 bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-sm"
               title={primaryPin ? 'Edit pin on this sector' : 'Place custom pin on this sector'}
             >
               {primaryPin ? <Edit3 className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
@@ -343,7 +444,7 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-md transition-colors cursor-pointer ml-1"
+              className="p-1 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-md transition-colors cursor-pointer ml-0.5"
               title="Dismiss inspector"
             >
               <X className="w-4 h-4" />

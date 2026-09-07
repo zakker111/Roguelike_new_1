@@ -80,6 +80,16 @@ export function isCastleTownAtChunk(chunkX: number, chunkY: number): boolean {
   return isCastleTownAtChunkModule(chunkX, chunkY, prng);
 }
 
+export function isRuinedCityAtChunk(chunkX: number, chunkY: number): boolean {
+  if (chunkX === 0 && chunkY === 0) return false;
+  if (hasTownAtChunk(chunkX, chunkY)) return false;
+  // Dedicated landmark ruined city battlefield chunks and deterministic PRNG placement
+  if ((chunkX === 2 && chunkY === 2) || (chunkX === -3 && chunkY === 2) || (chunkX === 4 && chunkY === -3)) {
+    return true;
+  }
+  return prng(chunkX, chunkY, 991) < 0.08;
+}
+
 export function getSettlementTier(chunkX: number, chunkY: number) {
   return getSettlementTierModule(chunkX, chunkY, prng);
 }

@@ -1,21 +1,10 @@
-export interface Particle {
-  id: string;
-  x: number; // canvas or world coordinate
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  color: string;
-  alpha: number;
-  decay: number;
-  life: number;
-  maxLife: number;
-  shape?: 'circle' | 'spark' | 'ring' | 'snowflake' | 'ember';
-}
+import { ParticlePool, PooledParticle } from './particlePool';
+
+export type { PooledParticle as Particle };
 
 export class VisualFxParticleSystem {
   private static instance: VisualFxParticleSystem;
-  private particles: Particle[] = [];
+  private pool: ParticlePool = new ParticlePool(300);
 
   public static getInstance(): VisualFxParticleSystem {
     if (!VisualFxParticleSystem.instance) {
@@ -24,13 +13,19 @@ export class VisualFxParticleSystem {
     return VisualFxParticleSystem.instance;
   }
 
+  public getParticlePool(): ParticlePool {
+    return this.pool;
+  }
+
+  public getActiveCount(): number {
+    return this.pool.getActiveCount();
+  }
+
   public spawnSpellBurst(x: number, y: number, color: string = '#f59e0b', count: number = 12) {
-    if (this.particles.length > 250) return; // Cap max active particles
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
       const speed = 1.5 + Math.random() * 2.5;
-      this.particles.push({
-        id: `p_${Math.random()}`,
+      this.pool.acquire({
         x,
         y,
         vx: Math.cos(angle) * speed,
@@ -39,21 +34,18 @@ export class VisualFxParticleSystem {
         color,
         alpha: 1.0,
         decay: 0.03 + Math.random() * 0.02,
-        life: 0,
         maxLife: 30 + Math.random() * 20,
-        shape: Math.random() > 0.4 ? 'spark' : 'circle'
+        shape: Math.random() > 0.4 ? 'spark' : 'circle',
       });
     }
   }
 
   public spawnLightningBurst(x: number, y: number, count: number = 20) {
-    if (this.particles.length > 250) return;
     const colors = ['#ffffff', '#38bdf8', '#60a5fa', '#c084fc', '#a855f7'];
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 2.0 + Math.random() * 4.5;
-      this.particles.push({
-        id: `bolt_p_${Math.random()}`,
+      this.pool.acquire({
         x,
         y,
         vx: Math.cos(angle) * speed,
@@ -62,17 +54,14 @@ export class VisualFxParticleSystem {
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 1.0,
         decay: 0.04 + Math.random() * 0.03,
-        life: 0,
         maxLife: 20 + Math.random() * 15,
-        shape: Math.random() > 0.3 ? 'spark' : 'circle'
+        shape: Math.random() > 0.3 ? 'spark' : 'circle',
       });
     }
   }
 
   public spawnEmber(x: number, y: number) {
-    if (this.particles.length > 250) return; // Cap max active particles
-    this.particles.push({
-      id: `ember_${Math.random()}`,
+    this.pool.acquire({
       x: x + (Math.random() - 0.5) * 16,
       y,
       vx: (Math.random() - 0.5) * 0.8,
@@ -81,16 +70,13 @@ export class VisualFxParticleSystem {
       color: '#ef4444',
       alpha: 0.9,
       decay: 0.02,
-      life: 0,
       maxLife: 40,
-      shape: 'ember'
+      shape: 'ember',
     });
   }
 
   public spawnWaterRipple(x: number, y: number, color: string = 'rgba(56, 189, 248, 0.75)') {
-    if (this.particles.length > 250) return;
-    this.particles.push({
-      id: `ripple_${Math.random()}`,
+    this.pool.acquire({
       x,
       y,
       vx: 0,
@@ -99,20 +85,17 @@ export class VisualFxParticleSystem {
       color,
       alpha: 0.85,
       decay: 0.025,
-      life: 0,
       maxLife: 35,
       shape: 'ring',
     });
   }
 
   public spawnFootstepSplash(x: number, y: number, count: number = 6) {
-    if (this.particles.length > 250) return;
     const colors = ['#38bdf8', '#7dd3fc', '#60a5fa', '#93c5fd'];
     for (let i = 0; i < count; i++) {
       const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * 1.2;
       const speed = 1.0 + Math.random() * 2.2;
-      this.particles.push({
-        id: `splash_${Math.random()}`,
+      this.pool.acquire({
         x: x + (Math.random() - 0.5) * 12,
         y: y + (Math.random() - 0.5) * 6,
         vx: Math.cos(angle) * speed,
@@ -121,25 +104,25 @@ export class VisualFxParticleSystem {
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 0.9,
         decay: 0.04 + Math.random() * 0.02,
-        life: 0,
         maxLife: 22 + Math.random() * 10,
         shape: 'circle',
       });
     }
   }
 
-  public updateAndRender(ctx: CanvasRenderingContext2D, dt: number) {
-    if (this.particles.length === 0) return;
+  public updateAndRender(ctx: CanvasRenderingContext2D, _dt?: number) {
+    const activeCount = this.pool.getActiveCount();
+    if (activeCount === 0) return;
 
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
+    for (let i = activeCount - 1; i >= 0; i--) {
+      const p = this.pool.getParticleAt(i);
       p.x += p.vx;
       p.y += p.vy;
       p.alpha -= p.decay;
       p.life++;
 
       if (p.alpha <= 0 || p.life >= p.maxLife) {
-        this.particles.splice(i, 1);
+        this.pool.releaseAt(i);
         continue;
       }
 
@@ -179,7 +162,7 @@ export class VisualFxParticleSystem {
   }
 
   public clear() {
-    this.particles = [];
+    this.pool.clear();
   }
 }
 

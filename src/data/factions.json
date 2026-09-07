@@ -1,0 +1,290 @@
+[
+  {
+    "id": "iron_vanguard",
+    "name": "The Iron Vanguard",
+    "shortName": "Vanguard",
+    "description": "An uncompromising military order of armored paladins and siege wardens dedicated to fortified law, discipline, and the purge of chaotic corruption.",
+    "bannerEmoji": "🛡️",
+    "primaryColor": "#3b82f6",
+    "secondaryColor": "#1e3a8a",
+    "alignment": "lawful_neutral",
+    "headquarters": "Iron Bastion Citadel",
+    "motto": "Iron Within, Order Prevails.",
+    "preferredBiomes": ["Plains", "Mountains", "Castle", "Fortress"],
+    "enemyTypes": ["VanguardSoldier", "VanguardKnight", "VanguardArcher", "VanguardCaptain", "VanguardSentry"],
+    "defaultRelationships": {
+      "iron_vanguard": "allied",
+      "town_guard": "friendly",
+      "unaligned": "neutral",
+      "wild_beasts": "unfriendly",
+      "ancient_guardians": "neutral",
+      "shadow_syndicate": "hostile",
+      "outlaw_bandits": "hostile",
+      "orc_clans": "hostile",
+      "undead_scourge": "nemesis"
+    },
+    "tactics": ["Phalanx Formation", "Shield Wall Wallops", "Armor Sunder Fortifications", "Siege Reprisals"],
+    "bountyLoot": {
+      "currency": "Vanguard Crests",
+      "rate": 1.0,
+      "items": ["Refined Iron Ingot", "Vanguard Kite Shield", "Tempered Greathelm"]
+    },
+    "lore": "Formed during the Great Sundering, the Vanguard maintains watchtowers across high passes to prevent monster incursions and crush outlaw raids."
+  },
+  {
+    "id": "shadow_syndicate",
+    "name": "The Shadow Syndicate",
+    "shortName": "Syndicate",
+    "description": "A clandestine network of nightblades, poison alchemists, and black-market smugglers ruling the underworld alleys, moonlit coves, and hidden vaults.",
+    "bannerEmoji": "🗡️",
+    "primaryColor": "#a855f7",
+    "secondaryColor": "#581c87",
+    "alignment": "chaotic_neutral",
+    "headquarters": "Moonshadow Cove Vaults",
+    "motto": "Gold in Silence, Blood in Shadows.",
+    "preferredBiomes": ["Swamp", "Ruins", "Subterranean", "Alleys"],
+    "enemyTypes": ["SyndicateRogue", "SyndicateAssassin", "SyndicatePoisoner", "SyndicateShadowmaster"],
+    "defaultRelationships": {
+      "shadow_syndicate": "allied",
+      "unaligned": "neutral",
+      "wild_beasts": "neutral",
+      "ancient_guardians": "unfriendly",
+      "town_guard": "unfriendly",
+      "iron_vanguard": "hostile",
+      "outlaw_bandits": "hostile",
+      "orc_clans": "hostile",
+      "undead_scourge": "nemesis"
+    },
+    "tactics": ["Vanish into Smokescreen", "Poison Blade Flurries", "Shadowstep Backstabs", "Black Market Bribery"],
+    "bountyLoot": {
+      "currency": "Syndicate Marks",
+      "rate": 1.0,
+      "items": ["Vial of Lethal Nightshade", "Shadow Dagger", "Silken Lockpick"]
+    },
+    "lore": "The Syndicate views law as a tool of oppression and profit as the ultimate sovereign rule. They control illegal alchemy labs and underground smuggler conduits."
+  },
+  {
+    "id": "outlaw_bandits",
+    "name": "Bloodcrest Outlaw Gangs",
+    "shortName": "Outlaws",
+    "description": "Desperate exiles, highway cutthroats, and runaway marauders who ambush trade caravans and maintain fortified wilderness timber camps.",
+    "bannerEmoji": "🏴‍☠️",
+    "primaryColor": "#ef4444",
+    "secondaryColor": "#7f1d1d",
+    "alignment": "chaotic_evil",
+    "headquarters": "Bloodcrest Ravine Hideout",
+    "motto": "Take What You Can, Burn the Rest.",
+    "preferredBiomes": ["Forest", "Desert", "Mountains", "Wasteland"],
+    "enemyTypes": ["Bandit", "BanditArcher", "OutlawLeader", "OutlawMarauder", "OutlawTrapmaster"],
+    "defaultRelationships": {
+      "outlaw_bandits": "allied",
+      "unaligned": "unfriendly",
+      "wild_beasts": "unfriendly",
+      "ancient_guardians": "hostile",
+      "town_guard": "hostile",
+      "iron_vanguard": "hostile",
+      "shadow_syndicate": "hostile",
+      "orc_clans": "hostile",
+      "undead_scourge": "nemesis"
+    },
+    "tactics": ["Roadside Ambush", "Barricade Crossfire", "Campfire Reinforcements", "Spike Traps"],
+    "bountyLoot": {
+      "currency": "Stolen Gold Pouches",
+      "rate": 0.8,
+      "items": ["Ripped Leather Pouch", "Outlaw Scimitar", "Rusty Crossbow Bolts"]
+    },
+    "lore": "A loose confederation of bandit dens operating out of forgotten ruins and deep forest clearings, surviving by preying on passing merchants."
+  },
+  {
+    "id": "orc_clans",
+    "name": "Goreaxe Orc Clans",
+    "shortName": "Orcs",
+    "description": "A savage tribal brotherhood of iron-thewed berserkers, wolf-riders, and primal blood shamans seeking dominance over the ruined frontier.",
+    "bannerEmoji": "🪓",
+    "primaryColor": "#ea580c",
+    "secondaryColor": "#7c2d12",
+    "alignment": "chaotic_neutral",
+    "headquarters": "Goreaxe Stronghold",
+    "motto": "Strength Is Sovereign, Blood Pays All.",
+    "preferredBiomes": ["Ruins", "Badlands", "Mountains", "Volcanic"],
+    "enemyTypes": ["OrcWarrior", "OrcBerserker", "OrcShaman", "OrcWarlord", "WarBoar"],
+    "defaultRelationships": {
+      "orc_clans": "allied",
+      "wild_beasts": "neutral",
+      "ancient_guardians": "hostile",
+      "unaligned": "unfriendly",
+      "town_guard": "hostile",
+      "iron_vanguard": "hostile",
+      "shadow_syndicate": "hostile",
+      "outlaw_bandits": "hostile",
+      "undead_scourge": "nemesis"
+    },
+    "tactics": ["Primal Bloodlust Rage", "Cleave Sweeps", "Warhorn Rally Call", "Staggering Ground Slam"],
+    "bountyLoot": {
+      "currency": "Blood Iron Fangs",
+      "rate": 1.2,
+      "items": ["Goreaxe War Cleaver", "Heavy Spiked Pauldron", "Tribal Totem Bone"]
+    },
+    "lore": "Occupying ancient fallen cities and cracked stone bastions, the Goreaxe clans fight fiercely for territorial supremacy against human factions and undead abominations."
+  },
+  {
+    "id": "undead_scourge",
+    "name": "The Dread Necropolis",
+    "shortName": "Scourge",
+    "description": "Relentless hordes of animated skeletal warriors, vengeful crypt wraiths, and lich necromancers bound by dark necrotic sorcery.",
+    "bannerEmoji": "💀",
+    "primaryColor": "#64748b",
+    "secondaryColor": "#0f172a",
+    "alignment": "lawful_evil",
+    "headquarters": "Catacombs of the Ebon Throne",
+    "motto": "Flesh Withers, Bone Endures.",
+    "preferredBiomes": ["Dungeon", "Catacombs", "Graveyard", "Crypts", "Underworld"],
+    "enemyTypes": ["Skeleton", "SkeletonMage", "Zombie", "Wraith", "Lich", "Necromancer", "BoneGolem"],
+    "defaultRelationships": {
+      "undead_scourge": "allied",
+      "ancient_guardians": "hostile",
+      "wild_beasts": "hostile",
+      "unaligned": "nemesis",
+      "town_guard": "nemesis",
+      "iron_vanguard": "nemesis",
+      "shadow_syndicate": "nemesis",
+      "outlaw_bandits": "nemesis",
+      "orc_clans": "nemesis"
+    },
+    "tactics": ["Necrotic Life Drain", "Bone Wall Entombment", "Reanimation Surge", "Curse of Frailty"],
+    "bountyLoot": {
+      "currency": "Ebon Soul Shards",
+      "rate": 1.0,
+      "items": ["Crypt Dust Essence", "Skeletal Ribcage", "Grimoire of Decay"]
+    },
+    "lore": "Risen from the sunken catacombs of the forgotten age, the Scourge seeks to extinguish all mortal life and shroud the realm in eternal stillness."
+  },
+  {
+    "id": "town_guard",
+    "name": "Sunder Civic Militia & Guard",
+    "shortName": "Town Guard",
+    "description": "Civic peacekeepers, town sentinels, and castle gate wardens tasked with maintaining municipal safety and protecting innocent villagers.",
+    "bannerEmoji": "🏰",
+    "primaryColor": "#10b981",
+    "secondaryColor": "#064e3b",
+    "alignment": "lawful_good",
+    "headquarters": "Oakhaven Town Barracks",
+    "motto": "Vigilant Guard, Peaceful Hearth.",
+    "preferredBiomes": ["Town", "Village", "Castle", "Harbor"],
+    "enemyTypes": ["TownGuard", "CastleGuard", "HarborSentry", "BarracksCaptain"],
+    "defaultRelationships": {
+      "town_guard": "allied",
+      "iron_vanguard": "friendly",
+      "unaligned": "friendly",
+      "shadow_syndicate": "unfriendly",
+      "wild_beasts": "unfriendly",
+      "ancient_guardians": "neutral",
+      "outlaw_bandits": "hostile",
+      "orc_clans": "hostile",
+      "undead_scourge": "nemesis"
+    },
+    "tactics": ["Town Alarm Whistle", "Lockdown Formation", "Crossbow Piercing Volley", "Banishment Stun"],
+    "bountyLoot": {
+      "currency": "Town Commendation Badges",
+      "rate": 0.5,
+      "items": ["Civic Guard Halberd", "Polished Iron Buckler", "Bounty Notice Scroll"]
+    },
+    "lore": "The brave sentinels stationed at settlement perimeters, manning gatehouses day and night to keep monster incursions and bandit raids at bay."
+  },
+  {
+    "id": "wild_beasts",
+    "name": "Fauna & Wild Predators",
+    "shortName": "Wildlife",
+    "description": "Indigenous creatures of the deep forests, tundra crags, and swamp wetlands driven by territorial survival and hunger.",
+    "bannerEmoji": "🐺",
+    "primaryColor": "#84cc16",
+    "secondaryColor": "#365314",
+    "alignment": "unaligned",
+    "headquarters": "Primal Deepwood Dens",
+    "motto": "The Wild Obeys Only Instinct.",
+    "preferredBiomes": ["Forest", "Swamp", "Tundra", "Meadows", "Mountains"],
+    "enemyTypes": ["Wolf", "DireWolf", "CaveBear", "WildBoar", "GiantSpider", "FrostbiteSpider", "CaveBat"],
+    "defaultRelationships": {
+      "wild_beasts": "allied",
+      "unaligned": "neutral",
+      "ancient_guardians": "neutral",
+      "town_guard": "unfriendly",
+      "iron_vanguard": "unfriendly",
+      "shadow_syndicate": "neutral",
+      "outlaw_bandits": "unfriendly",
+      "orc_clans": "neutral",
+      "undead_scourge": "hostile"
+    },
+    "tactics": ["Pack Flanking", "Territorial Pounce", "Venom Web Snare", "Rending Bite"],
+    "bountyLoot": {
+      "currency": "Pristine Beast Pelts",
+      "rate": 1.0,
+      "items": ["Thick Wild Hide", "Predator Fang", "Spider Silk Thread"]
+    },
+    "lore": "The natural inhabitants of the Sunder continent whose territory shrinks as civilization and faction wars expand."
+  },
+  {
+    "id": "ancient_guardians",
+    "name": "Aetherial Vault Automata",
+    "shortName": "Constructs",
+    "description": "Silent arcane golems, runic sentinels, and elemental wardens forged by an extinct civilization to protect celestial chambers.",
+    "bannerEmoji": "🗿",
+    "primaryColor": "#06b6d4",
+    "secondaryColor": "#164e63",
+    "alignment": "lawful_neutral",
+    "headquarters": "Aetherial Sanctuaries",
+    "motto": "Mandate Unbroken for Eternity.",
+    "preferredBiomes": ["Sanctuary", "Vaults", "Ruins", "Celestial"],
+    "enemyTypes": ["RunicGolem", "VaultAutomaton", "AetherSentinel", "ArcaneWard"],
+    "defaultRelationships": {
+      "ancient_guardians": "allied",
+      "wild_beasts": "neutral",
+      "unaligned": "neutral",
+      "town_guard": "neutral",
+      "iron_vanguard": "neutral",
+      "shadow_syndicate": "unfriendly",
+      "outlaw_bandits": "hostile",
+      "orc_clans": "hostile",
+      "undead_scourge": "hostile"
+    },
+    "tactics": ["Runic Barrier Shielding", "Aether Beam Discharge", "Seismic Stomp", "Self-Repair Cycle"],
+    "bountyLoot": {
+      "currency": "Celestial Runic Cores",
+      "rate": 1.5,
+      "items": ["Aether Stone Fragment", "Animated Clockwork Gear", "Ancient Power Matrix"]
+    },
+    "lore": "Immortal clockwork and aetherstone sentinels unbothered by mortality or politics, attacking only when sacred wards are disturbed."
+  },
+  {
+    "id": "unaligned",
+    "name": "Independent Wanderers & Fauna",
+    "shortName": "Unaligned",
+    "description": "Lone wandering merchants, pilgrims, bards, tame animals, and free mercenaries who pledge fealty to no single banner.",
+    "bannerEmoji": "🏕️",
+    "primaryColor": "#94a3b8",
+    "secondaryColor": "#334155",
+    "alignment": "neutral",
+    "headquarters": "The Open Road",
+    "motto": "Every Step My Own Domain.",
+    "preferredBiomes": ["Plains", "Forest", "Roads", "Meadows"],
+    "enemyTypes": ["Deer", "Goat", "Sheep", "TravelingMerchant", "Pilgrim"],
+    "defaultRelationships": {
+      "unaligned": "allied",
+      "town_guard": "friendly",
+      "iron_vanguard": "neutral",
+      "shadow_syndicate": "neutral",
+      "wild_beasts": "neutral",
+      "ancient_guardians": "neutral",
+      "outlaw_bandits": "unfriendly",
+      "orc_clans": "unfriendly",
+      "undead_scourge": "nemesis"
+    },
+    "tactics": ["Flee from Danger", "Self-Preservation Dodge", "Defensive Retreat"],
+    "bountyLoot": {
+      "currency": "Wanderer Gold",
+      "rate": 0.5,
+      "items": ["Traveler Bread", "Flask of Clean Water", "Worn Walking Staff"]
+    },
+    "lore": "Free folk and humble animals walking the realm, often caught in the crossfire of faction skirmishes."
+  }
+]

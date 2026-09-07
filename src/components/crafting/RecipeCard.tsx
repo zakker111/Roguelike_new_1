@@ -38,6 +38,12 @@ export interface RecipeCardProps {
   disabledReason?: string;
   themeColor?: 'amber' | 'emerald' | 'purple' | 'sky' | 'teal' | 'rose' | 'pink';
   allowBatch?: boolean;
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+    icon?: React.ReactNode;
+    tooltip?: string;
+  };
 }
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({
@@ -58,6 +64,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   disabledReason,
   themeColor = 'amber',
   allowBatch = false,
+  secondaryAction,
 }) => {
   const [craftQuantity, setCraftQuantity] = useState<number>(1);
 
@@ -291,22 +298,42 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
           </div>
         )}
 
-        <button
-          id={`btn-craft-${id}`}
-          onClick={handleCraftClick}
-          disabled={!canCraft}
-          className={`w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border shadow-lg transition-all duration-200 cursor-pointer ${
-            canCraft
-              ? `${styles.btnActive} hover:scale-[1.01] active:scale-[0.98]`
-              : 'bg-slate-950 text-slate-600 border-slate-850 cursor-not-allowed opacity-60'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>
-            {craftButtonLabel}
-            {craftQuantity > 1 ? ` (x${craftQuantity})` : ''}
-          </span>
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            id={`btn-craft-${id}`}
+            onClick={handleCraftClick}
+            disabled={!canCraft}
+            className={`w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border shadow-lg transition-all duration-200 cursor-pointer ${
+              canCraft
+                ? `${styles.btnActive} hover:scale-[1.01] active:scale-[0.98]`
+                : 'bg-slate-950 text-slate-600 border-slate-850 cursor-not-allowed opacity-60'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>
+              {craftButtonLabel}
+              {craftQuantity > 1 ? ` (x${craftQuantity})` : ''}
+            </span>
+          </button>
+
+          {secondaryAction && (
+            <button
+              id={`btn-secondary-${id}`}
+              type="button"
+              onClick={secondaryAction.onClick}
+              disabled={!canCraft}
+              title={secondaryAction.tooltip}
+              className={`w-full py-2 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-1.5 border transition-all duration-200 cursor-pointer ${
+                canCraft
+                  ? 'bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border-amber-500/40 hover:border-amber-400 active:scale-[0.98]'
+                  : 'bg-slate-950 text-slate-600 border-slate-850 cursor-not-allowed opacity-40'
+              }`}
+            >
+              {secondaryAction.icon}
+              <span>{secondaryAction.label}</span>
+            </button>
+          )}
+        </div>
 
         {disabledReason && !canCraft && (
           <p className="text-[9.5px] font-mono text-rose-400/90 text-center">

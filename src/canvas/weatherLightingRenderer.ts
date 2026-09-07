@@ -3,11 +3,16 @@ import { visualFxParticleSystem } from './visualFxParticleSystem';
 import { playSound } from '../utils/audio';
 import { getSeasonalLeafPalette, isForestBiome, isDesertBiome, isObstacleTile } from '../utils/weatherEngine';
 import { renderBiomeMicroAtmosphere } from './biomeAtmosphereRenderer';
+import { lightingEngine } from './lightingEngine';
+import { weatherInteractivityManager } from './weatherInteractivityRenderer';
 
 export interface RenderWeatherAndLightingParams {
   ctx: CanvasRenderingContext2D;
   gameState: GameState;
   dimensions: { width: number; height: number };
+  camX?: number;
+  camY?: number;
+  tileSize?: number;
 }
 
 interface LightningActiveState {
@@ -193,56 +198,69 @@ export function renderWeatherAndLighting({
   ctx,
   gameState,
   dimensions,
+  camX = 0,
+  camY = 0,
+  tileSize = 28,
 }: RenderWeatherAndLightingParams) {
-  // Day-Night Lighting Ambient Shader and Weather Elements (Only on Overworld chunks)
-  if (!gameState.isOverworld) return;
+  let lightningFlashAlpha = 0;
 
-  const rawMins = gameState.gameTime % 1440;
-  let lightCoeff = 1.0; 
-  
-  if (rawMins < 360) {
-    // Night (12 AM to 6 AM): very dark
-    lightCoeff = 0.3 + (rawMins / 360) * 0.4;
-  } else if (rawMins >= 360 && rawMins < 480) {
-    // Dawn (6 AM to 8 AM): transitioning up
-    lightCoeff = 0.7 + ((rawMins - 360) / 120) * 0.3;
-  } else if (rawMins >= 480 && rawMins < 1080) {
-    // Midday (8 AM to 6 PM): crystal clear
-    lightCoeff = 1.0;
-  } else if (rawMins >= 1080 && rawMins < 1200) {
-    // Dusk (6 PM to 8 PM): transitioning down
-    lightCoeff = 1.0 - ((rawMins - 1080) / 120) * 0.4;
-  } else {
-    // Evening / Twilight (8 PM to 12 AM)
-    lightCoeff = 0.6 - ((rawMins - 1200) / 240) * 0.3;
-  }
-
-  if (lightCoeff < 0.95) {
-    // Determine moon phase for gorgeous custom ambient colors during night hours!
-    const currentPhase = getMoonPhase(gameState.playerStats?.turnsPlayed || 0);
-    let tintColor = `rgba(15, 23, 42, ${0.48 * (1.0 - lightCoeff)})`; // Default slate dark
-    
-    if (rawMins >= 1200 || rawMins < 360) { // strictly at night hours
-      if (currentPhase.id === 'new_moon') {
-        // Deep shadow veil violet
-        tintColor = `rgba(8, 2, 16, ${0.65 * (1.0 - lightCoeff)})`;
-      } else if (currentPhase.id === 'full_moon') {
-        // Soft ethereal silver glow
-        tintColor = `rgba(224, 231, 255, ${0.28 * (1.0 - lightCoeff)})`;
-      } else if (currentPhase.id === 'waxing_crescent') {
-        // Soft amber twilight stardust
-        tintColor = `rgba(251, 191, 36, ${0.20 * (1.0 - lightCoeff)})`;
-      } else if (currentPhase.id === 'first_quarter') {
-        // High contrast deep cosmic indigo
-        tintColor = `rgba(30, 27, 75, ${0.45 * (1.0 - lightCoeff)})`;
-      } else if (currentPhase.id === 'waning_gibbous') {
-        // Cool oceanic aquamarine
-        tintColor = `rgba(13, 148, 136, ${0.25 * (1.0 - lightCoeff)})`;
+  // --- Rare Ambient Lightning Strike Trigger during Rainy Storm Weather ---
+  const nowTime = Date.now();
+  if (gameState.weather === 'rainy' && gameState.isOverworld && !activeLightningStrike) {
+    if (nowTime - lastAmbientLightningTime > 45000) { // At least 45s interval
+      if (Math.random() < 0.0008) { // Extra rare frame trigger chance
+        lastAmbientLightningTime = nowTime;
+        triggerLightningStrike({
+          screenWidth: dimensions.width,
+          screenHeight: dimensions.height,
+        });
       }
     }
-    
-    ctx.fillStyle = tintColor; 
-    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+  }
+
+  // Calculate active lightning flash intensity
+  if (activeLightningStrike) {
+    const elapsed = nowTime - activeLightningStrike.startTime;
+    if (elapsed <= activeLightningStrike.duration) {
+      const progress = elapsed / activeLightningStrike.duration;
+      if (progress < 0.15) {
+        lightningFlashAlpha = (progress / 0.15) * 0.85;
+      } else if (progress < 0.30) {
+        lightningFlashAlpha = 0.85 - ((progress - 0.15) / 0.15) * 0.45;
+      } else if (progress < 0.45) {
+        lightningFlashAlpha = 0.40 + ((progress - 0.30) / 0.15) * 0.50;
+      } else {
+        lightningFlashAlpha = 0.90 * Math.pow(1 - (progress - 0.45) / 0.55, 2);
+      }
+    }
+  }
+
+  // 1. Dynamic 2D Multi-Light Point Shader (Player lantern, campfires, torches, shrines, lava, dungeons)
+  lightingEngine.renderLightingPass(
+    ctx,
+    gameState,
+    camX,
+    camY,
+    dimensions,
+    tileSize,
+    lightningFlashAlpha
+  );
+
+  // 2. Weather Ground Interactivity (Rain puddle ripples, droplet splashes, snow crust on walls/trees)
+  weatherInteractivityManager.renderInteractivity(
+    ctx,
+    gameState,
+    camX,
+    camY,
+    dimensions,
+    tileSize
+  );
+
+  // If inside dungeon and not overworld, skip overworld weather overlays
+  if (!gameState.isOverworld) {
+    // Render Visual FX Particle System Overlay (Sparks, Embers, Spell Bursts in dungeon)
+    visualFxParticleSystem.updateAndRender(ctx, 16);
+    return;
   }
 
   // Render Weather Elements with Gradual Atmosphere Fade & Smooth Cross-Fade
@@ -334,20 +352,6 @@ export function renderWeatherAndLighting({
     }
   }
 
-
-  // --- Rare Ambient Lightning Strike Trigger during Rainy Storm Weather ---
-  const nowTime = Date.now();
-  if (gameState.weather === 'rainy' && gameState.isOverworld && !activeLightningStrike) {
-    if (nowTime - lastAmbientLightningTime > 45000) { // At least 45s interval
-      if (Math.random() < 0.0008) { // Extra rare frame trigger chance
-        lastAmbientLightningTime = nowTime;
-        triggerLightningStrike({
-          screenWidth: dimensions.width,
-          screenHeight: dimensions.height,
-        });
-      }
-    }
-  }
 
   // --- Render Active Lightning Strike Visual FX (Atmospheric Flash + Bolt + Impact) ---
   if (activeLightningStrike) {

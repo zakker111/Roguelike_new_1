@@ -7,3 +7,4 @@ export * from './types/map';
 export * from './types/items';
 export * from './types/entities';
 export * from './types/game';
+export * from './types/minigames/glyphGame';

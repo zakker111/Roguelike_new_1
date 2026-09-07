@@ -7,6 +7,7 @@ import React from 'react';
 import { SPELL_SCROLLS } from '../../utils/spellScrolls';
 import { EquipmentItem } from '../../types';
 import { RecipeCard, IngredientRequirement, RecipeStatPreview } from './RecipeCard';
+import { Sparkles } from 'lucide-react';
 
 export interface ScrollScriptoriumTabProps {
   inventoryMaterials: { [matId: string]: number };
@@ -14,6 +15,7 @@ export interface ScrollScriptoriumTabProps {
   equipmentInventory?: EquipmentItem[];
   onCraftSpellScroll?: (templateId: string) => void;
   onCraftRecallScroll?: () => void;
+  onTriggerScriptorium?: (templateId: string) => void;
   searchQuery?: string;
 }
 
@@ -23,6 +25,7 @@ export const ScrollScriptoriumTab: React.FC<ScrollScriptoriumTabProps> = ({
   equipmentInventory = [],
   onCraftSpellScroll,
   onCraftRecallScroll,
+  onTriggerScriptorium,
   searchQuery = '',
 }) => {
   const filteredScrolls = SPELL_SCROLLS.filter((scroll) => {
@@ -102,7 +105,17 @@ export const ScrollScriptoriumTab: React.FC<ScrollScriptoriumTabProps> = ({
                 statsPreview={stats}
                 canCraft={canCraft}
                 onCraft={() => onCraftSpellScroll?.(template.id)}
-                craftButtonLabel={`Scribe ${template.name.replace('Scroll of ', '')}`}
+                craftButtonLabel={`Direct Scribe (Normal)`}
+                secondaryAction={
+                  onTriggerScriptorium
+                    ? {
+                        label: 'Trace Leyline Glyph (Masterwork +30%)',
+                        icon: <Sparkles className="w-3.5 h-3.5 text-amber-400" />,
+                        onClick: () => onTriggerScriptorium(template.id),
+                        tooltip: 'Engage in interactive rune tracing to craft a Masterwork scroll with enhanced damage and 0 MP cast cost!',
+                      }
+                    : undefined
+                }
                 ownedCount={ownedCount}
                 disabledReason={!canCraft ? 'Missing parchment or catalyst elements' : undefined}
                 themeColor="sky"

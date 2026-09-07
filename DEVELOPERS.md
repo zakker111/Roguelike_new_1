@@ -27,9 +27,9 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── 📂 ai                  # Modular AI Behavior & Enemy/Civilian Decision Trees
   │   │   ├── types.ts           # AI parameter context and state interfaces
   │   │   ├── aiTurnEnvironment.ts # Status ticks, weather/season modifiers, roaming spawns
-  │   │   ├── useFollowerAI.ts   # Companion follow logic, ranged positioning, defensive assist
+  │   │   ├── useFollowerAI.ts   # Companion follow logic, ranged positioning, defensive assist & tactical retreat
   │   │   ├── useTownGuardAI.ts  # Town defense threat response, 30-tile alarm broadcast, day/night shifts
-  │   │   ├── useHostileAI.ts    # Stagger posture, telegraphed attacks, wagon targeting, BRACE/DODGE
+  │   │   ├── useHostileAI.ts    # Stagger posture, telegraphed attacks, wagon targeting, BRACE/DODGE & defender focus
   │   │   ├── useCivilianAI.ts   # Cat wandering, civilian schedules, weather shelter, hero counter-attacks
   │   │   ├── aiCombatAggregator.ts # Aggregated floating combat text & caravan skirmish resolution
   │   │   └── useEnemyAI.ts      # Turnkey AI coordinator executing turn-based AI resolution
@@ -37,6 +37,13 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   └── useGodPanelState.ts # Centralized cheats, arena warp, spawn dispatch & sim runners
   │   ├── 📂 app                 # Extracted App-Level Orchestration Hooks
   │   │   ├── usePlayerTurnMovement.ts # Turn steps, chunk loading, terrain hazards, traps, and looting
+  │   │   ├── 📂 movement        # Modular Movement & Collision Sub-Engine
+  │   │   │   ├── types.ts       # Movement context & collision payload interfaces
+  │   │   │   ├── useStepResolver.ts # Tile collisions, boundaries, followers, doors
+  │   │   │   ├── useTerrainHazards.ts # Mud/ice/sand terrain modifiers & traps
+  │   │   │   ├── useTileLooting.ts  # Tiered chest loot distribution & gold pickup
+  │   │   │   ├── useChunkTransition.ts # Continuous overworld streaming boundaries
+  │   │   │   └── index.ts       # Movement sub-engine barrel export
   │   │   ├── useGKeyInteraction.ts    # Multi-context G-key interaction router (signs, beds, bushes, shrines, NPCs)
   │   │   ├── useAutoplayAgent.ts      # Autonomous playtesting AI agent for automated runs
   │   │   ├── useShopAndTradeHandlers.ts # Merchant shopping, regional trade buy/sell, tariffs
@@ -85,13 +92,16 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── tileMapRenderer.ts     # Viewport-culled tile map grid renderer
   │   ├── entityLayerRenderer.ts # Entities, enemies, player, projectiles & floating text layer
   │   ├── shadowRenderer.ts      # Dynamic sun/moon 24h directional drop shadow renderer
+  │   ├── waterShimmerRenderer.ts# Procedural sine-wave specular ripples, wave foam lines & crystalline glints
+  │   ├── biomeAtmosphereRenderer.ts# Ambient micro-particles (snowflakes, fireflies/wisps, volcanic embers)
   │   ├── visualFxParticleSystem.ts# Particle system: water ripples, rain footstep splashes, spell bursts
   │   ├── weatherLightingRenderer.ts# Weather lighting shaders, weather overlay cross-fades & transition fog
   │   ├── spriteAnimationManager.ts# Multi-frame 4-directional sprite state machine
   │   ├── spriteRenderer.ts      # Optimized sprite rendering & emoji regex caching
   │   ├── AssetPreloader.ts      # Asynchronous tile-sheet & sprite image loader
   │   ├── TilesetAtlasManager.ts # Sprite sheet grid & autotile coordinate mapper
-  │   └── VFXEmitter.ts          # Decoupled real-time particle VFX emitter queue
+  │   ├── VFXEmitter.ts          # Decoupled real-time particle VFX emitter queue
+  │   └── index.ts               # Canvas engine barrel export
   │
   ├── 📂 world                   # Isolated World & Dungeon Generators
   │   ├── 📂 dungeon              # Modular Dungeon Generation Sub-Engine
@@ -135,6 +145,16 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── GameCanvas.tsx         # Canvas-based Grid Rendering Engine
   │   ├── GameLog.tsx            # Animated adventure log with filter chips & auto-scroll
   │   ├── CraftingPanel.tsx      # Modular Arcanum Workbench Panel
+  │   ├── 📂 crafting            # Modular Crafting Sub-Components & Stations
+  │   │   ├── CraftingHeader.tsx # Discipline tabs switcher & search filter
+  │   │   ├── RecipeCard.tsx     # Cost badges & level requirement cards
+  │   │   ├── WeaponForgingTab.tsx # Weapon/armor forging & tier smithing
+  │   │   ├── CookingTab.tsx     # Campfire culinary recipes & stamina rations
+  │   │   ├── AlchemyTab.tsx     # Potion brewing & elixir synthesis
+  │   │   ├── CampAndToolsTab.tsx # Survival tools, hatchets, pickaxes & campfire deployables
+  │   │   ├── ScrollScriptoriumTab.tsx # Spell scroll scribing & arcane glyph matrices
+  │   │   ├── MutationCatalystTab.tsx # Elemental catalyst equipment infusions
+  │   │   └── GearUpgradeTab.tsx # Tier upgrades & equipment repair
   │   ├── UnifiedInventoryPanel.tsx # Decoupled composer coordinating modular sub-components
   │   ├── 📂 inventory           # Modular Inventory Sub-Components & Panels
   │   │   ├── types.ts                # Inventory interfaces & item rarity evaluators
@@ -144,13 +164,28 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── BackpackSlotGrid.tsx    # Weight bar, sorting, and Allies/Gear/Food/Mats tabs
   │   │   ├── AlchemicalTransmuterPanel.tsx # Portable Wild Alchemical Transmuter UI
   │   │   └── index.ts                # Inventory components barrel export
-  │   ├── ChunkMinimap.tsx       # Overworld 2D Canvas Minimap & POI visualizer
-  │   ├── DifficultyTracker.tsx  # Dynamic Chaos Matrix & Adaptive Threat Level HUD
-  │   ├── ChaosConsole.tsx       # Chaos surge visualizer & mitigation dashboard
-  │   ├── OverforgeGauge.tsx     # Over-forging heat gauge & bellows risk/reward engine
-  │   ├── MutationSynergyPanel.tsx # Dual-element mutation synergy matrix & strain gauge
-  │   ├── AudioSettingsModal.tsx # Volume sliders & sound preferences modal
-  │   ├── AudioOscilloscopeStudio.tsx # 60 FPS WebAudio oscilloscope & synth studio
+  │   ├── 📂 worldmap            # Modular Cartography World Map & Sector Intelligence
+  │   │   ├── types.ts                # World map POIs, chunk models, pins & TraversalIndex
+  │   │   ├── chunkTileRasterizer.ts  # Micro-tile surface rasterizer with topographic relief & dual LRU cache
+  │   │   ├── WorldMapHeader.tsx      # Compass header, coordinate breadcrumbs, zoom stepper & filter toggles
+  │   │   ├── WorldMapCanvas.tsx      # Dual-layer interactive canvas, smooth inertia, touch deadzone & Compass D-Pad
+  │   │   ├── WorldMapChunkTooltip.tsx # Collapsible sector dossier with minimize pill & reticle frame
+  │   │   ├── WorldMapPinsList.tsx    # Discovered Leyline Waystones and custom user explorer pins
+  │   │   ├── CustomPinEditorModal.tsx # Landmark pin editor with icon palette and color picker
+  │   │   ├── WorldMapLegend.tsx      # Cartographer's map legend and interactive controls guide
+  │   │   ├── WorldMapModal.tsx       # Standalone modal wrapper
+  │   │   └── index.ts                # World map barrel export
+  │   ├── 📂 guild               # Modular Sunder Guild Sub-Engine
+  │   │   ├── types.ts                # Guild tabs, props interfaces & safehouse storage contracts
+  │   │   ├── useGuildOperations.ts   # Guild operations hook (HQ, research, war, vault, expeditions)
+  │   │   ├── GuildHeaderBar.tsx      # Navigation tabs with responsive badge indicators
+  │   │   ├── GuildHQPanel.tsx        # Headquarters founding, laboratory research & passive registry
+  │   │   ├── GuildSanctuaryPanel.tsx # Custom installments, trophies & decor buffs
+  │   │   ├── GuildFactionWarPanel.tsx # Faction gear blueprints, war treasury & conquest map
+  │   │   ├── GuildMissionBoard.tsx   # Companion expedition dispatch board & rewards ledger
+  │   │   ├── GuildStashPanel.tsx     # Dual-pane vault storage with Quick Stash All & safehouse rest
+  │   │   ├── GuildTreasuryPanel.tsx  # Composed facade delegating to sub-panels
+  │   │   └── index.ts                # Guild barrel export
   │   ├── 📂 god                 # Sovereign Developer Console Panels
   │   │   ├── GodStorytellerPanel.tsx # GM Storyteller mood, boredom & encounter console
   │   │   ├── GodItemSpawner.tsx      # Declarative item & equipment spawner
@@ -158,22 +193,31 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── GodWorldEditor.tsx      # Tile painter & map generator
   │   │   ├── GodDungeonEditor.tsx    # Grid-Based Custom Dungeon Editor & Painter
   │   │   ├── GodModdingTab.tsx       # Live JSON Schema Mod Manager & Plugin Console
-  │   │   ├── GodCheatsTab.tsx        # Developer cheats, stat overrides & God Mode
+  │   │   ├── GodCheatsTab.tsx        # Developer cheats, stat overrides, God Mode & Realm PNG Exporter
   │   │   ├── GodAdminEditor.tsx      # Raw game state JSON import/export
   │   │   ├── GodEnemyBlueprintEditor.tsx # Custom enemy blueprint designer
   │   │   ├── GodReplaySimulator.tsx  # Turn action replay scrubber
   │   │   └── GodSmoketestTab.tsx     # Client-side virtual smoke test suite panel
-  │   ├── 📂 crafting            # Crafting Arcanum Sub-Tabs
-  │   │   ├── CookingTab.tsx      # Hearth & campfire culinary recipes
-  │   │   ├── AlchemyTab.tsx      # Apothecary potion brewing & tier upgrades
-  │   │   ├── CampAndToolsTab.tsx # Survival tools & recall scroll scribing
-  │   │   └── ScrollScriptoriumTab.tsx # Spell scroll scribing arcanum
-  │   ├── 📂 guild               # Guild HQ Treasury & Mission Board Panels
-  │   └── 📂 modals              # Standalone Modal Overlays
-  │       ├── TradeModal.tsx     # Merchant trading & caravan departures
-  │       ├── DialogueModal.tsx  # NPC conversation trees & tavern gossip
-  │       ├── CaravanActiveOverlay.tsx # Caravan travel progress & wagon HP
-  │       └── DiscardItemModal.tsx # Item discard & ground loot drop gump
+  │   ├── 📂 panels              # Dedicated Sidebar & Command Panels
+  │   │   ├── PlayerSidebarPanel.tsx  # Health/Mana, stats, buffs, companions, quick spells
+  │   │   ├── MobileCommandPad.tsx    # Touch D-Pad & mobile action buttons
+  │   │   └── MobileHudBar.tsx        # Compact mobile status grid
+  │   ├── 📂 screens             # Major Game State Screens
+  │   │   ├── StartScreen.tsx         # Title screen, class selection & new game init
+  │   │   ├── GameOverScreen.tsx      # Permadeath summary & run stats
+  │   │   └── VictoryScreen.tsx       # Campaign victory screen
+  │   ├── 📂 modals              # Standalone Modal Overlays
+  │   │   ├── TradeModal.tsx     # Merchant trading & caravan departures
+  │   │   ├── DialogueModal.tsx  # NPC conversation trees & tavern gossip
+  │   │   ├── CaravanActiveOverlay.tsx # Caravan travel progress & wagon HP
+  │   │   └── DiscardItemModal.tsx # Item discard & ground loot drop gump
+  │   ├── ChunkMinimap.tsx       # Overworld 2D Canvas Minimap & POI visualizer
+  │   ├── DifficultyTracker.tsx  # Dynamic Chaos Matrix & Adaptive Threat Level HUD
+  │   ├── ChaosConsole.tsx       # Chaos surge visualizer & mitigation dashboard
+  │   ├── OverforgeGauge.tsx     # Over-forging heat gauge & bellows risk/reward engine
+  │   ├── MutationSynergyPanel.tsx # Dual-element mutation synergy matrix & strain gauge
+  │   ├── AudioSettingsModal.tsx # Volume sliders & sound preferences modal
+  │   └── AudioOscilloscopeStudio.tsx # 60 FPS WebAudio oscilloscope & synth studio
   │
   ├── 📂 data                    # Static Game Databases & Declarative JSON Schemas
   │   ├── balance.ts             # Centralized XP leveling formulas, armor mitigation, & combat curves
@@ -223,6 +267,8 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── ambientSoundscapes.ts # Continuous environmental audio layers (rain, blizzards, winds, caves)
   │   │   ├── soundCatalog.ts    # Procedural sound design definitions for UI, spells, combat, loot, crafting
   │   │   └── index.ts           # Unified audio barrel export
+  │   ├── 📂 worldmap            # World Map & Cartography Utilities
+  │   │   └── worldMapPngExporter.ts # Whole realm 40% scale offscreen canvas rasterizer & PNG exporter
   │   ├── bestiary.ts            # Bestiary lookup utilities & monster categorizer
   │   ├── buildingAudio.ts       # Building interior detection & acoustic filtering rules
   │   ├── caravanAndTerritory.ts # Caravan schedules, traveling guards, and territory conquest maps
@@ -255,7 +301,8 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── overworldTownGen.ts# Settlement layouts, harbors & castle keeps
   │   │   ├── overworldWildernessGen.ts # Wilderness terrain, lakes & hazards
   │   │   ├── overworldLivelySpawners.ts# Traveling merchants & bandit camps
-  │   │   └── overworldChunkGen.ts # Chunk assembler orchestrator
+  │   │   ├── overworldChunkGen.ts # Chunk assembler orchestrator
+  │   │   └── asyncChunkBatcher.ts # Asynchronous chunk streaming & non-blocking background pre-generation
   │   ├── questData.ts           # Quest tracking helpers & status validators
   │   ├── relics.ts              # Relic lookup and passive effect evaluators
   │   ├── scars.ts               # Permadeath "Scars of the Defeated" Generator
@@ -270,9 +317,19 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── wildernessCamping.ts   # Wilderness Campsite Quality, Insulation & Night-Watch Sentry Engine
   │   └── worldThreat.ts         # Adaptive world threat & chaos calculation
   │
-  └── 📂 tests                   # Automated Vitest Engine Test Suites (50 test files, 308 tests)
+  └── 📂 tests                   # Automated Vitest Engine Test Suites (52 test files, 315 tests)
       ├── ai.test.ts             # Pathfinding, Bresenham line of sight & enemy AI tests
+      ├── appHooksAndGameStateFactory.test.ts # App hooks & game state factory tests
+      ├── audioEngineModular.test.ts # WebAudio synthesizer node graphs & sound catalog
+      ├── automatedButtonSuite.test.ts # Interactive UI buttons across all top-level tabs & overlays
+      ├── automatedCraftingButtonSuite.test.ts # Crafting, smithing, alchemy & cooking action buttons
+      ├── automatedGodAndStudioButtonSuite.test.ts # Sovereign Developer cheats & Audio Oscilloscope buttons
+      ├── automatedGuildButtonSuite.test.ts # Sunder Guild operations, vault stash & war buttons
+      ├── automatedInventoryButtonSuite.test.ts # Inventory 8-slot paperdoll & attribute buttons
+      ├── automatedSaveLoadAndMigrationSuite.test.ts # Save serialization, migration & corrupt state handling
+      ├── automatedWorldMapButtonSuite.test.ts # World map cartography, waystones & custom pins buttons
       ├── berryBushAndRegenBatching.test.ts # Berry bush harvesting & regen batching
+      ├── biomesAndUniqueDungeons.test.ts # 7 Whittaker biomes & 10 unique dungeon floor layouts
       ├── caravanEncounters.test.ts # D20 caravan road encounter triggers & rewards
       ├── combat.test.ts         # Combat damage, armor mitigation & attack resolution
       ├── combatBatching.test.ts # Turn combat batching & performance tests
@@ -287,20 +344,31 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
       ├── endToEndGameplaySimulation.test.ts # End-to-end 50-turn gameplay, commerce, guild & save
       ├── fallingLeaves.test.ts  # Ambient falling leaf, blossom & spore particles
       ├── gameplaySimulation.test.ts # Simulated multi-turn dungeon crawls & turn solver
+      ├── guildModularPanels.test.ts # Sunder Guild modular panels & safehouse storage
       ├── harborPort.test.ts     # Coastal harbor towns, docks & nautical trades
       ├── hooksIntegration.test.ts # Domain hook integration & state synchronization
+      ├── inventoryComponents.test.ts # Modular inventory sub-components & biometrics
       ├── itemsAndInventory.test.ts # Inventory stacking, weight encumbrance & item durability
       ├── logAndDiagnostics.test.ts # Combat log formatting, diagnostic events & level scaling
+      ├── modularAIEngine.test.ts# Autonomous AI modular sub-engine tests
       ├── npcDialogue.test.ts    # Weather and time reactive NPC dialogue trees
       ├── npcSchedulesAndShelter.test.ts # NPC daily routines, weather shelter & tavern drinking
+      ├── organicWorldGen.test.ts# Multi-octave continuous noise, rivers & clustered vegetation
       ├── saveLoad.test.ts       # Serialization, save integrity validation & corruption handling
       ├── settlementScalingAndTaverns.test.ts # Settlement tier scaling & tavern layouts
       ├── shadowRenderer.test.ts # Dynamic sun & moon 24h directional drop shadows
       ├── spellsAndMana.test.ts  # Active spells catalog, mana costs & scroll conversions
       ├── storytellerAI.test.ts  # GM state, personality shifts & encounter triggers
+      ├── storytellerModule.test.ts # Modular GM Storyteller sub-engine & chaos surges
+      ├── toolHarvestingDurability.test.ts # Hatchet/pickaxe tool requirements & durability decay
+      ├── waterShimmerAndAtmosphere.test.ts # Water ripple sine-waves & micro-particle atmosphere
+      ├── waystonesAndCustomPins.test.ts # Leyline waystones, custom pins & fast travel
       ├── weatherAndMutations.test.ts # Weather effects, catalyst multipliers & dual-element synergies
       ├── wildernessEnemyTierVariance.test.ts # Wilderness monster tier variance & affix scaling
-      └── worldGen.test.ts       # Chunk generation, biomes & dungeon floor layouts
+      ├── worldDungeonModular.test.ts # Modular dungeon sub-engine & room generation
+      ├── worldGen.test.ts       # Chunk generation, biomes & dungeon floor layouts
+      ├── worldMap.test.ts       # World map cartography, tile rasterizer & sector intelligence
+      └── worldMapPngExporter.test.ts # 40% scale Realm PNG exporter rasterization & export tests
 ```
 
 ---
@@ -485,10 +553,45 @@ The engine will **automatically** parse your configuration for combat buffs, mov
 
 ---
 
-## 👾 How to Create Custom Enemies
+## 👾 How to Create Custom Enemies & Behavioral AI Roles
 
 You can declare custom enemies by pushing templates into `window.customEnemies` or configuring `src/data/enemies.json`.
-- Enemies support standard pathfinding (`speed`), attack ranges (`range`), defensive parameters (`baseDef`), and visual avatars (`char`, `color`).
+- **Combat Parameters**: Enemies support pathfinding speed (`speed`), attack ranges (`range`), defensive parameters (`baseDef`), health (`baseHp`), attack power (`baseAtk`), and visual avatars (`char`, `color`).
+- **Behavioral AI Archetypes (`aiRole`)**:
+  - `'melee'`: Standard front-line combatant. Advances directly towards targets and strikes in melee range.
+  - `'skirmisher_kiting'`: Tactical ranged marksman / spellcaster. Advances to optimal 3–4 tile range. If a player or defender encroaches into melee (<= 2 tiles), calculates retreat vectors and kites backward to re-establish range before firing.
+  - `'support_healer'`: Backline medic / shaman. Scans for wounded allies with HP < 75% within 6 tiles, casting restorative spells (+25% HP) on teammates with dynamic cooldown tracking (`supportSpellCooldown`).
+  - `'support_buffer'`: Arcane totem / buffer. Prioritizes buffing elite and boss allies within 5 tiles with ATK/DEF enhancements.
+  - `'tank'`: High-health, heavy vanguard that engages threats and absorbs pressure.
+  - `'ambusher'`: High-evasion stealth or burrowing predator that strikes with high critical potency.
+
+Example Enemy JSON Schema:
+```json
+{
+  "Necromancer": {
+    "name": "Acolyte Necromancer",
+    "baseHp": 20,
+    "baseAtk": 4,
+    "baseDef": 1,
+    "range": 4,
+    "speed": 1.1,
+    "char": "🧙",
+    "color": "#a855f7",
+    "aiRole": "support_healer"
+  },
+  "SkeletonMage": {
+    "name": "Skeleton Spellflinger",
+    "baseHp": 14,
+    "baseAtk": 4,
+    "baseDef": 0,
+    "range": 4,
+    "speed": 1.0,
+    "char": "S",
+    "color": "#60a5fa",
+    "aiRole": "skirmisher_kiting"
+  }
+}
+```
 
 ---
 
@@ -1049,13 +1152,59 @@ The engine relies on pure **procedural WebAudio synthesis** in `src/utils/audio.
 
 ---
 
+---
+
+## 🗺️ Cartography & Deep-Zoom World Map Engine (`src/components/worldmap/` & `src/utils/worldmap/`)
+
+The cartography system features an interactive, decoupled multi-layer sector visualizer with continuous coordinate tracking, dynamic frontier bounds expansion, and high-performance rasterization:
+
+### 1. Dual-Canvas Decoupled Rendering Architecture (`WorldMapCanvas.tsx`)
+To ensure high performance without layout thrashing:
+- **Static Background Layer Canvas**: Renders discovered chunk terrain tiles, elevation contours, highway road splines, river water channels, settlement icons, and POI markers.
+- **Dynamic Foreground Layer Canvas**: Operates in an animation loop rendering hero beacon pulse rings, animated Leyline Waystone auras, custom pin glow rings, and selected sector reticles.
+- **Dynamic Frontier Bounds**: The map bounding box expands dynamically based on the maximum extents of player discovery, keeping the entire known realm within coordinate view.
+
+### 2. Topographic Hillshading & Double LRU Cache (`chunkTileRasterizer.ts`)
+- **Topographic Relief Lighting**: Computes Lambertian surface illumination from the Northwest (315° azimuth, 45° solar elevation) based on elevation gradients across adjacent chunk tiles.
+- **Contour Intervals & Alpine Snow**: Renders subtle 5-step elevation contour lines, oceanic depth factors for coastal tiles, and alpine snow cap frost on mountain peaks.
+- **Dual LRU Cache**: Employs two in-memory LRU canvas caches (a 64-entry micro-tile cache and a downsampled LOD macro canvas cache) to eliminate redundant per-frame tile generation.
+
+### 3. Whole Realm 40% Scale PNG Exporter (`src/utils/worldmap/worldMapPngExporter.ts`)
+- **Offscreen Canvas Rasterization**: Constructs an offscreen canvas scaling all discovered chunks to 40% resolution ($10 \times 10$ pixels per tile).
+- **High-Resolution Visual Export**: Exports full terrain topography, river splines, road networks, settlements, POI icons, and cartographic grid lines into a standalone downloadable PNG.
+- **Direct Trigger**: Available in the World Map header button bar and via the Sovereign God Panel (`exportRealmMapToPng(gameState)`).
+
+### 4. Mobile Touch Gestures & Momentum Inertia Physics
+- **6px Drag Deadzone**: Prevents accidental sector selection when initiating swipe gestures on mobile viewports.
+- **Velocity Tracking & Smooth Inertia**: Samples touch movement delta vectors (`velocityX`, `velocityY`) with exponential decay damping (`friction = 0.92`) to provide smooth momentum panning on drag release.
+- **Drag Hover Suppression**: Automatically deactivates mouse/touch tooltip overlays during active panning to prevent inspection cards from obstructing navigation.
+- **Collapsible Sector Inspection Card (`WorldMapChunkTooltip.tsx`)**: Includes an interactive minimize/expand pill toggle (`ChevronDown`/`ChevronUp`), close button (`✕`), and selected sector glowing reticle frame (`#38bdf8`).
+- **Floating Mobile Compass Navigator**: Renders an ergonomic touch D-pad overlay with instant directional stepping, zoom steppers, center hero (`Crosshair`), and center Oakhaven [0,0] (`Home`).
+
+---
+
+## 🐾 Follower Tactical AI, Defensive Intercepts & Dead State Persistence (`src/hooks/ai/`)
+
+Follower AI (`src/hooks/ai/useFollowerAI.ts`) governs companion movement, tactical positioning, and combat coordination:
+
+### 1. Multi-Archetype Combat Behavior
+- **Dynamic Range Detection**: Evaluates companion weapon type to determine engagement distance (Bows engage at 4-tile range, Magic Staves at 3 tiles, Spears at 2 tiles, Swords/Daggers at 1 tile).
+- **Tactical Fallback & Retreat**: When companion HP drops below 30%, defensive instincts trigger, causing the follower to fall back toward the player's coordinate and avoid melee clashes.
+- **Hostile Defender Priority**: Monsters dynamically prioritize engaged followers and town guards over passive player movement, creating engaging frontline skirmishes.
+
+### 2. Companion Dead State & Transition Persistence
+- **Zero-HP Death State**: When a follower's HP reaches 0, `isDead: true` is permanently stamped onto the follower entity.
+- **Transition Safeguards**: Follower arrays preserve `isDead` flags during dungeon stairs transitions, overworld chunk boundaries, and save/load serialization, preventing dead companions from reviving or ghost-attacking.
+
+---
+
 ## 🧪 Automated QA, Import Health Audit & Testing Suite
 
-The codebase is protected by an automated QA & testing suite with 100% passing status across **49 Vitest test suites (295 total unit, simulation & automated interaction tests)**.
+The codebase is protected by an automated QA & testing suite with 100% passing status across **51 Vitest test suites (310 total unit, simulation & automated interaction tests)**.
 
 ### 🛠️ Developer Scripts
-- **`npm run audit`**: Launches the comprehensive codebase auditor (`scripts/auditCodebase.cjs`), verifying 378 source files, 29 JSON data catalog files, and relative import resolutions across all TypeScript files. It then runs TypeScript type checking (`tsc --noEmit`) and all 49 Vitest test suites.
-- **`npm test`**: Runs all 49 Vitest test suites (`vitest run`).
+- **`npm run audit`**: Launches the comprehensive codebase auditor (`scripts/auditCodebase.cjs`), verifying 383 source files, 29 JSON data catalog files, and relative import resolutions across all TypeScript files. It then runs TypeScript type checking (`tsc --noEmit`) and all 51 Vitest test suites.
+- **`npm test`**: Runs all 51 Vitest test suites (`vitest run`).
 - **`npm run lint`**: Performs TypeScript type verification without emitting build artifacts (`tsc --noEmit`).
 - **`npm run build`**: Compiles the application for production deployment with Vite (`vite build`).
 
@@ -1114,9 +1263,439 @@ The God Panel features an interactive command line that accepts GM slash command
 4. **Performance & Diagnostics Monitor (`GodDiagnosticsTab.tsx`)**:
    - Real-time performance readouts: active FPS, canvas draw calls per frame, particle count, active entity count, overworld chunk memory footprint, and WebAudio synthesizer node usage.
 
+---
 
+## 🎨 Pluggable Dual-Mode Graphics Engine & Sprite Sheet Guide (`/src/canvas/`)
 
+The rendering pipeline is built on a modular, pluggable **Hybrid Graphics Architecture** (`HybridGraphicsEngine.ts`) allowing seamless toggling between high-DPI procedural glyphs and sprite-sheet texture atlases.
 
+### 1. Default Visual Mode & Dynamic Switching
+- **Default Mode**: The engine defaults to **`classic_glyph`** mode (`getStoredGraphicsMode()` in `src/canvas/types.ts`).
+- **High-DPI Procedural Glyph Rendering**: In `classic_glyph` mode, every tile, monster, guard, animal, and structure is rendered with Crisp Unicode typography, distinct elemental color codes, directional shadows, smooth Lerp interpolation, animated water specular shimmer, and equipment paperdoll overlays.
+- **1-Click Mode Switching**: Players and developers can switch anytime using the **`🔲 Classic ASCII` / `🎨 Animated Tileset`** button in the header bar or programmatically:
+  ```typescript
+  import { hybridGraphicsEngine } from '../canvas';
 
+  // Toggle between 'classic_glyph' and 'animated_tileset'
+  hybridGraphicsEngine.toggleMode();
 
+  // Or set explicitly
+  hybridGraphicsEngine.setMode('animated_tileset');
+  ```
+- **State Persistence**: The current graphics mode is saved in `localStorage` under `roguelike_graphics_mode`.
 
+---
+
+### 2. Sprite Sheet & Atlas Layout Specifications
+
+When in `animated_tileset` mode, the engine accesses sprite coordinates managed by `TilesetAtlasManager.ts` and loaded through `AssetPreloader.ts`.
+
+#### A. Terrain Tileset Atlas Layout (`main_tileset`)
+- **Base Grid Size**: $32 \times 32$ pixels per tile.
+- **Cardinal Autotiling Bitmask**: Walls, Water channels, Roads, and Fences use a 16-bitmask matrix ($N=1, E=2, S=4, W=8$):
+  - `(0, 0)`: Isolated pillar (Bitmask 0)
+  - `(1, 0)`: End North (Bitmask 1)
+  - `(2, 0)`: End East (Bitmask 2)
+  - `(3, 0)`: Corner North-East (Bitmask 3)
+  - `(0, 1)`: End South (Bitmask 4)
+  - `(1, 1)`: Straight North-South (Bitmask 5)
+  - `(2, 1)`: Corner South-East (Bitmask 6)
+  - `(3, 1)`: T-Junction North-East-South (Bitmask 7)
+  - `(0, 2)`: End West (Bitmask 8)
+  - `(1, 2)`: Corner North-West (Bitmask 9)
+  - `(2, 2)`: Straight East-West (Bitmask 10)
+  - `(3, 2)`: T-Junction North-East-West (Bitmask 11)
+  - `(0, 3)`: Corner South-West (Bitmask 12)
+  - `(1, 3)`: T-Junction North-South-West (Bitmask 13)
+  - `(2, 3)`: T-Junction South-East-West (Bitmask 14)
+  - `(3, 3)`: Cross Intersection North-East-South-West (Bitmask 15)
+
+#### B. Entity & Character Animation Atlas Layout (`entity_tileset`)
+- **Dimensions**: $32 \times 32$ pixels per frame.
+- **Directional Rows**:
+  - Row 0 (`sy = 0`): South (Facing Forward/Down)
+  - Row 1 (`sy = 32`): West (Facing Left)
+  - Row 2 (`sy = 64`): East (Facing Right)
+  - Row 3 (`sy = 96`): North (Facing Up)
+- **Animation Action Columns**:
+  - Cols 0–3 (`sx = 0..96`): **Idle** animation frames (4-frame breathing cycle)
+  - Cols 4–7 (`sx = 128..224`): **Walk** animation frames (4-frame stepping cycle)
+  - Cols 8–11 (`sx = 256..352`): **Attack / Swipe** animation frames
+  - Cols 12–13 (`sx = 384..416`): **Hurt / Stagger** reaction frames
+  - Cols 14–15 (`sx = 448..480`): **Spellcast / Channeling** frames
+
+---
+
+### 3. How to Preload Custom Sprite Sheets
+To load custom PNG sprite sheets (e.g. from `/assets/tileset.png` or external CDNs):
+```typescript
+import { assetPreloader } from '../canvas';
+
+// Preload terrain atlas
+await assetPreloader.preloadAtlas('main_tileset', '/assets/dungeon_tileset.png');
+
+// Preload entities/monsters atlas
+await assetPreloader.preloadAtlas('entity_tileset', '/assets/creatures_atlas.png');
+```
+
+#### 🛡️ Zero-Break Automatic Fallback
+If an atlas image is not loaded or fails to load, `TilesetRenderer.ts` automatically intercepts draw calls and executes the high-DPI procedural glyph renderer. The game will never crash, stall, or display black boxes.
+
+---
+
+## ⚔️ Combat VFX, Ballistic Projectiles & Decals (`combatVfxEngine.ts`)
+
+The **Combat VFX Engine** unifies projectile trajectories, directional melee slashes, impact particle bursts, and persistent ground decals across both classic and tileset modes.
+
+### 1. Ballistic Projectile Engine (`projectileEngine.ts`)
+Supports 4 trajectory dynamics:
+- **`parabolic`**: Curved ballistic arc for bows, thrown daggers, throwing axes, and javelins.
+- **`serpentine`**: Sinusoidal weaving wave for Frostbolts, Ice shards, and Poison darts.
+- **`spiral`**: Orbiting vortex for Void siphons and Shadow bolts.
+- **`straight`**: Direct high-speed beam for Fireballs, Magic Missiles, and Lightning javelins.
+
+#### Spawning a Custom Projectile:
+```typescript
+import { combatVfxEngine } from '../canvas';
+
+combatVfxEngine.spawnProjectile({
+  fromX: playerX,
+  fromY: playerY,
+  toX: enemyX,
+  toY: enemyY,
+  color: '#f97316',
+  coreColor: '#fed7aa',
+  symbol: '🔥',
+  shape: 'sphere',
+  trajectory: 'parabolic',
+  speed: 14.0,
+  trailParticles: true,
+  onImpact: (hitX, hitY) => {
+    // Spawn directional impact decal & burst
+    combatVfxEngine.spawnDecal('scorch', hitX, hitY);
+  },
+});
+```
+
+### 2. Directional Melee Slashes & Ground Decals (`meleeVfxEngine.ts`)
+- **Melee Slashes**: Renders curved sweeping slash arcs rotated towards the target vector (N, NE, E, SE, S, SW, W, NW) with dynamic elemental glow.
+- **Persistent Combat Decals**:
+  - `'blood'`: Organic crimson blood splatters that linger and slowly fade on dungeon/overworld ground.
+  - `'scorch'`: Charred, soot-blackened ground burns from fire spells and lava traps.
+  - `'frost'`: Crystalline frost rime patches from ice attacks.
+  - `'stone_fracture'`: Radial fractured stone cracks from heavy bludgeoning hits.
+
+---
+
+## 💡 Dynamic 2D Multi-Point Lighting & Weather Shaders (`lightingEngine.ts`)
+
+The lighting engine provides real-time 2D multi-light rendering with harmonic flame flicker and optical destination-out radial blending.
+
+### 1. Light Emitter Types
+- **Player Lantern**: Follows the player with a warm amber radius ($\approx 145\text{px}$).
+- **Campfires & Fireplaces**: Emits large roaring hearth illumination ($\approx 180\text{px}$) with lively crackling sparks.
+- **Torches & Wall Sconces**: Casts ambient dungeon orange light ($\approx 120\text{px}$).
+- **Lava & Traps**: Deep crimson volcanic glow ($\approx 110\text{px}$).
+- **Shrines & Portals**: Pulsating mystical cyan/violet illumination ($\approx 135\text{px}$).
+
+### 2. Multi-Frequency Harmonic Flame Flicker
+Lights do not pulse in artificial synchrony. They calculate a 3-harmonic sine waveform:
+$$r_{\text{flicker}} = r \times \big(1 + (0.5 \sin(1.7t + \phi) + 0.3 \cos(3.1t + 1.5\phi) + 0.2 \sin(6.3t + 2.3\phi)) \times \text{magnitude}\big)$$
+
+### 3. Weather Ground Interactivity (`weatherInteractivityRenderer.ts`)
+- **Rain Puddle Ripples**: Concentric circular ripples periodically expand and fade on walkable grass, stone paths, and cobblestones.
+- **Droplet Splashes**: Micro-droplets bounce upwards from ground impacts during rainfall.
+- **Snow Accumulation**: In winter, snowy biomes, or blizzard weather, delicate snow caps settle onto tree crowns and stone wall top edges.
+- **Thunderstorm Flash**: Celestial lightning strikes momentarily illuminate the entire screen with day-bright electric light before fading.
+
+---
+
+## 🏛️ Faction Engine & Hostility Matrix (`src/factions/`)
+
+The game features an extensible, modular faction system supporting dynamic standing tiers, merchant price adjustments, and multi-faction turf wars.
+
+### 1. Faction Registry & Standing Tiers (`FactionMatrix.ts`)
+- **Major Factions**:
+  - `iron_pact`: Iron Pact Castle Town Defenders & Citadel Sentries.
+  - `orc_clan`: Bloodfang Orc Clan raiders and warlords.
+  - `shadow_guild`: Outlaw Bandits and highwaymen.
+  - `sunder_guild`: Player-allied Sunder Adventurer Guild.
+  - `nature_spirits`: Forest guardians and dryads.
+  - `undead_scourge`: Crypt skeletons and necromancers.
+- **Reputation Tiers**:
+  - `Hated` ($< -500$): Kill on sight.
+  - `Unfriendly` ($-500 \text{ to } -100$): Hostile interactions, high tariffs ($+50\%$).
+  - `Neutral` ($-100 \text{ to } 100$): Standard trade, wary tolerance.
+  - `Friendly` ($100 \text{ to } 500$): Faction discounts ($-10\%$), quest unlocks.
+  - `Honored` ($500 \text{ to } 900$): Safehouse access, elite gear discounts ($-25\%$).
+  - `Revered` ($> 900$): Legendary faction blueprints and allied reinforcements.
+
+### 2. Hostility & Combat Integration
+```typescript
+import { factionMatrix } from '../factions';
+
+// Check if two entities are hostile
+const isHostile = factionMatrix.areHostile('iron_pact', 'orc_clan'); // true
+
+// Adjust player faction reputation on enemy kill
+factionMatrix.recordKill('orc_clan'); // Decreases orc standing, increases town standing
+```
+
+---
+
+## 🎨 Procedural Mockup Atlas & Dynamic Tileset Engine
+
+The engine provides a complete procedural sprite sheet and tileset generation architecture. It allows rapid testing, instant theme swapping, variable sprite resolution (16px–128px), and native rendering of multi-tile oversized boss entities without external graphic dependencies.
+
+### 1. Architecture Components
+
+1. **`MockupAtlasGenerator.ts`**:
+   - Programmatically synthesizes 4 complete pixel-art texture atlas canvases:
+     - `main_tileset`: Walls, floors, water, grass, paths, doors, stairs, props, and Wang autotile 16-bitmask variations.
+     - `entity_tileset`: 4-directional 4-frame animation sheets for Player, Warrior, Mage, Rogue, Town Guards, Goblins, Skeletons, Orcs, Spiders, Wolves, Slimes, and Cats.
+     - `boss_tileset`: Oversized multi-tile bosses (2x2 Dragons, 2x2 Titan Golems, 3x3 Demon Lords).
+     - `items_tileset`: Weapons, shields, helmets, armor, potions, rings, scrolls, and catalysts.
+   - Supports 4 distinct visual themes:
+     - `classic`: 16-bit retro fantasy (warm stone, verdant foliage, golden trim).
+     - `cyber`: Neon cyan gridlines, magenta energy, holo-circuits.
+     - `forest`: Verdant deepwood, mossy slate, emerald leaf particles.
+     - `infernal`: Volcanic basalt, molten lava, hellfire embers.
+
+2. **`AssetPreloader.ts` (Canvas Injection & Event System)**:
+   - Direct injection of in-memory `HTMLCanvasElement` sources via `registerCanvas(key, canvas)`.
+   - Dynamic `getAtlasSource(key)` returning `CanvasImageSource` (either `HTMLImageElement` or `HTMLCanvasElement`).
+   - Reactive `onAtlasChange(callback)` event listeners that automatically re-render the viewport when a theme or resolution change occurs.
+
+3. **`TilesetAtlasManager.ts` (Dynamic Sizing & Oversized Entity Registry)**:
+   - Dynamic base sprite size configuration (`setSpriteSize(16 | 24 | 32 | 48 | 64)`).
+   - Dynamic coordinate resolution with `getSpriteCoords(entity, animState, direction, frame)`.
+   - **`OversizedEntityConfig`**: Multi-tile entity configuration specifying `widthTiles`, `heightTiles`, source atlas pixel dimensions (`pixelWidth`, `pixelHeight`), and vertical ground anchor (`anchorY`).
+
+### 2. How to Programmatically Generate or Swap Atlases
+
+```typescript
+import { mockupAtlasGenerator } from './canvas/MockupAtlasGenerator';
+import { assetPreloader } from './canvas/AssetPreloader';
+import { tilesetAtlasManager } from './canvas/TilesetAtlasManager';
+
+// 1. Generate all procedural atlases with a theme and sprite size
+mockupAtlasGenerator.generateAllAtlases('cyber', 32);
+
+// 2. Or switch theme on the fly
+mockupAtlasGenerator.setTheme('infernal');
+
+// 3. Or change resolution (e.g. 48x48 HD sprites)
+mockupAtlasGenerator.setBaseSpriteSize(48);
+
+// 4. Export atlas as PNG Data URL for offline editing
+const pngUrl = mockupAtlasGenerator.getDataUrl('entity_tileset');
+```
+
+### 3. Adding New Oversized Boss Entities
+
+To add a new multi-tile creature (e.g., a 2x2 Minotaur or 3x3 Kraken):
+
+```typescript
+import { tilesetAtlasManager } from './canvas/TilesetAtlasManager';
+
+// Register oversized entity blueprint
+tilesetAtlasManager.registerOversizedEntity('minotaur', {
+  entityId: 'minotaur',
+  atlasKey: 'boss_tileset',
+  widthTiles: 2,
+  heightTiles: 2,
+  pixelWidth: 64,
+  pixelHeight: 64,
+  sx: 128,
+  sy: 0,
+  anchorY: 0.92, // Ground anchor offset
+});
+```
+
+### 4. Developer Suite: Tileset Studio Tab
+
+Access the **Tileset Studio** tab in the Sovereign Dev Panel (`F1` or God button):
+- **Theme Switcher**: Instant one-click toggle between Classic, Cyber, Forest, and Infernal themes.
+- **Resolution Scaler**: Live slider (16px to 64px) dynamically re-rasterizing the atlas and canvas.
+- **Atlas Sheet Inspector**: High-resolution zoomable viewer with coordinate grid overlays and PNG export.
+- **Character & Boss Animator**: Interactive 4-directional state machine previewer (Idle, Walk, Attack, Hurt, Cast) with adjustable FPS.
+- **Autotiling 16-Grid**: Visual test matrix for all 16 cardinal connectivity bitmasks (N=1, E=2, S=4, W=8).
+- **Live Test Spawner**: Instant spawn of standard characters or 2x2/3x3 bosses directly adjacent to the player on the active map.
+
+---
+
+## 🎨 Complete Tileset Modding & Hand-Crafting Guide
+
+This section explains exactly **where all tileset and sprite files reside in the codebase** and provides a step-by-step tutorial on **how to create or replace tilesets by hand** (using custom PNG images or pixel-art tools like Aseprite, Photoshop, or GIMP).
+
+### 🎨 0. Dual "Instinct Classic" Tileset Sources: PNG Mockups vs. Procedural Code
+
+The engine establishes **two authoritative classic tileset sources** that share an identical 16×16 coordinate grid contract and can be seamlessly hot-swapped at runtime via the Tileset Studio (`F1` -> Tileset Studio) or `HybridGraphicsEngine.setTilesetSource(...)`:
+
+1. **Instinct Classic (PNG Mockups)** (`TilesetSourceType: 'classic_png'`):
+   - **Source Location**: `/public/tilesets/*.png` (`main_tileset.png`, `entity_tileset.png`, `animations_tileset.png`, `boss_tileset.png`, `items_tileset.png`).
+   - **Asset Builder**: Generated and expanded via `scripts/generateMockupPngs.cjs` (`npm run generate:tilesets`).
+   - **Characteristics**: Pre-rendered, deterministic, pixel-perfect PNG assets suitable for production shipping, external graphic editing, and zero-runtime CPU overhead.
+
+2. **Instinct Classic (Procedural Code)** (`TilesetSourceType: 'classic_code'`):
+   - **Source Location**: `src/canvas/MockupAtlasGenerator.ts`.
+   - **Asset Builder**: Synthesizes 4 complete pixel-art texture atlas sheets in-memory directly onto HTML5 `CanvasRenderingContext2D` objects.
+   - **Characteristics**: Infinite procedural themes (`classic`, `cyber`, `forest`, `infernal`), dynamic resolution scaling (16px–128px), and instant modifiability purely via TypeScript.
+
+---
+
+### 📁 1. Where Tilesets & Sprite Engines Live in the Files
+
+All graphics, sprite-sheets, texture atlases, autotiling matrices, and tile-to-coordinate mappers live under `/src/canvas/` and standalone PNG mockups under `/public/tilesets/`:
+
+| File Path | Core Role & Contents |
+| :--- | :--- |
+| **`/public/tilesets/*.png`** | **Instinct Classic (PNG Mockups)**: Ready-to-use PNG atlases (`main_tileset.png`, `entity_tileset.png`, `animations_tileset.png`, `boss_tileset.png`, `items_tileset.png`) generated by `scripts/generateMockupPngs.cjs`. |
+| **`src/canvas/MockupAtlasGenerator.ts`** | **Instinct Classic (Procedural Code)**: Draws the 4 in-memory texture atlases (`main_tileset`, `entity_tileset`, `boss_tileset`, `items_tileset`) across 4 themes (`classic`, `cyber`, `forest`, `infernal`). Renders procedural pixel art directly onto HTML5 Canvas elements. |
+| **`src/canvas/TilesetAtlasManager.ts`** | **Coordinate & Bitmask Mapping Registry**: Defines grid coordinates (column, row, atlas key) for every `TileType`, trap, chest, door, static prop, dynamic Wang autotile 16-bitmask matrix, entity animation frame mapping, and oversized boss dimensions. |
+| **`src/canvas/AssetPreloader.ts`** | **Image & Canvas Loader / Cache**: Manages loading external PNG images via `preloadAtlas(key, url)` and in-memory canvases via `registerCanvas(key, canvas)`. Emits reactive update notifications when an atlas is swapped. |
+| **`src/canvas/spriteRenderer.ts`** | **Unified Sprite Drawing Engine**: Translates high-level draw requests (`drawSpriteOrAscii`) into pixel-perfect atlas sub-rectangle clipping (`ctx.drawImage(atlas, sx, sy, sw, sh, dx, dy, dw, dh)`), handling frame rate ticks and visual modes. |
+| **`src/canvas/tileMapRenderer.ts`** | **Overworld & Dungeon Chunk Grid Renderer**: Iterates over visible map tiles, resolves biome context, calculates autotiling bitmasks, and renders terrain, walls, decorations, and water shimmer. |
+| **`src/canvas/entityPaperdollEngine.ts`** | **Equipment Paperdoll Layering**: Renders helmets, armor, boots, shields, and weapons as distinct modular layers over character sprites in Tileset mode. |
+| **`src/components/god/TilesetTesterTab.tsx`** | **In-Game Tileset Studio GUI**: Interactive live visual studio (`F1` / God Mode -> Tileset Studio) where you can toggle between **Instinct Classic (PNG)** and **Instinct Classic (Code)**, inspect atlases with grid overlays, test animations, and export procedural tilesets. |
+
+---
+
+### 🎨 2. The 4 Core Texture Atlas Sheets & Grid Layout
+
+The engine organizes all graphics into 4 distinct atlas keys (standard base grid size is **32×32px** per tile, scalable from 16px to 128px):
+
+```
++-------------------------------------------------------------------------------------------------+
+| 1. 'main_tileset' (16 cols × 16 rows = 512×512px @ 32px)                                        |
+| Rows 0-3: 16-Bitmask Autotile Walls (Cardinal N/E/S/W connections)                              |
+| Rows 4-5: Terrain & Autotile Water (Grass, Sand, Snow, Dirt, Paved Stone, Water shores)         |
+| Row 6:    Forest & Foliage (Oak Tree, Pine Tree, Birch Tree, Berry Bush, Stumps)               |
+| Row 7:    Ores & Minerals (Copper Ore Vein, Iron Ore Vein, Gold, Mithril, Rubble)               |
+| Row 8:    Doors, Stairs & Structures (Closed Door, Open Door, Stairs Down, Stairs Up, Waystones) |
+| Row 9:    Traps, Hazards & Props (Spikes, Fire Vent, Poison Gas, Campfires, Anvils, Shrines)     |
+| Rows 10-15: Dungeon Theme Biome Variations (Sunken Crypt, Volcanic Basalt, Ice Cavern)         |
++-------------------------------------------------------------------------------------------------+
+| 2. 'entity_tileset' (16 cols × 16 rows)                                                         |
+| Rows 0-1: Player Character (Idle, Walk, Attack, Hurt - 4 directions × 4 frames)                 |
+| Rows 2-3: Humanoid Allies (Warrior, Mage, Rogue, Town Guards)                                   |
+| Rows 4-11: Common Monsters (Goblins, Skeletons, Orcs, Spiders, Dire Wolves, Cave Slimes, Bats)   |
+| Rows 12-15: NPCs & Townspeople (Blacksmith, Merchant, Innkeeper, Legendary Stray Cats)          |
++-------------------------------------------------------------------------------------------------+
+| 3. 'boss_tileset' (16 cols × 16 rows)                                                           |
+| 2×2, 3×3, and 4×4 Oversized Monsters & Act Bosses (Abyssal Void Lord, Thunder Warlord, Dragon) |
++-------------------------------------------------------------------------------------------------+
+| 4. 'items_tileset' (16 cols × 16 rows)                                                          |
+| Weapons, Shields, Helmets, Armor, Spell Scrolls, Potions, Elemental Catalysts, Gems & Gold Coins|
++-------------------------------------------------------------------------------------------------+
+```
+
+---
+
+### ✍️ 3. How to Create & Add a New Tileset By Hand
+
+You can create and load custom tilesets using two primary methods:
+
+#### Method A: Drawing a Custom PNG Image in an External Editor (Aseprite / GIMP / Photoshop)
+
+1. **Export the Base Template**:
+   - Launch the game and open the **Tileset Studio** tab (`F1` or God Mode button -> **Tileset Studio**).
+   - Click **`Export PNG`** on the `main_tileset` (or `entity_tileset`) canvas to save the default layout as a `.png` file.
+   - Alternatively, open an image editor and create a new image of size **512×512px** (for 32×32px tiles in a 16×16 grid).
+
+2. **Paint Your Custom Tiles**:
+   - Match the cell coordinates specified in `src/canvas/TilesetAtlasManager.ts` (e.g. Row 6 Col 0 = Oak Tree, Row 8 Col 0 = Closed Door, Row 8 Col 2 = Stairs Down).
+   - Use transparent backgrounds for entities, foliage, and props so terrain renders underneath them.
+
+3. **Save Your PNG to the Project**:
+   - Place your custom sprite sheet in the `/public` directory (e.g., `/public/assets/tilesets/my_custom_tileset.png`).
+
+4. **Register and Preload the Custom PNG**:
+   - In `src/canvas/AssetPreloader.ts` (or during app initialization in `src/App.tsx`), call `preloadAtlas`:
+   ```typescript
+   import { assetPreloader } from './canvas/AssetPreloader';
+
+   // Preload your custom PNG sprite sheet
+   await assetPreloader.preloadAtlas('main_tileset', '/assets/tilesets/my_custom_tileset.png');
+   ```
+   - When loaded, `AssetPreloader` automatically replaces the procedural canvas and triggers a clean viewport re-render!
+
+---
+
+#### Method B: Programmatic Pixel-Art in TypeScript (`MockupAtlasGenerator.ts`)
+
+If you prefer writing pure procedural pixel art without external image assets:
+
+1. **Open `src/canvas/MockupAtlasGenerator.ts`**.
+2. **Locate or Add Tile Drawing Routines**:
+   - Scroll to the corresponding draw method (e.g., `drawWallTile`, `drawTreeTile`, `drawDoorTile`, `drawOreVeinTile`).
+   - Use standard HTML5 Canvas 2D context methods (`ctx.fillRect`, `ctx.fillStyle`, `ctx.beginPath`, `ctx.arc`) using integer pixel coordinates:
+   ```typescript
+   // Example: Handcrafting a custom Magic Crystal Shrub at col 5, row 6
+   private drawCrystalShrub(ctx: CanvasRenderingContext2D, px: number, py: number, size: number) {
+     // Base soil shadow
+     ctx.fillStyle = '#1e293b';
+     ctx.fillRect(px + 4, py + size - 6, size - 8, 4);
+
+     // Glowing amethyst crystal spire
+     ctx.fillStyle = '#c084fc';
+     ctx.fillRect(px + 12, py + 8, 8, 16);
+
+     // Facet highlight
+     ctx.fillStyle = '#f3e8ff';
+     ctx.fillRect(px + 14, py + 10, 3, 10);
+   }
+   ```
+3. **Map the Coordinates in `TilesetAtlasManager.ts`**:
+   - If adding a brand new `TileType` or prop, register its static location in `initStaticTileMappings()`:
+   ```typescript
+   this.tileStaticCoords.set('MagicShrub', {
+     atlasKey: 'main_tileset',
+     col: 5,
+     row: 6,
+     frameCount: 1,
+   });
+   ```
+
+---
+
+### 🔄 4. Adding New Autotiling Rules (16-Bitmask Wall & Water Connectivity)
+
+The engine uses a 4-neighbor cardinal bitmask algorithm (`N=1`, `E=2`, `S=4`, `W=8`) to select the seamless connected corner, junction, or wall cap:
+
+1. In `src/canvas/TilesetAtlasManager.ts`, review `initDefaultBitmasks()`:
+   - `bitmask: 0` = Isolated Pillar (`col: 3, row: 3`)
+   - `bitmask: 3` (N+E) = Bottom-Left Corner (`col: 0, row: 2`)
+   - `bitmask: 15` (N+E+S+W) = 4-Way Cross Intersection (`col: 1, row: 1`)
+2. To add a new autotiled terrain type (e.g., Lava Shorelines or Crystal Walls), register a new entry in `this.autotileBitmasks.set(TileType.YourNewTile, customBitmaskConfig)`.
+
+---
+
+### 🧪 5. Testing Your Custom Tileset In-Game
+
+1. Toggle into **Animated Tileset** mode by clicking **`🎨 Tileset`** in the top header bar or pressing `F8` / `Alt+T`.
+2. Open **God Mode** (`F1` or `~`), navigate to the **Tileset Studio** tab, and verify your new atlas coordinates and animation playback.
+3. Step near the new tiles in the overworld or dungeons to confirm pixel alignment, clipping margins, and lighting shader blending.
+
+---
+
+## 🛡️ Merchant Caravan Escort & Tactical Skirmish Sub-Engine
+
+The caravan travel system orchestrates inter-settlement trade expeditions, random overland encounters, and dedicated 24×18 tactical skirmish battlefields.
+
+### 1. State Machine & Flow (`src/hooks/useCaravanTravel.ts`)
+- **Initiation**: `handleStartCaravanTravel(origin, dest, destName, rewardGold)` configures origin/dest chunk coordinates, calculated step count based on Manhattan distance, and initial 100 HP wagon integrity.
+- **Overland Steps**: `handleAdvanceCaravanTravel()` steps along the trade route. Each step rolls for road encounters (`generateRandomCaravanEncounter`) scaled by regional threat tiers.
+- **Encounter Types**:
+  - **Narrative Checks**: Roadblocks, fallen bridges, muddy bogs, mysterious peddlers (resolved via STR, DEX, INT, CHA, or LCK skill checks).
+  - **Hostile Ambushes**: Outlaw bands, beast packs, or Act Boss Ambushes.
+- **Tactical Skirmish Deployment**: When players engage in combat, `handleDeployTacticalBattle` captures a lossless snapshot of the current overworld chunk into `savedOverworldState` (`map`, `discovered`, `visible`, `enemies`, `dungeonProps`, `playerX`, `playerY`, `currentChunkX`, `currentChunkY`).
+- **Skirmish Battlefield (`src/world/caravanSkirmishGen.ts`)**: Generates a self-contained 24×18 arena with central road band, trade carriage wagon prop (`🛒`), guard campfire, 2 allied veteran defenders, and perimeter ambushers.
+- **Victory & Defeat Resolution**:
+  - **Tactical Victory**: In `aiCombatAggregator.ts` and `usePlayerAttack.ts`, defeating all hostile ambushers grants bonus gold/XP and immediately restores the saved overworld state without losing chunk memory.
+  - **Tactical Flee**: In `CaravanActiveOverlay.tsx`, retreating back to the convoy carriage penalizes hull HP while safely restoring the overworld chunk.
+  - **Journey Completion**: Arriving at the destination invokes `handleCompleteCaravanTravel`, validating destination chunk safety via `findNearestSafePlayerTile`, transferring rewards based on preserved wagon hull percentage, and granting bonus elemental catalysts for high integrity (>= 85%).
+- **Zero-Crash Guarantees**:
+  - Full null-safety checks on `updatedChunks` and `nextOverworldChunks`.
+  - Immutable state snapshots prevent map or coordinate desynchronization.
+  - Guard and merchant spawns enforce window and obstacle avoidance algorithms.

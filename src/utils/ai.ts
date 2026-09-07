@@ -6,6 +6,46 @@
 import { TileType } from '../types';
 
 /**
+ * Zero-allocation line tracer using Bresenham's algorithm.
+ * Calls `callback(x, y)` for each point along the line from (x0, y0) to (x1, y1).
+ * If `callback` returns `false`, execution terminates early and returns `false`.
+ * Otherwise returns `true`.
+ */
+export function traceLine(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  callback: (x: number, y: number) => boolean | void
+): boolean {
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+
+  let x = x0;
+  let y = y0;
+
+  while (true) {
+    if (callback(x, y) === false) {
+      return false;
+    }
+    if (x === x1 && y === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y += sy;
+    }
+  }
+  return true;
+}
+
+/**
  * Returns a list of coordinates of a straight line connecting two grid points.
  * Uses Bresenham's Line Algorithm with memoization.
  */
@@ -18,28 +58,10 @@ export function bresenhamLine(x0: number, y0: number, x1: number, y1: number): {
   if (cached) return cached;
 
   const points: { x: number; y: number }[] = [];
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx - dy;
-
-  let x = x0;
-  let y = y0;
-
-  while (true) {
+  traceLine(x0, y0, x1, y1, (x, y) => {
     points.push({ x, y });
-    if (x === x1 && y === y1) break;
-    const e2 = 2 * err;
-    if (e2 > -dy) {
-      err -= dy;
-      x += sx;
-    }
-    if (e2 < dx) {
-      err += dx;
-      y += sy;
-    }
-  }
+    return true;
+  });
 
   if (lineCache.size >= MAX_LINE_CACHE_SIZE) {
     lineCache.clear();
@@ -51,10 +73,15 @@ export function bresenhamLine(x0: number, y0: number, x1: number, y1: number): {
 
 export function hasLineOfSight(x0: number, y0: number, x1: number, y1: number, map: TileType[][]): boolean {
   if (!map || map.length === 0 || !map[0]) return true;
-  const points = bresenhamLine(x0, y0, x1, y1);
-  for (let i = 1; i < points.length - 1; i++) {
-    const p = points[i];
-    const tile = map[p.y]?.[p.x];
+  if (x0 === x1 && y0 === y1) return true;
+
+  let clear = true;
+  traceLine(x0, y0, x1, y1, (x, y) => {
+    // Endpoints do not block sight between themselves
+    if ((x === x0 && y === y0) || (x === x1 && y === y1)) {
+      return true;
+    }
+    const tile = map[y]?.[x];
     if (
       tile === TileType.Wall ||
       tile === TileType.Door ||
@@ -65,10 +92,27 @@ export function hasLineOfSight(x0: number, y0: number, x1: number, y1: number, m
       tile === TileType.PineTree ||
       tile === TileType.BirchTree
     ) {
-      return false;
+      clear = false;
+      return false; // early stop
     }
+    return true;
+  });
+  return clear;
+}
+
+/**
+ * Fast direct matrix allocation without closure creation overhead.
+ */
+export function createBooleanMatrix(width: number, height: number, initialValue: boolean = false): boolean[][] {
+  const matrix: boolean[][] = new Array(height);
+  for (let y = 0; y < height; y++) {
+    const row = new Array(width);
+    for (let x = 0; x < width; x++) {
+      row[x] = initialValue;
+    }
+    matrix[y] = row;
   }
-  return true;
+  return matrix;
 }
 
 /**
@@ -123,9 +167,7 @@ export function computeFOV(
 
   const height = map.length;
   const width = map[0].length;
-  const visible = Array(height)
-    .fill(null)
-    .map(() => Array(width).fill(false));
+  const visible = createBooleanMatrix(width, height, false);
 
   // Clamp starting position to guarantee we don't access out of bounds
   const clampedPx = Math.max(0, Math.min(width - 1, px));
@@ -153,30 +195,31 @@ export function computeFOV(
   }
 
   function castRay(x0: number, y0: number, x1: number, y1: number) {
-    const line = bresenhamLine(x0, y0, x1, y1);
-    for (const p of line) {
+    traceLine(x0, y0, x1, y1, (x, y) => {
       // Bounds check for point coordinates to prevent exceptions
-      if (p.x < 0 || p.x >= width || p.y < 0 || p.y >= height) {
-        continue;
+      if (x < 0 || x >= width || y < 0 || y >= height) {
+        return true;
       }
 
       // Fast squared distance check to avoid Math.sqrt in hot raycasting loop
-      const distSq = (p.x - x0) * (p.x - x0) + (p.y - y0) * (p.y - y0);
-      if (distSq > radiusSq) break;
+      const distSq = (x - x0) * (x - x0) + (y - y0) * (y - y0);
+      if (distSq > radiusSq) return false;
 
-      visible[p.y][p.x] = true;
+      visible[y][x] = true;
 
       // Wall blocks light
+      const tile = map[y][x];
       if (
-        map[p.y][p.x] === TileType.Wall ||
-        map[p.y][p.x] === TileType.Door ||
-        map[p.y][p.x] === TileType.WatchtowerWall ||
-        map[p.y][p.x] === TileType.WatchtowerSlit ||
-        map[p.y][p.x] === TileType.WatchtowerBarricade
+        tile === TileType.Wall ||
+        tile === TileType.Door ||
+        tile === TileType.WatchtowerWall ||
+        tile === TileType.WatchtowerSlit ||
+        tile === TileType.WatchtowerBarricade
       ) {
-        break;
+        return false;
       }
-    }
+      return true;
+    });
   }
 
   if (fovCache.size >= MAX_FOV_CACHE_SIZE) {

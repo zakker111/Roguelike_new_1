@@ -3,6 +3,7 @@ import { GameState, NPC, Follower, Enemy, EnemyState } from '../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../utils/gameUtils';
 import { computeFOV } from '../utils/ai';
 import { generateOverworldChunk, formatGameTime } from '../utils/overworld';
+import { combatVfxEngine } from '../canvas/combatVfxEngine';
 
 export interface UseNpcInteractionParams {
   gameState: GameState;
@@ -384,13 +385,25 @@ export function useNpcInteraction({
           timestamp: 'VOYAGE'
         }];
 
+        const curKey = `${prev.currentChunkX},${prev.currentChunkY}`;
+        const nextOverworldChunks = prev.overworldChunks ? { ...prev.overworldChunks } : {};
+        if (nextOverworldChunks[curKey]) {
+          nextOverworldChunks[curKey] = {
+            ...nextOverworldChunks[curKey],
+            enemies: prev.enemies,
+            corpses: prev.corpses || [],
+            bloodSplatters: prev.bloodSplatters || [],
+            props: prev.dungeonProps || []
+          };
+        }
+
         const targetChunkKey = `${targetCx},${targetCy}`;
         let targetChunk = prev.overworldChunks?.[targetChunkKey];
         let nextSpawnedCats = prev.spawnedCats ? [...prev.spawnedCats] : [];
-        let nextOverworldChunks = { ...(prev.overworldChunks || {}) };
+        let nextOverworldChunksUpdated = { ...nextOverworldChunks };
         if (!targetChunk) {
           targetChunk = generateOverworldChunk(targetCx, targetCy, LEVEL_WIDTH, LEVEL_HEIGHT, nextSpawnedCats, prev.spawnedSeppo, prev.playerStats, prev.currentWeapon);
-          nextOverworldChunks[targetChunkKey] = targetChunk;
+          nextOverworldChunksUpdated[targetChunkKey] = targetChunk;
         }
 
         const destPx = 10;
@@ -407,7 +420,7 @@ export function useNpcInteraction({
           playerX: destPx, 
           playerY: destPy,
           isOverworld: true,
-          overworldChunks: nextOverworldChunks,
+          overworldChunks: nextOverworldChunksUpdated,
           map: targetChunk.map,
           discovered: discovered,
           visible: fov,
@@ -415,6 +428,10 @@ export function useNpcInteraction({
           traps: targetChunk.traps,
           chests: targetChunk.chests,
           npcs: targetChunk.npcs,
+          lootPiles: targetChunk.lootPiles || [],
+          corpses: targetChunk.corpses || [],
+          bloodSplatters: targetChunk.bloodSplatters || [],
+          dungeonProps: targetChunk.props || [],
           gameTime: advancedTime,
           playerStats: {
             ...prev.playerStats,
@@ -423,6 +440,8 @@ export function useNpcInteraction({
           logs: nextLogs
         };
       });
+
+      combatVfxEngine.clearAll();
 
       const talkEvent = new CustomEvent('spawn-game-effect', {
         detail: { x: npc.x, y: npc.y, text: `⛵ Set Sail!`, type: 'heal' },

@@ -7,6 +7,7 @@ import { generateOverworldChunk, formatGameTime } from '../utils/overworld';
 import { getRandomRelicDraft, SanctumRelic } from '../utils/relics';
 import { analyzeCampsiteSurroundings, rollWildernessAmbush } from '../utils/wildernessCamping';
 import { spawnFollowersOnLevelLoadByReset } from '../utils/dungeon';
+import { combatVfxEngine } from '../canvas/combatVfxEngine';
 
 export interface UsePoiAndWildernessParams {
   gameState: GameState;
@@ -638,6 +639,9 @@ export function usePoiAndWilderness({
           chests: prev.chests,
           npcs: prev.npcs,
           lootPiles: prev.lootPiles || [],
+          corpses: prev.corpses || [],
+          bloodSplatters: prev.bloodSplatters || [],
+          props: prev.dungeonProps || [],
           dungeons: oldChunk?.dungeons || [],
           towns: oldChunk?.towns || [],
           biome: prev.biome,
@@ -716,6 +720,9 @@ export function usePoiAndWilderness({
         chests: destChunk.chests,
         npcs: destChunk.npcs || [],
         lootPiles: destChunk.lootPiles || [],
+        corpses: destChunk.corpses || [],
+        bloodSplatters: destChunk.bloodSplatters || [],
+        dungeonProps: destChunk.props || [],
         overworldChunks: updatedChunks,
         discoveredChunks: updatedDiscoveredChunks,
         visitedTiles: nextVisited,
@@ -723,6 +730,8 @@ export function usePoiAndWilderness({
         weather: destChunk.weather,
       };
     });
+
+    combatVfxEngine.clearAll();
   }, [setActivePoi, setGameState, addLogMessage, playSound]);
 
   const handleChallengeBiomeGuardian = useCallback((poi: PoiType) => {

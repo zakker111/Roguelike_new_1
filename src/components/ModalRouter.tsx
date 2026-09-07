@@ -35,7 +35,7 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
       discovered: skirmish.discovered,
       visible: skirmish.visible,
       enemies: skirmish.enemies,
-      props: skirmish.props,
+      dungeonProps: skirmish.props,
       playerX: skirmish.playerX,
       playerY: skirmish.playerY,
       caravanTravel: prev.caravanTravel ? {
@@ -43,6 +43,17 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
         wagonX: skirmish.wagonX,
         wagonY: skirmish.wagonY,
         isTacticalCombat: true,
+        savedOverworldState: {
+          map: prev.map,
+          discovered: prev.discovered,
+          visible: prev.visible,
+          enemies: prev.enemies,
+          dungeonProps: prev.dungeonProps || [],
+          playerX: prev.playerX,
+          playerY: prev.playerY,
+          currentChunkX: prev.currentChunkX,
+          currentChunkY: prev.currentChunkY,
+        },
         currentEncounter: {
           ...encounter,
           isTacticalCombat: true,

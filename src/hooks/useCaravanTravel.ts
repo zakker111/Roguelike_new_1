@@ -1,10 +1,12 @@
 import React from 'react';
 import { GameState, CaravanTravelState, CaravanEncounter } from '../types';
 import { generateRandomCaravanEncounter } from '../utils/caravanEncounters';
-import { generateOverworldChunk, formatGameTime } from '../utils/overworld';
+import { generateOverworldChunk, formatGameTime, manageActiveChunkWindow, ensureChunkDecompressed, findNearestSafeNpcTile } from '../utils/overworld';
+import { appendBoundedLogs } from '../utils/logBuffer';
 import { computeFOV } from '../utils/ai';
 import { spawnFollowersOnLevelLoadByReset } from '../utils/dungeon';
 import { LEVEL_WIDTH, LEVEL_HEIGHT, findNearestSafePlayerTile, isLunarBlessingActive, getEffectiveAttribute } from '../utils/gameUtils';
+import { combatVfxEngine } from '../canvas/combatVfxEngine';
 
 interface UseCaravanTravelOptions {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -451,9 +453,23 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         bonusMsg = ` 🧪 High Cargo Integrity Bonus: Baron Tobias hands you 1x ${bonusCat === 'cat_fire' ? 'Flame Catalyst' : 'Void Catalyst'}!`;
       }
 
+      const updatedChunks = prev.overworldChunks ? { ...prev.overworldChunks } : {};
+      const curKey = `${prev.currentChunkX},${prev.currentChunkY}`;
+      if (updatedChunks[curKey]) {
+        updatedChunks[curKey] = {
+          ...updatedChunks[curKey],
+          enemies: prev.enemies,
+          corpses: prev.corpses || [],
+          bloodSplatters: prev.bloodSplatters || [],
+          props: prev.dungeonProps || []
+        };
+      }
+
       const targetChunkKey = `${destX},${destY}`;
-      let updatedChunks = prev.overworldChunks ? { ...prev.overworldChunks } : {};
       let targetChunk = updatedChunks[targetChunkKey];
+      if (targetChunk) {
+        targetChunk = ensureChunkDecompressed(targetChunk);
+      }
       let nextSpawnedCats = prev.spawnedCats ? [...prev.spawnedCats] : [];
       let hasSeppoOnLoad = false;
       
@@ -485,13 +501,17 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
       const nextVisited = { ...prev.visitedTiles };
       nextVisited[`${finalPx},${finalPy},${destX},${destY}`] = true;
 
-      const newMsgs = [...prev.logs];
-      newMsgs.push({
+      const newMsgs = appendBoundedLogs(prev.logs, {
         id: `caravan_arrived_${Date.now()}`,
         text: `🏆 [CARAVAN SECURED]: Escorted merchant caravan to ${destName}! Cargo Integrity: ${Math.round(hpRatio * 100)}%. Baron Tobias slides a reward pouch of +${reward} Gold into your hands!${bonusMsg}`,
         type: 'loot',
         timestamp: formatGameTime(prev.gameTime).timeStr
-      });
+      }, 200);
+
+      const managedChunks = manageActiveChunkWindow({
+        ...updatedChunks,
+        [targetChunkKey]: targetChunk
+      }, destX, destY, 25);
 
       return {
         ...prev,
@@ -499,10 +519,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         playerY: finalPy,
         currentChunkX: destX,
         currentChunkY: destY,
-        overworldChunks: {
-          ...updatedChunks,
-          [targetChunkKey]: targetChunk
-        },
+        overworldChunks: managedChunks,
         spawnedCats: nextSpawnedCats,
         spawnedSeppo: prev.spawnedSeppo || hasSeppoOnLoad,
         map: targetChunk.map,
@@ -511,8 +528,28 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, finalPx, finalPy, targetChunk.map),
         traps: targetChunk.traps,
         chests: targetChunk.chests,
-        npcs: targetChunk.npcs,
+        npcs: (targetChunk.npcs || []).map(npc => {
+          const safePos = findNearestSafeNpcTile(npc.x, npc.y, targetChunk.map);
+          const safeHome = npc.homeX !== undefined && npc.homeY !== undefined
+            ? findNearestSafeNpcTile(npc.homeX, npc.homeY, targetChunk.map)
+            : safePos;
+          const safeWork = npc.workX !== undefined && npc.workY !== undefined
+            ? findNearestSafeNpcTile(npc.workX, npc.workY, targetChunk.map)
+            : safePos;
+          return {
+            ...npc,
+            x: safePos.x,
+            y: safePos.y,
+            homeX: safeHome.x,
+            homeY: safeHome.y,
+            workX: safeWork.x,
+            workY: safeWork.y
+          };
+        }),
         lootPiles: targetChunk.lootPiles || [],
+        corpses: targetChunk.corpses || [],
+        bloodSplatters: targetChunk.bloodSplatters || [],
+        dungeonProps: targetChunk.props || [],
         inventoryMaterials: nextMats,
         logs: newMsgs,
         playerStats: {
@@ -522,6 +559,8 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         caravanTravel: null
       };
     });
+
+    combatVfxEngine.clearAll();
   };
 
   return {

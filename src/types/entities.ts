@@ -167,7 +167,9 @@ export interface Enemy {
   isEnraged?: boolean;          // Boss Phase 2 Enrage state override
   affixes?: EnemyAffix[];       // Corrupted long-run / high threat affixes
   armorPenetrationPercent?: number; // Ignores portion of player defense (0.0 to 0.6)
-  faction?: 'syndicate' | 'vanguard' | 'outlaw' | 'goblin' | 'bandits';
+  faction?: 'syndicate' | 'vanguard' | 'outlaw' | 'goblin' | 'bandits' | 'iron_vanguard' | 'shadow_syndicate' | 'outlaw_bandits' | 'orc_clans' | 'undead_scourge' | 'town_guard' | 'wild_beasts' | 'ancient_guardians' | 'unaligned' | string;
+  factionRank?: 'grunt' | 'scout' | 'soldier' | 'captain' | 'warlord' | 'shaman' | 'assassin' | 'champion' | 'leader';
+  factionId?: string;           // Canonical FactionId reference
   shift?: 'day' | 'night' | 'sentry'; // Guard duty shift schedule
   barracksBed?: { x: number; y: number; z?: number }; // Target bed tile in barracks
   barracksBedX?: number;
@@ -192,6 +194,8 @@ export interface Enemy {
   maxStaggerMeter?: number;   // Max Stagger threshold before stance breaks
   isStaggered?: boolean;      // True if guard/posture is currently shattered (vulnerable)
   staggerTurns?: number;      // Remaining turns of stagger stun
+  aiRole?: 'melee' | 'skirmisher_kiting' | 'support_healer' | 'support_buffer' | 'tank' | 'ambusher'; // Advanced behavioral AI archetype
+  supportSpellCooldown?: number; // Cooldown turns before support healing/buffing spells can be re-cast
 }
 
 export interface NPC {
@@ -208,6 +212,8 @@ export interface NPC {
   workY: number;
   dialogue: string[];
   scheduleState: 'home' | 'work' | 'leisure' | 'campfire';
+  factionId?: string;
+  factionRank?: string;
   isHomeSameAsShop?: boolean;
   isAsleep?: boolean;
   isSitting?: boolean;
@@ -252,6 +258,7 @@ export interface Corpse {
   color: string;
   type: 'enemy' | 'animal' | 'npc' | 'follower';
   isElite?: boolean;
+  decayTurns?: number;
 }
 
 export interface BloodSplatter {

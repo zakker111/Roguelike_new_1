@@ -71,8 +71,16 @@ export function spawnDungeonChests(
   roomsForChests.forEach((room, index) => {
     // 65% chance per room, but guarantee at least one chest on the last room if none generated yet
     if (Math.random() < 0.65 || (index === roomsForChests.length - 1 && chests.length === 0)) {
-      const cx = room.x + Math.floor(Math.random() * Math.max(1, room.w - 2)) + 1;
-      const cy = room.y + Math.floor(Math.random() * Math.max(1, room.h - 2)) + 1;
+      let cx = room.x + Math.floor(Math.random() * Math.max(1, room.w - 2)) + 1;
+      let cy = room.y + Math.floor(Math.random() * Math.max(1, room.h - 2)) + 1;
+
+      if (cx === stairsX && cy === stairsY) {
+        if (room.w > 3) {
+          cx = cx > room.x + 1 ? cx - 1 : cx + 1;
+        } else if (room.h > 3) {
+          cy = cy > room.y + 1 ? cy - 1 : cy + 1;
+        }
+      }
 
       if (!(cx === stairsX && cy === stairsY)) {
         const chestGold = Math.floor(Math.random() * 15) + 5 + depth * 3;

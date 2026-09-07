@@ -4,6 +4,7 @@ import { LEVEL_WIDTH, LEVEL_HEIGHT, findStairsOrWalkablePosition } from '../util
 import { computeFOV } from '../utils/ai';
 import { generateOverworldChunk } from '../utils/overworld';
 import { generateLevel } from '../utils/dungeon';
+import { combatVfxEngine } from '../canvas/combatVfxEngine';
 
 export interface UsePlayerMovementParams {
   gameStateRef: MutableRefObject<GameState>;
@@ -110,9 +111,9 @@ export function usePlayerMovement({
         chests: targetChunk.chests,
         npcs: targetChunk.npcs,
         lootPiles: targetChunk.lootPiles || [],
-        corpses: [],
-        bloodSplatters: [],
-        dungeonProps: [],
+        corpses: targetChunk.corpses || [],
+        bloodSplatters: targetChunk.bloodSplatters || [],
+        dungeonProps: targetChunk.props || [],
         dungeonLevels: updatedDungeonLevels,
         overworldChunks: nextOverworldChunks,
         spawnedCats: nextSpawnedCats,
@@ -122,6 +123,8 @@ export function usePlayerMovement({
         }
       };
     });
+
+    combatVfxEngine.clearAll();
 
     setActiveTab('dungeon');
     setTimeout(() => {
@@ -402,6 +405,9 @@ export function usePlayerMovement({
         chests: prev.chests,
         npcs: prev.npcs,
         lootPiles: prev.lootPiles || [],
+        corpses: prev.corpses || [],
+        bloodSplatters: prev.bloodSplatters || [],
+        props: prev.dungeonProps || [],
         dungeons: [],
         towns: [],
         biome: prev.biome,
@@ -525,6 +531,8 @@ export function usePlayerMovement({
         };
       }
     });
+
+    combatVfxEngine.clearAll();
 
     setActiveTab('dungeon');
     setTimeout(() => {

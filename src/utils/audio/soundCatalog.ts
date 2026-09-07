@@ -12,6 +12,7 @@ import {
   getIsAudioMuted,
   createNoiseBuffer,
 } from './synthEngine';
+import { getVoiceManager, getSoundPriority, getSoundDuration } from './voiceManager';
 
 export { SOUND_CATALOG, SOUND_SYNTH_PRESETS };
 
@@ -88,31 +89,51 @@ export function playSound(
 
   const now = ctx.currentTime;
   const sfxGainNode = getSfxGainNode();
+  if (!sfxGainNode) return;
 
-  // Build routing node graph for this sound
-  const soundGain = ctx.createGain();
-  soundGain.gain.setValueAtTime(finalVol, now);
+  const priority =
+    typeof options === 'object' && options?.priority !== undefined
+      ? options.priority
+      : getSoundPriority(type);
+  const duration = getSoundDuration(type);
 
-  const filterNode = ctx.createBiquadFilter();
-  filterNode.type = 'lowpass';
-  filterNode.frequency.setValueAtTime(lowpassFreq, now);
+  const voiceManager = getVoiceManager(ctx, sfxGainNode);
+  const channel = voiceManager.allocateVoice(type, duration, priority, {
+    volume: finalVol,
+    panX,
+    lowpassFreq,
+    filterType: 'lowpass',
+  });
 
-  // Connect Filter -> SoundGain -> Panner/Direct
-  filterNode.connect(soundGain);
-
-  let pannerNode: StereoPannerNode | null = null;
-  if (typeof ctx.createStereoPanner === 'function') {
-    pannerNode = ctx.createStereoPanner();
-    pannerNode.pan.setValueAtTime(panX, now);
-    soundGain.connect(pannerNode);
-    pannerNode.connect(sfxGainNode || ctx.destination);
-  } else {
-    soundGain.connect(sfxGainNode || ctx.destination);
+  if (!channel) {
+    // Concurrency throttled - max active voices reached with higher-priority sounds
+    return;
   }
 
-  const destNode = filterNode;
+  const destNode = channel.filterNode;
 
-  switch (type) {
+  // Intercept oscillator and buffer source creation during this sound's dispatch
+  const originalCreateOsc = typeof ctx.createOscillator === 'function' ? ctx.createOscillator.bind(ctx) : null;
+  const originalCreateBufferSource = typeof ctx.createBufferSource === 'function' ? ctx.createBufferSource.bind(ctx) : null;
+
+  if (originalCreateOsc) {
+    ctx.createOscillator = () => {
+      const osc = originalCreateOsc();
+      channel.registerSource(osc);
+      return osc;
+    };
+  }
+
+  if (originalCreateBufferSource) {
+    ctx.createBufferSource = () => {
+      const src = originalCreateBufferSource();
+      channel.registerSource(src);
+      return src;
+    };
+  }
+
+  try {
+    switch (type) {
     case 'bump':
     case 'footstep': {
       const osc = ctx.createOscillator();
@@ -1124,5 +1145,9 @@ export function playSound(
       osc.stop(now + 0.018);
       break;
     }
+  }
+  } finally {
+    if (originalCreateOsc) ctx.createOscillator = originalCreateOsc;
+    if (originalCreateBufferSource) ctx.createBufferSource = originalCreateBufferSource;
   }
 }

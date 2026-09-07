@@ -1109,6 +1109,138 @@ Extracted all God Mode developer state and sub-tools into a dedicated hook and c
 - **Automated Verification**:
   - Verified 31 Vitest test suites (139 tests passing 100% green).
 
+---
+
+## 59. Enemy AI Behavioral Archetypes & Tactical Kiting (v7.8.0)
+
+Integrated deep behavioral archetypes into the modular hostile AI resolution engine (`src/hooks/ai/useHostileAI.ts`, `src/types/entities.ts`, `src/data/enemies.json`):
+
+- **Tactical Ranged Kiting (`skirmisher_kiting`)**:
+  - Marksmen and spellcasters (`SkeletonMage`, `Trapmaster`, `FrostbiteSpider`, `AbyssalSiren`) maintain optimal range.
+  - When a target (player or defender) steps into melee range ($\le 2$ tiles), skirmishers calculate retreat vectors away from the threat and kite backward to re-establish a 3–4 tile firing line before attacking.
+- **Support Healers & Buffers (`support_healer`, `support_buffer`)**:
+  - Healers (`Necromancer`, Shamans) scan a 6-tile radius for wounded allies ($HP < 75\%$) and cast restorative spells (+25% HP) with cooldown tracking (`supportSpellCooldown`).
+  - Buffers (`Tidecaller`) bestow offensive and defensive combat enhancements upon nearby elite and boss allies.
+- **Vanguard Tanks & Ambushers (`tank`, `ambusher`)**:
+  - Heavy tanks absorb incoming player pressure, while ambushers deliver high-critical strikes from concealment.
+
+---
+
+## 60. Async Background Chunk Batching & Non-Blocking Pre-generation (v7.8.0)
+
+Implemented a high-performance background chunk generation and caching engine (`src/utils/overworld/asyncChunkBatcher.ts`):
+
+- **Asynchronous Time-Slicing**:
+  - Employs `requestIdleCallback` (with an 8ms time budget per frame and fallback to micro-tasks) to generate chunk slices without impacting rendering 60 FPS frame rates.
+- **Proactive Surrounding Pre-generation**:
+  - During player chunk boundary crossings in `usePlayerTurnMovement.ts`, the batcher automatically schedules background pre-generation for the adjacent ring of surrounding sectors.
+- **Cartography Integration**:
+  - `chunkTileRasterizer.ts` and `WorldMapModal.tsx` query and populate the async chunk cache, eliminating duplicate generation overhead when opening or deep-zooming the world map across massive sectors.
+
+---
+
+## 61. Arcane Scriptorium: Glyph Rune Tracing & Masterwork Spell Scrolls (v7.9.0)
+
+Implemented an interactive vector rune tracing minigame and Masterwork scroll scribing workstation (`src/components/ScriptoriumMiniGame.tsx`, `src/types/minigames/glyphGame.ts`, `src/components/crafting/ScriptoriumStationTab.tsx`):
+
+- **Vector Slate Glyph Inscription**:
+  - Connect runic nodes (0–9) arranged in geometric formations matching spell elements (Fire, Frost, Lightning, Void, Holy, Arcane).
+  - Supports mouse/touch dragging with fluid glowing conduit beams, direct keyboard number key (0–9) sequence inputs, reset stroke (`R`), and close (`Esc`).
+- **Dynamic Arcane Instability Gauge**:
+  - Real-time heat/instability timer with penalties (+15% instability) for wrong node connections.
+  - Reaching 100% instability triggers an Arcane Backlash / Fizzle, destroying parchment in smoke.
+- **Masterwork Spell Scroll Inscription**:
+  - Scoring $\ge 90\%$ accuracy with 0 mistakes creates **Masterwork Spell Scrolls** featuring **0 MP Cast Cost**, **+30% Spell Damage Potency**, and **+15% Critical Strike Chance** in combat.
+- **Sandbox Testing in God Panel**:
+  - Integrated into `GodMinigamesTab.tsx` with instant reagent granting (`+10 Inks 📜`), template selection, and difficulty tier switching (Novice, Adept, Archmage).
+
+---
+
+## 62. ASCII Default Startup Guarantee & Nature Procedural Pixel Art (v7.9.7)
+
+Guaranteed that every game session boots cleanly in classic ASCII glyph mode while allowing seamless runtime switching to Animated HD Tileset (`🎨 Tileset` button / `F8` / `Alt+T`).
+
+- **ASCII Startup Default (`src/canvas/types.ts`)**:
+  - `getStoredGraphicsMode()` unconditionally returns `'classic_glyph'` upon fresh game initialization.
+- **Handcrafted Procedural Pixel Art (`src/canvas/MockupAtlasGenerator.ts`)**:
+  - **Oak Trees**: Lush multi-lobed canopy with rooted trunk.
+  - **Pine Trees**: Sharp tiered dark conifer boughs with highlighted needles.
+  - **Birch Trees**: Slender white notched bark with bright crown.
+  - **Sweet Berry Bushes**: Dense green foliage adorned with ruby berries.
+  - **Mineral Ore Veins**: Copper and iron faceted slate rock boulders embedded with gleaming crystal clusters.
+- **Door Animation Stabilization (`src/canvas/spriteRenderer.ts`)**:
+  - Wooden doors configured as static single-frame tiles (`frameCount: 1`), eliminating door animation cycling.
+- **Calm Water Autotiling (`src/canvas/waterShimmerRenderer.ts`)**:
+  - Deep-blue base with gentle horizontal surface ripples and specular ambient glints.
+
+---
+
+## 63. Follower Combat Damage & Dynamic Enemy Target Swapping (v8.0.0)
+
+Integrated multi-defender combat and target swapping across all hostile entities (`src/hooks/ai/useHostileAI.ts`):
+
+- **Comprehensive Entity Evaluation**:
+  - Hostile AI checks both `updatedEnemiesList` and `nextEnemies`, evaluating all active companions, town guards, and rival faction entities regardless of turn order.
+- **Dynamic Threat Weighting**:
+  - Enemies dynamically evaluate proximity, health status, and aggro. If a companion or town guard is closer or heavily wounded, enemies swap targets naturally instead of fixating exclusively on the player.
+- **Direct Combat Resolution**:
+  - Damage applies to followers with floating text, hit SFX, HP bar updates, and fallen ally persistence.
+
+---
+
+## 64. Early Dungeon Combat Balance & Guaranteed Damage Floor (v8.0.0)
+
+Balanced novice dungeon accessibility and early survival progression:
+
+- **Dungeon Depth Scaling Capping (`src/world/dungeon/dungeonEntities.ts`)**:
+  - Capped `calculateGlobalThreatFactor` at floor depths 1 and 2 to ensure early floors remain accessible to newly created adventurers.
+  - Enforced `DEF <= 1` and moderate HP pools for standard early dungeon foes.
+- **Guaranteed Weapon Damage Floor (`src/hooks/combat/combatMath.ts`)**:
+  - Enforced a minimum guaranteed hit damage floor (`minWeaponFloor = Math.max(1, Math.floor(weaponDmg * 0.45))`), preventing zero-damage hits when striking armored opponents with valid weapons.
+
+---
+
+## 65. Chunk Border Obstacle In-Place Carving vs. Player Warping (v8.0.0)
+
+Eliminated disorienting player warps when transitioning overworld chunks into dense woods (`src/hooks/app/movement/useChunkTransition.ts`):
+
+- **In-Place Obstacle Carving**:
+  - When stepping across chunk boundaries into natural obstacles (`Tree`, `PineTree`, `BirchTree`, `Bush`), the system carves the obstacle tile into walkable `TileType.Grass` at the exact point of entry.
+  - Retains player momentum and spatial orientation without long outward spiral searches.
+
+---
+
+## 66. Dual Instinct Classic Tileset System (v8.2.0)
+
+Implemented a dual authoritative sourcing architecture for the Classic tileset:
+
+- **Dual Sourcing (`classic_png` vs `classic_code`)**:
+  - **Instinct Classic (PNG Mockups)**: Pre-rendered static `.png` sprite sheets loaded from `/public/tilesets/`.
+  - **Instinct Classic (Procedural Code)**: Live programmatic HTML5 canvas renderer generated at runtime in memory.
+  - Runtime hot-swapping in **Tileset Studio** (`F1` -> Tileset Studio tab) with `localStorage` persistence.
+- **Synchronized 16×16 Grid Expansion**:
+  - Full coordinate alignment between `TilesetAtlasManager.ts`, `MockupAtlasGenerator.ts`, and `scripts/generateMockupPngs.cjs`.
+  - Dedicated cells for chests, shrines, crossroads signposts, campfires, covered wagons, dungeon floor traps (spikes, fire, poison, frost), and hazard pools (magma, ice, sand).
+
+---
+
+## 67. Merchant Caravan Escort & Tactical Skirmish Sub-Engine (v8.2.0)
+
+Delivered an inter-settlement trade expedition and tactical battlefield system (`src/world/caravanSkirmishGen.ts`, `src/hooks/useCaravanTravel.ts`):
+
+- **Dedicated 24×18 Tactical Skirmish Battlefield**:
+  - Spawns central trade road, merchant covered carriage (`🛒`), guard campfire, 2 allied veteran defenders, and perimeter ambushers.
+- **Lossless Overworld State Preservation**:
+  - `SavedOverworldSkirmishState` captures an immutable snapshot of the active overworld chunk (`map`, `discovered`, `visible`, `enemies`, `dungeonProps`, player coordinates, and chunk indices).
+  - Tactical victory unwraps the saved snapshot and restores the overland terrain and props with zero chunk memory loss.
+- **Tactical Retreat Resolution**:
+  - Retreating back to the wagon applies carriage damage penalties while safely returning the party to the overland route.
+- **Wagon Integrity & High-Value Rewards**:
+  - Arriving at the destination calculates rewards based on preserved wagon hull percentage, granting bonus elemental catalysts for pristine condition ($\ge 85\%$).
+
+
+
+
 
 
 

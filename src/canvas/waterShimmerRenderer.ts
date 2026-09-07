@@ -67,29 +67,22 @@ export function renderWaterTileShimmer(
       ctx.stroke();
     }
   } else {
-    // Forest / Desert / Ocean: Flowing sinusoidal specular ripples & shore foam lines
-    const ripple1 = Math.sin(time * 2.2 + coordOffset + ry * 0.1);
-    const ripple2 = Math.cos(time * 1.6 - coordOffset + rx * 0.1);
+    // Forest / Desert / Ocean: Gentle, calm specular ripples & shore foam lines
+    const ripple1 = Math.sin(time * 1.2 + coordOffset);
+    const ripple2 = Math.cos(time * 0.9 - coordOffset);
 
     const baseColor = isDesert ? '34, 211, 238' : (isShallow ? '56, 189, 248' : '186, 230, 253');
-    const alpha = Math.max(0, (ripple1 * 0.5 + ripple2 * 0.5) * 0.28);
+    const alpha = Math.max(0, (ripple1 * 0.5 + ripple2 * 0.5) * 0.16);
 
-    if (alpha > 0.05) {
+    if (alpha > 0.04) {
       ctx.strokeStyle = `rgba(${baseColor}, ${alpha.toFixed(3)})`;
       ctx.lineWidth = 1.0;
 
-      // Draw subtle dual wave ripples across the tile
-      const yOffset1 = ry + 8 + Math.sin(time * 2.0 + tileX) * 3;
-      const yOffset2 = ry + tileSize - 8 + Math.cos(time * 1.8 + tileY) * 3;
-
+      // Draw subtle calm horizontal ripple line
+      const yOffset = ry + Math.floor(tileSize * 0.5);
       ctx.beginPath();
-      // Wave 1
-      ctx.moveTo(rx + 3, yOffset1);
-      ctx.quadraticCurveTo(rx + tileSize * 0.5, yOffset1 + ripple1 * 2, rx + tileSize - 3, yOffset1);
-      
-      // Wave 2
-      ctx.moveTo(rx + 5, yOffset2);
-      ctx.quadraticCurveTo(rx + tileSize * 0.5, yOffset2 - ripple2 * 2, rx + tileSize - 5, yOffset2);
+      ctx.moveTo(rx + 6, yOffset);
+      ctx.lineTo(rx + tileSize - 6, yOffset);
       ctx.stroke();
     }
 

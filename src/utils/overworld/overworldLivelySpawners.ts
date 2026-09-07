@@ -319,18 +319,19 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
         connectPoiSpokeToTrail(map, caravanX, caravanY + 1, width, height, true);
 
         // Spawn interactive Baron Tobias NPC as Baron Tobias (Caravan Merchant)
+        const safeMerchantPos = findNearestSafeNpcTile(caravanX, caravanY + 1, map);
         npcs.push({
           id: `ambushed_merchant_${chunkX}_${chunkY}`,
           name: 'Baron Tobias (Caravan Merchant)',
           role: 'merchant_caravan_ambushed' as any,
           char: 'C',
           color: '#fbbf24',
-          x: caravanX,
-          y: caravanY + 1,
-          homeX: caravanX,
-          homeY: caravanY + 1,
-          workX: caravanX,
-          workY: caravanY + 1,
+          x: safeMerchantPos.x,
+          y: safeMerchantPos.y,
+          homeX: safeMerchantPos.x,
+          homeY: safeMerchantPos.y,
+          workX: safeMerchantPos.x,
+          workY: safeMerchantPos.y,
           scheduleState: 'work',
           dialogue: [
             "Help! We are being ambushed by bloodthirsty bandits! Defeat them all, and I'll grant you our coveted Rare Trade License!",
