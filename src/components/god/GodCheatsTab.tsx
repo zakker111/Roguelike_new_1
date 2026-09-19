@@ -1,6 +1,7 @@
-import React from 'react';
-import { Sparkles, Heart, Sliders, Hammer, Zap, Eye, MapPin, ShieldAlert, ShieldCheck, Globe } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, Heart, Sliders, Hammer, Zap, Eye, MapPin, ShieldAlert, ShieldCheck, Globe, Activity } from 'lucide-react';
 import { GameState } from '../../types';
+import { performanceMonitor } from '../../utils/performanceMonitor';
 
 interface GodCheatsTabProps {
   gameState: GameState;
@@ -20,6 +21,8 @@ interface GodCheatsTabProps {
   handleResetLevelDecor?: () => void;
   handleFastForwardTime?: () => void;
   handlePurgeExhaustion?: () => void;
+  isPerfHudOpen?: boolean;
+  handleTogglePerfHud?: () => void;
   onClose: () => void;
 }
 
@@ -41,8 +44,22 @@ export const GodCheatsTab: React.FC<GodCheatsTabProps> = ({
   handleResetLevelDecor,
   handleFastForwardTime,
   handlePurgeExhaustion,
+  isPerfHudOpen,
+  handleTogglePerfHud,
   onClose
 }) => {
+  const [internalPerfHudActive, setInternalPerfHudActive] = useState(() => performanceMonitor.isHudOpen());
+  const isPerfHudActive = isPerfHudOpen !== undefined ? isPerfHudOpen : internalPerfHudActive;
+
+  const onToggleHudClick = () => {
+    if (handleTogglePerfHud) {
+      handleTogglePerfHud();
+    } else {
+      const next = performanceMonitor.toggleHud();
+      setInternalPerfHudActive(next);
+    }
+  };
+
   const isInvincible =
     godModeActive ||
     gameState.godMode ||
@@ -98,6 +115,38 @@ export const GodCheatsTab: React.FC<GodCheatsTabProps> = ({
             <span className="text-sm">{isInvincible ? '🛡️✨' : '🛡️'}</span>
           </button>
         )}
+
+        {/* Real-Time Performance & Resource HUD Toggle Card */}
+        <button
+          onClick={onToggleHudClick}
+          className={`py-2.5 px-3 rounded cursor-pointer transition-all text-left flex items-center justify-between col-span-1 sm:col-span-2 border ${
+            isPerfHudActive
+              ? 'bg-gradient-to-r from-emerald-950/80 via-teal-950/70 to-slate-900/60 border-emerald-400/90 text-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.35)] ring-1 ring-emerald-400/60'
+              : 'bg-slate-950/60 hover:bg-slate-900 border-slate-700/60 text-slate-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Activity className={`w-4 h-4 ${isPerfHudActive ? 'text-emerald-300 animate-pulse' : 'text-slate-400'}`} />
+            <div>
+              <div className="font-bold text-xs flex items-center gap-2">
+                <span>Real-Time Performance & Resource HUD</span>
+                <span
+                  className={`text-[9px] px-1.5 py-0.5 rounded font-black tracking-wide ${
+                    isPerfHudActive
+                      ? 'bg-emerald-400 text-slate-950 shadow-sm'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {isPerfHudActive ? 'ACTIVE (F3)' : 'OFF (F3)'}
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-300/80 font-normal">
+                Live canvas FPS, frame latency ms, uncompressed vs RLE chunk cache window, 8-channel WebAudio voices, and spatial entity diagnostics.
+              </div>
+            </div>
+          </div>
+          <span className="text-sm">{isPerfHudActive ? '⚡🟢' : '⚡'}</span>
+        </button>
 
         <button
           onClick={handleHealPlayer}

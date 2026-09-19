@@ -10,7 +10,7 @@ import {
   CaravanTravelState
 } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT, isLunarBlessingActive } from '../../utils/gameUtils';
-import { getNextStepTowards, hasLineOfSight } from '../../utils/ai';
+import { getNextStepTowards, getNextStepAwayFrom, hasLineOfSight, isTileWalkableForEntity, isTileBlockedForEntity } from '../../utils/ai';
 import { getEnemyFleeQuote } from '../../utils/fleeQuotes';
 import { incrementDefeatedEnemyCount } from '../../utils/bestiary';
 import { evaluateScarAcquisition, getEffectiveStats } from '../../utils/scars';
@@ -20,6 +20,7 @@ import { isPlayerInvincible } from '../../utils/invincibility';
 import { isHostileBetween } from '../../factions/FactionMatrix';
 import { SpatialEntityGrid } from '../../utils/spatial';
 import { DefeatedEnemyCounts } from './types';
+import { checkDesperateSurrender, triggerSquadMoraleBreakOnLeaderDeath } from './factionMorale';
 
 function safeDispatchEffect(detail: any) {
   if (typeof window !== 'undefined' && typeof CustomEvent !== 'undefined') {
@@ -230,7 +231,7 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
   }
 
   // Decrement support spell cooldown
-  const isHostile = !e.isFollower && (!e.isTownGuard || nextGuardsHostile);
+  let isHostile = !e.isFollower && (!e.isTownGuard || nextGuardsHostile);
 
   if (e.supportSpellCooldown && e.supportSpellCooldown > 0) {
     e.supportSpellCooldown -= 1;
@@ -413,6 +414,36 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
     }
   }
 
+  // Morale Break and Desperate Surrender Evaluation
+  if (e.isSurrendered) {
+    e.surrenderTurns = (e.surrenderTurns || 1) - 1;
+    if (e.surrenderTurns <= 0) {
+      e.isSurrendered = false;
+    }
+    e.state = EnemyState.Retreating;
+    isHostile = false; // Cease hostile aggression while surrendered
+  } else if (e.isPanicked) {
+    e.panicTurns = (e.panicTurns || 1) - 1;
+    if (e.panicTurns <= 0) {
+      e.isPanicked = false;
+    }
+    e.state = EnemyState.Retreating;
+    isHostile = false; // In panic, flight overrides aggression
+  } else if (isHostile) {
+    // Check if wounded, isolated hostile decides to throw down their weapons
+    const surrenderResult = checkDesperateSurrender(
+      e,
+      nextEnemies,
+      (msg) => staticLogs.push(msg),
+      (x, y, txt, col) => safeDispatchEffect({ x, y, text: txt, color: col, type: 'heal' }),
+      playSound
+    );
+    if (surrenderResult.didSurrender) {
+      e = surrenderResult.enemy;
+      isHostile = false;
+    }
+  }
+
   const sameZ = (e.z ?? 0) === ((prev as any).overworldZ ?? 0);
   const distToPlayer = Math.abs(e.x - px) + Math.abs(e.y - py);
   const enemyRange = e.range || 1;
@@ -429,6 +460,35 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
       e.hasWarnedElite = true;
       const folName = prev.followers[0].name;
       staticLogs.push(`🛡️ ${folName}: "Master, heads up! An elite foe (${e.name}) is bearing down on us!"`);
+    }
+  }
+
+  // Build unified registry of all living active entities with latest turn states
+  const updatedMap = new Map<string, Enemy>();
+  for (const ue of updatedEnemiesList) {
+    updatedMap.set(ue.id, ue);
+  }
+  const allActiveEntities = nextEnemies
+    .map(ne => updatedMap.get(ne.id) || ne)
+    .filter(item => item && item.hp > 0 && item.id !== e.id);
+
+  // Build unified spatial index of all living active entities with latest turn states
+  const entitySpatialGrid = SpatialEntityGrid.fromEnemies(allActiveEntities);
+
+  // Autonomous Inter-Faction Skirmish Perception: detect rival faction combatants within 8 tiles
+  let detectedRivalFaction: Enemy | null = null;
+  if (e.faction && isHostile && e.state !== EnemyState.Fleeing && e.state !== EnemyState.Surrendered && e.state !== EnemyState.Retreating) {
+    const nearbyPotentialRivals = entitySpatialGrid.getNearby(e.x, e.y, 8);
+    for (const other of nearbyPotentialRivals) {
+      if (other.id !== e.id && other.hp > 0 && isHostileBetween(e.faction, other.faction)) {
+        if (hasLineOfSight(e.x, e.y, other.x, other.y, prev.map)) {
+          detectedRivalFaction = other;
+          break;
+        }
+      }
+    }
+    if (detectedRivalFaction && e.state !== EnemyState.Chasing) {
+      e.state = EnemyState.Chasing;
     }
   }
 
@@ -477,18 +537,6 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
       };
     }
   }
-
-  // Build unified registry of all living active entities with latest turn states
-  const updatedMap = new Map<string, Enemy>();
-  for (const ue of updatedEnemiesList) {
-    updatedMap.set(ue.id, ue);
-  }
-  const allActiveEntities = nextEnemies
-    .map(ne => updatedMap.get(ne.id) || ne)
-    .filter(item => item && item.hp > 0 && item.id !== e.id);
-
-  // Build unified spatial index of all living active entities with latest turn states
-  const entitySpatialGrid = SpatialEntityGrid.fromEnemies(allActiveEntities);
 
   // Target Defenders (Followers, Town Guards & Rival Faction Enemies)
   let targetDefender: Enemy | null = null;
@@ -575,13 +623,32 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
       playSound('injury');
       safeDispatchEffect({ x: targetDefender.x, y: targetDefender.y, sourceX: e.x, sourceY: e.y, text: `-${fDmg} HP`, type: 'dmg' });
     }
-    if (isKilled && isVisible) {
-      if (isRivalFactionCombat) {
-        staticLogs.push(`💀 [TURF CASUALTY]: ${targetDefender.name} was slain by ${e.name} in the faction clash!`);
-      } else if (targetDefender.isTownGuard) {
-        staticLogs.push(`☠️ [TOWN GUARD FALLEN]: ${targetDefender.name} was slain defending the town!`);
-      } else {
-        staticLogs.push(`💔 [COMPANION FALLEN]: ${targetDefender.name} has been slain in combat!`);
+    if (isKilled) {
+      if (isVisible) {
+        if (isRivalFactionCombat) {
+          staticLogs.push(`💀 [TURF CASUALTY]: ${targetDefender.name} was slain by ${e.name} in the faction clash!`);
+        } else if (targetDefender.isTownGuard) {
+          staticLogs.push(`☠️ [TOWN GUARD FALLEN]: ${targetDefender.name} was slain defending the town!`);
+        } else {
+          staticLogs.push(`💔 [COMPANION FALLEN]: ${targetDefender.name} has been slain in combat!`);
+        }
+      }
+
+      // Check if the fallen entity was a faction leader
+      const moraleResult = triggerSquadMoraleBreakOnLeaderDeath(
+        targetDefender,
+        nextEnemies,
+        (msg) => staticLogs.push(msg),
+        (x, y, txt, col) => safeDispatchEffect({ x, y, text: txt, color: col, type: 'heal' }),
+        playSound
+      );
+      if (moraleResult.panickedCount > 0) {
+        for (let m = 0; m < nextEnemies.length; m++) {
+          const updated = moraleResult.updatedEnemies.find((ue) => ue.id === nextEnemies[m].id);
+          if (updated) {
+            nextEnemies[m] = updated;
+          }
+        }
       }
     }
     return {
@@ -724,7 +791,14 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
         null,
         rawStrike
       );
-      const strikeDmg = archetypeAdj.damage;
+      let sniperBonus = 0;
+      const distToP = Math.hypot(px - e.x, py - e.y);
+      if (e.isHighGroundSniper && distToP > 1.5) {
+        sniperBonus = 2;
+        staticLogs.push(`🏹 [HIGH-GROUND SNIPER]: ${e.name} fires a precision bolt from the elevated barricade perch! (+2 Pierce DMG)`);
+      }
+
+      const strikeDmg = archetypeAdj.damage + sniperBonus;
       if (archetypeAdj.logNote) {
         staticLogs.push(archetypeAdj.logNote);
       }
@@ -740,7 +814,6 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
       staticLogs.push(`⚔️ ${e.name} attacks you for -${strikeDmg} HP!`);
       playSound('injury');
 
-      const distToP = Math.hypot(px - e.x, py - e.y);
       if (distToP > 1.5) {
         let enemyProjType = 'arrow';
         let enemyProjColor = '#d97706';
@@ -915,7 +988,10 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
         for (const step of retreatDirs) {
           if (step.x >= 0 && step.x < LEVEL_WIDTH && step.y >= 0 && step.y < LEVEL_HEIGHT) {
             const tile = prev.map[step.y]?.[step.x];
-            const isWalkable = tile !== TileType.Wall && tile !== TileType.Water;
+            const isWalkable = isTileWalkableForEntity(tile, {
+              isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+              canOpenDoors: false
+            });
             const isBlocked = (step.x === px && step.y === py) ||
                               updatedEnemiesList.some(other => other.x === step.x && other.y === step.y) ||
                               nextEnemies.some((other, idx) => idx > i && other.x === step.x && other.y === step.y);
@@ -940,11 +1016,14 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
         // Ideal sweet spot firing position with clear line-of-sight: hold ground to shoot rather than walking into melee
       } else {
         // Outside firing range or LOS broken by obstacles: advance towards firing range
-        const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, true, updatedEnemiesList, false);
+        const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, false, updatedEnemiesList, false);
         if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
           const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                        nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-          const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+          const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], {
+            isWaterWalkable: false,
+            canOpenDoors: false
+          });
           if (!isTileBlockedByEnemy && isTileWalkable) {
             e.x = nextStep.x;
             e.y = nextStep.y;
@@ -958,22 +1037,21 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
 
       if (isPackUnit) {
         const flankAngles = [
-          { x: px, y: py - 1 },
-          { x: px + 1, y: py },
-          { x: px, y: py + 1 },
-          { x: px - 1, y: py },
-          { x: px + 1, y: py - 1 },
-          { x: px + 1, y: py + 1 },
-          { x: px - 1, y: py + 1 },
-          { x: px - 1, y: py - 1 }
+          { x: chaseTargetX, y: chaseTargetY - 1 },
+          { x: chaseTargetX + 1, y: chaseTargetY },
+          { x: chaseTargetX, y: chaseTargetY + 1 },
+          { x: chaseTargetX - 1, y: chaseTargetY },
         ];
 
         let chosenFlank: { x: number; y: number } | null = null;
         for (const pos of flankAngles) {
           if (pos.x >= 0 && pos.x < LEVEL_WIDTH && pos.y >= 0 && pos.y < LEVEL_HEIGHT) {
             const tile = prev.map[pos.y]?.[pos.x];
-            const isWall = tile === TileType.Wall || tile === TileType.Water;
-            if (!isWall) {
+            const isWalkable = isTileWalkableForEntity(tile, {
+              isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+              canOpenDoors: false
+            });
+            if (isWalkable) {
               const isOccupied = updatedEnemiesList.some(other => other.x === pos.x && other.y === pos.y) ||
                                  nextEnemies.some((other, idx) => idx > i && other.x === pos.x && other.y === pos.y);
               if (!isOccupied) {
@@ -990,11 +1068,14 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
         }
       }
 
-      const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+      const nextStep = getNextStepTowards(e.x, e.y, chaseTargetX, chaseTargetY, prev.map, false, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
       if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
         const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                      nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-        const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+        const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], {
+          isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+          canOpenDoors: false
+        });
         if (!isTileBlockedByEnemy && isTileWalkable) {
           e.x = nextStep.x;
           e.y = nextStep.y;
@@ -1005,7 +1086,7 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
     let nearestDormant: Enemy | null = null;
     let minDormantDist = 999;
 
-    if (!e.hasAlertedBackup) {
+    if (!e.hasAlertedBackup && !e.isPanicked && !e.isSurrendered) {
       for (let targetIdx = 0; targetIdx < nextEnemies.length; targetIdx++) {
         if (targetIdx === i) continue;
         const target = nextEnemies[targetIdx];
@@ -1051,6 +1132,9 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
           playSound('bump', { x: e.x, y: e.y, playerX: px, playerY: py });
         }
       }
+    } else if (e.homeCampX !== undefined && e.homeCampY !== undefined) {
+      retreatTargetX = e.homeCampX;
+      retreatTargetY = e.homeCampY;
     } else {
       const dirX = Math.sign(e.x - px) || (Math.random() < 0.5 ? 1 : -1);
       const dirY = Math.sign(e.y - py) || (Math.random() < 0.5 ? 1 : -1);
@@ -1058,11 +1142,24 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
       retreatTargetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + dirY * 5));
     }
 
-    const nextStep = getNextStepTowards(e.x, e.y, retreatTargetX, retreatTargetY, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+    let nextStep: { x: number; y: number } | null = null;
+    const isTargetWalkable = isTileWalkableForEntity(prev.map[retreatTargetY]?.[retreatTargetX], {
+      isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+      canOpenDoors: false
+    });
+    if (isTargetWalkable) {
+      nextStep = getNextStepTowards(e.x, e.y, retreatTargetX, retreatTargetY, prev.map, false, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+    }
+    if (!nextStep) {
+      nextStep = getNextStepAwayFrom(e.x, e.y, px, py, prev.map, false, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+    }
     if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
-      const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
-                                   nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-      const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+      const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep!.x && other.y === nextStep!.y) ||
+                                   nextEnemies.some((other, idx) => idx > i && other.x === nextStep!.x && other.y === nextStep!.y);
+      const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], {
+        isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+        canOpenDoors: false
+      });
       if (!isTileBlockedByEnemy && isTileWalkable) {
         e.x = nextStep.x;
         e.y = nextStep.y;
@@ -1075,18 +1172,27 @@ export function processHostileTurn(params: HostileAIParams): HostileActionResult
     let currentPatrolIdx = e.patrolIndex || 0;
     let targetTile = e.patrolPath[currentPatrolIdx];
     
-    if (targetTile && e.x === targetTile.x && e.y === targetTile.y) {
+    // If waypoint is reached or waypoint tile itself is impassable, cycle to next waypoint
+    const isTargetBlocked = targetTile && isTileBlockedForEntity(prev.map[targetTile.y]?.[targetTile.x], {
+      isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+      canOpenDoors: false
+    });
+
+    if (targetTile && ((e.x === targetTile.x && e.y === targetTile.y) || isTargetBlocked)) {
       currentPatrolIdx = (currentPatrolIdx + 1) % e.patrolPath.length;
       e.patrolIndex = currentPatrolIdx;
       targetTile = e.patrolPath[currentPatrolIdx];
     }
 
     if (targetTile) {
-      const nextStep = getNextStepTowards(e.x, e.y, targetTile.x, targetTile.y, prev.map, true, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
+      const nextStep = getNextStepTowards(e.x, e.y, targetTile.x, targetTile.y, prev.map, false, updatedEnemiesList, e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso);
       if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
         const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                      nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-        const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+        const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], {
+          isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+          canOpenDoors: false
+        });
         if (!isTileBlockedByEnemy && isTileWalkable) {
           e.x = nextStep.x;
           e.y = nextStep.y;

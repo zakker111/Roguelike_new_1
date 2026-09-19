@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Enemy } from '../../types';
 
 export interface UnlawfulAssaultModalProps {
@@ -17,6 +17,19 @@ export const UnlawfulAssaultModal: React.FC<UnlawfulAssaultModalProps> = ({
   onCancel,
   onConfirm,
 }) => {
+  useEffect(() => {
+    if (!unlawfulGuardTarget) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [unlawfulGuardTarget, onCancel]);
+
   if (!unlawfulGuardTarget) return null;
 
   return (

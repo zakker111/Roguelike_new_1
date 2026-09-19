@@ -184,7 +184,7 @@ export function generateOverworldChunk(
     lootPiles: [],
     dungeons: ctx.dungeons,
     towns: ctx.towns,
-    props: ctx.props || [],
+    props: (ctx.props && ctx.props.length > 0) ? ctx.props : props,
     biome,
     weather,
     pois: ctx.poisList,

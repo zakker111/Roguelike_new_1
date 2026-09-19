@@ -38,6 +38,8 @@ export enum TileType {
   TreeStump = 'TreeStump',
   Bedroll = 'Bedroll',
   FieldTent = 'FieldTent',
+  Ice = 'Ice',
+  Ash = 'Ash',
 }
 
 export enum TrapType {
@@ -171,3 +173,6 @@ export interface DungeonLevelState {
   bloodSplatters: BloodSplatter[];
   props: DungeonProp[];
 }
+
+export const LEVEL_WIDTH = 64;
+export const LEVEL_HEIGHT = 40;

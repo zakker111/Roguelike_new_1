@@ -160,23 +160,33 @@ export function generateRuinedCityChunk(
 
   // Add Forgotten Shrine prop
   props.push({
+    id: `rc_shrine_${chunkX}_${chunkY}`,
     x: 5,
     y: 5,
     char: '⛩️',
     color: '#38bdf8',
     name: 'Moss-Covered Aether Altar',
+    description: 'An ancient shrine pulsating with celestial energy. Pray to receive a transcendent blessing.',
+    actionLabel: 'Pray at Aether Altar',
+    interaction: 'statue_blessing',
+    isInteracted: false,
     type: 'shrine',
     interactive: true,
   });
 
-  // Add Vault Door & Locked Masterwork Chest
+  // Add Vault Door & Locked Masterwork Chest (Conquest Chest)
   const vaultCoord = { x: 16, y: 16 };
   props.push({
+    id: `rc_vault_chest_${chunkX}_${chunkY}`,
     x: vaultCoord.x,
     y: vaultCoord.y,
     char: '🔒',
     color: '#fbbf24',
     name: 'Ancient Reinforced Vault Chest',
+    description: 'The legendary locked conquest chest of Sol-Keth! Contains kingly gold, refined ingots, and ancient treasures.',
+    actionLabel: 'Unlock Conquest Chest',
+    interaction: 'open_vault_chest',
+    isInteracted: false,
     type: 'chest',
     interactive: true,
   });

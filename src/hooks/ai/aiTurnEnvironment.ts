@@ -13,6 +13,7 @@ import { getGMPointOfInterestNudge } from '../../utils/gmNarrator';
 import { getCompanionAdvice } from '../../utils/companionAdvice';
 import { BIOME_VALID_WEATHERS, getValidWeatherForBiome } from '../../utils/weatherEngine';
 import { isPlayerInvincible } from '../../utils/invincibility';
+import { advanceElementalPropagation } from '../../utils/elemental';
 import { TurnEnvironmentResult, FoodBuff } from './types';
 
 function safeDispatchEffect(detail: any) {
@@ -430,6 +431,29 @@ export function resolvePlayerStatusAndEnvironment(
     }
   }
 
+  // 10. Cellular Elemental Propagation (Fire spread, Ice freeze/melt, Gas deflagration, Steam, Shock)
+  const elemRes = advanceElementalPropagation(prev, px, py);
+  if (elemRes.playerDamage > 0) {
+    playerHp = Math.max(0, playerHp - elemRes.playerDamage);
+  }
+  if (elemRes.entityDamages.length > 0) {
+    for (const ed of elemRes.entityDamages) {
+      const targetIdx = nextEnemies.findIndex((e) => e.id === ed.entityId);
+      if (targetIdx !== -1) {
+        nextEnemies[targetIdx] = {
+          ...nextEnemies[targetIdx],
+          hp: Math.max(0, nextEnemies[targetIdx].hp - ed.damage),
+        };
+      }
+    }
+  }
+  for (const log of elemRes.logs) {
+    staticLogs.push(log.text);
+  }
+  for (const fl of elemRes.floaters) {
+    safeDispatchEffect(fl);
+  }
+
   return {
     playerHp,
     playerMp,
@@ -448,6 +472,8 @@ export function resolvePlayerStatusAndEnvironment(
     nextSplatters,
     gmStateUpdates,
     staticLogs,
-    nextEnemies
+    nextEnemies,
+    nextElementalFields: elemRes.updatedFields,
+    mapModifications: elemRes.mapModifications,
   };
 }

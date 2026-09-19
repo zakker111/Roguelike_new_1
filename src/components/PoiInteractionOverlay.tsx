@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, BookOpen, Flame, Shield, HelpCircle, Heart, Trophy, Zap, AlertTriangle, Coins, Compass, Navigation, Swords } from 'lucide-react';
 import { PlayerStats, CatalystType, TileType } from '../types';
 import { playSound } from '../utils/audio';
@@ -75,6 +75,23 @@ export default function PoiInteractionOverlay({
 }: PoiInteractionOverlayProps) {
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [showWaystoneNetwork, setShowWaystoneNetwork] = useState<boolean>(false);
+
+  // Close POI interaction or subview on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (showWaystoneNetwork) {
+          setShowWaystoneNetwork(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [showWaystoneNetwork, onClose]);
 
   const isAlreadyAttuned = poi.isAttunedWaystone || attunedWaystones.includes(poi.id);
 

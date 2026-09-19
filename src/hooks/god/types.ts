@@ -79,4 +79,5 @@ export type GodActiveTab =
   | 'house_editor'
   | 'npc_planner'
   | 'dungeon_editor'
-  | 'modding_api';
+  | 'modding_api'
+  | 'catalog_tuner';

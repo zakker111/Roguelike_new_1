@@ -13,6 +13,7 @@ import {
   createNoiseBuffer,
 } from './synthEngine';
 import { getVoiceManager, getSoundPriority, getSoundDuration } from './voiceManager';
+import { calculateAcousticOcclusion, getAcousticListenerContext } from './acousticOcclusion';
 
 export { SOUND_CATALOG, SOUND_SYNTH_PRESETS };
 
@@ -60,10 +61,16 @@ export function playSound(
   let attenuation = 1.0;
   let panX = 0;
   let lowpassFreq = 20000;
+  let filterQ = 0.7;
 
-  if (x !== undefined && y !== undefined && playerX !== undefined && playerY !== undefined) {
-    const dx = x - playerX;
-    const dy = y - playerY;
+  const listenerCtx = getAcousticListenerContext();
+  const px = playerX ?? (x !== undefined ? listenerCtx?.playerX : undefined);
+  const py = playerY ?? (y !== undefined ? listenerCtx?.playerY : undefined);
+  const activeMap = (typeof options === 'object' ? options.map : undefined) ?? listenerCtx?.map;
+
+  if (x !== undefined && y !== undefined && px !== undefined && py !== undefined) {
+    const dx = x - px;
+    const dy = y - py;
     const dist = Math.hypot(dx, dy);
 
     // Strictly enforce: Player only hears what is around them!
@@ -74,6 +81,18 @@ export function playSound(
     attenuation = Math.pow(Math.max(0, 1 - dist / maxDistance), 1.5);
     panX = Math.max(-1, Math.min(1, dx / 8));
     lowpassFreq = 1200 + (18000 - 1200) * (1 - dist / maxDistance);
+
+    // --- RAYTRACED ACOUSTIC OCCLUSION (Behind-Door / Behind-Wall Muffling) ---
+    if (activeMap) {
+      const occlusion = calculateAcousticOcclusion(x, y, px, py, activeMap);
+      lowpassFreq = Math.min(lowpassFreq, occlusion.effectiveLowpassFreq);
+      attenuation *= occlusion.volumeMultiplier;
+      filterQ = occlusion.roomResonanceQ;
+    } else if (typeof options === 'object' && options?.occlusion !== undefined) {
+      const occ = Math.min(1, Math.max(0, options.occlusion));
+      lowpassFreq = Math.min(lowpassFreq, 18000 * Math.exp(-2.2 * occ));
+      attenuation *= Math.max(0.4, 1 - occ * 0.5);
+    }
 
     // Acoustic dampening through building walls
     if (isIndoorEvent) {
@@ -102,6 +121,7 @@ export function playSound(
     volume: finalVol,
     panX,
     lowpassFreq,
+    filterQ,
     filterType: 'lowpass',
   });
 

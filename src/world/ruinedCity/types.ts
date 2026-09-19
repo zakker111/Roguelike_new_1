@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { Enemy, NPC, TileType } from '../../types';
+import type { Enemy, NPC, TileType, DungeonProp } from '../../types';
 
 export type RuinedCityTurfZone =
   | 'orc_warcamp'         // Savage Orc Clan stronghold
@@ -25,13 +25,8 @@ export interface RuinedCitySector {
   dangerLevel: number;
 }
 
-export interface RuinedCityProp {
-  x: number;
-  y: number;
-  char: string;
-  color: string;
-  name: string;
-  type: 'totem' | 'bonfire' | 'tripwire' | 'vault_door' | 'barricade' | 'chest' | 'shrine' | 'rubble';
+export interface RuinedCityProp extends DungeonProp {
+  type?: 'totem' | 'bonfire' | 'tripwire' | 'vault_door' | 'barricade' | 'chest' | 'shrine' | 'rubble' | string;
   interactive?: boolean;
 }
 

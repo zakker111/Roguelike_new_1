@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, ShieldAlert, Zap, Skull, Award, Flame, TrendingUp, Sparkles, AlertTriangle } from 'lucide-react';
 import { GameState } from '../../types';
 import { calculateWorldThreatTier, getThreatTierInfo, getAffixMeta } from '../../utils/worldThreat';
@@ -17,6 +17,18 @@ export const WorldThreatModal: React.FC<WorldThreatModalProps> = ({
   onClose,
   addLogMessage
 }) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        playSound('bump');
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
   const currentThreatTier = calculateWorldThreatTier(gameState.playerStats, gameState.chaosScore);
   const threatInfo = getThreatTierInfo(currentThreatTier);
   const customBonus = gameState.playerStats.customThreatBonus || 0;

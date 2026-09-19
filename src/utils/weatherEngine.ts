@@ -133,10 +133,19 @@ export function isObstacleTile(tile?: TileType): boolean {
     tile === TileType.CopperVein ||
     tile === TileType.IronVein ||
     tile === TileType.WatchtowerWall ||
+    tile === TileType.WatchtowerSlit ||
     tile === TileType.Tree ||
     tile === TileType.PineTree ||
     tile === TileType.BirchTree ||
-    tile === TileType.WatchtowerBarricade
+    tile === TileType.TreeStump ||
+    tile === TileType.WatchtowerBarricade ||
+    tile === TileType.Window ||
+    tile === TileType.Table ||
+    tile === TileType.Campfire ||
+    tile === TileType.Fireplace ||
+    tile === TileType.Anvil ||
+    tile === TileType.FieldTent ||
+    tile === TileType.Empty
   );
 }
 

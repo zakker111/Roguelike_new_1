@@ -63,6 +63,14 @@ This document serves as the authoritative structural map and development ruleset
 
 ---
 
+### 3c. `/src/utils/elemental/` & `/src/types/elemental.ts` — Elemental Propagation Sub-Engine (Pillar 2)
+- `src/types/elemental.ts`: Domain types for elemental fields (`fire`, `ice`, `shock`, `steam`, `poison_gas`), intensities, and propagation contracts.
+- `src/utils/elemental/elementalEngine.ts`: Cellular automata fire spread, flammable vegetation consumption into Ash, water freezing into walkable Ice, contiguous water shock conduction, toxic gas deflagration explosions, and steam line-of-sight obscuration.
+- `src/utils/elemental/index.ts`: Elemental sub-engine barrel export.
+- `src/canvas/elementalVfxRenderer.ts`: Canvas procedural VFX renderer for fire flickers, ice frost glints, lightning arcs, steam plumes, and toxic poison clouds.
+
+---
+
 ### 4. `/src/canvas/` — 2D Grid & Graphics Rendering Engine
 - `src/canvas/types.ts` / `src/canvas/IGraphicsRenderer.ts`: Pluggable renderer interfaces (`IVisualRenderer`, `GraphicsVisualMode`, `TilesetSourceType`).
 - `src/canvas/HybridGraphicsEngine.ts`: Primary rendering coordinator (supports hot-swapping `Classic ASCII`, `Classic PNG Mockup`, `Classic Code Canvas`).
@@ -79,6 +87,9 @@ This document serves as the authoritative structural map and development ruleset
 - `src/canvas/weatherInteractivityRenderer.ts`: Weather ground effects (puddles, splashes, snow crust accumulations).
 - `src/canvas/waterShimmerRenderer.ts`: Sine-wave specular ripples, wave foam lines, and crystalline glints for water tiles.
 - `src/canvas/biomeAtmosphereRenderer.ts`: Ambient particles (snowflakes, swamp fireflies/wisps, volcanic embers).
+- `src/canvas/waterCausticsRenderer.ts`: Multi-scale dynamic water caustics, wave light refraction webs, and submerged entity caustics.
+- `src/canvas/bloomEngine.ts`: Luminous HDR bloom pass with pre-cached radial gradient bloom stamps.
+- `src/canvas/vignetteRenderer.ts`: Contextual atmospheric perimeter vignette with dungeon depth scaling.
 - `src/canvas/shadowRenderer.ts`: Directional shadow projection for trees, buildings, and entities.
 - `src/canvas/particlePool.ts` / `src/canvas/VFXEmitter.ts`: Pre-allocated object pool ring-buffer and visual FX emitter.
 - `src/canvas/spriteAnimationManager.ts` / `src/canvas/spriteRenderer.ts`: Animated sprite frame progression.
@@ -118,6 +129,7 @@ This document serves as the authoritative structural map and development ruleset
   - `useTownGuardAI.ts`: Town defense threat response, 30-tile alarm broadcast, and shift schedules.
   - `useHostileAI.ts`: Stagger recovery, telegraphed attacks, wagon targeting, and flanking behavior.
   - `useCivilianAI.ts`: Cat playful wandering, civilian daily routines, weather shelter reactions, and barks.
+  - `factionMorale.ts`: Pack/squad morale breaks on leader/alpha death, panic scatter, and desperate surrender calculations.
   - `aiCombatAggregator.ts`: Aggregated visual floating text dispatcher and skirmish victory checks.
   - `useEnemyAI.ts`: Turn-based AI resolution coordinator.
   - `index.ts`: Modular AI engine barrel export.
@@ -183,7 +195,7 @@ This document serves as the authoritative structural map and development ruleset
 ### 8. `/src/utils/` — Game Engines, Math, Lore & Audio
 - `src/utils/gmStoryteller.ts`: Facade re-exporting the modular storyteller engine.
 - `src/utils/storyteller/`: Autonomous AI Game Master sub-engine:
-  - `types.ts`: Storyteller interfaces, memory state, personalities, and catalog types.
+  - `types.ts` / `gmCoordinateUtils.ts`: Storyteller interfaces, memory state, spatial perimeter search, and direction calculations.
   - `storytellerFlavor.ts` / `storytellerEncountersData.ts`: 26 dynamic GM encounters and narrative interpolation.
   - `storytellerChaos.ts`: Chaos score modifications and 20-tier periodic Chaos Core Surge matrices.
   - `storytellerRescue.ts`: Emergency life-saving rescue evaluations and triggers.
@@ -198,6 +210,7 @@ This document serves as the authoritative structural map and development ruleset
   - `types.ts` / `voiceManager.ts`: 8-voice concurrency cap, 4-tier priority classification, and node graph recycling.
   - `synthEngine.ts` / `spatialAudio.ts`: Oscillators, ADSR envelopes, filters, and 2D spatial panning.
   - `ambientSoundscapes.ts` / `soundCatalog.ts`: Continuous environmental audio layers and procedural SFX definitions.
+  - `acousticOcclusion.ts`: Bresenham obstacle raycasting, behind-door lowpass muffling, transmission volume absorption, and cavity resonance.
   - `index.ts`: Audio engine barrel export.
 - `src/utils/buildingAudio.ts`: Indoor detection and acoustic sound dampening.
 - `src/utils/combatArchetypes.ts` / `src/utils/combatFloaterDrift.ts`: Combat scaling and floating text physics.
@@ -213,6 +226,8 @@ This document serves as the authoritative structural map and development ruleset
 - `src/utils/logBuffer.ts`: Centralized FIFO game log bounding utility maintaining a strict cap of 200 messages.
 - `src/utils/logExporter.ts`: Real-time session and combat log formatting and export utility.
 - `src/utils/worldmap/worldMapPngExporter.ts`: Realm 40% scale offscreen canvas rasterizer and PNG exporter.
+- `src/utils/catalogLiveTuner.ts`: Reactive live data catalog tuning engine for real-time balancing of weapons, bestiary monsters, spells, and global balance constants with JSON profile export/import.
+- `src/utils/performanceMonitor.ts`: Real-time performance monitor and telemetry collector tracking frame times, FPS, active audio voices, spatial entity distributions, and chunk memory footprint.
 
 ---
 
@@ -271,13 +286,14 @@ This document serves as the authoritative structural map and development ruleset
   - `WorldMapPinsList.tsx` / `CustomPinEditorModal.tsx` / `WorldMapLegend.tsx`: Custom pin management and legend.
   - `WorldMapModal.tsx`: Top-level modal container coordinating map components and hotkeys.
   - `index.ts`: World map barrel export.
-- `src/components/god/`: 26 God Mode developer tools (`TilesetTesterTab`, `GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
+- `src/components/god/`: 27 God Mode developer tools (`TilesetTesterTab`, `GodCatalogLiveTuner`, `GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
 - `src/components/modals/`: Dialogue modals, town shops, bed resting, caravan battles, and fishing/lockpicking minigames.
+- `src/components/PerformanceHud.tsx`: Real-Time Performance & Resource HUD with live FPS graph, memory meters, voice monitor, entity distribution gauges, viewport resolution, and position cycling.
 
 ---
 
 ### 10. `/src/tests/` — Automated Test Suite
-- 57 comprehensive Vitest test suites (353 unit, simulation, and integration tests passing 100% green) covering button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
+- 63 comprehensive Vitest test suites (390 unit, simulation, and integration tests passing 100% green) covering elemental propagation and environmental chain reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), morale and surrender sub-engine (`moraleAndSurrenderE2.test.ts`), performance telemetry & HUD (`performanceHudAndMonitoring.test.ts`), live data catalog tuning (`catalogLiveTuner.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
 
 ---
 

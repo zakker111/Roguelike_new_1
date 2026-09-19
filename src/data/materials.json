@@ -301,5 +301,35 @@
     "baseDamageMod": 1,
     "critMod": 0.05,
     "speedMod": 1.1
+  },
+  {
+    "id": "mat_smuggler_key",
+    "name": "Smuggler's Lockbox Key 🔑",
+    "description": "A tarnished iron skeleton key salvaged from Shadow Dagger outlaws. Unlocks contraband chests and hidden caches.",
+    "category": "Tier1",
+    "color": "#fbbf24",
+    "baseDamageMod": 0,
+    "critMod": 0.0,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_refined_iron",
+    "name": "Refined Iron Ingot ⚙️",
+    "description": "High-density smelted iron salvaged from military barricades and fortresses. Essential for reinforced armor and heavy weaponry.",
+    "category": "Tier2",
+    "color": "#94a3b8",
+    "baseDamageMod": 3,
+    "critMod": 0.06,
+    "speedMod": 1.0
+  },
+  {
+    "id": "mat_tempered_scrap",
+    "name": "Tempered Scrap Metal 🔩",
+    "description": "Hardened mechanical bolts, rivets, and broken shield plates scavenged from turf war ruins. Superb for field crafting and reinforcement.",
+    "category": "Tier1",
+    "color": "#64748b",
+    "baseDamageMod": 1,
+    "critMod": 0.03,
+    "speedMod": 1.0
   }
 ]

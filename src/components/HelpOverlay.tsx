@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, HelpCircle, ArrowRight, BookOpen, Key, Shield, Hammer, Flame, Shuffle, Sparkles, Globe, Compass, Skull, Scroll, Cloud } from 'lucide-react';
 
 interface HelpOverlayProps {
@@ -6,6 +6,18 @@ interface HelpOverlayProps {
 }
 
 export default function HelpOverlay({ onClose }: HelpOverlayProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
       <div 
@@ -114,6 +126,10 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Developer GOD Panel:</span>
                   <span className="text-red-400">P Key</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/30 py-0.5">
+                  <span className="text-slate-400">Performance & Resource HUD:</span>
+                  <span className="text-emerald-400 font-bold">F3 Key</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/30 py-0.5">
                   <span className="text-slate-400">Close Window / Return:</span>

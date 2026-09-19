@@ -1,6 +1,6 @@
 import { Enemy, GameState, TileType } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
-import { getNextStepTowards, hasLineOfSight } from '../../utils/ai';
+import { getNextStepTowards, hasLineOfSight, isTileWalkableForEntity } from '../../utils/ai';
 import { incrementDefeatedEnemyCount } from '../../utils/bestiary';
 import { TownGuardAIParams, TownGuardActionResult } from './types';
 
@@ -96,7 +96,7 @@ export function processTownGuardTurn(params: TownGuardAIParams): TownGuardAction
       if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
         const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                      nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-        const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+        const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], { canOpenDoors: true });
         if (!isTileBlockedByEnemy && isTileWalkable) {
           e.x = nextStep.x;
           e.y = nextStep.y;
@@ -108,7 +108,7 @@ export function processTownGuardTurn(params: TownGuardAIParams): TownGuardAction
       if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
         const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                      nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-        const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+        const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], { canOpenDoors: true });
         if (!isTileBlockedByEnemy && isTileWalkable) {
           e.x = nextStep.x;
           e.y = nextStep.y;
@@ -159,7 +159,10 @@ export function processTownGuardTurn(params: TownGuardAIParams): TownGuardAction
         if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
           const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                        nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-          const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+          const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], {
+            canOpenDoors: true,
+            isBedWalkable: guardTargetTile && nextStep.x === guardTargetTile.x && nextStep.y === guardTargetTile.y
+          });
           if (!isTileBlockedByEnemy && isTileWalkable) {
             e.x = nextStep.x;
             e.y = nextStep.y;

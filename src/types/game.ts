@@ -6,6 +6,7 @@
 import type { TileType, OverworldChunk, DungeonLevelState, DungeonProp, Trap, BiomeType } from './map';
 import type { CraftedWeapon, EquipmentItem, LootPile, Chest } from './items';
 import type { PlayerStats, Enemy, NPC, Follower, Corpse, BloodSplatter } from './entities';
+import type { ElementalTile } from './elemental';
 
 export interface GameLogMessage {
   id: string;
@@ -162,6 +163,7 @@ export interface GameState {
   // Persisted Dungeons, Corpses, and Blood Splatters
   corpses: Corpse[];
   bloodSplatters: BloodSplatter[];
+  elementalFields?: ElementalTile[];
   dungeonProps: DungeonProp[];
   dungeonEntranceChunkX?: number;
   dungeonEntranceChunkY?: number;

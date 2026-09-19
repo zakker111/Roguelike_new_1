@@ -4,6 +4,27 @@
 
 ### Recent Gameplay, AI, UI & Stability Resolutions
 
+- **[RESOLVED] Overworld Berry Bush & Mineral Ore Vein Procedural Scarcity (v8.6.0)**
+  - **What was reported / Fixed**: Berry bushes and ore veins (Copper, Iron) were almost never spawning across overworld chunks, and tree stumps/harvested tiles were causing collision or rendering desync.
+  - **Root Cause & Fix**:
+    1. In `/src/world/organic/vegetationClusterGen.ts`, the multi-octave noise thresholds for mineral ore veins (`oreLodeNoise > 0.84 && oreSubNoise > 0.60`) and grove flora (`groveNoise > 0.58` with high `subVariation` filters) were mathematically too restrictive, yielding 0 to near-zero spawns on most seeds.
+    2. Redesigned `vegetationClusterGen.ts` with balanced continuous noise mineral belts (`mineralBelt > 0.54 && pOre > 0.978`), spawning ~6-10 clustered ore veins per chunk with an authentic 60/40 Copper vs. Iron ratio.
+    3. Tuned flora density thresholds (`groveNoise > 0.44`) to consistently generate 15-35 wild berry bushes per chunk across all biomes (Sweet Berries in forests, Frostblooms in tundras, Nightshade in swamps, drought scrub in deserts, charred shrubs in volcanic zones).
+    4. Added subterranean mineral ore veins to procedural dungeons (`src/world/dungeon/dungeonRooms.ts` - `spawnSubterraneanOreVeins`), embedding Copper and Iron veins into cavern room wall alcoves for deep spelunking.
+    5. In `/src/hooks/app/useGKeyInteraction.ts` and `/src/utils/harvestEngine.ts`, synchronized harvested tile replacements (`TileType.Grass` in overworld, `TileType.Floor` in dungeons), added tree stump clearing via 'G' key, and added immediate background canvas cache invalidation (`chunkBackgroundCache.invalidate()`, `invalidateChunkCanvasCache`).
+    6. Added automated tests in `/src/tests/organicWorldGen.test.ts` verifying bushes and ore vein yields across chunks and biomes. All tests passing 100% green.
+
+- **[RESOLVED] Enemy Movement Through Trees/Wood & Obstacle Collision Inconsistency (v8.2.0)**
+  - **What was reported / Fixed**: User reported an enemy ignored wood/trees and walked straight through them ("there was bug one enemy ignored wood and got sraight to woods chek other tiles too that enemies cannot go in there if they block walking").
+  - **Root Cause & Fix**:
+    1. In `/src/utils/ai.ts`, line-of-sight (`hasLineOfSight`) and FOV (`computeFOV`) previously only blocked vision for `TileType.Wall`, allowing ranged enemies to fire and path straight through dense forests (`Tree`, `PineTree`, `BirchTree`, `TreeStump`), ore veins (`CopperVein`, `IronVein`), and fortifications (`WatchtowerWall`, `WatchtowerSlit`, `WatchtowerBarricade`, `FieldTent`).
+    2. In `/src/hooks/ai/useHostileAI.ts`, `/src/hooks/ai/useTownGuardAI.ts`, `/src/hooks/ai/useFollowerAI.ts`, and `/src/hooks/ai/useCivilianAI.ts`, individual movement routines (kiting, ranged advance, pack flanking, chasing, retreating, and patrolling) implemented manual, incomplete walkability checks (e.g. `tile !== TileType.Wall && tile !== TileType.Water`), ignoring trees, veins, barricades, campfires, and tents.
+    3. Created centralized, authoritative passability predicates in `/src/utils/ai.ts`: `isTileBlockedForEntity` and `isTileWalkableForEntity`, checking all movement-blocking obstacles (`Wall`, `Window`, `Table`, `Tree`, `PineTree`, `BirchTree`, `TreeStump`, `CopperVein`, `IronVein`, `WatchtowerWall`, `WatchtowerSlit`, `WatchtowerBarricade`, `Campfire`, `Fireplace`, `Anvil`, `FieldTent`, `Empty`, and conditionally `Water`, `Door`, `Bed`).
+    4. Refactored all pathfinding solvers (`getNextStepTowards`, `getNextStepAwayFrom`) and AI sub-engines (`useHostileAI`, `useTownGuardAI`, `useFollowerAI`, `useCivilianAI`) to strictly use `isTileWalkableForEntity`.
+    5. Updated `usePlayerTurnMovement.ts` to ensure player collision logic comprehensively checks `TreeStump`, `Campfire`, `Fireplace`, `Anvil`, `FieldTent`, and `Empty` alongside existing obstacles.
+    6. Updated `weatherEngine.ts` `isObstacleTile` to include all obstacle tiles.
+    7. Added comprehensive test coverage in `/src/tests/ai.test.ts` verifying pathfinding routes around trees, impassable obstacle detection, and line-of-sight blockage across all tree varieties. All 59 test suites and 370 tests pass 100% green.
+
 - **[RESOLVED] Dungeon Level Chest Placement Fallback (v8.2.0)**
   - **What was reported / Fixed**: On certain procedural dungeon generation seeds, if room chest generation selected the room's staircase coordinate `(stairsX, stairsY)` during fallback chest spawning, chest placement was skipped, leaving the dungeon level with 0 chests.
   - **Root Cause & Fix**:
@@ -174,5 +195,5 @@
 ## 📊 Current Defect Status: ZERO OPEN BUGS
 - **TypeScript Verification**: Clean (`tsc --noEmit` exit 0)
 - **Applet Build**: Production Build Clean (`npm run build` exit 0)
-- **Automated Test Suite**: 57 Vitest Test Suites Passing (353 / 353 tests green, 100%)
-- **Architectural Health**: All 412 source files, 31 JSON data catalogs, and modular hooks synchronized and validated
+- **Automated Test Suite**: 64 Vitest Test Suites Passing (399 / 399 tests green, 100%)
+- **Architectural Health**: All 464 total source and data files (433 TypeScript source files + 31 JSON data catalogs), and modular hooks synchronized and validated

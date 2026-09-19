@@ -77,9 +77,29 @@ The audio engine automatically calculates:
 2. **Stereo Panning**:
    $$\text{panX} = \text{clamp}\left(\frac{\Delta x}{8}, -1, 1\right)$$
    Events to the left of the player pan left; events to the right pan right.
-3. **Low-Pass Wall/Distance Occlusion**:
-   $$\text{cutoffFreq} = 1200 + (18000 - 1200) \times \left(1 - \frac{\text{dist}}{\text{maxDistance}}\right)$$
-   Distant sounds lose high frequencies, creating realistic spatial depth.
+3. **Raytraced Acoustic Occlusion & Behind-Door Muffling (v8.5.0)** (`src/utils/audio/acousticOcclusion.ts`):
+   - Bresenham line raycasting checks the line-of-sight between the sound coordinates and the player.
+   - Counts solid stone walls (`TileType.Wall`, `WatchtowerWall`) and closed doors (`TileType.Door`).
+   - Dynamic Low-Pass Cutoff:
+     $$\text{cutoffFreq} = \text{baseCutoff} \times 0.42^{\text{walls}} \times 0.65^{\text{doors}}$$
+     Behind walls and closed doors, high frequencies are realistically muffled down to ~360–750 Hz.
+   - Transmission Absorption: Attenuates direct sound volume through structural barriers ($0.45^{\text{walls}} \times 0.72^{\text{doors}}$).
+   - Cavity Resonance: Increases filter $Q$ up to 2.4 ($\text{roomResonanceQ} = 0.707 + (\text{barriers} \times 0.35)$), emphasizing warm, enclosed low frequencies.
+   - Global Listener Tracking: `setAcousticListenerContext(playerX, playerY, map)` automatically synchronizes the current player position and tile grid each frame.
+
+---
+
+## 🏛️ Modular Audio Sub-Engine (`src/utils/audio/`)
+
+The audio engine is organized into decoupled, highly focused modules:
+- `types.ts`: Audio settings, sound types, voice priorities, and spatial configuration contracts.
+- `voiceManager.ts`: Concurrency voice allocator capping active nodes at 8 with 4-tier priority levels (`critical`, `high`, `normal`, `ambient`).
+- `synthEngine.ts`: Master AudioContext management, oscillator creation, ADSR envelopes, noise generators, and oscilloscope analyzers.
+- `spatialAudio.ts`: 2D spatial math, stereo panning, distance rolloff, and occlusion parameter resolution.
+- `acousticOcclusion.ts`: Bresenham obstacle raycaster, barrier lowpass dampening, cavity resonance calculations, and global listener context.
+- `ambientSoundscapes.ts`: Environmental background wind, weather audio layers, indoor muffling, and sub-bass tension drones.
+- `soundCatalog.ts`: Central procedural SFX catalog mapping sound keys to custom synthesis graphs.
+- `index.ts`: Barrel export maintaining backward compatibility for all audio functions.
 
 ---
 

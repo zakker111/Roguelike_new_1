@@ -225,12 +225,24 @@ export const WorldMapModal: React.FC<WorldMapModalProps> = ({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If user is typing in an input field (e.g. pin editor modal), ignore hotkeys
-      if (pinEditor.isOpen || (e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') {
+      // If pin editor is open, let pin editor's handler manage it
+      if (pinEditor.isOpen) {
         return;
       }
 
-      if (e.key === 'Escape' || e.key === 'm' || e.key === 'M') {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+
+      // If user is typing in an input field, ignore letter hotkeys
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
         e.stopPropagation();
         onClose();

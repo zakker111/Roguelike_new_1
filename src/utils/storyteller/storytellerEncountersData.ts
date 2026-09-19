@@ -1,7 +1,7 @@
 import { GameState, Enemy, EnemyState, EnemyType, TileType, EquipmentItem, CatalystType, Follower, TrapType, Trap } from "../../types";
 import { BIOME_VALID_WEATHERS, getValidWeatherForBiome } from "../weatherEngine";
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
-import { findWalkableSpotNearPlayer, getDirectionString } from "../../data/gmCommands";
+import { findWalkableSpotNearPlayer, getDirectionString } from "./gmCoordinateUtils";
 import { createGMTriangleCheaterEnemy } from "../combatArchetypes";
 import { playSound } from "../audio";
 import { GMEncounter } from "./types";

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Shield, Swords, UserCheck, RefreshCw, Zap, MessageSquare } from 'lucide-react';
 import { GameState, Follower, EquipmentItem, GameLogMessage } from '../types';
 import { getCompanionAdvice } from '../utils/companionAdvice';
@@ -13,6 +13,19 @@ interface FollowerInspectOverlayProps {
 export default function FollowerInspectOverlay({ gameState, setGameState, followerId, onClose }: FollowerInspectOverlayProps) {
   const f = gameState.followers.find((fol) => fol.id === followerId);
   const [activeAdvice, setActiveAdvice] = useState<string | null>(null);
+
+  // Close follower inspector on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   if (!f) return null;
 

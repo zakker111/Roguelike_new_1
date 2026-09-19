@@ -64,14 +64,47 @@ describe('Phase 1: Organic World Generation Module', () => {
 
     // Verify vegetation generated
     let treeCount = 0;
+    let bushCount = 0;
+    let oreCount = 0;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (map[y][x] === TileType.Tree || map[y][x] === TileType.BirchTree || map[y][x] === TileType.PineTree || map[y][x] === TileType.Bush) {
+        if (map[y][x] === TileType.Tree || map[y][x] === TileType.BirchTree || map[y][x] === TileType.PineTree) {
           treeCount++;
+        } else if (map[y][x] === TileType.Bush) {
+          bushCount++;
+        } else if (map[y][x] === TileType.CopperVein || map[y][x] === TileType.IronVein) {
+          oreCount++;
         }
       }
     }
     expect(treeCount).toBeGreaterThan(0);
+    expect(bushCount).toBeGreaterThan(0);
+  });
+
+  it('generates berry bushes and ore veins across macro-world chunks', () => {
+    const width = 30;
+    const height = 20;
+    let totalBushes = 0;
+    let totalCopper = 0;
+    let totalIron = 0;
+
+    for (let cy = -2; cy <= 2; cy++) {
+      for (let cx = -2; cx <= 2; cx++) {
+        const map: TileType[][] = Array(height).fill(null).map(() => Array(width).fill(TileType.Grass));
+        generateOrganicVegetationAndOres(map, cx, cy, width, height, 'forest', 8675309);
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (map[y][x] === TileType.Bush) totalBushes++;
+            if (map[y][x] === TileType.CopperVein) totalCopper++;
+            if (map[y][x] === TileType.IronVein) totalIron++;
+          }
+        }
+      }
+    }
+
+    expect(totalBushes).toBeGreaterThan(50);
+    expect(totalCopper).toBeGreaterThan(10);
+    expect(totalIron).toBeGreaterThan(10);
   });
 
   it('carveOrganicTrailsAndRoads adds path tiles for highway chunks', () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Swords, ShoppingBag, MessageSquare, ShieldAlert, Eye, EyeOff, Compass } from 'lucide-react';
 import { NPC, PlayerStats } from '../types';
 import { playSound } from '../utils/audio';
@@ -34,6 +34,19 @@ export default function TravelerInteractionOverlay({
     npc.dialogue[0] || "Hello, traveler. Sunder is a vast and untamed land."
   );
   const [hasChatted, setHasChatted] = useState(false);
+
+  // Close traveler interaction on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   // Check if there are other NPCs on visible tiles who can witness a crime
   const witnesses = otherNpcs.filter(other => {

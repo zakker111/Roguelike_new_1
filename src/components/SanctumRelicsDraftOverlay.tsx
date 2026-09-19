@@ -3,18 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Sparkles, Award, Shield, Swords, Flame, Heart, Cpu } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Award, Shield, Swords, Flame, Heart, Cpu, X } from 'lucide-react';
 import { SanctumRelic } from '../utils/relics';
 import { playSound } from '../utils/audio';
 
 interface SanctumRelicsDraftOverlayProps {
   draft: SanctumRelic[];
   onSelectRelic: (relic: SanctumRelic) => void;
+  onClose?: () => void;
 }
 
-export default function SanctumRelicsDraftOverlay({ draft, onSelectRelic }: SanctumRelicsDraftOverlayProps) {
+export default function SanctumRelicsDraftOverlay({ draft, onSelectRelic, onClose }: SanctumRelicsDraftOverlayProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // Close draft on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   const handleSelect = (relic: SanctumRelic) => {
     playSound('levelUp');
@@ -29,6 +43,15 @@ export default function SanctumRelicsDraftOverlay({ draft, onSelectRelic }: Sanc
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 relative overflow-y-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col items-center text-center space-y-6">
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer z-20"
+            title="Close / Postpone (Esc)"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
         
         {/* Glow accent at the top */}
         <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent" />

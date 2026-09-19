@@ -275,3 +275,96 @@ export function getRegionalRumorAndGossip(context: DialogueContext): string {
   const combined = [...weatherRumors, ...baseRumors];
   return combined[Math.floor(Math.random() * combined.length)];
 }
+
+/**
+ * Contextual bark when town alarm sounds due to approaching hostiles or gate breaches.
+ */
+export function getTownAlarmReactionBark(npc: NPC, threatName?: string): string {
+  const name = npc.name.split(' (')[0];
+  const role = (npc.role || 'villager').toLowerCase();
+  const monster = threatName || 'hostiles';
+
+  if (role.includes('guard') || role.includes('vanguard')) {
+    return `${name}: "To arms! ${monster} approaching the perimeter! Hold the gatehouse line!"`;
+  }
+  if (role.includes('blacksmith')) {
+    return `${name}: "Sound the muster bell! I'll keep the forge hammers ready for defense!"`;
+  }
+  if (role.includes('merchant') || role.includes('apothecary')) {
+    return `${name}: "Barricade the shop shutters! The guards have engaged ${monster} outside!"`;
+  }
+  return `${name}: "The alarm horn! Get behind the fortress walls before ${monster} break through!"`;
+}
+
+/**
+ * Contextual bark acknowledging the player's faction reputation standing.
+ */
+export function getFactionStandingBark(npc: NPC, reputation: number, factionName?: string): string {
+  const name = npc.name.split(' (')[0];
+  const fName = factionName || 'the settlement';
+
+  if (reputation >= 50) {
+    // Revered / Honored
+    return `${name}: "Hail, champion! Word of your deeds for ${fName} inspires everyone here."`;
+  }
+  if (reputation >= 20) {
+    // Friendly
+    return `${name}: "Good to see you again, friend. The people of ${fName} hold you in high regard."`;
+  }
+  if (reputation <= -30) {
+    // Hated / Criminal
+    return `${name}: "*Glares warily, hand on knife* Watch yourself... You aren't welcome in ${fName}."`;
+  }
+  if (reputation < 0) {
+    // Suspicious
+    return `${name}: "*Eyes you cautiously* We have enough trouble without outlaws causing a stir."`;
+  }
+  return `${name}: "Greetings, wanderer. Mind the peace within town borders."`;
+}
+
+/**
+ * Stray animal shelter emotes during severe weather.
+ */
+export function getAnimalShelterBark(npc: NPC, weather: string): string {
+  const isCat = npc.id?.startsWith('npc_cat_') || npc.role === 'special_cat';
+  if (weather === 'blizzard' || weather === 'snowy') {
+    return isCat
+      ? `🐱 ${npc.name} curls into a tight ball by the warm hearth fire, shivering softly against the frost.`
+      : `🐾 The animal huddles closely under the eaves, sheltering from the biting blizzard.`;
+  }
+  if (weather === 'rainy') {
+    return isCat
+      ? `🐱 ${npc.name} shakes cold raindrops from its fur and nestles comfortably under the tavern bench.`
+      : `🐾 The animal ducks beneath the wooden canopy to escape the muddy downpour.`;
+  }
+  if (weather === 'sandstorm') {
+    return isCat
+      ? `🐱 ${npc.name} tucks its paws beneath its chest, squinting away from the blowing sand.`
+      : `🐾 The animal hunkers down behind a stone wall, safe from the desert gale.`;
+  }
+  return isCat
+    ? `🐱 ${npc.name} purrs softly, dozing on a sun-warmed floor tile.`
+    : `🐾 The stray animal rests peacefully in the quiet corner.`;
+}
+
+/**
+ * Morning routine opening barks at dawn.
+ */
+export function getMorningRoutineBark(npc: NPC): string {
+  const name = npc.name.split(' (')[0];
+  const role = (npc.role || 'villager').toLowerCase();
+
+  if (role.includes('blacksmith')) {
+    return `${name}: "Dawn breaks! Time to stoke the furnace coals and get the forge anvil ringing."`;
+  }
+  if (role.includes('merchant') || role.includes('fishmonger')) {
+    return `${name}: "Fresh morning shipments arrived! Setting out the display stalls for the day."`;
+  }
+  if (role.includes('guard')) {
+    return `${name}: "Morning shift taking over the watchtowers. Safe skies over the realm today."`;
+  }
+  if (role.includes('apothecary')) {
+    return `${name}: "Brewing morning restoratives before the daily rush begins."`;
+  }
+  return `${name}: "The morning bell rings! Time to head to the stalls and start the day's work."`;
+}

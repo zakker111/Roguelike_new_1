@@ -7,6 +7,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { TileType, Enemy, Trap, Chest, GameState } from '../types';
 import { GraphicsVisualMode } from '../canvas/types';
 import { renderTileMap } from '../canvas/tileMapRenderer';
+import { renderElementalFields } from '../canvas/elementalVfxRenderer';
 import { renderEntityLayer, GameVisualEffect } from '../canvas/entityLayerRenderer';
 import { renderWeatherAndLighting } from '../canvas/weatherLightingRenderer';
 import { hybridGraphicsEngine } from '../canvas/HybridGraphicsEngine';
@@ -18,67 +19,18 @@ import { entityInterpolationManager } from '../canvas/entityInterpolationManager
 import { combatVfxEngine } from '../canvas/combatVfxEngine';
 import { calculateDirectionalDrift } from '../utils/combatFloaterDrift';
 import { chunkBackgroundCache } from '../canvas/chunkBackgroundCache';
+import { performanceMonitor } from '../utils/performanceMonitor';
+import { bloomEngine } from '../canvas/bloomEngine';
+import { vignetteRenderer } from '../canvas/vignetteRenderer';
+import { setAcousticListenerContext } from '../utils/audio/acousticOcclusion';
+import {
+  SpriteSheetTileMapping,
+  SpriteSheetConfig,
+  DEFAULT_TILESET_CONFIG,
+} from '../canvas/types';
 
-export interface SpriteSheetTileMapping {
-  /** Column index on the sprite sheet (0-indexed) */
-  sx: number;
-  /** Row index on the sprite sheet (0-indexed) */
-  sy: number;
-  /** Total frames for an animated sequence (defaults to 1 for static elements) */
-  frameCount?: number;
-  /** Custom width multiplier (e.g. for large multi-tile boss characters) */
-  widthMultiplier?: number;
-  /** Custom height multiplier */
-  heightMultiplier?: number;
-  /** Animation speed multiplier: game ticks to spend on each visual frame */
-  ticksPerFrame?: number;
-}
-
-export interface SpriteSheetConfig {
-  /** Master switch to enable sprite-sheet textured rendering. Defaults to false to use default stylized text/emojis. */
-  enabled: boolean;
-  /** File path or URL to the spritesheet image file */
-  imageSrc: string;
-  /** Native size of a single tile in the target spritesheet (typically 16 or 32 pixels) */
-  spriteSize: number;
-  /** Mapping of TileType enum values to their coordinates and animation sequences */
-  tileMappings: Partial<Record<TileType, SpriteSheetTileMapping>>;
-  /** Biome specific mappings to override standard TileType mappings dynamically */
-  biomeMappings?: Record<string, Partial<Record<TileType, SpriteSheetTileMapping>>>;
-  /** Traps mapping by trap name */
-  trapMappings?: Record<string, SpriteSheetTileMapping>;
-  /** Chest mappings by open/closed status */
-  chestMappings?: {
-    closed: SpriteSheetTileMapping;
-    opened: SpriteSheetTileMapping;
-  };
-  /** Mapping of entity character characters (e.g. '@', 'S', 'O', 'G') to their animated sprite rows */
-  entityMappings?: Record<string, SpriteSheetTileMapping>;
-}
-
-export const DEFAULT_TILESET_CONFIG: SpriteSheetConfig = {
-  enabled: false, // Defaulting to false to preserve the current high-contrast text/emoji tiles
-  imageSrc: '/assets/tileset.png', // Placeholder URL for future artist assets
-  spriteSize: 32, // HD 32x32 pixel grids
-  tileMappings: {},
-  biomeMappings: {},
-  trapMappings: {
-    'Spikes': { sx: 5, sy: 5, frameCount: 1 },
-    'FireVent': { sx: 6, sy: 5, frameCount: 1 },
-    'PoisonGas': { sx: 7, sy: 5, frameCount: 1 }
-  },
-  chestMappings: {
-    closed: { sx: 13, sy: 4, frameCount: 1 },
-    opened: { sx: 14, sy: 4, frameCount: 1 }
-  },
-  entityMappings: {
-    '@': { sx: 0, sy: 0, frameCount: 4, ticksPerFrame: 12 },
-    'S': { sx: 0, sy: 20, frameCount: 4, ticksPerFrame: 12 },
-    'O': { sx: 0, sy: 24, frameCount: 4, ticksPerFrame: 12 },
-    'G': { sx: 0, sy: 16, frameCount: 4, ticksPerFrame: 12 },
-    'D': { sx: 0, sy: 32, frameCount: 4, ticksPerFrame: 12 },
-  }
-};
+export type { SpriteSheetTileMapping, SpriteSheetConfig };
+export { DEFAULT_TILESET_CONFIG };
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -324,6 +276,7 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
     let animId: number;
 
     const render = () => {
+      const frameStart = performance.now();
       const gameState = gameStateRef.current;
       // Increment continuous visual frame tick counter for sprite animations
       animationTickRef.current += 1;
@@ -571,6 +524,17 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         animationTick: animationTickRef.current,
       });
 
+      // 4b. Render Elemental Ground Fields (Fire, Ice, Shock, Steam, Poison Gas)
+      renderElementalFields({
+        ctx,
+        gameState,
+        camX,
+        camY,
+        dimensions,
+        tileSize: TILE_SIZE,
+        animationTick: animationTickRef.current,
+      });
+
       // 5. Render Entity Layer (Corpses, Props, Traps, Chests, POIs, Loot, NPCs, Enemies, Player, Effects)
       renderEntityLayer({
         ctx,
@@ -597,6 +561,22 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         camY,
         tileSize: TILE_SIZE,
       });
+
+      // 7. Luminous HDR Bloom Pass (Torches, Fireplaces, Magic, Elemental Fields)
+      bloomEngine.renderBloomPass(ctx, gameState, camX, camY, dimensions, TILE_SIZE);
+
+      // 8. Atmospheric Perimeter Vignette Pass (Dungeon Depth, Day/Night, Storms)
+      vignetteRenderer.renderVignettePass(ctx, dimensions, gameState);
+
+      // Update acoustic raytracing listener coordinates & current map for real-time behind-door muffling
+      setAcousticListenerContext(gameState.playerX, gameState.playerY, gameState.map);
+
+      const frameDuration = performance.now() - frameStart;
+      performanceMonitor.recordFrame(
+        frameDuration,
+        effectsRef.current.length + combatVfxEngine.getActiveFloaterCount(),
+        3
+      );
 
       animId = requestAnimationFrame(render);
     };

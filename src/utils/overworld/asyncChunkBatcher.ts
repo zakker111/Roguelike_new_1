@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { OverworldChunk } from '../../types';
+import { OverworldChunk, LEVEL_WIDTH, LEVEL_HEIGHT } from '../../types';
 import { generateOverworldChunk } from './overworldChunkGen';
-import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../gameUtils';
 
 export interface ChunkGeneratorOptions {
   spawnedCats?: string[];

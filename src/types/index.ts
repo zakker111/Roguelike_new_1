@@ -7,5 +7,6 @@ export * from './map';
 export * from './items';
 export * from './entities';
 export * from './game';
+export * from './elemental';
 export * from './minigames/glyphGame';
 export * from '../factions/types';

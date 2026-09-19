@@ -1,9 +1,8 @@
 import { TileType, GameState } from '../types';
-import { SpriteSheetConfig } from '../components/GameCanvas';
+import { SpriteSheetConfig, getStoredGraphicsMode } from './types';
 import { resolveTileStyle } from './tileMapRenderer';
 import { drawSpriteOrAscii } from './spriteRenderer';
 import { tilesetAtlasManager } from './TilesetAtlasManager';
-import { hybridGraphicsEngine } from './HybridGraphicsEngine';
 
 export interface ChunkCacheConfig {
   gameState: GameState;
@@ -11,6 +10,7 @@ export interface ChunkCacheConfig {
   tilesetConfig: SpriteSheetConfig;
   tilesetImage: HTMLImageElement | null;
   animationTick?: number;
+  isTilesetMode?: boolean;
 }
 
 /**
@@ -31,6 +31,7 @@ export class ChunkBackgroundCache {
   private cachedTileSize: number = 0;
   private lastDiscoveryCount: number = -1;
   private lastMapVersion: number = 0;
+  private lastMapRef: TileType[][] | null = null;
   private lastPlayerX: number = -1;
   private lastPlayerY: number = -1;
   private lastTurnsPlayed: number = -1;
@@ -58,12 +59,13 @@ export class ChunkBackgroundCache {
   }
 
   /**
-   * Manually invalidate cache (e.g. on chunk warp, dungeon depth change, graphics mode toggle)
+   * Manually invalidate cache (e.g. on chunk warp, dungeon depth change, graphics mode toggle, tile harvest)
    */
   public invalidate(): void {
     this.isDirty = true;
     this.cachedKey = '';
     this.lastDiscoveryCount = -1;
+    this.lastMapRef = null;
   }
 
   /**
@@ -180,7 +182,14 @@ export class ChunkBackgroundCache {
     const chunkKey = `${gameState.currentChunkX},${gameState.currentChunkY}`;
     const activeWatchtower = isOverworld ? gameState.overworldChunks?.[chunkKey]?.watchtower : undefined;
     const controller = activeWatchtower?.controller || 'neutral';
-    const isTileset = tilesetConfig.enabled || hybridGraphicsEngine.isTilesetMode();
+    const isTileset = tilesetConfig.enabled || config.isTilesetMode || getStoredGraphicsMode() === 'animated_tileset';
+
+    // Auto-detect if map reference changed (e.g. tree chopped, ore mined, door opened, terraformed)
+    if (this.lastMapRef !== gameState.map) {
+      this.lastMapRef = gameState.map;
+      this.lastMapVersion++;
+      this.isDirty = true;
+    }
 
     const turnsPlayed = gameState.playerStats?.turnsPlayed || 0;
     const playerX = gameState.playerX;

@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { bresenhamLine, computeFOV, getNextStepTowards, getNextStepAwayFrom } from '../utils/ai';
+import {
+  bresenhamLine,
+  computeFOV,
+  hasLineOfSight,
+  getNextStepTowards,
+  getNextStepAwayFrom,
+  isTileBlockedForEntity,
+  isTileWalkableForEntity
+} from '../utils/ai';
 import { TileType } from '../types';
 
 describe('12.1 Core AI, Movement & Pathfinding Verification', () => {
@@ -26,6 +34,79 @@ describe('12.1 Core AI, Movement & Pathfinding Verification', () => {
     expect(fov[5][2]).toBe(true); // Player origin
     expect(fov[5][5]).toBe(true); // Wall tile itself is visible
     expect(fov[5][6]).toBe(false); // Tile directly behind wall is blocked from line of sight
+  });
+
+  it('isTileBlockedForEntity and isTileWalkableForEntity accurately recognize wood and obstacles', () => {
+    // Trees, stumps, and wood
+    expect(isTileBlockedForEntity(TileType.Tree)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.PineTree)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.BirchTree)).toBe(true);
+    // Tree stumps are cut trunks that both player and entities can walk over
+    expect(isTileBlockedForEntity(TileType.TreeStump)).toBe(false);
+    expect(isTileWalkableForEntity(TileType.TreeStump)).toBe(true);
+
+    // Veins and structures
+    expect(isTileBlockedForEntity(TileType.CopperVein)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.IronVein)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.WatchtowerWall)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.WatchtowerSlit)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.WatchtowerBarricade)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Campfire)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Fireplace)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Anvil)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.FieldTent)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Empty)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Bush)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Chair)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Sign)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.Torch)).toBe(true);
+    expect(isTileBlockedForEntity(TileType.WatchtowerFlag)).toBe(true);
+
+    // Walkable tiles
+    expect(isTileWalkableForEntity(TileType.Floor)).toBe(true);
+    expect(isTileWalkableForEntity(TileType.Grass)).toBe(true);
+    expect(isTileWalkableForEntity(TileType.Path)).toBe(true);
+    expect(isTileWalkableForEntity(TileType.Bedroll)).toBe(true);
+    expect(isTileWalkableForEntity(TileType.WatchtowerDeck)).toBe(true);
+    expect(isTileWalkableForEntity(TileType.DungeonEntrance)).toBe(true);
+    expect(isTileWalkableForEntity(TileType.TownGate)).toBe(true);
+  });
+
+  it('getNextStepTowards routes around wood/tree tiles without walking through them', () => {
+    const width = 7;
+    const height = 7;
+    const map: TileType[][] = Array(height).fill(null).map(() => Array(width).fill(TileType.Grass));
+
+    // Place a Tree in the direct line from (1, 3) to (3, 3) at (2, 3)
+    map[3][2] = TileType.Tree;
+
+    const step = getNextStepTowards(1, 3, 3, 3, map, false, []);
+    expect(step).not.toBeNull();
+    // Step must NOT be (2, 3) because (2, 3) is a Tree!
+    expect(step).not.toEqual({ x: 2, y: 3 });
+    // Must step up or down around the tree
+    expect(step?.y === 2 || step?.y === 4).toBe(true);
+  });
+
+  it('hasLineOfSight is blocked by Trees, PineTrees, and BirchTrees', () => {
+    const width = 10;
+    const height = 10;
+    const map: TileType[][] = Array(height).fill(null).map(() => Array(width).fill(TileType.Grass));
+
+    // Unobstructed line of sight
+    expect(hasLineOfSight(1, 3, 5, 3, map)).toBe(true);
+
+    // Obstructed by Tree
+    map[3][3] = TileType.Tree;
+    expect(hasLineOfSight(1, 3, 5, 3, map)).toBe(false);
+
+    // Obstructed by PineTree
+    map[3][3] = TileType.PineTree;
+    expect(hasLineOfSight(1, 3, 5, 3, map)).toBe(false);
+
+    // Obstructed by BirchTree
+    map[3][3] = TileType.BirchTree;
+    expect(hasLineOfSight(1, 3, 5, 3, map)).toBe(false);
   });
 
   it('getNextStepTowards routes around obstacles via BFS', () => {

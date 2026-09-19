@@ -311,3 +311,56 @@ export function manageActiveChunkWindow(
 
   return hasModifications ? nextChunks : chunks;
 }
+
+export interface ChunkMemoryStats {
+  totalLoaded: number;
+  uncompressed: number;
+  compressed: number;
+  uncompressedPercent: number;
+  estimatedMemoryKb: number;
+  savedMemoryKb: number;
+}
+
+/**
+ * Returns memory footprint and compression metrics across loaded overworld chunks.
+ */
+export function getChunkMemoryStats(chunks?: Record<string, OverworldChunk>): ChunkMemoryStats {
+  if (!chunks) {
+    return {
+      totalLoaded: 0,
+      uncompressed: 0,
+      compressed: 0,
+      uncompressedPercent: 0,
+      estimatedMemoryKb: 0,
+      savedMemoryKb: 0,
+    };
+  }
+
+  const chunkList = Object.values(chunks);
+  const totalLoaded = chunkList.length;
+  let uncompressed = 0;
+  let compressed = 0;
+
+  for (let i = 0; i < totalLoaded; i++) {
+    if (chunkList[i].isCompressed) {
+      compressed++;
+    } else {
+      uncompressed++;
+    }
+  }
+
+  // An uncompressed 80x80 chunk has 6,400 tile ints + discovery and visibility boolean arrays (~64KB heap)
+  // A compressed RLE string chunk consumes ~0.4KB
+  const rawKb = uncompressed * 64;
+  const compKb = compressed * 0.4;
+  const savedKb = compressed * (64 - 0.4);
+
+  return {
+    totalLoaded,
+    uncompressed,
+    compressed,
+    uncompressedPercent: totalLoaded > 0 ? Math.round((uncompressed / totalLoaded) * 100) : 0,
+    estimatedMemoryKb: Math.round(rawKb + compKb),
+    savedMemoryKb: Math.round(savedKb),
+  };
+}

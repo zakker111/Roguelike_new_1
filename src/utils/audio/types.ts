@@ -18,6 +18,9 @@ export interface PlaySoundOptions {
   pitch?: number;
   isIndoor?: boolean;
   priority?: number;
+  map?: any;
+  occlusion?: number;
+  roomResonanceQ?: number;
 }
 
 export enum SoundPriority {

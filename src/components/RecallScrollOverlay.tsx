@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, MapPin, Sparkles, Compass, DoorOpen } from 'lucide-react';
 import { playSound } from '../utils/audio';
 import { hasTownAtChunk, getDeterministicTownName, getOrganicBiome } from '../utils/overworld';
@@ -16,6 +16,19 @@ export default function RecallScrollOverlay({
   gameState,
   onTeleport,
 }: RecallScrollOverlayProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Let's gather all available recall targets.

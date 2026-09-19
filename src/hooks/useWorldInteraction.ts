@@ -3,6 +3,8 @@ import { GameState, GameLogMessage, OverworldChunk, TileType, EquipmentItem, Cra
 import { playSound } from '../utils/audio';
 import { computeFOV } from '../utils/ai';
 import { harvestWorldResource } from '../utils/harvestEngine';
+import { chunkBackgroundCache } from '../canvas/chunkBackgroundCache';
+import { invalidateChunkCanvasCache } from '../components/worldmap/chunkTileRasterizer';
 
 export interface UseWorldInteractionProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -105,6 +107,8 @@ export function useWorldInteraction({
     }
 
     if (result.success && result.newState) {
+      chunkBackgroundCache.invalidate();
+      invalidateChunkCanvasCache(gameState.currentChunkX, gameState.currentChunkY);
       setGameState(result.newState);
       executeEnemiesTurn(gameState.playerX, gameState.playerY);
     }
@@ -120,6 +124,8 @@ export function useWorldInteraction({
     const nextMap = gameState.map.map((row, y) =>
       row.map((cell, x) => (x === targetX && y === targetY ? TileType.Floor : cell))
     );
+    chunkBackgroundCache.invalidate();
+    invalidateChunkCanvasCache(gameState.currentChunkX, gameState.currentChunkY);
     setGameState((prev) => ({ ...prev, map: nextMap }));
     addLogMessage('🚪 You opened a heavy building door with a creak and latch release.', 'system');
     executeEnemiesTurn(gameState.playerX, gameState.playerY);

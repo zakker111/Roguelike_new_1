@@ -1,10 +1,11 @@
 import { GameState, TileType } from '../types';
-import { SpriteSheetConfig } from '../components/GameCanvas';
+import { SpriteSheetConfig } from './types';
 import { drawSpriteOrAscii } from './spriteRenderer';
 import { getDirectionalShadowParams, renderEntityDirectionalShadow } from './shadowRenderer';
 import { visualFxParticleSystem } from './visualFxParticleSystem';
 import { entityInterpolationManager } from './entityInterpolationManager';
 import { combatVfxEngine } from './combatVfxEngine';
+import { renderSubmergedObjectCaustics } from './waterCausticsRenderer';
 
 const lastEntityPositions = new Map<string, { x: number; y: number }>();
 
@@ -501,7 +502,17 @@ export function renderEntityLayer({
       ctx.fillRect(barX, staggerBarY, barWidth * staggerPercent, 2);
     }
 
-    if (enemy.isStaggered) {
+    if (enemy.isSurrendered) {
+      ctx.font = 'bold 9px "Inter", sans-serif';
+      ctx.fillStyle = '#f8fafc';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏳️ YIELD', rx + tileSize / 2, ry - 3);
+    } else if (enemy.isPanicked) {
+      ctx.font = 'bold 8px "Inter", sans-serif';
+      ctx.fillStyle = '#fbbf24';
+      ctx.textAlign = 'center';
+      ctx.fillText('😱 PANIC', rx + tileSize / 2, ry - 3);
+    } else if (enemy.isStaggered) {
       ctx.font = 'bold 8px "Inter", sans-serif';
       ctx.fillStyle = '#f97316';
       ctx.textAlign = 'center';
@@ -514,11 +525,15 @@ export function renderEntityLayer({
       ctx.fillText(`${enemy.hp}/${enemy.maxHp}`, rx + tileSize / 2, ry + tileSize - 4);
     }
 
+    const enemyTile = gameState.map[y]?.[x];
+    if (isWaterOrSwampTile(enemyTile)) {
+      renderSubmergedObjectCaustics(ctx, rx, ry, tileSize, tileSize);
+    }
+
     // Check movement for water ripples & rain splashes
     const prevEnemyPos = lastEntityPositions.get(enemyKey);
     if (prevEnemyPos && (prevEnemyPos.x !== x || prevEnemyPos.y !== y)) {
-      const tile = gameState.map[y]?.[x];
-      if (isWaterOrSwampTile(tile)) {
+      if (isWaterOrSwampTile(enemyTile)) {
         visualFxParticleSystem.spawnWaterRipple(rx + tileSize / 2, ry + tileSize / 2);
       }
       if (gameState.isOverworld && (gameState.weather === 'rainy' || (gameState.weather as string) === 'stormy')) {
@@ -592,6 +607,11 @@ export function renderEntityLayer({
     ctx.beginPath();
     ctx.arc(prx + tileSize / 2, pry + tileSize / 2, tileSize * 0.5, 0, Math.PI * 2);
     ctx.stroke();
+  }
+
+  const playerTile = gameState.map[gameState.playerY]?.[gameState.playerX];
+  if (isWaterOrSwampTile(playerTile)) {
+    renderSubmergedObjectCaustics(ctx, prx, pry, tileSize, tileSize);
   }
 
   // Check player movement for water ripples & rain splashes

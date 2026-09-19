@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   X,
   Zap,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { GameState } from '../types';
 import { playSound } from '../utils/audio';
+import { performanceMonitor } from '../utils/performanceMonitor';
 import { useGodPanelState, DESIGNER_LEGEND } from '../hooks/god/useGodPanelState';
 import townTemplates from '../data/townTemplates.json';
 
@@ -47,37 +48,10 @@ import { GodDungeonEditor } from './god/GodDungeonEditor';
 import { GodModdingTab } from './god/GodModdingTab';
 import { GodMinigamesTab } from './god/GodMinigamesTab';
 import { TilesetTesterTab } from './god/TilesetTesterTab';
+import { GodCatalogLiveTuner } from './god/GodCatalogLiveTuner';
+import { PALETTE_TILES } from './god/GodHouseDesigner';
 
-export { DESIGNER_LEGEND };
-
-export const PALETTE_TILES = [
-  { char: '#', name: 'Wall 🧱', color: '#475569', desc: 'Solid wall bounds' },
-  { char: '.', name: 'Floor 🪵', color: '#1e293b', desc: 'Walkable floor tile' },
-  { char: 'D', name: 'Door 🚪', color: '#b45309', desc: 'Wood walkway door' },
-  { char: 'B', name: 'Bed 🛌', color: '#0d9488', desc: 'Comfortable sleeping bed' },
-  { char: 'C', name: 'Chair 🪑', color: '#451a03', desc: 'Sitting stool' },
-  { char: 'T', name: 'Table 🪵', color: '#78350f', desc: 'Wooden table' },
-  { char: 'f', name: 'Campfire 🔥', color: '#ea580c', desc: 'Illuminating fire source' },
-  { char: 'F', name: 'Fireplace 🔥', color: '#b91c1c', desc: 'Brick-built fireplace' },
-  { char: 'S', name: 'Sign 🪧', color: '#78350f', desc: 'Wooden pointer sign' },
-  { char: 'G', name: 'Grass 🌱', color: '#15803d', desc: 'Green grass tile' },
-  { char: 'W', name: 'Water 💧', color: '#1d4ed8', desc: 'Impassable pool water' },
-  { char: 'E', name: 'Entrance 🌀', color: '#6d28d9', desc: 'Mystical dungeon entryway' },
-  { char: 't', name: 'Tree 🌲', color: '#166534', desc: 'Impassable green tree' },
-  { char: 'P', name: 'Pine Tree 🌲', color: '#064e3b', desc: 'Dense needle pine tree' },
-  { char: 'Y', name: 'Birch Tree 🌳', color: '#022c22', desc: 'Light pale bark tree' },
-  { char: 'p', name: 'Path 🪨', color: '#64748b', desc: 'Stone path flooring' },
-  { char: 'w', name: 'Window 🪟', color: '#38bdf8', desc: 'Glass frame window wall' },
-  { char: 'b', name: 'Bush 🍓', color: '#047857', desc: 'Berry harvestable bush' },
-  { char: 'o', name: 'Torch 🕯️', color: '#f59e0b', desc: 'Wall-mounted flame light' },
-  { char: 'A', name: 'Anvil ⚒️', color: '#64748b', desc: 'Blacksmithing forging anvil' },
-  { char: 'K', name: 'Bookshelf 📚', color: '#b45309', desc: 'Leather-bound research library' },
-  { char: 'H', name: 'Counter 🪵', color: '#92400e', desc: 'Shopkeeper trade desk' },
-  { char: 'M', name: 'Stool 🪵', color: '#78350f', desc: 'Bar seating stool' },
-  { char: 'u', name: 'Drunkard 🍺', color: '#f59e0b', desc: 'Tavern drunk NPC' },
-  { char: 'N', name: 'Townsfolk 🧑', color: '#38bdf8', desc: 'Peaceful settlement civilian' },
-  { char: 'g', name: 'Guard 🛡️', color: '#f97316', desc: 'Ironclad town sentry' }
-];
+export { DESIGNER_LEGEND, PALETTE_TILES };
 
 export interface GodPanelOverlayProps {
   gameState: GameState;
@@ -89,6 +63,9 @@ export interface GodPanelOverlayProps {
   onTriggerScriptorium?: (scrollTemplateId?: string) => void;
   isAutoplayActive?: boolean;
   setIsAutoplayActive?: (active: boolean) => void;
+  isPerfHudOpen?: boolean;
+  setIsPerfHudOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+  onTogglePerfHud?: () => void;
   addLogMessage?: (msg: string, type?: string) => void;
 }
 
@@ -102,6 +79,9 @@ function GodPanelOverlayComponent({
   onTriggerScriptorium,
   isAutoplayActive = false,
   setIsAutoplayActive,
+  isPerfHudOpen,
+  setIsPerfHudOpen,
+  onTogglePerfHud,
   addLogMessage
 }: GodPanelOverlayProps) {
   const godState = useGodPanelState({
@@ -116,6 +96,19 @@ function GodPanelOverlayComponent({
     setIsAutoplayActive,
     addLogMessage
   });
+
+  // Close God Panel on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   const {
     activeTab,
@@ -348,12 +341,47 @@ function GodPanelOverlayComponent({
               SOVEREIGN DEVELOPER CONSOLE & GOD SUITE
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Quick Toggle for Real-Time Performance & Resource HUD */}
+            <button
+              onClick={() => {
+                if (onTogglePerfHud) {
+                  onTogglePerfHud();
+                } else if (setIsPerfHudOpen) {
+                  setIsPerfHudOpen((p) => {
+                    const next = !p;
+                    performanceMonitor.setHudOpen(next);
+                    if (addLogMessage) {
+                      addLogMessage(`⚡ Performance HUD ${next ? 'Activated' : 'Dismissed'} [F3]`, 'system');
+                    }
+                    return next;
+                  });
+                } else {
+                  const next = performanceMonitor.toggleHud();
+                  if (addLogMessage) {
+                    addLogMessage(`⚡ Performance HUD ${next ? 'Activated' : 'Dismissed'} [F3]`, 'system');
+                  }
+                }
+              }}
+              className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
+                (isPerfHudOpen ?? performanceMonitor.isHudOpen())
+                  ? 'bg-emerald-950/80 border-emerald-500/70 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                  : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+              title="Toggle Real-Time Performance & Resource HUD [F3]"
+            >
+              <Activity className={`w-3.5 h-3.5 ${(isPerfHudOpen ?? performanceMonitor.isHudOpen()) ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
+              <span>Perf HUD: {(isPerfHudOpen ?? performanceMonitor.isHudOpen()) ? 'ON' : 'OFF'}</span>
+              <span className="text-[10px] px-1 py-0.2 rounded bg-slate-800 text-amber-300">F3</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Global Notifications */}
@@ -387,7 +415,8 @@ function GodPanelOverlayComponent({
             { id: 'replay', label: 'Replay Sim', icon: History, color: 'text-amber-400' },
             { id: 'bestiary_test', label: 'Bestiary', icon: Skull, color: 'text-orange-400' },
             { id: 'dungeon_editor', label: 'Dungeon Floors', icon: Grid, color: 'text-purple-400' },
-            { id: 'modding_api', label: 'Modding API', icon: Code, color: 'text-pink-400' }
+            { id: 'modding_api', label: 'Modding API', icon: Code, color: 'text-pink-400' },
+            { id: 'catalog_tuner', label: 'Catalog Tuner', icon: Sliders, color: 'text-amber-400' }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -443,6 +472,18 @@ function GodPanelOverlayComponent({
                 handleResetLevelDecor={handleResetLevelDecor}
                 handleFastForwardTime={handleFastForwardTime}
                 handlePurgeExhaustion={handlePurgeExhaustion}
+                isPerfHudOpen={isPerfHudOpen}
+                handleTogglePerfHud={onTogglePerfHud || (() => {
+                  if (setIsPerfHudOpen) {
+                    setIsPerfHudOpen((p) => {
+                      const next = !p;
+                      performanceMonitor.setHudOpen(next);
+                      return next;
+                    });
+                  } else {
+                    performanceMonitor.toggleHud();
+                  }
+                })}
                 onClose={onClose}
               />
               <GodTeleportWarpPanel
@@ -714,6 +755,11 @@ function GodPanelOverlayComponent({
               triggerSuccessLog={triggerSuccessLog}
               playSound={playSound}
             />
+          )}
+
+          {/* In-Game Data Catalog Live Tuner */}
+          {activeTab === 'catalog_tuner' && (
+            <GodCatalogLiveTuner />
           )}
         </div>
 

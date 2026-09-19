@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, Cpu, Star, Sun, CloudRain, CloudFog, Snowflake, Heart, 
   Coins, Sparkles, ShieldAlert, Users, Swords, Skull, Flame, 
@@ -55,6 +55,19 @@ export default function GmPanelOverlay({
 }: GmPanelOverlayProps) {
   const [activeTab, setActiveTab] = useState<'Chaos Matrix' | 'Weather Control' | 'Hero Blessings' | 'Spawning Actions' | 'Tactical Smites' | 'Autonomous GM'>(initialTab);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Close GM Panel on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   // Read live Storyteller configuration state
   const currentGMObj = getGMStorytellerState();

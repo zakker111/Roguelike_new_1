@@ -243,6 +243,35 @@ export function handleDecorInteraction(prop: DungeonProp): InteractionResult {
     result.logs.push(`📦 [RELIC]: You pop open the overgrown relic coffer! Obtained ${gold} Gold and rare Solstice Petals!`);
     result.effectText = `💎 +${gold} GOLD`;
     result.effectType = 'loot';
+  } else if (type === 'salvage_barricade' || type === 'barricade') {
+    result.statChanges.addMaterial = { id: 'mat_wood', count: 3 };
+    result.statChanges.expChange = 15;
+    result.logs.push(`🪵 [SALVAGE]: You dismantle the heavy wooden barricade, collecting 3x Timber Logs and clearing the choke point!`);
+    result.effectText = `🪵 +3 WOOD`;
+    result.effectType = 'loot';
+  } else if (type === 'open_vault_chest' || type === 'vault_chest') {
+    const gold = Math.floor(Math.random() * 80) + 120;
+    result.statChanges.goldChange = gold;
+    result.statChanges.expChange = 75;
+    result.statChanges.addMaterial = { id: 'mat_refined_iron', count: 2 };
+    result.logs.push(`👑 [CONQUEST VAULT]: You crack the reinforced iron vault chest! Discovered ${gold} Gold and 2x Refined Iron ingots!`);
+    result.effectText = `👑 +${gold} GOLD / REFINED IRON`;
+    result.effectType = 'loot';
+  } else if (type === 'search_crate' || type === 'crate') {
+    const gold = Math.floor(Math.random() * 40) + 40;
+    result.statChanges.goldChange = gold;
+    result.statChanges.expChange = 25;
+    result.statChanges.addMaterial = { id: 'mat_tempered_scrap', count: 2 };
+    result.logs.push(`📦 [CONTRABAND]: You pry open the cache crate! Found ${gold} Gold and 2x Tempered Metal Scrap.`);
+    result.effectText = `🪙 +${gold} GOLD / SCRAP`;
+    result.effectType = 'loot';
+  } else if (type === 'drink_fountain' || type === 'fountain') {
+    result.statChanges.hpChange = 35;
+    result.statChanges.mpChange = 30;
+    result.statChanges.exhaustionChange = -20;
+    result.logs.push(`⛲ [FOUNTAIN]: You drink cold enchanted water from the obsidian fountain. Restored +35 HP, +30 MP, and quenched exhaustion!`);
+    result.effectText = `💧 +35 HP / +30 MP`;
+    result.effectType = 'heal';
   } else if (type === 'sun_dial' || type === 'align_sundial') {
     result.statChanges.dexChange = 1;
     result.logs.push(`☀️ [SUNDIAL]: You align the celestial sundial to sunlight. Gained permanent +1 Dexterity!`);

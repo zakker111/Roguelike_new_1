@@ -132,4 +132,44 @@ describe('Tool Harvesting Durability & Broken State Enforcement', () => {
     expect(result.logMessage).toContain('TOOL BROKE');
     expect(result.newState?.currentWeapon).toBeNull();
   });
+
+  it('updates chopped tree tile to TreeStump trunk and permits walking onto it', () => {
+    const state = createNewGameRun(123);
+    const axe = createMockTool('axe_iron', 'Iron Hatchet', 100, 100);
+    state.currentWeapon = axe as any;
+    const targetX = state.playerX + 1;
+    const targetY = state.playerY;
+    state.map[targetY][targetX] = TileType.Tree;
+
+    const result = harvestWorldResource(TileType.Tree, targetX, targetY, state);
+
+    expect(result.handled).toBe(true);
+    expect(result.success).toBe(true);
+    expect(result.newState?.map[targetY][targetX]).toBe(TileType.TreeStump);
+  });
+
+  it('updates mined ore vein to walkable ground (Grass in overworld, Floor in dungeon)', () => {
+    const state = createNewGameRun(123);
+    const pickaxe = createMockTool('pick_iron', 'Iron Pickaxe', 100, 100);
+    pickaxe.subType = 'Pickaxe' as any;
+    state.currentWeapon = pickaxe as any;
+    const targetX = state.playerX + 1;
+    const targetY = state.playerY;
+
+    // Overworld test
+    state.isOverworld = true;
+    state.map[targetY][targetX] = TileType.CopperVein;
+    const owResult = harvestWorldResource(TileType.CopperVein, targetX, targetY, state);
+    expect(owResult.handled).toBe(true);
+    expect(owResult.success).toBe(true);
+    expect(owResult.newState?.map[targetY][targetX]).toBe(TileType.Grass);
+
+    // Dungeon test
+    state.isOverworld = false;
+    state.map[targetY][targetX] = TileType.IronVein;
+    const dgResult = harvestWorldResource(TileType.IronVein, targetX, targetY, state);
+    expect(dgResult.handled).toBe(true);
+    expect(dgResult.success).toBe(true);
+    expect(dgResult.newState?.map[targetY][targetX]).toBe(TileType.Floor);
+  });
 });

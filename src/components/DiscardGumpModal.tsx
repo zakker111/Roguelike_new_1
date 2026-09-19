@@ -31,6 +31,19 @@ export const DiscardGumpModal: React.FC<DiscardGumpModalProps> = ({
     setQty(1);
   }, [data?.id]);
 
+  // Close Discard Gump on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
+
   const maxQty = data.maxQuantity;
   const weightSaved = (data.unitWeight * qty).toFixed(1);
   const remainingQty = maxQty - qty;

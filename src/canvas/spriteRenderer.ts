@@ -1,6 +1,5 @@
 import { TileType } from '../types';
-import { SpriteSheetConfig, SpriteSheetTileMapping } from '../components/GameCanvas';
-import { hybridGraphicsEngine } from './HybridGraphicsEngine';
+import { SpriteSheetConfig, SpriteSheetTileMapping, isTilesetModeActive } from './types';
 import { tilesetAtlasManager } from './TilesetAtlasManager';
 import { assetPreloader } from './AssetPreloader';
 import { mockupAtlasGenerator } from './MockupAtlasGenerator';
@@ -51,7 +50,7 @@ export function drawSpriteOrAscii(
     ctx.globalAlpha = options.alpha!;
   }
 
-  const isTilesetActive = tilesetConfig.enabled || hybridGraphicsEngine.isTilesetMode();
+  const isTilesetActive = tilesetConfig.enabled || isTilesetModeActive();
 
   // Lazy ensure mockup atlases or PNGs are ready if in tileset mode
   if (isTilesetActive && !assetPreloader.isLoaded('main_tileset')) {

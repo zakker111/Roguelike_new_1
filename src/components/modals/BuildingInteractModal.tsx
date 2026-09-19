@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Shield, Wrench, Coins, ArrowUpCircle, Castle, Flag, Users } from 'lucide-react';
 import { GameState } from '../../types';
 import { playSound } from '../../utils/audio';
@@ -34,6 +34,19 @@ export const BuildingInteractModal: React.FC<BuildingInteractModalProps> = ({
 }) => {
   const [currentDurability, setCurrentDurability] = useState(durability);
   const [currentGold, setCurrentGold] = useState(accumulatedGold);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   const isPlayerOwned = controller === 'player' || controller === 'vanguard';
 

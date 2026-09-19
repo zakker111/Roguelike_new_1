@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, Skull, Shield, Sword, Heart, Activity, 
   Coins, Sparkles, Lock, Search, 
@@ -16,6 +16,20 @@ export default function BestiaryOverlay({ defeatedEnemiesCount = {}, onClose, in
   const [activeTab, setActiveTab] = useState<'Standard' | 'Wildlife' | 'Bosses'>('Standard');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEntryKey, setSelectedEntryKey] = useState<string>('');
+
+  // Close bestiary on Escape key if not inline
+  useEffect(() => {
+    if (!onClose || inline) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose, inline]);
 
   // Grouped entries under the current tab, filtered by search query
   const filteredEntries = useMemo(() => {

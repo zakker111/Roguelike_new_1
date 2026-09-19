@@ -5,7 +5,9 @@ import {
   PlayerEffect,
   EquipmentItem,
   CaravanTravelState,
-  PlayerStats
+  PlayerStats,
+  TileType,
+  ElementalTile
 } from '../../types';
 
 export type FoodBuff = NonNullable<GameState['activeFoodBuff']>;
@@ -38,6 +40,8 @@ export interface TurnEnvironmentResult {
   gmStateUpdates: Partial<GameState>;
   staticLogs: string[];
   nextEnemies: Enemy[];
+  nextElementalFields?: ElementalTile[];
+  mapModifications?: { x: number; y: number; newTile: TileType }[];
 }
 
 export interface HostileCombatResult {

@@ -76,6 +76,9 @@ export enum EnemyState {
   Chasing = 'Chasing',
   Retreating = 'Retreating',
   Sleeping = 'Sleeping',
+  Fleeing = 'Fleeing',
+  Surrendered = 'Surrendered',
+  Dead = 'Dead',
 }
 
 export enum EnemyType {
@@ -89,6 +92,9 @@ export enum EnemyType {
   WildlifeDeer = 'Deer',   // Non-hostile, flees
   WildlifeBoar = 'Boar',   // Neutral/passive, attacks only if hit or just flees
   WildlifeGoat = 'Goat',   // Non-hostile, climbs/flees
+  Wolf = 'Wolf',           // Predator wolf
+  Rabbit = 'Rabbit',       // Small prey rabbit/hare
+  Bear = 'Bear',           // Apex forest predator
   LootGoblin = 'LootGoblin', // Non-aggressive wandering sprite
   Ghost = 'Ghost',           // Spectral, high evasion
   Vampire = 'Vampire',       // Lifesteals, fast
@@ -196,6 +202,18 @@ export interface Enemy {
   staggerTurns?: number;      // Remaining turns of stagger stun
   aiRole?: 'melee' | 'skirmisher_kiting' | 'support_healer' | 'support_buffer' | 'tank' | 'ambusher'; // Advanced behavioral AI archetype
   supportSpellCooldown?: number; // Cooldown turns before support healing/buffing spells can be re-cast
+  isPanicked?: boolean;          // Flag when leader falls and squad breaks formation
+  panicTurns?: number;           // Remaining turns of panicked retreat
+  isSurrendered?: boolean;       // True if low-HP isolated hostile dropped weapons and yielded
+  surrenderTurns?: number;       // Turns until hostile cowers or flees peacefully
+  droppedMoraleLoot?: boolean;   // Ensures dropped panic/surrender loot spawns only once
+  homeCampX?: number;            // Camp origin coordinate for retreat routing
+  homeCampY?: number;
+  isHighGroundSniper?: boolean;  // Elevated barricade/perch sniper with enhanced range and cover
+  packId?: string;               // Faction squad or wildlife pack membership ID
+  packLeaderId?: string;         // Explicit pack leader or commander ID
+  diet?: 'herbivore' | 'carnivore' | 'omnivore'; // Ecological diet classification
+  hungerLevel?: number;          // Predator hunger level (0 to 100)
 }
 
 export interface NPC {

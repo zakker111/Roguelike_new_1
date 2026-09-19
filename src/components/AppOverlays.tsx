@@ -21,9 +21,13 @@ import UnlawfulAssaultModal from './modals/UnlawfulAssaultModal';
 import WorldThreatModal from './modals/WorldThreatModal';
 import { WorldMapModal } from './worldmap/WorldMapModal';
 import { SanctumRelic } from '../utils/relics';
+import { PerformanceHud } from './PerformanceHud';
+import { performanceMonitor } from '../utils/performanceMonitor';
 
 export interface AppOverlaysProps {
   // States
+  isPerfHudOpen?: boolean;
+  setIsPerfHudOpen?: (val: boolean) => void;
   isHelpOpen: boolean;
   setIsHelpOpen: (val: boolean) => void;
 
@@ -118,6 +122,8 @@ export interface AppOverlaysProps {
 }
 
 export const AppOverlays = React.memo<AppOverlaysProps>(({
+  isPerfHudOpen,
+  setIsPerfHudOpen,
   isHelpOpen,
   setIsHelpOpen,
   isWorldThreatOpen,
@@ -240,6 +246,8 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
           }}
           isAutoplayActive={isAutoplayActive}
           setIsAutoplayActive={setIsAutoplayActive}
+          isPerfHudOpen={isPerfHudOpen}
+          setIsPerfHudOpen={setIsPerfHudOpen}
           addLogMessage={addLogMessage}
         />
       )}
@@ -502,6 +510,7 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
       {activeRelicDraft && (
         <SanctumRelicsDraftOverlay
           draft={activeRelicDraft}
+          onClose={() => setActiveRelicDraft(null)}
           onSelectRelic={(relic) => {
             setGameState(prev => {
               const stats = { ...prev.playerStats };
@@ -519,6 +528,19 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
             });
             addLogMessage(`🌟 Fused Sanctum Relic: Claimed the ${relic.name}!`, 'craft');
             setActiveRelicDraft(null);
+          }}
+        />
+      )}
+
+      {/* Real-Time Performance & Resource HUD */}
+      {(isPerfHudOpen ?? performanceMonitor.isHudOpen()) && (
+        <PerformanceHud
+          gameState={gameState}
+          onClose={() => {
+            if (setIsPerfHudOpen) {
+              setIsPerfHudOpen(false);
+            }
+            performanceMonitor.setHudOpen(false);
           }}
         />
       )}

@@ -9,3 +9,4 @@ export * from './spatialAudio';
 export * from './soundCatalog';
 export * from './ambientSoundscapes';
 export * from './voiceManager';
+export * from './acousticOcclusion';

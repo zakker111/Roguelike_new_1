@@ -27,6 +27,7 @@ import {
   updateWeaponDurability,
   updateShieldDurability
 } from './combat';
+import { triggerSquadMoraleBreakOnLeaderDeath } from './ai/factionMorale';
 
 export type { UsePlayerAttackParams };
 
@@ -197,6 +198,9 @@ export function usePlayerAttack({
 
       const flavor = getCombatFlavorText(weapon, enemy.name, rollCrit);
       addLogMessage(`${flavor} (Dealt ${finalDmg} damage${rollCrit ? ' CRITICAL!' : ''})`, 'combat');
+      if (enemy.isSurrendered) {
+        addLogMessage(`⚔️ [EXECUTION STRIKE]: You mercilessly cut down the defenseless, surrendered ${enemy.name}!`, 'danger');
+      }
 
       const hitEvent = new CustomEvent('spawn-game-effect', {
         detail: {
@@ -212,7 +216,7 @@ export function usePlayerAttack({
       const guardWasAttacked = isGuard && !gameState.areGuardsHostile;
 
       setGameState((prev) => {
-        const nextEnemies = [...prev.enemies];
+        let nextEnemies = [...prev.enemies];
         let nextLootPiles = prev.lootPiles ? [...prev.lootPiles] : [];
         let nextCorpses = prev.corpses ? [...prev.corpses] : [];
         let nextSplatters = prev.bloodSplatters ? [...prev.bloodSplatters] : [];
@@ -464,6 +468,41 @@ export function usePlayerAttack({
             updatedEnemy.type as string,
             !!updatedEnemy.isBoss
           );
+
+          // Phase E2: Squad & Pack morale break on leader death
+          const squadMorale = triggerSquadMoraleBreakOnLeaderDeath(
+            updatedEnemy,
+            nextEnemies,
+            (msg, logType) => {
+              updatedLogs.push({
+                id: `morale_${Date.now()}_${Math.random()}`,
+                text: msg,
+                type: (logType as any) || 'combat',
+                timestamp: formatGameTime(prev.gameTime).timeStr,
+              });
+            },
+            (fx, fy, txt, col) => {
+              const ev = new CustomEvent('spawn-game-effect', {
+                detail: { x: fx, y: fy, text: txt, color: col, type: 'heal' },
+              });
+              window.dispatchEvent(ev);
+            },
+            playSound
+          );
+          nextEnemies = squadMorale.updatedEnemies;
+          if (squadMorale.droppedPiles.length > 0) {
+            squadMorale.droppedPiles.forEach((p) => {
+              nextLootPiles.push({
+                id: `morale_drop_${Date.now()}_${Math.random()}`,
+                x: p.x,
+                y: p.y,
+                gold: p.gold,
+                materials: p.materials,
+                catalysts: [],
+                equipment: [],
+              });
+            });
+          }
         }
 
         let nextCaravanTravel = prev.caravanTravel;

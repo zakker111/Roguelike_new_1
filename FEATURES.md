@@ -14,12 +14,14 @@ Welcome to **Sunder: Chronicles of the Forge** (Abyss Rogue), an advanced proced
 - **Jumbo Map Dimensions**: Each overworld chunk is dynamically scaled to an expanded **64x40 grid** of tiles, widening the walk space and adding pristine density to natural and structural assets.
 - **Dynamic Coordinate Boundaries**: The Overworld spans an infinitely scrolling tile grid. Crossing chunk borders dynamically prompts smooth procedural generation of new landscapes, saving the old chunks inside the game's state memory.
 - **Biome Multiplicity**: Chunks feature distinct eco-regions:
-  - 🌲 **Verdant Forests**: Soft plains filled with trees, wild grass pathways, spawning Sweet Berries (`mat_berry`), rare Earthy Forest Truffles (`mat_forest_truffle`), and Wild Honeycombs (`mat_honeycomb`).
-  - 🏜️ **Arid Deserts**: Barren golden sand dunes, cacti clusters, dry tumbleweeds (`*`), and harvestable Sun-Blossom Aloe succulents (`mat_sun_aloe`).
-  - ❄️ **Tundra Glaciers & Glacial Caverns**: Deep subzero ice fields with frozen evergreens, snowdrifts, frostbite vents, falling icicles, and delicate Glacial Frostbloom flowers (`mat_frostbloom`).
-  - 🐊 **Soggy Swamps**: Dense mud pits, mossy floor tiles, stagnant water bodies, and harvestable Bioluminescent Nightshade herbs (`mat_swamp_nightshade`).
+  - 🌲 **Verdant Forests**: Soft plains filled with trees, wild grass pathways, spawning Sweet Berries (`mat_berry`) from wild bushes, rare Earthy Forest Truffles (`mat_forest_truffle`), and Wild Honeycombs (`mat_honeycomb`).
+  - 🏜️ **Arid Deserts**: Barren golden sand dunes, cacti clusters, dry tumbleweeds (`*`), and harvestable Sun-Blossom Aloe succulents (`mat_sun_aloe`) from desert bushes.
+  - ❄️ **Tundra Glaciers & Glacial Caverns**: Deep subzero ice fields with frozen evergreens, snowdrifts, frostbite vents, falling icicles, and delicate Glacial Frostbloom flowers (`mat_frostbloom`) harvested from frosted shrubs.
+  - 🐊 **Soggy Swamps**: Dense mud pits, mossy floor tiles, stagnant water bodies, and harvestable Bioluminescent Nightshade herbs (`mat_swamp_nightshade`) harvested from marsh shrubs.
   - 🪸 **Sunken Coral Reefs**: Azure oceanic lagoons, vibrant pink/cyan coral colonies, geysers, tidal pools, and drifting aquatic bubble atmospheres.
-  - 🌋 **Volcanic Calderas**: Searing magma fissures, obsidian crag plains, sulfur vents, rising ash particles, and molten lava lakes.
+  - 🌋 **Volcanic Calderas**: Searing magma fissures, obsidian crag plains, sulfur vents, rising ash particles, molten lava lakes, and charred shrubs yielding ash reagents.
+  - ⛏️ **Mineral Belts & Subterranean Mining (v8.6.0)**: Overworld chunks generate rich mineral belts spawning clusters of Copper Veins (`TileType.CopperVein`) and deep Iron Veins (`TileType.IronVein`). In addition, subterranean dungeons feature cavern mineral veins embedded directly into dungeon room wall alcoves for deep mining expeditions. Equipped with a pickaxe, players can mine raw Copper and Iron ores for forge blacksmithing, with mining tool durability and interactive yield popups. Harvested veins cleanly revert to natural walkable terrain (`TileType.Grass` in the overworld, `TileType.Floor` in dungeons).
+  - 🌿 **Wilderness Foraging & Tree Felling**: Foraging wild bushes gathers region-specific berries, herbs, and succulents. Chopping trees fells timber while leaving walkable tree stumps that can be cleared with the 'G' key for scrap kindling.
   - 🏰 **Towns & Settlements**: Civilized sanctuaries with shopkeepers, taverns, inns, and municipal town guards. Weather in town biomes remains mild and protected. Town guards (`isTownGuard: true`) feature an active defense AI that continuously scans the settlement map for hostile invaders (bandits, rogue beasts, or hostile monsters). When a threat is detected, guards wake sleeping sentries within 30 tiles, march towards the hostile using BFS pathfinding (`getNextStepTowards`), and engage in reciprocal combat dealing persistent damage.
 - **Strict Biome-Aware Weather Rules Engine**: The weather simulation enforces biome climate rules—there is always strictly one active weather pattern played at a time, tailored to the current biome:
   - *Deserts*: Only sunny/clear, foggy, or sandstorm conditions (rain, snow, or blizzards never occur in deserts).
@@ -1237,6 +1239,70 @@ Delivered an inter-settlement trade expedition and tactical battlefield system (
   - Retreating back to the wagon applies carriage damage penalties while safely returning the party to the overland route.
 - **Wagon Integrity & High-Value Rewards**:
   - Arriving at the destination calculates rewards based on preserved wagon hull percentage, granting bonus elemental catalysts for pristine condition ($\ge 85\%$).
+
+---
+
+## 68. Living Ecosystem & Autonomous NPC Routines (v8.3.0)
+
+Delivered a simulated ecological and autonomous AI behavior layer (Pillar 1):
+
+- **Fauna Ecology & Predator-Prey Dynamics (`src/hooks/ai/useCivilianAI.ts`, `src/types/entities.ts`)**:
+  - Wildlife herbivores (Deer, Rabbits) forage and flee from carnivores.
+  - Apex predators (Wolves, Bears) track and hunt prey targets based on hunger thresholds, resolving kills without player involvement.
+- **Morale Breaking, Panic Retreats & Surrenders (`src/hooks/ai/factionMorale.ts`)**:
+  - Slaying a pack alpha (e.g. Dire Wolf Alpha) or squad leader triggers morale break checks on surviving pack members, causing them to panic and scatter.
+  - Wounded humanoid enemies (< 20% HP) trigger desperate surrender states, allowing the player to parley for gold, rations, or information.
+- **Dynamic Time-of-Day NPC Schedules & Severe Weather Shelter**:
+  - Villagers follow circadian routines: morning commerce, evening tavern socializing, and nighttime bed sleeping.
+  - Impending downpours and blizzards drive civilians and livestock into indoor buildings, porches, and around warm campfires.
+
+---
+
+## 69. Dynamic Cellular Elemental Propagation & Environmental Reactions (v8.4.0)
+
+Delivered the complete cellular elemental propagation sub-engine (Pillar 2):
+
+- **Cellular Automata Fire Spread (`src/utils/elemental/elementalEngine.ts`)**:
+  - Open flames ignite adjacent flammable terrain (grass tufts, berry bushes, pine trees, wooden doors, campsite furniture).
+  - Fire spread is governed by environmental humidity and turn ticks, organically consuming fuel.
+  - Completely incinerated vegetation transforms permanently into walkable `TileType.Ash` tiles.
+- **Cryomancy & Water Freezing / Melting**:
+  - Frost spells and sub-zero ground fields freeze liquid water into solid walkable `TileType.Ice` sheets, creating tactical river crossings.
+  - Fire and extreme heat thaw ice sheets back into liquid water; boiling hot surfaces generate dense steam clouds.
+- **Electric Shock Conduction & Gas Deflagrations**:
+  - Electric currents propagate instantaneously through all contiguous connected water bodies in a single turn, delivering shock damage and stun checks to entities standing in water.
+  - Contact between open flames and toxic poison gas pockets ignites violent 3×3 AOE deflagration explosions with bonus fire damage and terrain charring.
+- **Tactical Steam Clouds & Line-of-Sight Obscuration (`src/utils/ai.ts`)**:
+  - Billowing steam fields block Bresenham raycasting in `hasLineOfSight`, enabling tactical escapes, broken enemy ranged locks, and dynamic stealth repositioning.
+- **Procedural Canvas Elemental VFX Renderer (`src/canvas/elementalVfxRenderer.ts`)**:
+  - Multi-layered procedural visual effects for fire tongues & embers, ice frost prisms, arcing electric sparks, billowing vapor plumes, and swirling poison clouds.
+- **Comprehensive Automated Test Suite (`src/tests/elementalPropagation.test.ts`)**:
+  - 7 comprehensive unit tests verifying flammability spread, ash creation, ice freezing/melting, lightning conduction, deflagration explosions, and steam sight blockage (63 test suites, 390 tests passing 100% green).
+
+---
+
+## 70. Spatial Acoustics & Advanced Procedural VFX (v8.5.0)
+
+Delivered the complete spatial acoustics and visual rendering sub-engine (Pillar 4):
+
+- **Raytraced Acoustic Occlusion & Behind-Door Muffling (`src/utils/audio/acousticOcclusion.ts`)**:
+  - Implements Bresenham raycasting between any sound emitter and the player listener coordinates.
+  - Automatically identifies solid dungeon walls and closed doors blocking the sound trajectory.
+  - Dynamically lowers the audio cutoff frequency down to a muffled ~360–750 Hz behind barriers, models acoustic transmission absorption reducing sound volume, and boosts low-frequency cavity resonance (`roomResonanceQ` up to 2.4).
+  - Global listener tracking via `setAcousticListenerContext` integrates seamlessly into `calculateSpatialParameters` (`src/utils/audio/spatialAudio.ts`) and `playSound` (`src/utils/audio/soundCatalog.ts`) without requiring callsite refactoring.
+- **Dynamic Water Caustics & Refraction Shimmer (`src/canvas/waterCausticsRenderer.ts`)**:
+  - Multi-frequency intersecting sine waves generate dynamic light refraction caustics across all open water surfaces.
+  - Biome-specific palettes: crystal cyan for oceans/rivers, frost prisms for glacial waters, murky bioluminescent swirls for swamp bogs, and warm golden reflections for desert oases.
+  - Projects undulating refractive light ripples onto entities and corpses wading through shallow water (`renderSubmergedObjectCaustics`).
+- **Luminous HDR Bloom Engine (`src/canvas/bloomEngine.ts`)**:
+  - Additive blending pass with pre-rendered radial gradient stamps cached in memory.
+  - Emits soft, luminous halos for torches, lanterns, fireplaces, runic leylines, spell projectiles, and active elemental fields (fire, electric arcs, poison vapor).
+- **Contextual Atmospheric Vignette (`src/canvas/vignetteRenderer.ts`)**:
+  - Dynamic radial gradient depth framing that deepens in subterranean dungeon descents ($0.48 \to 0.72$ based on floor depth).
+  - Adapts to overworld time of day (daylight framing vs. midnight darkness) and special celestial states (crimson glow during Blood Moons, frosted borders during blizzards).
+- **Automated Test Suite (`src/tests/spatialAcousticsAndVfx.test.ts`)**:
+  - 9 comprehensive unit and integration tests verifying acoustic raytracing through open corridors, closed door muffling, solid wall dampening, listener context integration, water caustics, submerged projection, bloom emitters, and contextual vignette states (64 test suites, 399 tests passing 100% green).
+
 
 
 

@@ -6,6 +6,7 @@
 import React from 'react';
 import { GameState } from '../../types';
 import { triggerLightningStrike } from '../../canvas/weatherLightingRenderer';
+import { igniteTile, freezeWaterAt, electrifyConnectedWater, spawnPoisonGasAt } from '../../utils/elemental';
 
 export interface GodWeatherScarEditorProps {
   gameState: GameState;
@@ -140,6 +141,136 @@ export const GodWeatherScarEditor: React.FC<GodWeatherScarEditorProps> = ({
         >
           <span>⚡ Strike Lightning Bolt</span>
         </button>
+      </div>
+
+      {/* Pillar 2: Elemental Propagation Controls */}
+      <div className="pt-3 border-t border-slate-800 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-amber-400 font-bold uppercase flex items-center gap-1">
+            🔥 Cellular Elemental Fields
+          </span>
+          <span className="text-[9px] text-slate-500 font-mono">
+            Active: {(gameState.elementalFields || []).length} fields
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[10px]">
+          <button
+            onClick={() => {
+              setGameState(prev => {
+                let nextFields = prev.elementalFields || [];
+                const px = prev.playerX;
+                const py = prev.playerY;
+                for (let dy = -1; dy <= 1; dy++) {
+                  for (let dx = -1; dx <= 1; dx++) {
+                    nextFields = igniteTile(nextFields, px + dx, py + dy, 6, 2);
+                  }
+                }
+                return { ...prev, elementalFields: nextFields };
+              });
+              triggerSuccessLog("🔥 Cellular Firestorm ignited around player!");
+              playSound('spell');
+            }}
+            className="py-1.5 px-2 bg-red-950/40 hover:bg-red-900/60 border border-red-500/50 text-red-200 font-bold rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+          >
+            <span>🔥 Ignite Fire</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setGameState(prev => {
+                let nextFields = prev.elementalFields || [];
+                let nextMap = prev.map;
+                const px = prev.playerX;
+                const py = prev.playerY;
+                for (let dy = -2; dy <= 2; dy++) {
+                  for (let dx = -2; dx <= 2; dx++) {
+                    const res = freezeWaterAt(nextMap, nextFields, px + dx, py + dy, 12);
+                    nextMap = res.updatedMap;
+                    nextFields = res.updatedFields;
+                  }
+                }
+                return { ...prev, map: nextMap, elementalFields: nextFields };
+              });
+              triggerSuccessLog("❄️ Surrounding water flash-frozen into Ice sheets!");
+              playSound('spell');
+            }}
+            className="py-1.5 px-2 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/50 text-cyan-200 font-bold rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+          >
+            <span>❄️ Flash Freeze</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setGameState(prev => {
+                let nextFields = prev.elementalFields || [];
+                const px = prev.playerX;
+                const py = prev.playerY;
+                for (let dy = -2; dy <= 2; dy++) {
+                  for (let dx = -2; dx <= 2; dx++) {
+                    const res = electrifyConnectedWater(prev.map, nextFields, px + dx, py + dy, 8);
+                    nextFields = res.updatedFields;
+                  }
+                }
+                return { ...prev, elementalFields: nextFields };
+              });
+              triggerSuccessLog("⚡ Electric current surged through nearby water!");
+              playSound('spell');
+            }}
+            className="py-1.5 px-2 bg-yellow-950/40 hover:bg-yellow-900/60 border border-yellow-500/50 text-yellow-200 font-bold rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+          >
+            <span>⚡ Shock Waters</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setGameState(prev => {
+                let nextFields = prev.elementalFields || [];
+                const px = prev.playerX;
+                const py = prev.playerY;
+                for (let dy = -1; dy <= 1; dy++) {
+                  for (let dx = -1; dx <= 1; dx++) {
+                    nextFields = spawnPoisonGasAt(nextFields, px + dx, py + dy, 8);
+                  }
+                }
+                return { ...prev, elementalFields: nextFields };
+              });
+              triggerSuccessLog("🧪 Toxic Poison Miasma clouds dispersed!");
+              playSound('spell');
+            }}
+            className="py-1.5 px-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/50 text-emerald-200 font-bold rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+          >
+            <span>🧪 Poison Miasma</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setGameState(prev => ({
+                ...prev,
+                elementalFields: (prev.elementalFields || []).map(f => ({
+                  ...f,
+                  element: 'steam',
+                  duration: 4
+                }))
+              }));
+              triggerSuccessLog("💨 Active fields vaporized into obscuring Steam!");
+              playSound('spell');
+            }}
+            className="py-1.5 px-2 bg-slate-900 hover:bg-slate-850 border border-slate-700 text-slate-300 font-bold rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+          >
+            <span>💨 Convert Steam</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setGameState(prev => ({ ...prev, elementalFields: [] }));
+              triggerSuccessLog("🧹 All elemental fields cleared from reality.");
+            }}
+            className="py-1.5 px-2 bg-slate-950 hover:bg-red-950/30 border border-slate-800 hover:border-red-800 text-slate-400 hover:text-red-300 font-bold rounded cursor-pointer transition-all flex items-center justify-center gap-1"
+          >
+            <span>🧹 Purge Fields</span>
+          </button>
+        </div>
       </div>
     </div>
   );

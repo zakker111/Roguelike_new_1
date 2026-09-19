@@ -6,6 +6,109 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.6.0] — Wilderness Foraging, Subterranean Mineral Belts & Harvest Synchronization (September 13, 2026)
+*Delivered balanced continuous procedural generation for wild berry bushes and mineral ore veins (Copper and Iron) across overworld chunks and subterranean dungeon levels. Resolved procedural scarcity thresholds, synchronized harvest mutations across chunk memory and canvas cache layers, enabled tree stump removal via interaction key, and integrated dungeon mineral vein generation.*
+
+- **1. Balanced Overworld Mineral Belts & Foraging Flora (`src/world/organic/vegetationClusterGen.ts`)**:
+  - Re-engineered procedural noise thresholds: deployed continuous multi-octave noise mineral belts (`mineralBelt > 0.54 && pOre > 0.978`) generating ~6-10 ore veins per chunk with a 60% Copper / 40% Iron distribution.
+  - Calibrated grove density and meadow clearing noise (`groveNoise > 0.44`) ensuring 15-35 wild foraging bushes spawn per chunk across all biomes (Sweet Berries in forests, Frostblooms in tundras, Swamp Nightshade in marshes, Sun Aloe in deserts, and Charred Shrubs in volcanic zones).
+- **2. Subterranean Cavern Ore Veins in Dungeons (`src/world/dungeon/dungeonRooms.ts`, `src/world/dungeon/dungeonGenerator.ts`)**:
+  - Implemented `spawnSubterraneanOreVeins`, dynamically embedding mineable Copper and Iron veins into dungeon room alcoves and cavern wall edges.
+  - Deep dungeon levels (depth $\ge 3$) feature increased Iron vein concentrations for high-tier smithing.
+- **3. Harvest Synchronization, Walkability & Tree Stump Removal (`src/utils/harvestEngine.ts`, `src/hooks/app/useGKeyInteraction.ts`)**:
+  - Fixed harvest tile mutations to properly set `TileType.Grass` in overworld and `TileType.Floor` in dungeons upon resource depletion.
+  - Tree stumps left after chopping down trees are now walkable, and can be actively cleared using the 'G' interaction key to gather scrap kindling (+1 Wood).
+  - Mining and foraging interactions now trigger immediate background canvas cache invalidation (`chunkBackgroundCache.invalidate()`, `invalidateChunkCanvasCache`) to eliminate visual ghosting.
+- **4. Comprehensive Test Coverage (`src/tests/organicWorldGen.test.ts`, `src/tests/toolHarvestingDurability.test.ts`)**:
+  - Validated overworld multi-chunk berry bush and ore vein yields, dungeon mineral veins, tool durability reduction, and harvesting rewards. 100% green pass rate across all test suites.
+
+## [v8.5.0] — Spatial Acoustics & Advanced Procedural VFX (September 11, 2026)
+*Delivered the complete Spatial Acoustics & VFX Sub-Engine (Pillar 4). Implemented raytraced acoustic occlusion and behind-door lowpass frequency muffling via Bresenham raycasting, dynamic multi-scale water caustics with biome-specific color palettes and submerged object light refraction, luminous HDR bloom rendering using in-memory pre-cached gradient stamps, context-aware atmospheric perimeter vignette scaling with dungeon depth and celestial events, and global listener tracking integrated directly into WebAudio spatial parameters.*
+
+- **1. Raytraced Acoustic Occlusion & Behind-Door Muffling (`src/utils/audio/acousticOcclusion.ts`)**:
+  - Implemented Bresenham raycasting between any sound source coordinates and the player listener coordinates to count solid stone/mountain walls and closed wooden/iron doors.
+  - Dynamically lowers the audio cutoff frequency down to ~360–750 Hz behind barriers, models acoustic transmission absorption reducing sound volume, and boosts low-frequency cavity resonance (`roomResonanceQ` up to 2.4).
+  - Global listener tracking via `setAcousticListenerContext` integrates seamlessly into `calculateSpatialParameters` (`src/utils/audio/spatialAudio.ts`) and `playSound` (`src/utils/audio/soundCatalog.ts`) without requiring callsite refactoring.
+- **2. Dynamic Water Caustics & Refraction Shimmer (`src/canvas/waterCausticsRenderer.ts`)**:
+  - Multi-frequency intersecting sine waves generate dynamic light refraction caustics across all open water surfaces.
+  - Biome-specific palettes: crystal cyan for oceans/rivers, frost prisms for glacial waters, murky bioluminescent swirls for swamp bogs, and warm golden reflections for desert oases.
+  - Projects undulating refractive light ripples onto entities and corpses wading through shallow water (`renderSubmergedObjectCaustics`).
+- **3. Luminous HDR Bloom Engine (`src/canvas/bloomEngine.ts`)**:
+  - Additive blending pass with pre-rendered radial gradient stamps cached in memory.
+  - Emits soft, luminous halos for torches, lanterns, fireplaces, runic leylines, spell projectiles, and active elemental fields (fire, electric arcs, poison vapor).
+- **4. Contextual Atmospheric Vignette (`src/canvas/vignetteRenderer.ts`)**:
+  - Dynamic radial gradient depth framing that deepens in subterranean dungeon descents ($0.48 \to 0.72$ based on floor depth).
+  - Adapts to overworld time of day (daylight framing vs. midnight darkness) and special celestial states (crimson glow during Blood Moons, frosted borders during blizzards).
+- **5. Verification & Automated Test Suite (`src/tests/spatialAcousticsAndVfx.test.ts`)**:
+  - 9 comprehensive unit and integration tests verifying acoustic raytracing through open corridors, closed door muffling, solid wall dampening, listener context integration, water caustics, submerged projection, bloom emitters, and contextual vignette states.
+  - 100% green pass rate across all 64 test suites (399 unit and integration tests passing).
+
+## [v8.4.0] — Dynamic Cellular Elemental Propagation & Environmental Chain Reactions (September 11, 2026)
+*Delivered the complete Elemental Propagation Sub-Engine (Pillar 2). Implemented cellular automata fire propagation along flammable terrain, dynamic water freezing into walkable ice sheets, water shock conduction across contiguous bodies, violent toxic gas deflagration explosions, tactical steam cloud line-of-sight obscuration, multi-layered canvas procedural elemental VFX, and integration into the turn-based environment phase.*
+
+- **1. Elemental Fields Domain & Cellular Automata (`src/types/elemental.ts` & `src/utils/elemental/elementalEngine.ts`)**:
+  - Implemented domain models for active ground fields: `ElementalType` (`'fire' | 'ice' | 'shock' | 'steam' | 'poison_gas'`), intensity tiers, duration decay, and propagation vectors.
+  - Cellular Automata Fire Spread: Fire expands organically to adjacent flammable terrain (grass, bushes, pine trees, wooden doors, campsite furniture) modulated by environmental humidity and turn ticks.
+  - Ash Decomposition: Fully consumed vegetation transforms permanently into walkable `TileType.Ash`.
+- **2. Cryomancy, Melting & Phase Transitions**:
+  - Frost spells and sub-zero field effects freeze liquid water bodies into solid, walkable `TileType.Ice` sheets, creating dynamic tactical bridges across rivers.
+  - Fire and extreme heat sources thaw ice sheets back into liquid water; boiling hot surfaces generate billowing steam clouds.
+- **3. Electric Shock Conduction & Deflagration Chain Reactions**:
+  - Shock Conduction: Lightning and electric currents propagate instantaneously across all contiguous connected water tiles in a single turn, delivering shock damage and stun checks to standing combatants.
+  - Gas Deflagration: Contact between open flame and toxic poison gas pockets ignites violent 3×3 AOE deflagration explosions with bonus fire damage and terrain charring.
+- **4. Tactical Steam Line-of-Sight Obscuration (`src/utils/ai.ts`)**:
+  - Billowing steam clouds block line-of-sight raycasting in `hasLineOfSight(x0, y0, x1, y1, map)`, allowing players and enemies to break line-of-sight, disrupt ranged targeting, and execute tactical disengagements.
+- **5. Canvas Procedural Elemental VFX Renderer (`src/canvas/elementalVfxRenderer.ts`)**:
+  - High-performance canvas procedural rendering without external sprite dependencies:
+    - Fire: Animated flame tongue flickers, core heat glows, and rising floating ember sparks.
+    - Ice: Crystalline glints, frosted rim edges, and geometric snowflake prisms.
+    - Shock: Arcing electrical sparks, jagged lightning discharge filaments, and cyan glow rings.
+    - Steam: Drifting, expanding vapor plumes with alpha fade.
+    - Poison Gas: Swirling emerald/viridian toxic haze billows.
+- **6. Verification & Automated Test Suite (`src/tests/elementalPropagation.test.ts`)**:
+  - Complete Vitest test suite validating all elemental rules: flammability spread, ash creation, ice freezing/melting, lightning conduction, deflagration explosions, and steam LOS blockage.
+  - Achieved 100% green pass rate across 63 test suites (390 unit and integration tests passing).
+
+## [v8.3.0] — Living Ecosystem & Autonomous NPC Routines (September 10, 2026)
+*Delivered the complete Living Ecosystem engine (Pillar 1). Implemented simulated predator-prey ecology, autonomous pack leader morale breakage & panic retreats, desperate humanoid surrenders with parley rewards, dynamic time-of-day NPC schedules & severe weather shelter seeking, active roving sector patrol waypoints, and autonomous inter-faction skirmishes leaving persistent battlefield debris and wounded survivors.*
+
+- **1. Dynamic NPC Schedules & Severe Weather Shelter (`src/hooks/ai/useCivilianAI.ts`)**:
+  - Implemented time-of-day schedule state machine driving civilians and townspeople through daily routines (Morning work at market/fields, Evening leisure at taverns, Night sleep in beds).
+  - Added storm and blizzard shelter-seeking: unarmored civilians and town fauna pathfind to indoor buildings, tavern canopies, and campfires during severe downpours or freezing whiteouts.
+  - Implemented contextual ambient dialogue barks based on approaching weather, town defense alerts, and faction reputation tiers in `src/utils/npcDialogue.ts`.
+- **2. Turf Wars & Autonomous Sector Patrols (`src/world/ruinedCity/ruinedCityTurf.ts` & `src/hooks/ai/useHostileAI.ts`)**:
+  - Upgraded Orc warcamps, Bandit hideouts, and contested plazas with roving multi-node patrol routes.
+  - Integrated autonomous inter-faction skirmish detection in `useHostileAI.ts`: hostile rival squads detect and engage each other within 8 tiles without requiring player proximity.
+  - Generates realistic combat aftermath upon autonomous entity deaths: bone/corpse remains, blood splatters, and salvageable battlefield debris (loot piles).
+  - Wounded survivors (< 20% HP) autonomously transition into fleeing or surrendering states.
+- **3. Ecosystem Telemetry & Complete Automated Test Suite (`src/tests/livingEcosystemSim.test.ts` & `src/tests/turfWarsAndPatrols.test.ts`)**:
+  - Added unit test suites verifying wolf predator hunts, pack leader panic triggers, isolated bandit surrenders, and roving patrol waypoint generation.
+  - Benchmarked 50+ simulated fauna and faction entities maintaining sub-5ms spatial query latency using `SpatialEntityGrid`.
+  - Maintained 100% green status across all 62 Vitest test suites (383 automated tests passing).
+
+## [v8.2.1] — Centralized Entity Walkability & Line-of-Sight Obstacle Collision Engine (September 9, 2026)
+*Resolved enemy wood/tree clipping and unified obstacle passability across all entity AI systems. Established centralized, authoritative walkability and line-of-sight verification rules in `src/utils/ai.ts` ensuring that trees, ore veins, fortifications, and furniture block movement and vision for hostiles, followers, guards, and civilians.*
+
+- **1. Authoritative Entity Passability Engine (`src/utils/ai.ts`)**:
+  - Implemented `isTileBlockedForEntity(tile, options)` and `isTileWalkableForEntity(tile, options)` with configurable capabilities for water crossing, door opening, and bed sleeping.
+  - Formally blocks movement across all solid world tiles:
+    - Woods & Foliage: `Tree`, `PineTree`, `BirchTree`, `TreeStump`.
+    - Mineral Veins: `CopperVein`, `IronVein`.
+    - Fortifications & Props: `WatchtowerWall`, `WatchtowerSlit`, `WatchtowerBarricade`, `FieldTent`, `Campfire`, `Fireplace`, `Anvil`, `Table`, `Window`, `Wall`, `Empty`.
+  - Upgraded `hasLineOfSight(x0, y0, x1, y1, map)` and `computeFOV` to block projectile targeting and vision through all trees, ore veins, and barricades, preventing ranged enemies from shooting through dense forests or stone ramparts.
+- **2. Universal AI Hook Passability Refactor**:
+  - Refactored `useHostileAI.ts` across all monster behaviors (kite-retreat, archer repositioning, pack flanking, direct assault, wagon ambush) to use `isTileWalkableForEntity`.
+  - Refactored `useTownGuardAI.ts` (shift patrols, guard chasing, criminal pursuit) to respect impassable obstacles while honoring guard door-opening privileges.
+  - Refactored `useFollowerAI.ts` (escorting, player tethering, companion positioning) to prevent followers from entering impassable tiles.
+  - Refactored `useCivilianAI.ts` (cat wanderings, heroic hires, fear evasion, villager weather shelter seeking) to eliminate tile clipping.
+- **3. Player Collision & Weather Obstacle Alignment**:
+  - Synchronized `usePlayerTurnMovement.ts` with `TreeStump`, `Campfire`, `Fireplace`, `Anvil`, `FieldTent`, and `Empty` collision blocks.
+  - Updated `weatherEngine.ts` (`isObstacleTile`) to align weather wind and storm effects with the complete impassable obstacle catalogue.
+- **4. Comprehensive Test Suite & Codebase Verification**:
+  - Added unit test suite in `src/tests/ai.test.ts` verifying pathfinding rerouting around trees, tile blocking predicates, and line-of-sight obstructions.
+  - Verified 100% test pass rate across all 59 Vitest test suites (370 automated unit and simulation tests passing green).
+  - Executed clean TypeScript compilation, lint checks, and complete 450-file graph import audit with zero errors.
+
 ## [v8.2.0] — Dual Instinct Classic Tileset System & Merchant Caravan Tactical Skirmish Sub-Engine (September 7, 2026)
 *Introduced dual authoritative tileset sourcing ('classic_png' pre-rendered mockups vs. 'classic_code' procedural canvas) with full 16×16 grid expansions across both pipelines. Delivered the merchant caravan escort and tactical skirmish sub-engine with lossless overworld state preservation, tactical victory/flee resolution, and zero-crash test coverage.*
 

@@ -73,8 +73,12 @@ export function harvestWorldResource(
   }
 
   // Perform harvesting
+  const replacementTile = isTree
+    ? TileType.TreeStump
+    : (gameState.isOverworld ? TileType.Grass : TileType.Floor);
+
   const nextMap = gameState.map.map((row, y) =>
-    row.map((cell, x) => (x === targetX && y === targetY ? (isTree ? TileType.TreeStump : TileType.Grass) : cell))
+    row.map((cell, x) => (x === targetX && y === targetY ? replacementTile : cell))
   );
 
   const curDurability = toolInfo.item.durability ?? 100;
@@ -137,10 +141,20 @@ export function harvestWorldResource(
     }
   }
 
+  const nextDungeonLevels = { ...(gameState.dungeonLevels || {}) };
+  const dungeonKey = `${gameState.dungeonEntranceChunkX ?? gameState.currentChunkX ?? 0},${gameState.dungeonEntranceChunkY ?? gameState.currentChunkY ?? 0}_depth-${gameState.playerStats.depth}`;
+  if (!gameState.isOverworld && nextDungeonLevels[dungeonKey]) {
+    nextDungeonLevels[dungeonKey] = {
+      ...nextDungeonLevels[dungeonKey],
+      map: nextMap
+    };
+  }
+
   const nextState: GameState = {
     ...gameState,
     map: nextMap,
     overworldChunks: nextChunks,
+    dungeonLevels: nextDungeonLevels,
     inventoryMaterials: nextMats,
     currentWeapon: nextCurrentWeapon,
     equippedShield: nextEquippedShield,

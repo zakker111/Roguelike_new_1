@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Moon, Clock, Heart, Sparkles, Shield, AlertTriangle, Flame, Tent, UserCheck } from 'lucide-react';
 import { PlayerStats, GameState } from '../types';
 import { formatGameTime } from '../utils/overworld';
@@ -26,6 +26,19 @@ export default function SleepOverlay({
   onConfirmSleep,
 }: SleepOverlayProps) {
   const [hours, setHours] = useState<number>(8); // Default to a standard 8 hours of sleep
+
+  // Close Sleep modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   // Analyze campsite context if gameState is provided
   const analysis: CampsiteAnalysis = gameState ? analyzeCampsiteSurroundings(gameState) : {

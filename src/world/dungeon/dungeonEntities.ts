@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TileType, Enemy, EnemyType, EnemyState, Follower } from '../../types';
+import { TileType, Enemy, EnemyType, EnemyState, Follower, LEVEL_WIDTH, LEVEL_HEIGHT } from '../../types';
 import enemyTemplates from '../../data/enemies.json';
 import { applyCombatArchetypeAndChaosScaling } from '../../utils/combatArchetypes';
 import { getActiveCustomMonsters } from '../../utils/moddingEngine';
-import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
 import { BossTemplate, Room } from './types';
 
 export function getEnemyTemplate(type: EnemyType | string) {

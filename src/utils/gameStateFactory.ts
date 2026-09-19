@@ -233,7 +233,8 @@ export function createNewGameRun(seed?: number): GameState {
 
     corpses: [],
     bloodSplatters: [],
-    dungeonProps: [],
+    elementalFields: [],
+    dungeonProps: initialChunk.props || [],
     dungeonLevels: {},
     unlockedChapters: [],
 

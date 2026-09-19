@@ -136,3 +136,50 @@ export function carveUnderworldLavaPools(map: TileType[][], rooms: Room[], depth
     }
   });
 }
+
+/**
+ * Spawns subterranean mineral ore veins (Copper and Iron) in cavern walls and room alcoves.
+ */
+export function spawnSubterraneanOreVeins(
+  map: TileType[][],
+  rooms: Room[],
+  depth: number,
+  stairsX: number,
+  stairsY: number,
+  playerX: number,
+  playerY: number
+): void {
+  rooms.forEach((room) => {
+    if (Math.random() < 0.55) {
+      const candidates: { x: number; y: number }[] = [];
+      for (let y = room.y; y < room.y + room.h; y++) {
+        for (let x = room.x; x < room.x + room.w; x++) {
+          if (
+            map[y]?.[x] === TileType.Floor &&
+            !(x === playerX && y === playerY) &&
+            !(x === stairsX && y === stairsY)
+          ) {
+            const hasAdjacentWall =
+              map[y - 1]?.[x] === TileType.Wall ||
+              map[y + 1]?.[x] === TileType.Wall ||
+              map[y]?.[x - 1] === TileType.Wall ||
+              map[y]?.[x + 1] === TileType.Wall;
+            if (hasAdjacentWall) {
+              candidates.push({ x, y });
+            }
+          }
+        }
+      }
+
+      if (candidates.length > 0) {
+        const oreCount = Math.min(candidates.length, Math.floor(Math.random() * 2) + 1);
+        for (let i = 0; i < oreCount; i++) {
+          const idx = Math.floor(Math.random() * candidates.length);
+          const spot = candidates.splice(idx, 1)[0];
+          const isIron = depth >= 3 ? Math.random() < 0.55 : Math.random() < 0.20;
+          map[spot.y][spot.x] = isIron ? TileType.IronVein : TileType.CopperVein;
+        }
+      }
+    }
+  });
+}

@@ -329,6 +329,201 @@ Eliminate rendering bottlenecks, GC allocation spikes, redundant per-frame recal
   - Verified 25-chunk active uncompressed window and distant sector compression.
   - Verified 200-item FIFO pruning for single and batched log updates.
 
+---
+
+# 🌿 Next-Gen Roguelike Engine Evolution Roadmap
+
+## 🎯 Architecture Objective
+Advance the core roguelike engine into a deeply systemic, emergent, living world. Build layered simulations for **Living Ecosystems & Autonomous NPC Routines**, **Dynamic Cellular Elemental Propagation**, and **Multi-Part Anatomical Boss Combat** while maintaining strict 60 FPS performance, modular decoupling, and test coverage.
+
+---
+
+## 📅 Roadmap Schedule & Priority Matrix
+
+| Pillar & Phase | Focus Area | Complexity | Recommended Start Order | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Pillar 1: Living Ecosystem & Autonomous AI** | **Simulated Ecology, Predator-Prey, Morale, Surrenders, Routines, Turf Wars** | **Medium-High** | **Completed** | **Completed (100% Green)** |
+| **Pillar 2: Elemental Propagation** | **Cellular Fire Spread, Water Freezing, Electricity, Vapor, Gas Explosions** | **Medium** | **Completed** | **Completed (100% Green)** |
+| **Pillar 3: Anatomical Combat** | Multi-Part Bosses, Severable Limbs, Wall Knockbacks | High | **READY TO START NOW** | **Next in Queue** |
+| **Pillar 4: Spatial Acoustics & VFX** | Muffled Behind-Door Audio, Dynamic Water Caustics, Bloom | Low-Medium | Parallel / Polish | Planned |
+| **Pillar 5: Runtime Mod Engine** | JSON Mod Packs, Custom Classes, Spell Scripting | Medium | Future | Planned |
+
+> **🚀 CURRENT HORIZON: Pillar 3: Anatomical Combat & Multi-Part Bosses**
+> **WE ARE READY TO START PILLAR 3!**
+> Prerequisites are satisfied:
+> 1. Elemental fields and reactions (fire, ice, shock, steam, poison gas) are fully working and verified.
+> 2. Living ecosystem and autonomous multi-target AI are active.
+> 3. Spatial hash grid and projectile/VFX pools are optimized for multi-part entities.
+
+---
+
+## 📋 Phased Implementation Plan: Living Ecosystem & NPC Autonomous Routines
+
+### 🐺 Phase E1: Fauna & Wildlife Ecology Layer (Predator-Prey Simulation)
+- [x] **Phase E1.1**: Animal Diet & Ecology Tagging in Entity Catalogs (`src/data/enemies.json`, `src/types/entities.ts`)
+  - Added `diet: 'herbivore' | 'carnivore' | 'omnivore'` and `packId?: string` to fauna (deer, rabbits, wild boars, wolves, bears).
+  - Added `hungerLevel?: number` (0 to 100) and `preyTargetTypes?: string[]` to carnivores.
+- [x] **Phase E1.2**: Autonomous Fauna Foraging & Grazing Routines (`src/hooks/ai/useFaunaAI.ts`)
+  - Herbivores graze near `TileType.Grass`, `TileType.Bush`, or water shores when undisturbed.
+  - Flee instincts trigger when detecting carnivores or humanoid actors within 5 tiles.
+- [x] **Phase E1.3**: Predator Stalking & Hunting Behavior
+  - Wolves, panthers, and bears identify nearest prey using the `SpatialEntityGrid`.
+  - Carnivores track and stalk prey, consuming food upon defeat (restoring HP and reducing aggression toward the player if well-fed).
+
+---
+
+### 🏳️ Phase E2: Morale, Fear & Surrender Mechanics
+- [x] **Phase E2.1**: Pack Leader & Warlord Linkage
+  - Support `packLeaderId?: string` and `packId?: string` linking grunts (e.g., Goblin Scavengers, Wolf Pups, Bandit Thugs) to their leader.
+  - Slaying the pack leader/alpha instantly triggers a Morale Check on all linked subordinates.
+- [x] **Phase E2.2**: Panic & Scatter Behavior
+  - Failed morale checks inflict `isPanicked = true`, causing enemies to drop defensive stances and flee using `getNextStepAwayFrom`, dropping panic coins/scrap.
+- [x] **Phase E2.3**: Intelligent Surrender & Parley Interaction
+  - Wounded humanoids/bandits (< 20% HP with no nearby allies) surrender (`isSurrendered = true`, displays `🏳️ YIELD` badge).
+  - Player can interact (`G` key): Accept surrender (receive gold bribe and crafting materials, enemy flees peacefully) or execute (+100% critical strike and execution flavor log).
+
+---
+
+### ⏰ Phase E3: Dynamic NPC Schedules & Weather Reactions
+- [x] **Phase E3.1**: Time-of-Day Schedule State Machine (`src/hooks/ai/useCivilianAI.ts`)
+  - Townspeople, shopkeepers, and guards follow daily routines:
+    - Dawn: Head to market stalls / fields / barracks.
+    - Dusk: Gather at the tavern for food and ale.
+    - Night: Return to beds/shelters to sleep.
+- [x] **Phase E3.2**: Environmental Reactions to Severe Weather
+  - Thunderstorms and blizzards cause non-combatants and stray animals to seek shelter under roofed buildings and tavern canopies.
+- [x] **Phase E3.3**: Dynamic Ambient NPC Dialogues & Barks
+  - Context-aware speech bubbles triggered by local occurrences (approaching storm, recent monster attack on the gates, player's faction standing).
+
+---
+
+### ⚔️ Phase E4: Turf Wars & Autonomous Faction Patrols
+- [x] **Phase E4.1**: Active Sector Patrol Nodes
+  - Orc warbands and Bandit patrols follow roving waypoints across the Ruined City and Wilderness borders.
+- [x] **Phase E4.2**: Autonomous Inter-Faction Skirmishes
+  - Clashing patrol paths trigger skirmishes independent of player presence, leaving battlefield debris and wounded survivors to discover.
+
+---
+
+### 🧪 Phase E5: Ecosystem Telemetry & Test Verification Suite
+- [x] **Phase E5.1**: Automated Ecological Simulation Tests (`src/tests/livingEcosystemSim.test.ts`)
+  - Test wolf predator hunts resolving without player intervention.
+  - Test pack leader defeat triggering subordinate panic and retreat.
+  - Test bandit surrender trigger and interaction payout.
+- [x] **Phase E5.2**: Performance & Entity Cap Benchmark
+  - Verify that 40+ simulated fauna and faction patrols maintain 60 FPS and $< 5\text{ms}$ AI turn latency using the $O(1)$ spatial grid.
+
+---
+
+## 📋 Phased Implementation Plan: Pillar 2 — Elemental Propagation Sub-Engine (COMPLETED)
+
+### 🔥 Phase P2.1: Elemental Fields & Grid Cellular Automata (`src/types/elemental.ts`, `src/utils/elemental/elementalEngine.ts`)
+- [x] **Phase P2.1.1**: Domain Types for Elemental Ground Effects (`src/types/elemental.ts`)
+  - Defined `ElementalType` (`'fire' | 'ice' | 'shock' | 'steam' | 'poison_gas'`), `ElementalTile`, `ElementalIntensity`, and propagation contracts.
+- [x] **Phase P2.1.2**: Cellular Fire Spread & Ash Decomposition (`elementalEngine.ts`)
+  - Fire fields propagate along flammable terrain (grass, bushes, trees, wooden doors, campsite furniture) based on humidity and turn ticks.
+  - Fully consumed vegetation decomposes into permanent walkable `TileType.Ash` tiles.
+- [x] **Phase P2.1.3**: Cryomancy & Water Freezing / Melting
+  - Cold spells/frost fields freeze water bodies into solid walkable `TileType.Ice` sheets.
+  - Fire/heat sources melt ice back into water, while boiling produces obscuring steam clouds.
+
+### ⚡ Phase P2.2: Reactive Conductors & Deflagration Chain Reactions
+- [x] **Phase P2.2.1**: Water Shock Conduction
+  - Lightning and shock waves propagate across contiguous connected water bodies in a single turn.
+  - Deals amplified shock damage and stun checks to entities standing in water.
+- [x] **Phase P2.2.2**: Toxic Gas Deflagration Explosions
+  - Fire contact with flammable poison gas pockets triggers violent deflagration explosions (3×3 AOE, fire damage, wall soot, screen-shake).
+- [x] **Phase P2.2.3**: Tactical Steam Clouds & Line-of-Sight Obscuration (`src/utils/ai.ts`)
+  - Dense steam clouds block Bresenham raycasting in `hasLineOfSight`, enabling tactical escapes and broken enemy targeting.
+
+### 🎨 Phase P2.3: Procedural Canvas VFX & World Integration
+- [x] **Phase P2.3.1**: Canvas Procedural Elemental VFX Renderer (`src/canvas/elementalVfxRenderer.ts`)
+  - Multi-layered procedural VFX for fire flickers & embers, ice frost glints, arcing electric sparks, billowing steam plumes, and toxic gas swirls.
+- [x] **Phase P2.3.2**: Spellcasting & Turn Environment Integration
+  - Wired into `aiTurnEnvironment.ts` for environmental ticks and `useCombatAndSpells.ts` for spellcast terrain impacts.
+- [x] **Phase P2.3.3**: Automated Test Suite (`src/tests/elementalPropagation.test.ts`)
+  - 7 comprehensive unit and integration tests verifying flammability, fire spread, ash creation, water freeze/melt, shock conduction, gas deflagration, and steam sight blockage.
+
+---
+
+## 🎧 Phased Implementation Plan: Pillar 4 — Spatial Acoustics & VFX (COMPLETED)
+
+### 🔊 Phase P4.1: Raytraced Acoustic Occlusion & Behind-Door Muffling (`src/utils/audio/acousticOcclusion.ts`)
+- [x] **Phase P4.1.1**: Bresenham Acoustic Obstacle Raycasting
+  - Raycasts sound propagation lines between sound emitters and the player listener.
+  - Detects solid stone/mountain walls and closed wooden/iron doors along the direct transmission path.
+  - Models realistic lowpass frequency muffling (clamping cutoff down to 360-750 Hz behind doors/walls) and material transmission absorption (volume down to 38-70%).
+  - Adds low-frequency acoustic cavity boost (`roomResonanceQ` up to 2.4).
+- [x] **Phase P4.1.2**: Global Acoustic Listener Context & Engine Integration
+  - `setAcousticListenerContext` synchronizes player coordinates and active level map in `GameCanvas.tsx`.
+  - Integrated with `calculateSpatialParameters` in `spatialAudio.ts` and `playSound` in `soundCatalog.ts` for automated behind-door muffling without callsite refactoring.
+
+### 🌊 Phase P4.2: Dynamic Water Caustics & Refraction Shimmer (`src/canvas/waterCausticsRenderer.ts`)
+- [x] **Phase P4.2.1**: Multi-Scale Dynamic Caustic Light Webs
+  - Intersecting dual-frequency sine wave caustics creating animated light refraction webs across water surfaces.
+  - Biome-specific caustic palettes: crystal cyan for oceans/rivers, ice glints for tundra, murky bioluminescent swirls for swamps, and golden reflections for desert oases.
+  - Integrated into `tileMapRenderer.ts` alongside water tile shimmer.
+- [x] **Phase P4.2.2**: Submerged Object Refractive Projection
+  - `renderSubmergedObjectCaustics` projects additive light refraction ribbons across players, monsters, and corpses wading through water or swamp tiles.
+
+### 🌟 Phase P4.3: Luminous HDR Bloom & Atmospheric Vignette (`src/canvas/bloomEngine.ts`, `src/canvas/vignetteRenderer.ts`)
+- [x] **Phase P4.3.1**: Luminous Canvas HDR Bloom Engine
+  - Additive blending pass (`lighter`) with pre-cached radial gradient bloom stamps in memory.
+  - Emits multi-frequency soft luminous halos for lanterns, torches, fireplaces, runic shrines, magic missiles, and active elemental fields (fire, shock, poison gas, frost).
+- [x] **Phase P4.3.2**: Context-Aware Atmospheric Vignette Renderer
+  - Dynamic radial gradient depth framing that deepens in subterranean dungeons according to dungeon depth ($0.48 \to 0.72$).
+  - Adapts to overworld time of day (daylight framing vs. midnight darkness) and special atmospheric states (crimson glow during Blood Moons, frosted borders during blizzards).
+- [x] **Phase P4.3.3**: Automated Test Suite (`src/tests/spatialAcousticsAndVfx.test.ts`)
+  - 9 comprehensive unit and integration tests verifying acoustic raytracing through open corridors, closed door muffling, solid wall dampening, listener context integration, water caustics, submerged projection, bloom emitters, and contextual vignette states (100% passing).
+
+---
+
+## 📋 Phased Implementation Plan: Pillar 3 — Anatomical Combat & Multi-Part Bosses (NEXT IN QUEUE)
+
+### 🐉 Phase P3.1: Multi-Part Anatomical Boss Archetypes & Data Contracts (`src/types/entities.ts`)
+- [ ] **Phase P3.1.1**: Anatomical Body Part Data Model
+  - Extend bosses (e.g. Surtur the Magma Arch-demon, Hydra, Bone Dragon) with targetable sub-parts:
+    - *Head / Horns*: Controls breath attacks & spellcasting; high defense, critical vulnerability.
+    - *Left / Right Claws / Wings*: Controls cleaving sweeps & mobility range; severable.
+    - *Tail / Stinger*: Controls rear sweeping stuns & venom attacks; severable.
+    - *Heart / Core*: Heavily armored; exposed only when stagger thresholds are breached.
+- [ ] **Phase P3.1.2**: Boss Part Hit Point Pools & Damage Redirection
+  - Attacks can be aimed specifically at exposed parts, or default to central torso.
+  - Each part possesses independent HP pool, armor value, and elemental vulnerabilities.
+
+### ⚔️ Phase P3.2: Dismemberment, Severable Limbs & Phase Transitions
+- [ ] **Phase P3.2.1**: Severing Mechanics & Combat Disable States
+  - Severing a wing reduces boss movement speed and disables flying dive-bombs.
+  - Severing a weapon arm or claw permanently disables cleave attacks and drops high-tier crafting materials (e.g., *Dragon Claw Ore*, *Hydra Tendon*).
+  - Severing the tail eliminates rear retaliatory stuns.
+- [ ] **Phase P3.2.2**: Berserk Enrage & Phase Shifts
+  - Dismembering multiple parts pushes the boss into desperate, volatile enrage states (faster attack speed, erratic movement, area-denial fire or poison).
+
+### 💥 Phase P3.3: Kinetic Wall Knockbacks & Environmental Splatters
+- [ ] **Phase P3.3.1**: Physics-Based Wall Knockback Damage
+  - Sunder blunt strikes and boss kinetic slams knock target entities backward $1-3$ tiles.
+  - Colliding with walls, trees, or solid obstacles inflicts bonus kinetic impact damage and applies a 1-turn Daze/Stun.
+- [ ] **Phase P3.3.2**: Structural Destruction
+  - High-magnitude boss attacks shatter fragile furniture, crack wooden doors, and splinter fences.
+
+---
+
+## 🌾 Completed Milestone: Wilderness Foraging, Mineral Belts & Harvest Durability (v8.6.0)
+- [x] **Balanced Overworld Mineral Belts (`src/world/organic/vegetationClusterGen.ts`)**:
+  - Continuous multi-octave noise mineral belts generating clustered Copper and Iron veins.
+  - 60/40 Copper vs. Iron distribution for progression from early tinker smithing to durable armaments.
+- [x] **Wilderness Foraging Flora (`src/world/organic/vegetationClusterGen.ts`)**:
+  - Consistent generation of 15-35 foraging berry bushes per chunk across all biomes (Sweet Berries, Frostblooms, Nightshade, Sun Aloe, Charred Shrubs).
+- [x] **Subterranean Mining in Dungeons (`src/world/dungeon/dungeonRooms.ts`, `src/world/dungeon/dungeonGenerator.ts`)**:
+  - `spawnSubterraneanOreVeins` placing Copper and Iron veins inside dungeon room wall alcoves.
+- [x] **Harvest State & Canvas Cache Synchronization (`src/utils/harvestEngine.ts`, `src/hooks/app/useGKeyInteraction.ts`)**:
+  - Harvested veins and bushes revert cleanly to walkable Grass in overworld and Floor in dungeons.
+  - Tree stumps left after chopping are walkable and clearable via 'G' key for scrap kindling.
+  - Canvas cache invalidation immediately updates rendering without visual ghosting.
+
+
+
+
 
 
 

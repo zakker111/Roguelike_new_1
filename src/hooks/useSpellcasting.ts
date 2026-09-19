@@ -8,6 +8,7 @@ import { playSound } from '../utils/audio';
 import { formatGameTime } from '../utils/overworld';
 import { hasLineOfSight } from '../utils/ai';
 import { calculateArchetypeDamageAdjustment, checkBossPhaseEnrage } from '../utils/combatArchetypes';
+import { igniteTile, freezeWaterAt, electrifyConnectedWater, spawnPoisonGasAt } from '../utils/elemental';
 
 export interface UseSpellcastingProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -320,8 +321,27 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
           playSound('levelup');
         }
 
+        // Apply elemental field effects on target tile
+        let nextElemental = prev.elementalFields || [];
+        let nextMap = prev.map;
+
+        if (debuffToApply?.type === CatalystType.Fire || /fire|flame|pyro|meteor/i.test(template?.name || '')) {
+          nextElemental = igniteTile(nextElemental, enemy.x, enemy.y, 5, 2);
+        } else if (debuffToApply?.type === CatalystType.Frost || /frost|ice|blizzard/i.test(template?.name || '')) {
+          const freezeRes = freezeWaterAt(nextMap, nextElemental, enemy.x, enemy.y, 10);
+          nextMap = freezeRes.updatedMap;
+          nextElemental = freezeRes.updatedFields;
+        } else if (debuffToApply?.type === CatalystType.Lightning || /lightning|thunder|shock/i.test(template?.name || '')) {
+          const shockRes = electrifyConnectedWater(nextMap, nextElemental, enemy.x, enemy.y, 8);
+          nextElemental = shockRes.updatedFields;
+        } else if (debuffToApply?.type === CatalystType.Poison || /poison|venom|toxic/i.test(template?.name || '')) {
+          nextElemental = spawnPoisonGasAt(nextElemental, enemy.x, enemy.y, 5);
+        }
+
         return {
           ...prev,
+          map: nextMap,
+          elementalFields: nextElemental,
           equipmentInventory: nextEquip,
           playerStats: {
             ...prev.playerStats,

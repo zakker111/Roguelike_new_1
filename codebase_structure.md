@@ -58,6 +58,22 @@ This document is the authoritative structural reference for the entire **Soverei
 
 ---
 
+### 3b. `/src/factions/` — Modular Faction Sub-Engine & Hostility Matrix
+- `src/factions/types.ts`: Domain types for factions, standing tiers (`Hated` to `Revered`), alignments, and perks.
+- `src/factions/FactionMatrix.ts`: Singleton engine for $O(1)$ pairwise hostility lookups and entity faction resolution.
+- `src/factions/useFactionReputation.ts`: Player reputation management hook tracking scores, prices, perks, and safehouses.
+- `src/factions/index.ts`: Faction sub-engine barrel export.
+
+---
+
+### 3c. `/src/utils/elemental/` & `/src/types/elemental.ts` — Elemental Propagation Sub-Engine (Pillar 2)
+- `src/types/elemental.ts`: Domain types for elemental fields (`fire`, `ice`, `shock`, `steam`, `poison_gas`), intensities, and propagation contracts.
+- `src/utils/elemental/elementalEngine.ts`: Cellular automata fire spread, flammable vegetation consumption into Ash, water freezing into walkable Ice, contiguous water shock conduction, toxic gas deflagration explosions, and steam line-of-sight obscuration.
+- `src/utils/elemental/index.ts`: Elemental sub-engine barrel export.
+- `src/canvas/elementalVfxRenderer.ts`: Canvas procedural VFX renderer for fire flickers, ice frost glints, lightning arcs, steam plumes, and toxic poison clouds.
+
+---
+
 ### 4. `/src/canvas/` — 2D Grid & Graphics Rendering Engine
 - `src/canvas/HybridGraphicsEngine.ts`: Primary rendering coordinator (supports canvas 2D & WebGL fallbacks).
 - `src/canvas/tileMapRenderer.ts`: Efficient viewport chunk renderer for terrain, water, roads, biomes, and indoor tiles.
@@ -65,6 +81,9 @@ This document is the authoritative structural reference for the entire **Soverei
 - `src/canvas/weatherLightingRenderer.ts`: Ambient day/night cycles, darkness shaders, fog of war, rain, snow, and storms.
 - `src/canvas/shadowRenderer.ts`: Directional shadow projection for trees, buildings, and entities.
 - `src/canvas/VFXEmitter.ts` / `src/canvas/visualFxParticleSystem.ts`: Particle effects (sparks, magic auras, leaf drifts, dust devils).
+- `src/canvas/waterCausticsRenderer.ts`: Multi-scale dynamic water caustics, wave refraction light webs, and submerged entity refraction ribbons.
+- `src/canvas/bloomEngine.ts`: Luminous HDR bloom pass with pre-cached radial gradient bloom stamps for lanterns, shrines, spells, and elemental fields.
+- `src/canvas/vignetteRenderer.ts`: Atmospheric perimeter vignette with dungeon depth scaling, midnight dark frames, and blood moon / blizzard overlays.
 - `src/canvas/TilesetAtlasManager.ts` / `src/canvas/TilesetRenderer.ts`: Texture atlas loading and sprite-sheet tile slicing.
 - `src/canvas/spriteAnimationManager.ts` / `src/canvas/spriteRenderer.ts`: Animated sprite frame progression.
 - `src/canvas/TextRenderer.ts`: High-DPI floating numbers, overhead speech bubbles, and nametags.
@@ -170,6 +189,7 @@ This document is the authoritative structural reference for the entire **Soverei
   - `storytellerRescue.ts`: Critical life-saving rescue evaluations and emergency triggers.
   - `storytellerEngine.ts`: Tension, boredom, autonomous monologue, and turn tick runner.
   - `index.ts`: Storyteller barrel export.
+- `src/utils/ai.ts`: Centralized pathfinding, BFS movement solvers, line-of-sight algorithms (`hasLineOfSight`, `computeFOV`), and authoritative entity passability engine (`isTileBlockedForEntity`, `isTileWalkableForEntity`) enforcing tree, vein, obstacle, and fortification collision across all actors.
 - `src/utils/gmNarrator.ts`: Narrative log generator and contextual event flavor broadcaster.
 - `src/utils/worldThreat.ts`: World threat scaling and regional difficulty calculation.
 - `src/utils/weatherEngine.ts`: Weather shifts, rain, snow, eclipses, and elemental field effects.
@@ -180,6 +200,7 @@ This document is the authoritative structural reference for the entire **Soverei
   - `synthEngine.ts`: WebAudio node graphs, oscillators, ADSR envelopes, filters, and global gain control.
   - `spatialAudio.ts`: 2D tile coordinate panning, low-pass distance muffling, and volume falloff.
   - `ambientSoundscapes.ts`: Continuous environmental audio layers (rain, blizzards, winds, dungeon caves, tavern chatter).
+  - `acousticOcclusion.ts`: Bresenham obstacle raycasting between sound emitters and player listener, realistic lowpass frequency muffling (360-750 Hz), material volume dampening, and acoustic cavity resonance boost.
   - `soundCatalog.ts`: Procedural sound design definitions for UI, spells, combat hits, loot drops, footsteps, crafting, boss fanfares, and death cues.
   - `index.ts`: Audio engine barrel export.
 - `src/utils/buildingAudio.ts`: Indoor detection and acoustic sound dampening.
@@ -258,5 +279,5 @@ This document is the authoritative structural reference for the entire **Soverei
 ---
 
 ### 10. `/src/tests/` — Automated Test Suite
-- 57 comprehensive Vitest test suites (353 unit, simulation, and integration tests passing 100% green) covering button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
+- 63 comprehensive Vitest test suites (390 unit, simulation, and integration tests passing 100% green) covering elemental propagation & cellular reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), living ecosystem & predator-prey simulation (`livingEcosystemSim.test.ts`), faction matrix & hostility (`factionMatrix.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding, tree/wood obstacle collisions, behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
 

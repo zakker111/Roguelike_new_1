@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameState, TileType } from '../../types';
 import { 
   CustomDungeonBlueprintMod, 
@@ -107,6 +107,20 @@ export const GodDungeonEditor: React.FC<GodDungeonEditorProps> = ({
   const [jsonInput, setJsonInput] = useState('');
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [copiedSuccess, setCopiedSuccess] = useState(false);
+
+  // Close JSON modal on Escape key
+  useEffect(() => {
+    if (!showJsonModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowJsonModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [showJsonModal]);
 
   // Resize Grid
   const handleResizeGrid = (newW: number, newH: number) => {

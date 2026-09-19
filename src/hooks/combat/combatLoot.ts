@@ -215,6 +215,35 @@ export function generateCombatLoot(
     });
   }
 
+  // Faction Turf War & Elite Spoils
+  if (
+    updatedEnemy.name?.toLowerCase().includes('warlord') ||
+    updatedEnemy.name?.toLowerCase().includes('goreaxe')
+  ) {
+    finalMats = [...finalMats, 'mat_refined_iron', 'mat_tempered_scrap'];
+    extraLogs.push({
+      id: `orc_spoils_${Date.now()}`,
+      text: `🏆 [WARLORD SPOILS]: Defeated ${updatedEnemy.name}! High-grade Refined Iron and Tempered Scrap scatter on the battlefield!`,
+      type: 'loot',
+      timestamp: formatGameTime(prev.gameTime).timeStr
+    });
+  } else if (
+    updatedEnemy.name?.toLowerCase().includes('shadow dagger') ||
+    updatedEnemy.name?.toLowerCase().includes('bandit leader')
+  ) {
+    finalMats = [...finalMats, 'mat_smuggler_key', 'mat_tempered_scrap'];
+    extraLogs.push({
+      id: `bandit_spoils_${Date.now()}`,
+      text: `🗝️ [SYNDICATE SPOILS]: Defeated ${updatedEnemy.name}! Found a Smuggler's Key and Scavenged Scrap!`,
+      type: 'loot',
+      timestamp: formatGameTime(prev.gameTime).timeStr
+    });
+  } else if (updatedEnemy.faction === 'outlaw_bandits' && Math.random() < 0.35) {
+    finalMats = [...finalMats, 'mat_smuggler_key'];
+  } else if (updatedEnemy.faction === 'iron_fang_orcs' && Math.random() < 0.40) {
+    finalMats = [...finalMats, 'mat_tempered_scrap'];
+  }
+
   if (isBloodMoon && finalCats.length > 0) {
     finalCats = [...finalCats, ...finalCats];
   }

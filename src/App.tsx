@@ -52,6 +52,7 @@ import { WEATHER_EFFECTS, getValidWeatherForBiome } from './utils/weatherEngine'
 import { STARTING_WEAPON, STARTING_ARMOR } from './utils/spellsAndEquipment';
 import { consumeItemFromInventory } from './utils/scrollUtils';
 import { SanctumRelic } from './utils/relics';
+import { performanceMonitor } from './utils/performanceMonitor';
 import { DEFAULT_QUESTS } from './utils/questData';
 import { getMerchantConfig } from './utils/shopData';
 import { appendBoundedLogs } from './utils/logBuffer';
@@ -167,6 +168,7 @@ export default function App() {
   const [isGodPanelOpen, setIsGodPanelOpen] = useState(false);
   const [isGmPanelOpen, setIsGmPanelOpen] = useState(false);
   const [isSleepOpen, setIsSleepOpen] = useState(false);
+  const [isPerfHudOpen, setIsPerfHudOpen] = useState(() => performanceMonitor.isHudOpen());
   const [isBestiaryOpen, setIsBestiaryOpen] = useState(false);
   const [isFishingOpen, setIsFishingOpen] = useState(false);
   const [isLockpickingOpen, setIsLockpickingOpen] = useState(false);
@@ -765,14 +767,38 @@ export default function App() {
     setIsLockpickingOpen,
     isFishingOpen,
     setIsFishingOpen,
+    isScriptoriumOpen,
+    setIsScriptoriumOpen,
+    activeScriptoriumScrollTemplateId,
+    setActiveScriptoriumScrollTemplateId,
+    activeLockpickingChestIndex,
+    setActiveLockpickingChestIndex,
+    unlawfulGuardTarget,
+    setUnlawfulGuardTarget,
+    activePoi,
+    setActivePoi,
+    activeDrunkNpc,
+    setActiveDrunkNpc,
+    activeTravelerNpc,
+    setActiveTravelerNpc,
+    activeRelicDraft,
+    setActiveRelicDraft,
+    activeRecallScroll: !!activeRecallScroll,
+    setActiveRecallScroll: setActiveRecallScroll as any,
+    activeTargetedScroll,
+    setActiveTargetedScroll,
     isHelpOpen,
     setIsHelpOpen,
+    isPerfHudOpen,
+    setIsPerfHudOpen,
     isGodPanelOpen,
     setIsGodPanelOpen,
     isGmPanelOpen,
     setIsGmPanelOpen,
     isBestiaryOpen,
     setIsBestiaryOpen,
+    isWorldThreatOpen,
+    setIsWorldThreatOpen,
     isAudioSettingsOpen,
     setIsAudioSettingsOpen,
     isSleepOpen,
@@ -783,6 +809,7 @@ export default function App() {
     setIsWorldMapOpen,
     activeTab,
     setActiveTab,
+    activeDialogueNpc,
     setActiveDialogueNpc,
     handleBraceDefense,
     climbStairsUpToOverworld,
@@ -999,6 +1026,8 @@ export default function App() {
           setIsWorldThreatOpen={setIsWorldThreatOpen}
           isWorldMapOpen={isWorldMapOpen}
           setIsWorldMapOpen={setIsWorldMapOpen}
+          isPerfHudOpen={isPerfHudOpen}
+          setIsPerfHudOpen={setIsPerfHudOpen}
           isGodPanelOpen={isGodPanelOpen}
           setIsGodPanelOpen={setIsGodPanelOpen}
           isGmPanelOpen={isGmPanelOpen}

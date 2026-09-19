@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CustomMapPin, MapPinIcon } from './types';
 import { X, MapPin, Trash2, Check } from 'lucide-react';
 
@@ -49,6 +49,20 @@ export const CustomPinEditorModal: React.FC<CustomPinEditorModalProps> = ({
   const [icon, setIcon] = useState<MapPinIcon>(existingPin?.icon || 'star');
   const [color, setColor] = useState(existingPin?.color || '#f59e0b');
   const [notes, setNotes] = useState(existingPin?.notes || '');
+
+  // Close pin editor on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

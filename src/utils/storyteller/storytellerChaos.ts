@@ -1,5 +1,5 @@
 import { GameState, Enemy, EnemyState, EnemyType, TileType, EquipmentItem, GameLogMessage, CatalystType, TrapType, Trap } from "../../types";
-import { findWalkableSpotNearPlayer, getDirectionString } from "../../data/gmCommands";
+import { findWalkableSpotNearPlayer, getDirectionString } from "./gmCoordinateUtils";
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
 import { GMState, getGMStorytellerState, setGMStorytellerState } from "./types";
 import { getChaosSurgeFlavorText } from "./storytellerFlavor";

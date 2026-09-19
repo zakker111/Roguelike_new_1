@@ -1,7 +1,7 @@
 {
   "name": "dungeon-crafting-roguelike",
   "private": true,
-  "version": "8.2.0",
+  "version": "8.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "generate:tilesets": "node scripts/generateMockupPngs.cjs",
+    "generate:icons": "node scripts/generateAppIcons.cjs",
     "test": "vitest run",
     "audit": "node scripts/validateJson.cjs && node scripts/auditCodebase.cjs && tsc --noEmit && vitest run"
   },

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, MessageSquare, Scroll, ShoppingBag, Swords, ShieldAlert, Sparkles, HelpCircle, CloudRain, Sun, Snowflake, CloudFog, CupSoda, Navigation } from 'lucide-react';
 import { NPC, PlayerStats } from '../../types';
 import { playSound } from '../../utils/audio';
@@ -41,6 +41,19 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
 }) => {
   const [dialogueIndex, setDialogueIndex] = useState(0);
   const [customQuote, setCustomQuote] = useState<string | null>(null);
+
+  // Close dialogue on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   const contextualLines = useMemo(() => {
     return getWeatherTimeContextDialogue(npc, { weather, gameTime, biome, season, townReputation });

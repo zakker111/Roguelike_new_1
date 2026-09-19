@@ -4,6 +4,7 @@
  */
 
 import { TileType } from '../types';
+import { ElementalTile } from '../types/elemental';
 
 /**
  * Zero-allocation line tracer using Bresenham's algorithm.
@@ -71,7 +72,14 @@ export function bresenhamLine(x0: number, y0: number, x1: number, y1: number): {
   return points;
 }
 
-export function hasLineOfSight(x0: number, y0: number, x1: number, y1: number, map: TileType[][]): boolean {
+export function hasLineOfSight(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  map: TileType[][],
+  elementalFields?: ElementalTile[]
+): boolean {
   if (!map || map.length === 0 || !map[0]) return true;
   if (x0 === x1 && y0 === y1) return true;
 
@@ -90,10 +98,20 @@ export function hasLineOfSight(x0: number, y0: number, x1: number, y1: number, m
       tile === TileType.WatchtowerBarricade ||
       tile === TileType.Tree ||
       tile === TileType.PineTree ||
-      tile === TileType.BirchTree
+      tile === TileType.BirchTree ||
+      tile === TileType.CopperVein ||
+      tile === TileType.IronVein ||
+      tile === TileType.FieldTent
     ) {
       clear = false;
       return false; // early stop
+    }
+
+    if (elementalFields && elementalFields.length > 0) {
+      if (elementalFields.some((f) => f.x === x && f.y === y && f.element === 'steam' && f.duration > 0)) {
+        clear = false;
+        return false;
+      }
     }
     return true;
   });
@@ -214,7 +232,13 @@ export function computeFOV(
         tile === TileType.Door ||
         tile === TileType.WatchtowerWall ||
         tile === TileType.WatchtowerSlit ||
-        tile === TileType.WatchtowerBarricade
+        tile === TileType.WatchtowerBarricade ||
+        tile === TileType.Tree ||
+        tile === TileType.PineTree ||
+        tile === TileType.BirchTree ||
+        tile === TileType.CopperVein ||
+        tile === TileType.IronVein ||
+        tile === TileType.FieldTent
       ) {
         return false;
       }
@@ -228,6 +252,72 @@ export function computeFOV(
   fovCache.set(hashKey, visible);
 
   return visible;
+}
+
+export interface TilePassabilityOptions {
+  isWaterWalkable?: boolean;
+  canOpenDoors?: boolean;
+  isBedWalkable?: boolean;
+}
+
+/**
+ * Authoritative check for whether a tile is impassable (blocks walking/movement) for entities.
+ * Includes all obstacles: Wall, Window, Table, Chair, Tree, PineTree, BirchTree, TreeStump,
+ * Bush, Sign, Torch, WatchtowerFlag, CopperVein, IronVein, WatchtowerWall, WatchtowerSlit,
+ * WatchtowerBarricade, Campfire, Fireplace, Anvil, FieldTent, Empty, and conditionally Water/Door/Bed.
+ */
+export function isTileBlockedForEntity(
+  tile: TileType | undefined,
+  options?: TilePassabilityOptions
+): boolean {
+  if (!tile) return true;
+
+  if (
+    tile === TileType.Wall ||
+    tile === TileType.Window ||
+    tile === TileType.Table ||
+    tile === TileType.Chair ||
+    tile === TileType.Tree ||
+    tile === TileType.PineTree ||
+    tile === TileType.BirchTree ||
+    tile === TileType.Bush ||
+    tile === TileType.Sign ||
+    tile === TileType.Torch ||
+    tile === TileType.WatchtowerFlag ||
+    tile === TileType.CopperVein ||
+    tile === TileType.IronVein ||
+    tile === TileType.WatchtowerWall ||
+    tile === TileType.WatchtowerSlit ||
+    tile === TileType.WatchtowerBarricade ||
+    tile === TileType.Campfire ||
+    tile === TileType.Fireplace ||
+    tile === TileType.Anvil ||
+    tile === TileType.FieldTent ||
+    tile === TileType.Empty
+  ) {
+    return true;
+  }
+
+  if (tile === TileType.Water && !options?.isWaterWalkable) {
+    return true;
+  }
+
+  if (tile === TileType.Door && !options?.canOpenDoors) {
+    return true;
+  }
+
+  if (tile === TileType.Bed && !options?.isBedWalkable) {
+    return true;
+  }
+
+  return false;
+}
+
+export function isTileWalkableForEntity(
+  tile: TileType | undefined,
+  options?: TilePassabilityOptions
+): boolean {
+  return !isTileBlockedForEntity(tile, options);
 }
 
 /**
@@ -301,24 +391,11 @@ export function getNextStepTowards(
 
         // Accessibility conditions
         const tile = map[ny][nx];
-        const isTileBlocked =
-          tile === TileType.Wall ||
-          tile === TileType.Window ||
-          tile === TileType.Table ||
-          tile === TileType.Tree ||
-          tile === TileType.PineTree ||
-          tile === TileType.BirchTree ||
-          tile === TileType.CopperVein ||
-          tile === TileType.IronVein ||
-          tile === TileType.WatchtowerWall ||
-          tile === TileType.WatchtowerSlit ||
-          tile === TileType.WatchtowerBarricade ||
-          (tile === TileType.Water && !isWaterWalkable) ||
-          tile === TileType.Campfire ||
-          tile === TileType.Anvil ||
-          tile === TileType.Empty ||
-          (tile === TileType.Bed && idx !== targetIdx) ||
-          (tile === TileType.Door && !canOpenDoors);
+        const isTileBlocked = isTileBlockedForEntity(tile, {
+          isWaterWalkable,
+          canOpenDoors,
+          isBedWalkable: idx === targetIdx
+        });
 
         if (isTileBlocked) {
           continue;
@@ -347,24 +424,11 @@ export function getNextStepTowards(
     .filter((step) => {
       if (step.nx < 0 || step.nx >= width || step.ny < 0 || step.ny >= height) return false;
       const tile = map[step.ny][step.nx];
-      const isTileBlocked =
-        tile === TileType.Wall ||
-        tile === TileType.Window ||
-        tile === TileType.Table ||
-        tile === TileType.Tree ||
-        tile === TileType.PineTree ||
-        tile === TileType.BirchTree ||
-        tile === TileType.CopperVein ||
-        tile === TileType.IronVein ||
-        tile === TileType.WatchtowerWall ||
-        tile === TileType.WatchtowerSlit ||
-        tile === TileType.WatchtowerBarricade ||
-        (tile === TileType.Water && !isWaterWalkable) ||
-        tile === TileType.Campfire ||
-        tile === TileType.Anvil ||
-        tile === TileType.Empty ||
-        (tile === TileType.Bed && (step.nx !== clampedTargetX || step.ny !== clampedTargetY)) ||
-        (tile === TileType.Door && !canOpenDoors);
+      const isTileBlocked = isTileBlockedForEntity(tile, {
+        isWaterWalkable,
+        canOpenDoors,
+        isBedWalkable: step.nx === clampedTargetX && step.ny === clampedTargetY
+      });
       if (isTileBlocked) return false;
       return !occupiedSet.has(step.ny * width + step.nx);
     })
@@ -383,7 +447,8 @@ export function getNextStepAwayFrom(
   threatY: number,
   map: TileType[][],
   canOpenDoors: boolean,
-  otherEntities: { x: number; y: number }[]
+  otherEntities: { x: number; y: number }[],
+  isWaterWalkable?: boolean
 ): { x: number; y: number } | null {
   if (!map || map.length === 0 || !map[0] || map[0].length === 0) return null;
   const height = map.length;
@@ -416,21 +481,11 @@ export function getNextStepAwayFrom(
     const ny = startY + dir.dy;
     if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
       const tile = map[ny][nx];
-      const isTileBlocked =
-        tile === TileType.Wall ||
-        tile === TileType.Window ||
-        tile === TileType.Table ||
-        tile === TileType.Tree ||
-        tile === TileType.PineTree ||
-        tile === TileType.BirchTree ||
-        tile === TileType.WatchtowerWall ||
-        tile === TileType.WatchtowerBarricade ||
-        tile === TileType.Water ||
-        tile === TileType.Campfire ||
-        tile === TileType.Anvil ||
-        tile === TileType.Bed ||
-        tile === TileType.Empty ||
-        (tile === TileType.Door && !canOpenDoors);
+      const isTileBlocked = isTileBlockedForEntity(tile, {
+        isWaterWalkable,
+        canOpenDoors,
+        isBedWalkable: false
+      });
 
       if (isTileBlocked || occupiedSet.has(`${nx},${ny}`)) continue;
 

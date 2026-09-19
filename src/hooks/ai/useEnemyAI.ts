@@ -39,8 +39,20 @@ export function useEnemyAI({
         nextSplatters,
         gmStateUpdates,
         staticLogs,
-        nextEnemies
+        nextEnemies,
+        nextElementalFields,
+        mapModifications
       } = envRes;
+
+      let nextMap = prev.map;
+      if (mapModifications && mapModifications.length > 0) {
+        nextMap = prev.map.map((row) => [...row]);
+        for (const mod of mapModifications) {
+          if (nextMap[mod.y] && nextMap[mod.y][mod.x] !== undefined) {
+            nextMap[mod.y][mod.x] = mod.newTile;
+          }
+        }
+      }
 
       let nextCaravanTravel = prev.caravanTravel;
       let nextDefeatedCounts = prev.defeatedEnemiesCount ? { ...prev.defeatedEnemiesCount } : {};
@@ -91,6 +103,7 @@ export function useEnemyAI({
 
       // 4. Enemy, Follower & Town Guard Action Processing
       const updatedEnemiesList: Enemy[] = [];
+      const nextLootPiles = [...(prev.lootPiles || [])];
       let incomingPlayerDamage = 0;
       let incomingPlayerHits = 0;
       let hadPlayerCrit = false;
@@ -115,9 +128,52 @@ export function useEnemyAI({
           if (fol) {
             fol.hp = target.hp;
           }
-          if (target.hp <= 0) {
-            nextCorpses.push({ x: target.x, y: target.y, char: '%', color: '#94a3b8', name: `${target.name} (Corpse)` });
-            nextSplatters.push({ x: target.x, y: target.y, color: '#ef4444' });
+        }
+
+        if (target.hp <= 0) {
+          // Autonomous Skirmish & Combat Death: Leave corpse, blood splatter, and battlefield debris!
+          const corpseColor = target.char === 'r' ? '#22c55e' :
+                              target.char === 'S' || target.name.toLowerCase().includes('skeleton') ? '#38bdf8' :
+                              target.isTownGuard ? '#3b82f6' :
+                              '#94a3b8';
+          const splatterColor = target.char === 'r' ? '#22c55e' :
+                                target.char === 'S' || target.name.toLowerCase().includes('skeleton') ? '#38bdf8' :
+                                '#dc2626';
+
+          nextCorpses.push({
+            id: `corpse_${target.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            x: target.x,
+            y: target.y,
+            char: '%',
+            color: corpseColor,
+            name: `${target.name} (Fallen Combatant)`
+          });
+          nextSplatters.push({
+            x: target.x,
+            y: target.y,
+            color: splatterColor
+          });
+
+          // Drop battlefield debris / loot pile from clash
+          const droppedGold = Math.floor(Math.random() * 8) + 3;
+          const factionScrap = target.faction === 'orc_clans' ? 'iron_scrap' :
+                               target.faction === 'outlaw_bandits' ? 'lockpick_salvage' :
+                               target.isAnimal ? 'raw_meat' : 'scrap_metal';
+          nextLootPiles.push({
+            id: `debris_${target.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            x: target.x,
+            y: target.y,
+            gold: droppedGold,
+            materials: [factionScrap],
+            catalysts: [],
+            equipment: []
+          });
+        } else if (target.hp <= Math.max(4, Math.round(target.maxHp * 0.25))) {
+          // Wounded survivors from skirmishes can panic or surrender amidst the debris
+          if (target.faction && target.state !== EnemyState.Fleeing && target.state !== EnemyState.Surrendered) {
+            target.state = Math.random() < 0.5 ? EnemyState.Surrendered : EnemyState.Fleeing;
+            if (ne) ne.state = target.state;
+            if (ueIndex !== -1) updatedEnemiesList[ueIndex].state = target.state;
           }
         }
         return target.hp <= 0;
@@ -274,9 +330,10 @@ export function useEnemyAI({
 
       return {
         ...prev,
+        map: restoredOverworld ? restoredOverworld.map : nextMap,
+        elementalFields: nextElementalFields || prev.elementalFields || [],
         ...gmStateUpdates,
         ...(restoredOverworld ? {
-          map: restoredOverworld.map,
           discovered: restoredOverworld.discovered,
           visible: restoredOverworld.visible,
           enemies: restoredOverworld.enemies,
@@ -303,6 +360,7 @@ export function useEnemyAI({
         activeFoodBuff: nextFoodBuff,
         corpses: nextCorpses,
         bloodSplatters: nextSplatters,
+        lootPiles: nextLootPiles,
         caravanTravel: nextCaravanTravel,
         followers: nextFollowers.filter(f => f && f.hp > 0),
         enemies: nextEnemies,

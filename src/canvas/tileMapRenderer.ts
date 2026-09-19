@@ -1,8 +1,9 @@
 import { TileType, GameState } from '../types';
-import { SpriteSheetConfig } from '../components/GameCanvas';
+import { SpriteSheetConfig } from './types';
 import { drawSpriteOrAscii } from './spriteRenderer';
 import { getDirectionalShadowParams, isShadowCastingTile, renderTileDirectionalShadow } from './shadowRenderer';
 import { renderWaterTileShimmer } from './waterShimmerRenderer';
+import { renderDynamicWaterCaustics } from './waterCausticsRenderer';
 import { tilesetAtlasManager } from './TilesetAtlasManager';
 import { chunkBackgroundCache } from './chunkBackgroundCache';
 
@@ -241,6 +242,14 @@ export function resolveTileStyle(
         glyphColor = isVisible ? '#38bdf8' : '#0369a1';
       }
     }
+  } else if (tile === TileType.Ice) {
+    char = '❄';
+    tileColor = isVisible ? '#0369a1' : '#0c4a6e';
+    glyphColor = isVisible ? '#e0f2fe' : '#7dd3fc';
+  } else if (tile === TileType.Ash) {
+    char = '░';
+    tileColor = isVisible ? '#1c1917' : '#0c0a09';
+    glyphColor = isVisible ? '#78716c' : '#44403c';
   } else if (tile === TileType.Path) {
     if (isOverworld) {
       if (biome === 'desert') {
@@ -537,6 +546,7 @@ export function renderTileMap({
 
       if (isVisible && tile === TileType.Water) {
         renderWaterTileShimmer(ctx, rx, ry, tileSize, x, y, isOverworld ? biome : undefined, false);
+        renderDynamicWaterCaustics(ctx, rx, ry, tileSize, x, y, isOverworld ? biome : undefined);
       }
 
       if (isVisible && isShadowCastingTile(tile)) {

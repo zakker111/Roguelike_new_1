@@ -140,14 +140,34 @@ export function usePlayerTurnMovement(props: UsePlayerTurnMovementProps) {
       tile === TileType.Tree ||
       tile === TileType.PineTree ||
       tile === TileType.BirchTree ||
+      tile === TileType.Bush ||
+      tile === TileType.Sign ||
+      tile === TileType.Torch ||
+      tile === TileType.WatchtowerFlag ||
       tile === TileType.CopperVein ||
       tile === TileType.IronVein ||
       (tile === TileType.Water && !isWaterWalkable) ||
       tile === TileType.Table ||
+      tile === TileType.Chair ||
       tile === TileType.WatchtowerWall ||
       tile === TileType.WatchtowerSlit ||
-      tile === TileType.WatchtowerBarricade;
+      tile === TileType.WatchtowerBarricade ||
+      tile === TileType.Campfire ||
+      tile === TileType.Fireplace ||
+      tile === TileType.Anvil ||
+      tile === TileType.FieldTent ||
+      tile === TileType.Empty;
     if (collides) {
+      if (tile === TileType.Sign) {
+        playSound('inspect');
+        addLogMessage(`🪧 [SIGNPOST]: Carved wooden signpost. Stand adjacent and press 'G' to read directions and regional landmarks!`, 'system');
+        return;
+      }
+      if (tile === TileType.Bush) {
+        playSound('bump');
+        addLogMessage(`🌿 [THICK BRUSH]: Dense berry brush blocks walking. Stand adjacent and press 'G' to forage sweet berries and herbs!`, 'system');
+        return;
+      }
       playSound('bump');
       return;
     }

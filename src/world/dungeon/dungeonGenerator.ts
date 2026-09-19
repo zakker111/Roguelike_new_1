@@ -5,7 +5,7 @@
 
 import { TileType, Trap, Chest, Enemy } from '../../types';
 import { GeneratedDungeonLevel, Room } from './types';
-import { generateDungeonRooms, carveUnderworldLavaPools } from './dungeonRooms';
+import { generateDungeonRooms, carveUnderworldLavaPools, spawnSubterraneanOreVeins } from './dungeonRooms';
 import { connectDungeonRooms, placeDungeonDoors } from './dungeonCorridors';
 import { spawnDungeonTraps, spawnDungeonChests } from './dungeonTrapsAndChests';
 import {
@@ -101,6 +101,9 @@ export function generateLevel(
 
   // 7. Underworld Lava Pools (depth >= 6)
   carveUnderworldLavaPools(map, rooms, depth, stairsX, stairsY, playerX, playerY);
+
+  // 7b. Subterranean Mineral Veins (Copper & Iron embedded in cave/dungeon walls)
+  spawnSubterraneanOreVeins(map, rooms, depth, stairsX, stairsY, playerX, playerY);
 
   // 8. Spawn Traps
   const traps: Trap[] = spawnDungeonTraps(map, width, height, depth, playerX, playerY, stairsX, stairsY, 0.08);

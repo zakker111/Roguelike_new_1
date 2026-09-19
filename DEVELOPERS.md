@@ -21,7 +21,8 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── game.ts                # Main GameState, UI & Navigation Enums
   │   ├── entities.ts            # PlayerStats, Enemy, Companion, Scar & NPC Types
   │   ├── map.ts                 # TileType, Chunk, POI & Map Coordinate Types
-  │   └── items.ts               # EquipmentItem, Recipe & Material Types
+  │   ├── items.ts               # EquipmentItem, Recipe & Material Types
+  │   └── elemental.ts           # Elemental Ground Fields, Intensities & Propagation Contracts
   │
   ├── 📂 hooks                   # Custom Domain Engine Hooks
   │   ├── 📂 ai                  # Modular AI Behavior & Enemy/Civilian Decision Trees
@@ -101,6 +102,10 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── AssetPreloader.ts      # Asynchronous tile-sheet & sprite image loader
   │   ├── TilesetAtlasManager.ts # Sprite sheet grid & autotile coordinate mapper
   │   ├── VFXEmitter.ts          # Decoupled real-time particle VFX emitter queue
+  │   ├── elementalVfxRenderer.ts# Canvas procedural VFX for fire, ice, sparks, steam, and poison gas
+  │   ├── waterCausticsRenderer.ts# Multi-scale dynamic water caustics, wave light webs & submerged refraction
+  │   ├── bloomEngine.ts         # Luminous HDR bloom pass, pre-cached gradient stamps for emitters & spells
+  │   ├── vignetteRenderer.ts    # Atmospheric perimeter vignette, dungeon depth scaling & blood moon tints
   │   └── index.ts               # Canvas engine barrel export
   │
   ├── 📂 world                   # Isolated World & Dungeon Generators
@@ -265,8 +270,12 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── synthEngine.ts     # WebAudio node graphs, oscillators, ADSR envelopes, filters & gain control
   │   │   ├── spatialAudio.ts    # 2D tile coordinate panning, low-pass distance muffling & volume falloff
   │   │   ├── ambientSoundscapes.ts # Continuous environmental audio layers (rain, blizzards, winds, caves)
+  │   │   ├── acousticOcclusion.ts  # Raytraced acoustic occlusion, Bresenham obstacle raycasting & door muffling
   │   │   ├── soundCatalog.ts    # Procedural sound design definitions for UI, spells, combat, loot, crafting
   │   │   └── index.ts           # Unified audio barrel export
+  │   ├── 📂 elemental           # Elemental Propagation Sub-Engine (Pillar 2)
+  │   │   ├── elementalEngine.ts # Cellular fire spread, ash decomposition, water freeze/melt, shock conduction, gas explosions
+  │   │   └── index.ts           # Elemental sub-engine barrel export
   │   ├── 📂 worldmap            # World Map & Cartography Utilities
   │   │   └── worldMapPngExporter.ts # Whole realm 40% scale offscreen canvas rasterizer & PNG exporter
   │   ├── bestiary.ts            # Bestiary lookup utilities & monster categorizer
@@ -317,7 +326,7 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── wildernessCamping.ts   # Wilderness Campsite Quality, Insulation & Night-Watch Sentry Engine
   │   └── worldThreat.ts         # Adaptive world threat & chaos calculation
   │
-  └── 📂 tests                   # Automated Vitest Engine Test Suites (52 test files, 315 tests)
+  └── 📂 tests                   # Automated Vitest Engine Test Suites (64 test files, 399 tests)
       ├── ai.test.ts             # Pathfinding, Bresenham line of sight & enemy AI tests
       ├── appHooksAndGameStateFactory.test.ts # App hooks & game state factory tests
       ├── audioEngineModular.test.ts # WebAudio synthesizer node graphs & sound catalog
@@ -357,6 +366,7 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
       ├── saveLoad.test.ts       # Serialization, save integrity validation & corruption handling
       ├── settlementScalingAndTaverns.test.ts # Settlement tier scaling & tavern layouts
       ├── shadowRenderer.test.ts # Dynamic sun & moon 24h directional drop shadows
+      ├── spatialAcousticsAndVfx.test.ts # Raytraced acoustic occlusion, water caustics, bloom & vignette
       ├── spellsAndMana.test.ts  # Active spells catalog, mana costs & scroll conversions
       ├── storytellerAI.test.ts  # GM state, personality shifts & encounter triggers
       ├── storytellerModule.test.ts # Modular GM Storyteller sub-engine & chaos surges

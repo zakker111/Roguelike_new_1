@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Wine, Coins, Sparkles, Zap, Hand, Dices } from 'lucide-react';
 import { NPC, PlayerStats } from '../types';
 import { playSound } from '../utils/audio';
@@ -39,6 +39,19 @@ export default function DrunkInteractionOverlay({
   const [outcomeMessage, setOutcomeMessage] = useState<string | null>(null);
   const [coinBet, setCoinBet] = useState<'heads' | 'tails' | null>(null);
   const [coinResult, setCoinResult] = useState<{ choice: string; rolled: string; won: boolean } | null>(null);
+
+  // Close drunk interaction on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
 
   const handleBuyDrink = () => {
     if (playerStats.gold < 25) {

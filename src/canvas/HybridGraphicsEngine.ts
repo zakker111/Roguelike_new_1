@@ -7,6 +7,7 @@ import {
   TILESET_SOURCES,
   getStoredGraphicsMode,
   setStoredGraphicsMode,
+  setActiveVisualMode,
 } from './types';
 import { TextRenderer } from './TextRenderer';
 import { TilesetRenderer } from './TilesetRenderer';
@@ -20,6 +21,7 @@ export class HybridGraphicsEngine implements IVisualRenderer {
   public mode: GraphicsVisualMode = getStoredGraphicsMode();
 
   private constructor() {
+    setActiveVisualMode(this.mode);
     this.syncSubRenderers(this.mode);
   }
 
@@ -38,6 +40,7 @@ export class HybridGraphicsEngine implements IVisualRenderer {
 
   public setMode(mode: GraphicsVisualMode): void {
     this.mode = mode;
+    setActiveVisualMode(mode);
     this.syncSubRenderers(mode);
     setStoredGraphicsMode(mode);
     chunkBackgroundCache.invalidate();

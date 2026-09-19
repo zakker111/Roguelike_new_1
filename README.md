@@ -473,6 +473,7 @@ The audio engine uses pure **WebAudio procedural synthesis** (`src/utils/audio.t
 ### 🛠️ Developer & Game Master Toolkits (In-Game Console)
 The game includes comprehensive built-in developer instruments designed for live-session playtesting:
 - **GOD Command Module Overlay (`🛡️`)**: Toggle absolute damage invulnerability, instantly grant +99 of all crafting alloys and alchemical catalysts, skip player levels, or spawn custom named companions.
+- **In-Game Data Catalog Live Tuner (`🎛️`)**: Modify base weapon damages, crit rates, durability, bestiary monster HP/ATK/DEF, spell mana costs, and global balance multipliers in real time with instant combat effect and JSON balance patch export/import.
 - **GM Storyteller Dashboard (`🌀`)**: Manually override weather and solar cycles, trigger specific encounters, and inspect live GM AI "thoughts" and behavioral variables (Boredom, Tension, Mood).
 
 ### 🧪 Quality Assurance: Client-Side Virtual Smoke Test Runner (v2.9.6) (DONE)
@@ -493,6 +494,6 @@ Maintain codebase health with our automated import and catalog scanner:
 # Run codebase import integrity check + TypeScript linter + Vitest suite
 npm run audit
 ```
-This checks all 412 source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 57 Vitest test suites (353 tests passing 100% green).
+This checks all 464 source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 64 Vitest test suites (399 tests passing 100% green).
 
 

@@ -1,9 +1,8 @@
-import { TileType, GameState, EquipmentItem, WeaponBaseType, getMoonPhase } from '../types';
-import { formatGameTime } from './overworld';
+import { TileType, GameState, EquipmentItem, WeaponBaseType, getMoonPhase, LEVEL_WIDTH, LEVEL_HEIGHT } from '../types';
+import { formatGameTime } from './overworld/overworldCore';
 import gameConfig from '../data/gameConfig.json';
 
-export const LEVEL_WIDTH = 64;
-export const LEVEL_HEIGHT = 40;
+export { LEVEL_WIDTH, LEVEL_HEIGHT };
 
 export function findNearestSafePlayerTile(
   startX: number,
@@ -244,6 +243,17 @@ export function generateRandomLootGear(isBoss: boolean, isDragon: boolean, enemy
         { name: "Louhi's Runed Frost Staff", type: 'weapon', subType: WeaponBaseType.Staff, defense: 0, damage: 20, range: 3, description: "A crystalline staff carrying Louhi's freezing dark sorcery. Requires MP to project shards." },
         { name: "Pohjola's Winter Plate", type: 'armor', subType: 'HeavyArmor', defense: 14, damage: 0, range: 1, description: "Enchanted heavy plate armor chilled by the biting winds of Pohjola." },
         { name: "Sampo Fragment Pendant", type: 'armor', subType: 'Amulet', defense: 2, damage: 0, range: 1, description: "A miraculous fragment of the Sampo, bringing immense fortune and passive attributes." }
+      ];
+    } else if (enemyName.toLowerCase().includes('warlord') || enemyName.toLowerCase().includes('goreaxe')) {
+      bossPool = [
+        { name: "Orcish Cleaver", type: 'weapon', subType: WeaponBaseType.Sword, defense: 0, damage: 18, range: 1, description: "A heavy, blood-forged war cleaver stripped from the Goreaxe Warlord. Hits inflict brutal bleeding wounds." },
+        { name: "Spiked Bone Shield", type: 'armor', subType: 'Shield', defense: 9, damage: 0, range: 1, description: "A monstrous shield of bound beast bones and tempered iron spikes. Thorns punish melee attackers." },
+        { name: "Warlord's Iron Greathelm", type: 'armor', subType: 'Helmet', defense: 6, damage: 0, range: 1, description: "Heavy horned iron helm forged in bloodfire." }
+      ];
+    } else if (enemyName.toLowerCase().includes('shadow dagger') || (enemyName.toLowerCase().includes('bandit') && isBoss)) {
+      bossPool = [
+        { name: "Shadow Syndicate Garb", type: 'armor', subType: 'LightArmor', defense: 7, damage: 0, range: 1, description: "Supple, treated shadow-leather favored by outlaw guildmasters. Grants heightened agility and critical precision." },
+        { name: "Smuggler's Serrated Dirk", type: 'weapon', subType: WeaponBaseType.Dagger, defense: 0, damage: 16, range: 1, description: "A razor-sharp obsidian-edged dagger coated in venom. Deadly on backstabs and critical strikes." }
       ];
     } else {
       // General boss pool

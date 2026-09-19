@@ -73,11 +73,32 @@
         "“My gadgets failed! Mission aborted!”",
         "“Tactical smoke bomb! *cough* ...just running!”"
       ]
+    },
+    {
+      "key": "bandit_outlaw",
+      "keywords": ["bandit", "outlaw", "cutthroat", "sniper", "shadow"],
+      "quotes": [
+        "“Shadows take you! The coin isn't worth dying for!”",
+        "“Retreat back to the hideout! Disappear into the alleys!”",
+        "“Drop smoke! Every rogue for themselves!”"
+      ]
     }
   ],
   "general": [
     "“Ouch! Spare me! I have gold in my pockets!”",
     "“Retreat! Gathering reinforcements!”",
     "“You win this round, mortal! Running away!”"
+  ],
+  "leaderPanic": [
+    "“The Warlord has fallen! The clan is broken! Run!”",
+    "“Chief is dead! Scatter into the ruins!”",
+    "“Our captain was slaughtered! Break formation and flee!”",
+    "“The boss is down! Every fighter for themselves!”"
+  ],
+  "surrender": [
+    "“Mercy, warrior! I drop my blade! Take my purse!”",
+    "“Please, spare me! The clan's cause is lost!”",
+    "“I yield! Don't strike, traveler! I'm leaving these ruins!”",
+    "“Have mercy! Take my coin, I have a family outside the city!”"
   ]
 }

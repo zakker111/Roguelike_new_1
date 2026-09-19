@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, BookOpen, Lock, Landmark, Compass, Award } from 'lucide-react';
 import { WORLD_HISTORY_CHAPTERS, LoreChapter } from '../data/worldHistory';
 
@@ -21,6 +21,20 @@ export default function HistoryBookOverlay({
   inline = false,
 }: HistoryBookOverlayProps) {
   const [activeChapterId, setActiveChapterId] = useState<string>('sunder_oakhaven');
+
+  // Close history book on Escape key if not inline
+  useEffect(() => {
+    if (!onClose || inline) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose, inline]);
 
   const chaptersArray = Object.entries(WORLD_HISTORY_CHAPTERS).map(([id, info]) => ({
     id,

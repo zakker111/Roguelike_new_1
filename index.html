@@ -2,13 +2,67 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+    
+    <!-- Primary Identity & SEO -->
     <title>Dungeon Crafting Roguelike</title>
     <meta name="description" content="A classical, turn-based grid roguelike game featuring modular dungeons, extremely tough dungeon bosses, strategic escape items, diverse traps, lootable chests, a material-gathering system, and custom weapon crafting with dynamic scalable challenge." />
+    <meta name="author" content="Dungeon Crafting Roguelike" />
+    <meta name="keywords" content="roguelike, turn-based rpg, dungeon crawler, crafting, procedural generation, pixel art, web game, rpg" />
+    
+    <!-- PWA & Mobile Web Capabilities -->
+    <meta name="theme-color" content="#090d16" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DungeonRogue" />
+    
+    <!-- Icons & Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- OpenGraph Social Cards -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dungeon Crafting Roguelike" />
     <meta property="og:title" content="Dungeon Crafting Roguelike" />
     <meta property="og:description" content="A classical, turn-based grid roguelike game featuring modular dungeons, extremely tough dungeon bosses, strategic escape items, diverse traps, lootable chests, a material-gathering system, and custom weapon crafting with dynamic scalable challenge." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Dungeon Crafting Roguelike - Classical Turn-Based RPG & Custom Weapon Crafting" />
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dungeon Crafting Roguelike" />
+    <meta name="twitter:description" content="A classical, turn-based grid roguelike game featuring modular dungeons, extremely tough dungeon bosses, strategic escape items, diverse traps, lootable chests, a material-gathering system, and custom weapon crafting with dynamic scalable challenge." />
+    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image:alt" content="Dungeon Crafting Roguelike - Classical Turn-Based RPG & Custom Weapon Crafting" />
+
+    <!-- Schema.org Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Dungeon Crafting Roguelike",
+      "description": "A classical, turn-based grid roguelike game featuring modular dungeons, extremely tough dungeon bosses, strategic escape items, diverse traps, lootable chests, a material-gathering system, and custom weapon crafting with dynamic scalable challenge.",
+      "genre": ["Roguelike", "RPG", "Turn-Based Strategy", "Crafting"],
+      "playMode": "SinglePlayer",
+      "applicationCategory": "Game",
+      "operatingSystem": "Any Web Browser",
+      "inLanguage": "en",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
   </head>
-  <body>
+  <body class="bg-[#090d16] text-slate-100 antialiased overflow-hidden select-none">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,6 +1,6 @@
 import { Enemy, EnemyState, GameState, TileType } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
-import { getNextStepTowards, hasLineOfSight } from '../../utils/ai';
+import { getNextStepTowards, hasLineOfSight, isTileWalkableForEntity } from '../../utils/ai';
 import { incrementDefeatedEnemyCount } from '../../utils/bestiary';
 import { FollowerAIParams, FollowerActionResult } from './types';
 
@@ -213,7 +213,7 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
         const cy = py + off.dy;
         if (cx >= 0 && cx < LEVEL_WIDTH && cy >= 0 && cy < LEVEL_HEIGHT) {
           const tile = prev.map[cy]?.[cx];
-          const isWalkable = tile === TileType.Floor || tile === TileType.Grass || tile === TileType.Path;
+          const isWalkable = isTileWalkableForEntity(tile, { canOpenDoors: true });
           if (isWalkable) {
             const d = Math.abs(cx - e.x) + Math.abs(cy - e.y);
             if (d < bestDist) {
@@ -232,7 +232,7 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
       if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
         const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
                                      nextEnemies.some((other, idx) => idx > i && other.x === nextStep.x && other.y === nextStep.y);
-        const isTileWalkable = prev.map[nextStep.y]?.[nextStep.x] !== TileType.Wall && prev.map[nextStep.y]?.[nextStep.x] !== TileType.Water;
+        const isTileWalkable = isTileWalkableForEntity(prev.map[nextStep.y]?.[nextStep.x], { canOpenDoors: true });
         if (!isTileBlockedByEnemy && isTileWalkable) {
           e.x = nextStep.x;
           e.y = nextStep.y;

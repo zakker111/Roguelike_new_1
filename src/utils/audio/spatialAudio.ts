@@ -5,6 +5,7 @@
 
 import { PlaySoundOptions, SoundType } from './types';
 import { playSound } from './soundCatalog';
+import { calculateAcousticOcclusion, getAcousticListenerContext } from './acousticOcclusion';
 
 export interface SpatialCalculationResult {
   audible: boolean;
@@ -12,10 +13,13 @@ export interface SpatialCalculationResult {
   panX: number;
   lowpassFreq: number;
   finalVol: number;
+  occlusionFactor?: number;
+  roomResonanceQ?: number;
 }
 
 /**
- * Calculates spatial attenuation, stereo pan, and low-pass acoustic filtering based on source and listener coordinates.
+ * Calculates spatial attenuation, stereo pan, and ray-traced acoustic occlusion filtering
+ * based on sound source, listener coordinates, and intermediate dungeon doors/walls.
  */
 export function calculateSpatialParameters(
   vol: number,
@@ -24,18 +28,25 @@ export function calculateSpatialParameters(
   let attenuation = 1.0;
   let panX = 0;
   let lowpassFreq = 20000;
+  let roomResonanceQ = 0.7;
+  let occlusionFactor = 0;
 
   const maxDistance = options?.maxDistance ?? 14;
   const isIndoorEvent = !!options?.isIndoor;
 
+  const listenerCtx = getAcousticListenerContext();
+  const playerX = options?.playerX ?? listenerCtx?.playerX;
+  const playerY = options?.playerY ?? listenerCtx?.playerY;
+  const map = options?.map ?? listenerCtx?.map;
+
   if (
     options?.x !== undefined &&
     options?.y !== undefined &&
-    options?.playerX !== undefined &&
-    options?.playerY !== undefined
+    playerX !== undefined &&
+    playerY !== undefined
   ) {
-    const dx = options.x - options.playerX;
-    const dy = options.y - options.playerY;
+    const dx = options.x - playerX;
+    const dy = options.y - playerY;
     const dist = Math.hypot(dx, dy);
 
     // Inaudible sound outside hearing range
@@ -46,12 +57,33 @@ export function calculateSpatialParameters(
         panX: 0,
         lowpassFreq: 20000,
         finalVol: 0,
+        occlusionFactor: 1.0,
+        roomResonanceQ: 0.7,
       };
     }
 
     attenuation = Math.pow(Math.max(0, 1 - dist / maxDistance), 1.5);
     panX = Math.max(-1, Math.min(1, dx / 8));
     lowpassFreq = 1200 + (18000 - 1200) * (1 - dist / maxDistance);
+
+    // --- RAYTRACED ACOUSTIC OCCLUSION (Behind-Door / Behind-Wall Muffling) ---
+    if (map) {
+      const occlusionRes = calculateAcousticOcclusion(
+        options.x,
+        options.y,
+        playerX,
+        playerY,
+        map
+      );
+      occlusionFactor = occlusionRes.occlusionFactor;
+      lowpassFreq = Math.min(lowpassFreq, occlusionRes.effectiveLowpassFreq);
+      attenuation *= occlusionRes.volumeMultiplier;
+      roomResonanceQ = occlusionRes.roomResonanceQ;
+    } else if (options.occlusion !== undefined) {
+      occlusionFactor = Math.min(1, Math.max(0, options.occlusion));
+      lowpassFreq = Math.min(lowpassFreq, 18000 * Math.exp(-2.2 * occlusionFactor));
+      attenuation *= Math.max(0.4, 1 - occlusionFactor * 0.5);
+    }
 
     // Acoustic dampening through building walls
     if (isIndoorEvent) {
@@ -70,6 +102,8 @@ export function calculateSpatialParameters(
     panX,
     lowpassFreq,
     finalVol,
+    occlusionFactor,
+    roomResonanceQ,
   };
 }
 

@@ -1,4 +1,5 @@
 import { TileType, NPC, Enemy, Trap, Chest, EnemyType, EnemyState, TrapType } from "../../types";
+import { isTileWalkableForEntity } from "../ai";
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
 import { generateWatchtowerPOI, generateRuinsPOI } from "../../world/poiGenerators";
 import { generateRuinsDecorProps } from "../decorEngine";
@@ -689,12 +690,29 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
           difficultyTier: tier,
           isElite: tier === 'tough' ? prng(mx, my, 25) > 0.75 : (tier === 'apex'),
           eliteEffect: tier === 'tough' && prng(mx, my, 25) > 0.75 ? 'Scurrying' : undefined,
-          patrolPath: [
-            { x: mx, y: my },
-            { x: Math.max(1, mx - 3), y: my },
-            { x: Math.max(1, mx - 3), y: Math.max(1, my - 3) },
-            { x: mx, y: Math.max(1, my - 3) }
-          ],
+          patrolPath: (() => {
+            const validPatrol: { x: number; y: number }[] = [{ x: mx, y: my }];
+            const patrolOffsets = [
+              { dx: 2, dy: 0 },
+              { dx: 0, dy: 2 },
+              { dx: -2, dy: 0 },
+              { dx: 0, dy: -2 },
+              { dx: 3, dy: 0 },
+              { dx: -3, dy: 0 }
+            ];
+            for (const off of patrolOffsets) {
+              const px = mx + off.dx;
+              const py = my + off.dy;
+              if (
+                px >= 1 && px < width - 1 && py >= 1 && py < height - 1 &&
+                isTileWalkableForEntity(map[py]?.[px])
+              ) {
+                validPatrol.push({ x: px, y: py });
+                if (validPatrol.length >= 3) break;
+              }
+            }
+            return validPatrol;
+          })(),
           patrolIndex: 0,
           debuffs: []
         };

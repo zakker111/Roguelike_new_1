@@ -6,6 +6,7 @@
 import { useEffect, useRef, Dispatch, SetStateAction, MutableRefObject } from 'react';
 import { GameState, TileType } from '../../types';
 import { hybridGraphicsEngine } from '../../canvas/HybridGraphicsEngine';
+import { performanceMonitor } from '../../utils/performanceMonitor';
 
 export interface UseKeyboardControlsParams {
   gameStateRef: MutableRefObject<GameState>;
@@ -17,6 +18,26 @@ export interface UseKeyboardControlsParams {
   setIsLockpickingOpen?: Dispatch<SetStateAction<boolean>>;
   isFishingOpen: boolean;
   setIsFishingOpen?: Dispatch<SetStateAction<boolean>>;
+  isScriptoriumOpen?: boolean;
+  setIsScriptoriumOpen?: Dispatch<SetStateAction<boolean>>;
+  activeScriptoriumScrollTemplateId?: string | null;
+  setActiveScriptoriumScrollTemplateId?: Dispatch<SetStateAction<string | null>>;
+  activeLockpickingChestIndex?: number | null;
+  setActiveLockpickingChestIndex?: Dispatch<SetStateAction<number | null>>;
+  unlawfulGuardTarget?: any;
+  setUnlawfulGuardTarget?: Dispatch<SetStateAction<any>>;
+  activePoi?: any;
+  setActivePoi?: Dispatch<SetStateAction<any>>;
+  activeDrunkNpc?: any;
+  setActiveDrunkNpc?: Dispatch<SetStateAction<any>>;
+  activeTravelerNpc?: any;
+  setActiveTravelerNpc?: Dispatch<SetStateAction<any>>;
+  activeRelicDraft?: any;
+  setActiveRelicDraft?: Dispatch<SetStateAction<any>>;
+  activeRecallScroll?: boolean;
+  setActiveRecallScroll?: Dispatch<SetStateAction<boolean>>;
+  activeTargetedScroll?: any;
+  setActiveTargetedScroll?: Dispatch<SetStateAction<any>>;
   isHelpOpen: boolean;
   setIsHelpOpen: Dispatch<SetStateAction<boolean>>;
   isGodPanelOpen: boolean;
@@ -25,6 +46,8 @@ export interface UseKeyboardControlsParams {
   setIsGmPanelOpen: Dispatch<SetStateAction<boolean>>;
   isBestiaryOpen: boolean;
   setIsBestiaryOpen: Dispatch<SetStateAction<boolean>>;
+  isWorldThreatOpen?: boolean;
+  setIsWorldThreatOpen?: Dispatch<SetStateAction<boolean>>;
   isAudioSettingsOpen?: boolean;
   setIsAudioSettingsOpen?: Dispatch<SetStateAction<boolean>>;
   isSleepOpen?: boolean;
@@ -33,8 +56,11 @@ export interface UseKeyboardControlsParams {
   setIsWeatherControlOpen?: Dispatch<SetStateAction<boolean>>;
   isWorldMapOpen?: boolean;
   setIsWorldMapOpen?: Dispatch<SetStateAction<boolean>>;
+  isPerfHudOpen?: boolean;
+  setIsPerfHudOpen?: Dispatch<SetStateAction<boolean>>;
   activeTab: 'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary' | 'chronicles';
   setActiveTab: Dispatch<SetStateAction<'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary' | 'chronicles'>>;
+  activeDialogueNpc?: any;
   setActiveDialogueNpc?: Dispatch<SetStateAction<any>>;
   handleBraceDefense: () => void;
   climbStairsUpToOverworld: () => void;
@@ -56,6 +82,26 @@ export function useKeyboardControls({
   setIsLockpickingOpen,
   isFishingOpen,
   setIsFishingOpen,
+  isScriptoriumOpen,
+  setIsScriptoriumOpen,
+  activeScriptoriumScrollTemplateId,
+  setActiveScriptoriumScrollTemplateId,
+  activeLockpickingChestIndex,
+  setActiveLockpickingChestIndex,
+  unlawfulGuardTarget,
+  setUnlawfulGuardTarget,
+  activePoi,
+  setActivePoi,
+  activeDrunkNpc,
+  setActiveDrunkNpc,
+  activeTravelerNpc,
+  setActiveTravelerNpc,
+  activeRelicDraft,
+  setActiveRelicDraft,
+  activeRecallScroll,
+  setActiveRecallScroll,
+  activeTargetedScroll,
+  setActiveTargetedScroll,
   isHelpOpen,
   setIsHelpOpen,
   isGodPanelOpen,
@@ -64,6 +110,8 @@ export function useKeyboardControls({
   setIsGmPanelOpen,
   isBestiaryOpen,
   setIsBestiaryOpen,
+  isWorldThreatOpen,
+  setIsWorldThreatOpen,
   isAudioSettingsOpen,
   setIsAudioSettingsOpen,
   isSleepOpen,
@@ -72,8 +120,11 @@ export function useKeyboardControls({
   setIsWeatherControlOpen,
   isWorldMapOpen,
   setIsWorldMapOpen,
+  isPerfHudOpen,
+  setIsPerfHudOpen,
   activeTab,
   setActiveTab,
+  activeDialogueNpc,
   setActiveDialogueNpc,
   handleBraceDefense,
   climbStairsUpToOverworld,
@@ -87,17 +138,17 @@ export function useKeyboardControls({
   const handleKeyDownRef = useRef<((e: KeyboardEvent) => void) | null>(null);
 
   const handleKeyDownInstance = (e: KeyboardEvent) => {
-    // 1. Ignore input if typing in an input, textarea, or contenteditable element
+    // 1. If typing in an input, textarea, or contenteditable element, ignore non-Escape input
     if (
       document.activeElement &&
       (document.activeElement.tagName === 'INPUT' ||
         document.activeElement.tagName === 'TEXTAREA' ||
         document.activeElement.getAttribute('contenteditable') === 'true')
     ) {
-      if (e.key === 'Escape') {
-        (document.activeElement as HTMLElement).blur();
+      if (e.key !== 'Escape') {
+        return;
       }
-      return;
+      (document.activeElement as HTMLElement).blur();
     }
 
     const key = e.key.toLowerCase();
@@ -105,19 +156,128 @@ export function useKeyboardControls({
     // Handle Escape globally to cancel/close all modals, gumps, overlays, and trade windows
     if (e.key === 'Escape') {
       e.preventDefault();
-      setIsHelpOpen(false);
-      setIsGodPanelOpen(false);
-      setIsGmPanelOpen(false);
-      setIsBestiaryOpen(false);
-      if (setIsWorldMapOpen) setIsWorldMapOpen(false);
-      if (setIsAudioSettingsOpen) setIsAudioSettingsOpen(false);
-      if (setIsSleepOpen) setIsSleepOpen(false);
-      if (setIsFishingOpen) setIsFishingOpen(false);
-      if (setIsLockpickingOpen) setIsLockpickingOpen(false);
-      if (setIsWeatherControlOpen) setIsWeatherControlOpen(false);
+
+      let hadModalOpen = false;
+
+      if (activeTargetedScroll) {
+        if (setActiveTargetedScroll) setActiveTargetedScroll(null);
+        addLogMessage('Targeted scroll casting cancelled.', 'system');
+        hadModalOpen = true;
+      }
+
+      if (unlawfulGuardTarget) {
+        if (setUnlawfulGuardTarget) setUnlawfulGuardTarget(null);
+        hadModalOpen = true;
+      }
+
+      if (activeLockpickingChestIndex !== null && activeLockpickingChestIndex !== undefined) {
+        if (setActiveLockpickingChestIndex) setActiveLockpickingChestIndex(null);
+        hadModalOpen = true;
+      }
+
+      if (activeScriptoriumScrollTemplateId !== null && activeScriptoriumScrollTemplateId !== undefined) {
+        if (setActiveScriptoriumScrollTemplateId) setActiveScriptoriumScrollTemplateId(null);
+        hadModalOpen = true;
+      }
+
+      if (isScriptoriumOpen) {
+        if (setIsScriptoriumOpen) setIsScriptoriumOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isFishingOpen) {
+        if (setIsFishingOpen) setIsFishingOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isLockpickingOpen) {
+        if (setIsLockpickingOpen) setIsLockpickingOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isHelpOpen) {
+        setIsHelpOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isGodPanelOpen) {
+        setIsGodPanelOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isGmPanelOpen) {
+        setIsGmPanelOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isBestiaryOpen) {
+        setIsBestiaryOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isWorldMapOpen && setIsWorldMapOpen) {
+        setIsWorldMapOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isWorldThreatOpen && setIsWorldThreatOpen) {
+        setIsWorldThreatOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isAudioSettingsOpen && setIsAudioSettingsOpen) {
+        setIsAudioSettingsOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isSleepOpen && setIsSleepOpen) {
+        setIsSleepOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isWeatherControlOpen && setIsWeatherControlOpen) {
+        setIsWeatherControlOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (isPerfHudOpen && setIsPerfHudOpen) {
+        setIsPerfHudOpen(false);
+        performanceMonitor.setHudOpen(false);
+        hadModalOpen = true;
+      }
+
+      if (activeRelicDraft) {
+        if (setActiveRelicDraft) setActiveRelicDraft(null);
+        hadModalOpen = true;
+      }
+
+      if (activeRecallScroll) {
+        if (setActiveRecallScroll) setActiveRecallScroll(false);
+        hadModalOpen = true;
+      }
+
+      if (activePoi) {
+        if (setActivePoi) setActivePoi(null);
+        hadModalOpen = true;
+      }
+
+      if (activeDrunkNpc) {
+        if (setActiveDrunkNpc) setActiveDrunkNpc(null);
+        hadModalOpen = true;
+      }
+
+      if (activeTravelerNpc) {
+        if (setActiveTravelerNpc) setActiveTravelerNpc(null);
+        hadModalOpen = true;
+      }
+
+      if (activeDialogueNpc) {
+        if (setActiveDialogueNpc) setActiveDialogueNpc(null);
+        hadModalOpen = true;
+      }
 
       const gs = gameStateRef.current;
-      const hasOpenModalState =
+      const hasOpenGameStateModal =
         gs.activeQuestBoardOpen ||
         gs.activeFollowerIdForInspect ||
         gs.activeTradeNpcId ||
@@ -131,7 +291,8 @@ export function useKeyboardControls({
         gs.poiInteraction ||
         gs.activeTravelerNpc;
 
-      if (hasOpenModalState) {
+      if (hasOpenGameStateModal) {
+        hadModalOpen = true;
         if (setActiveDialogueNpc) setActiveDialogueNpc(null);
         setGameState((prev) => ({
           ...prev,
@@ -148,9 +309,13 @@ export function useKeyboardControls({
           poiInteraction: null,
           activeTravelerNpc: null,
         }));
-      } else if (activeTab !== 'dungeon') {
+      }
+
+      // If no overlay/modal was active, but user is on a secondary tab, return to dungeon!
+      if (!hadModalOpen && activeTab !== 'dungeon') {
         setActiveTab('dungeon');
       }
+
       return;
     }
 
@@ -165,6 +330,20 @@ export function useKeyboardControls({
       case 'f1':
         e.preventDefault();
         setIsHelpOpen((p) => !p);
+        return;
+      case 'f3':
+        e.preventDefault();
+        if (setIsPerfHudOpen) {
+          setIsPerfHudOpen((p) => {
+            const next = !p;
+            performanceMonitor.setHudOpen(next);
+            addLogMessage(`⚡ Performance HUD ${next ? 'Activated' : 'Dismissed'} [F3]`, 'system');
+            return next;
+          });
+        } else {
+          const next = performanceMonitor.toggleHud();
+          addLogMessage(`⚡ Performance HUD ${next ? 'Activated' : 'Dismissed'} [F3]`, 'system');
+        }
         return;
       case 'c':
         e.preventDefault();

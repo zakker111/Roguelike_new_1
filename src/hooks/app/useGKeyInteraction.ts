@@ -8,6 +8,8 @@ import { GameState, TileType, NPC, DungeonProp } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
 import { hasTownAtChunk, getDeterministicTownName, getOrganicBiome, prng } from '../../utils/overworld';
 import { PoiType } from '../../components/PoiInteractionOverlay';
+import { chunkBackgroundCache } from '../../canvas/chunkBackgroundCache';
+import { invalidateChunkCanvasCache } from '../../components/worldmap/chunkTileRasterizer';
 
 interface UseGKeyInteractionProps {
   gameState: GameState;
@@ -267,7 +269,7 @@ export function useGKeyInteraction({
 
           setGameState((prev) => {
             const nextMap = prev.map.map(row => [...row]);
-            nextMap[ty][tx] = TileType.Grass;
+            nextMap[ty][tx] = prev.isOverworld ? TileType.Grass : TileType.Floor;
             const nextMats = { ...prev.inventoryMaterials };
             nextMats[gatheredId] = (nextMats[gatheredId] || 0) + gatheredQty;
 
@@ -280,9 +282,20 @@ export function useGKeyInteraction({
               };
             }
 
-            return { ...prev, map: nextMap, overworldChunks: nextChunks, inventoryMaterials: nextMats };
+            const nextDungeonLevels = { ...(prev.dungeonLevels || {}) };
+            const dungeonKey = `${prev.dungeonEntranceChunkX ?? prev.currentChunkX ?? 0},${prev.dungeonEntranceChunkY ?? prev.currentChunkY ?? 0}_depth-${prev.playerStats.depth}`;
+            if (!prev.isOverworld && nextDungeonLevels[dungeonKey]) {
+              nextDungeonLevels[dungeonKey] = {
+                ...nextDungeonLevels[dungeonKey],
+                map: nextMap
+              };
+            }
+
+            return { ...prev, map: nextMap, overworldChunks: nextChunks, dungeonLevels: nextDungeonLevels, inventoryMaterials: nextMats };
           });
 
+          chunkBackgroundCache.invalidate();
+          invalidateChunkCanvasCache(gameState.currentChunkX, gameState.currentChunkY);
           playSound('loot');
           addLogMessage(`🌿 Foraging: You gathered +${gatheredQty} ${gatheredName} from the wilderness!`, "loot");
           const ev = new CustomEvent('spawn-game-effect', {
@@ -291,6 +304,83 @@ export function useGKeyInteraction({
           window.dispatchEvent(ev);
           return;
         }
+      }
+    }
+
+    // 3.4. Check Adjacent/Underfoot Tree Stump Digging & Root Clearing
+    for (const pt of adjacentPoints) {
+      const tx = px + pt.dx;
+      const ty = py + pt.dy;
+      if (tx >= 0 && tx < LEVEL_WIDTH && ty >= 0 && ty < LEVEL_HEIGHT) {
+        if (gameState.map[ty]?.[tx] === TileType.TreeStump) {
+          setGameState((prev) => {
+            const nextMap = prev.map.map((row, y) =>
+              row.map((cell, x) => (x === tx && y === ty ? (prev.isOverworld ? TileType.Grass : TileType.Floor) : cell))
+            );
+            const nextMats = {
+              ...prev.inventoryMaterials,
+              mat_wood: (prev.inventoryMaterials['mat_wood'] || 0) + 1,
+            };
+            const chunkKey = `${prev.currentChunkX},${prev.currentChunkY}`;
+            const nextChunks = { ...prev.overworldChunks };
+            if (prev.isOverworld && nextChunks[chunkKey]) {
+              nextChunks[chunkKey] = {
+                ...nextChunks[chunkKey],
+                map: nextMap
+              };
+            }
+            return { ...prev, map: nextMap, overworldChunks: nextChunks, inventoryMaterials: nextMats };
+          });
+
+          chunkBackgroundCache.invalidate();
+          invalidateChunkCanvasCache(gameState.currentChunkX, gameState.currentChunkY);
+          playSound('craft_forge');
+          addLogMessage('🪵 [STUMP CLEARED]: You dig up the remaining tree stump roots, leveling the ground and salvaging +1 Scrap Wood!', 'craft');
+          const ev = new CustomEvent('spawn-game-effect', {
+            detail: { x: tx, y: ty, text: '+1 Scrap Wood 🪵', type: 'heal' },
+          });
+          window.dispatchEvent(ev);
+          return;
+        }
+      }
+    }
+
+    // 3.5. Check Adjacent Surrendered Enemies (Phase E2: Parley & Surrender Mercy)
+    if (gameState.enemies && gameState.enemies.length > 0) {
+      const adjacentSurrendered = gameState.enemies.find(
+        (e) => e.isSurrendered && e.hp > 0 && Math.abs(px - e.x) <= 1 && Math.abs(py - e.y) <= 1
+      );
+      if (adjacentSurrendered) {
+        const bribeGold = Math.floor(Math.random() * 25) + 15;
+        const potentialMats = ['mat_tempered_scrap', 'mat_steel_ingot', 'mat_leather_strip', 'mat_herb'];
+        const chosenMat = potentialMats[Math.floor(Math.random() * potentialMats.length)];
+
+        setGameState((prev) => {
+          const nextEnemies = prev.enemies.filter((e) => e.id !== adjacentSurrendered.id);
+          const nextMats = { ...prev.inventoryMaterials };
+          nextMats[chosenMat] = (nextMats[chosenMat] || 0) + 1;
+
+          return {
+            ...prev,
+            enemies: nextEnemies,
+            playerStats: {
+              ...prev.playerStats,
+              gold: prev.playerStats.gold + bribeGold,
+            },
+            inventoryMaterials: nextMats,
+          };
+        });
+
+        playSound('loot');
+        addLogMessage(
+          `🏳️ [PARLEY ACCEPTED]: You spare ${adjacentSurrendered.name}! They gratefully surrender +${bribeGold} Gold and a ${chosenMat.replace('mat_', '').replace('_', ' ')} before retreating peacefully into the wilderness!`,
+          'loot'
+        );
+        const ev = new CustomEvent('spawn-game-effect', {
+          detail: { x: adjacentSurrendered.x, y: adjacentSurrendered.y, text: `+${bribeGold}g 🏳️`, type: 'heal' },
+        });
+        window.dispatchEvent(ev);
+        return;
       }
     }
 

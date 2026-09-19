@@ -1,8 +1,36 @@
 import React, { useState } from 'react';
 import { Home, RotateCw, Hammer, Check, Play, Download, Copy, Code, Upload } from 'lucide-react';
 import { GameState } from '../../types';
-import { PALETTE_TILES } from '../GodPanelOverlay';
 import { getAvailableStructures, StructurePreset } from '../../utils/structurePlacer';
+
+export const PALETTE_TILES = [
+  { char: '#', name: 'Wall 🧱', color: '#475569', desc: 'Solid wall bounds' },
+  { char: '.', name: 'Floor 🪵', color: '#1e293b', desc: 'Walkable floor tile' },
+  { char: 'D', name: 'Door 🚪', color: '#b45309', desc: 'Wood walkway door' },
+  { char: 'B', name: 'Bed 🛌', color: '#0d9488', desc: 'Comfortable sleeping bed' },
+  { char: 'C', name: 'Chair 🪑', color: '#451a03', desc: 'Sitting stool' },
+  { char: 'T', name: 'Table 🪵', color: '#78350f', desc: 'Wooden table' },
+  { char: 'f', name: 'Campfire 🔥', color: '#ea580c', desc: 'Illuminating fire source' },
+  { char: 'F', name: 'Fireplace 🔥', color: '#b91c1c', desc: 'Brick-built fireplace' },
+  { char: 'S', name: 'Sign 🪧', color: '#78350f', desc: 'Wooden pointer sign' },
+  { char: 'G', name: 'Grass 🌱', color: '#15803d', desc: 'Green grass tile' },
+  { char: 'W', name: 'Water 💧', color: '#1d4ed8', desc: 'Impassable pool water' },
+  { char: 'E', name: 'Entrance 🌀', color: '#6d28d9', desc: 'Mystical dungeon entryway' },
+  { char: 't', name: 'Tree 🌲', color: '#166534', desc: 'Impassable green tree' },
+  { char: 'P', name: 'Pine Tree 🌲', color: '#064e3b', desc: 'Dense needle pine tree' },
+  { char: 'Y', name: 'Birch Tree 🌳', color: '#022c22', desc: 'Light pale bark tree' },
+  { char: 'p', name: 'Path 🪨', color: '#64748b', desc: 'Stone path flooring' },
+  { char: 'w', name: 'Window 🪟', color: '#38bdf8', desc: 'Glass frame window wall' },
+  { char: 'b', name: 'Bush 🍓', color: '#047857', desc: 'Berry harvestable bush' },
+  { char: 'o', name: 'Torch 🕯️', color: '#f59e0b', desc: 'Wall-mounted flame light' },
+  { char: 'A', name: 'Anvil ⚒️', color: '#64748b', desc: 'Blacksmithing forging anvil' },
+  { char: 'K', name: 'Bookshelf 📚', color: '#b45309', desc: 'Leather-bound research library' },
+  { char: 'H', name: 'Counter 🪵', color: '#92400e', desc: 'Shopkeeper trade desk' },
+  { char: 'M', name: 'Stool 🪵', color: '#78350f', desc: 'Bar seating stool' },
+  { char: 'u', name: 'Drunkard 🍺', color: '#f59e0b', desc: 'Tavern drunk NPC' },
+  { char: 'N', name: 'Townsfolk 🧑', color: '#38bdf8', desc: 'Peaceful settlement civilian' },
+  { char: 'g', name: 'Guard 🛡️', color: '#f97316', desc: 'Ironclad town sentry' }
+];
 
 export interface GodHouseDesignerProps {
   gameState: GameState;
