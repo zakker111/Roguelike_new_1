@@ -1709,3 +1709,42 @@ The caravan travel system orchestrates inter-settlement trade expeditions, rando
   - Full null-safety checks on `updatedChunks` and `nextOverworldChunks`.
   - Immutable state snapshots prevent map or coordinate desynchronization.
   - Guard and merchant spawns enforce window and obstacle avoidance algorithms.
+
+---
+
+## 🚀 Build, CI/CD Pipeline & GitHub Pages Deployment
+
+### 1. Verification Scripts & Automated Testing
+The engine provides a unified test and audit pipeline:
+```bash
+# Run catalog linting, file import graph audit, TypeScript typecheck, and full test suite:
+npm run audit
+
+# Run unit and integration tests only:
+npm test
+
+# Run strict TypeScript compiler verification:
+npm run lint
+
+# Validate all JSON game catalogs in src/data/:
+node scripts/validateJson.cjs
+
+# Scan all source modules for circular dependencies and broken imports:
+node scripts/auditCodebase.cjs
+```
+- **Test Suite Status**: 64 test suites, 402 tests passing 100% green.
+- **Catalog Validation**: 31 JSON catalogs validated with zero schema defects.
+- **Import Audit**: 464 source files scanned with zero broken imports or orphaned modules.
+
+### 2. GitHub Pages Build & Deployment Pipeline
+- **Production Build Scripts**:
+  - `npm run build`: Standard Vite production build into `dist/`.
+  - `npm run build:pages`: Explicit relative-base build (`vite build --base=./`).
+- **Automated GitHub Actions (`.github/workflows/deploy.yml`)**:
+  - Triggers automatically on push to `main` or `master` branches.
+  - Performs clean install (`npm ci`), runs validation (`npm test`), compiles the production bundle, and deploys directly to GitHub Pages.
+- **Single Page Application Support**:
+  - `public/404.html`: Redirects 404 URL hits to the game root, preventing route breaks on GitHub Pages.
+  - `public/.nojekyll`: Instructs GitHub Pages not to process files through Jekyll, preserving Vite assets and folders.
+  - `vite.config.ts`: Configures `base: './'` for dynamic repository subpath resolution.
+- **License**: Released under the standard MIT License (`LICENSE`).

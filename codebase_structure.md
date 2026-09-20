@@ -27,9 +27,15 @@ This document is the authoritative structural reference for the entire **Soverei
 ## 📁 System Architecture & Directory Map
 
 ### 1. Root Configuration & Scripts
-- `package.json` / `tsconfig.json` / `vite.config.ts`: Project manifest, TypeScript build configs, and Vite dev server configuration.
+- `package.json` / `tsconfig.json` / `vite.config.ts`: Project manifest, TypeScript build configs, and Vite dev server configuration (`base: './'`).
 - `metadata.json`: Platform metadata (app name, description, capabilities).
-- `codebase_structure.md` / `AGENTS.md`: Codebase architecture maps and engine rules.
+- `LICENSE`: Open-source MIT License.
+- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (lint, audit, test, build, deploy to GitHub Pages).
+- `public/`:
+  - `404.html`: SPA fallback redirect for GitHub Pages.
+  - `.nojekyll`: Disables Jekyll asset filtering on GitHub Pages.
+  - `manifest.json`, `favicon.svg`, icons, and tileset sprite atlases.
+- `codebase_structure.md` / `AGENTS.md` / `DEVELOPERS.md`: Codebase architecture maps and engine rules.
 - `scripts/`:
   - `auditCodebase.cjs`: Complete graph audit script (validates all JSON schemas, imports, exports, and file references).
   - `validateJson.cjs`: Automated JSON linting & catalog syntax validator.

@@ -6,6 +6,20 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.6.1] — Viewport Layout Ergonomics, Smooth Vertical Scrolling & GitHub Pages CI/CD (September 20, 2026)
+*Resolved page scrolling lockout by removing restrictive overflow-hidden directives from root layout shells, enabled natural vertical document flow across desktop and mobile devices, implemented responsive viewport heights for canvas stages, and configured full GitHub Pages deployment with automated CI/CD.*
+
+- **1. Enabled Root & Body Vertical Scrolling (`index.html`, `src/components/MainAppLayout.tsx`)**:
+  - Replaced `overflow-hidden` on `<body>` with `min-h-screen overflow-x-hidden overflow-y-auto`, restoring native browser scrollbar and trackpad/mouse-wheel vertical scrolling.
+- **2. Viewport Container Overflow Restoration (`src/components/views/GameMainViewport.tsx`)**:
+  - Removed clipping `overflow-hidden` constraints from `game-main-viewport-container` and inner column wrappers, allowing tall panels (Combat Logs, Mobile Command Pad, Inventory, Crafting, and Trade stores) to expand naturally.
+- **3. Responsive Canvas Height Scaling (`src/components/views/GameMainViewport.tsx`)**:
+  - Replaced the rigid `h-[880px]` canvas container with adaptive responsive scaling (`h-[640px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] min-h-[500px]`), ensuring comfortable visibility on standard laptop screens and split-screen previews without truncating lower UI elements.
+- **4. GitHub Pages & GitHub Actions CI/CD Pipeline (`.github/workflows/deploy.yml`)**:
+  - Configured automated GitHub Actions deployment workflow: installs dependencies, runs JSON validator and codebase audit, executes all 402 Vitest tests, builds the production bundle, and deploys directly to GitHub Pages.
+  - Added relative base resolution (`base: './'`), SPA route fallback (`public/404.html`), Jekyll bypass (`public/.nojekyll`), and open-source license (`LICENSE`).
+
+
 ## [v8.6.0] — Wilderness Foraging, Subterranean Mineral Belts & Harvest Synchronization (September 13, 2026)
 *Delivered balanced continuous procedural generation for wild berry bushes and mineral ore veins (Copper and Iron) across overworld chunks and subterranean dungeon levels. Resolved procedural scarcity thresholds, synchronized harvest mutations across chunk memory and canvas cache layers, enabled tree stump removal via interaction key, and integrated dungeon mineral vein generation.*
 

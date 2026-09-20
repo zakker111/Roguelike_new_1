@@ -171,7 +171,7 @@ export const GameMainViewport: React.FC<GameMainViewportProps> = ({
   addLogMessage,
 }) => {
   return (
-    <div id="game-main-viewport-container" className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden">
+    <div id="game-main-viewport-container" className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-visible">
       {/* LEFT SIDEPANEL: Heroes Card and Assets checklist */}
       {!activeMobileView && (
         <PlayerSidebarPanel
@@ -194,7 +194,7 @@ export const GameMainViewport: React.FC<GameMainViewportProps> = ({
       )}
 
       {/* RIGHT CENTER: High visual controls and viewport tabs */}
-      <div className={`${activeMobileView ? 'col-span-12' : 'lg:col-span-9 col-span-12'} flex flex-col gap-4 overflow-hidden order-1 lg:order-none`}>
+      <div className={`${activeMobileView ? 'col-span-12' : 'lg:col-span-9 col-span-12'} flex flex-col gap-4 overflow-visible min-w-0 order-1 lg:order-none`}>
         {/* Nav tabs controls */}
         <AppNavigationTabs
           activeTab={activeTab}
@@ -255,7 +255,7 @@ export const GameMainViewport: React.FC<GameMainViewportProps> = ({
               <WeatherForecastBanner gameState={gameState} />
 
               {!activeMobileView ? (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[880px] max-h-[880px] min-h-0 overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[640px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] min-h-[500px] overflow-hidden">
                   <div className="lg:col-span-8 flex flex-col min-h-0 relative h-full rounded-2xl overflow-hidden border border-slate-800/80 shadow-2xl bg-slate-950">
                     <GameCanvas
                       gameState={gameState}

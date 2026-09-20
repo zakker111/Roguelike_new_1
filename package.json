@@ -1,11 +1,12 @@
 {
   "name": "dungeon-crafting-roguelike",
   "private": true,
-  "version": "8.6.0",
+  "version": "8.6.1",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "build:pages": "vite build --base=./",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",

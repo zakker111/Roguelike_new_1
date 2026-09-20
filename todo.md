@@ -521,6 +521,19 @@ Advance the core roguelike engine into a deeply systemic, emergent, living world
   - Tree stumps left after chopping are walkable and clearable via 'G' key for scrap kindling.
   - Canvas cache invalidation immediately updates rendering without visual ghosting.
 
+---
+
+## 🚀 Completed Milestone: Viewport Ergonomics & GitHub Pages CI/CD Deployment (v8.6.1)
+- [x] **Viewport Vertical Scrolling Restoration (`index.html`, `GameMainViewport.tsx`)**:
+  - Replaced restrictive `overflow-hidden` with `overflow-y-auto min-h-screen` on body and viewport container.
+  - Adapted canvas container to responsive height tiers (`h-[640px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] min-h-[500px]`), restoring natural scrolling to lower controls, mobile HUDs, logs, and craft stations.
+- [x] **GitHub Launch & GitHub Pages CI/CD Pipeline (`.github/workflows/deploy.yml`)**:
+  - Automated deployment workflow running schema validations, import audits, 402 Vitest tests, and production bundling.
+  - Configured relative asset base (`base: './'`) in `vite.config.ts`, `public/manifest.json`, and `index.html`.
+  - Added SPA route fallback (`public/404.html`), Jekyll bypass (`public/.nojekyll`), and open-source license (`LICENSE`).
+  - Added `npm run build:pages` and compound `npm run audit` commands to `package.json`.
+
+
 
 
 

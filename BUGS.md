@@ -4,6 +4,15 @@
 
 ### Recent Gameplay, AI, UI & Stability Resolutions
 
+- **[RESOLVED] Viewport Vertical Scrolling Lockout (v8.6.1)**
+  - **What was reported / Fixed**: User reported inability to scroll the game down ("it seems i cant scroll game down").
+  - **Root Cause & Fix**:
+    1. In `/index.html`, `overflow-hidden` was present on the `<body>` element, preventing the browser window from scrolling down to view lower content (bottom logs, mobile command pad, craft stations, long inventory grids).
+    2. In `/src/components/views/GameMainViewport.tsx`, `overflow-hidden` on `id="game-main-viewport-container"` and the main column prevented vertical expansion when rendered content exceeded window height.
+    3. The desktop canvas container in `/src/components/views/GameMainViewport.tsx` had a rigid `h-[880px]` height, which on standard 768p/1080p laptop displays and preview iframes pushed the bottom controls and logs offscreen without scroll access.
+    4. Updated `/index.html` to configure `body` with `min-h-screen overflow-x-hidden overflow-y-auto`.
+    5. Updated `GameMainViewport.tsx` to set `overflow-visible min-w-0` on the viewport container and content column, and adapted the canvas viewport to responsive heights (`h-[640px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] min-h-[500px]`), allowing smooth vertical scrolling via mouse wheel, trackpad, touch, and scrollbar across all screen sizes.
+
 - **[RESOLVED] Overworld Berry Bush & Mineral Ore Vein Procedural Scarcity (v8.6.0)**
   - **What was reported / Fixed**: Berry bushes and ore veins (Copper, Iron) were almost never spawning across overworld chunks, and tree stumps/harvested tiles were causing collision or rendering desync.
   - **Root Cause & Fix**:

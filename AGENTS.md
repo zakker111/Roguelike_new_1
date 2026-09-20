@@ -23,8 +23,14 @@ This document serves as the authoritative structural map and development ruleset
 ---
 
 ## 📁 Root Configuration & Scripts
-- `package.json` / `tsconfig.json` / `vite.config.ts`: Project manifest, TypeScript build configs, and Vite dev server.
+- `package.json` / `tsconfig.json` / `vite.config.ts`: Project manifest, TypeScript build configs, and Vite dev server (`base: './'`).
 - `metadata.json`: Platform metadata (app name, description, capabilities).
+- `LICENSE`: Open-source MIT License.
+- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 402 tests, builds, and deploys to GitHub Pages).
+- `public/`:
+  - `404.html`: SPA fallback redirect for GitHub Pages.
+  - `.nojekyll`: Disables Jekyll asset processing on GitHub Pages.
+  - `manifest.json`, `favicon.svg`, icons, and tilesets.
 - `scripts/`:
   - `auditCodebase.cjs`: Complete graph audit script (validates all JSON schemas, imports, exports, and file references).
   - `validateJson.cjs`: Automated JSON linting & catalog syntax validator.

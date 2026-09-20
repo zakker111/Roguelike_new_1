@@ -1303,6 +1303,39 @@ Delivered the complete spatial acoustics and visual rendering sub-engine (Pillar
 - **Automated Test Suite (`src/tests/spatialAcousticsAndVfx.test.ts`)**:
   - 9 comprehensive unit and integration tests verifying acoustic raytracing through open corridors, closed door muffling, solid wall dampening, listener context integration, water caustics, submerged projection, bloom emitters, and contextual vignette states (64 test suites, 399 tests passing 100% green).
 
+---
+
+## 71. Wilderness Foraging, Subterranean Mineral Belts & Harvest Synchronization (v8.6.0)
+
+Delivered balanced continuous procedural generation for wild foraging flora and subterranean mineral belts:
+
+- **Balanced Mineral Belts & Foraging Flora (`src/world/organic/vegetationClusterGen.ts`)**:
+  - Continuous multi-octave noise mineral belts (`mineralBelt > 0.54 && pOre > 0.978`) spawning 6-10 clustered ore veins per overworld chunk with authentic Copper (60%) and Iron (40%) ratios.
+  - Grove density thresholds (`groveNoise > 0.44`) yielding 15-35 wild foraging bushes per chunk across all biomes (Sweet Berries, Frostbloom, Nightshade, Sun Aloe, Charred Shrubs).
+- **Subterranean Cavern Ore Veins (`src/world/dungeon/dungeonRooms.ts`)**:
+  - Embedded Copper and Iron mineral veins directly into procedural dungeon room wall alcoves for deep spelunking expeditions.
+- **Harvest Synchronization, Walkability & Tree Stump Clearing (`src/utils/harvestEngine.ts`, `src/hooks/app/useGKeyInteraction.ts`)**:
+  - Corrected harvested tile replacements to restore walkable terrain (`TileType.Grass` in overworld, `TileType.Floor` in dungeons).
+  - Walkable tree stumps can now be scavenged with the 'G' interaction key for kindling (+1 Wood).
+  - Integrated immediate offscreen background canvas cache invalidation (`chunkBackgroundCache.invalidate()`).
+- **Comprehensive Automated Test Coverage (`src/tests/organicWorldGen.test.ts`, `src/tests/toolHarvestingDurability.test.ts`)**:
+  - 13 comprehensive tests validating multi-chunk bush/ore vein distributions, dungeon vein spawning, tool durability decay, and harvesting mechanics.
+
+---
+
+## 72. Viewport Layout Ergonomics, Smooth Vertical Scrolling & GitHub Pages CI/CD (v8.6.1)
+
+Delivered viewport scrolling improvements and production deployment configurations:
+
+- **Vertical Page Scrolling Restoration (`index.html`, `src/components/views/GameMainViewport.tsx`)**:
+  - Removed restrictive `overflow-hidden` constraints from `<body>` and main layout wrappers, enabling smooth natural vertical scrolling via mouse wheel, trackpad, and touch.
+  - Responsive canvas stage height scaling (`h-[640px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] min-h-[500px]`), ensuring comfortable visibility on standard laptop screens and split-screen previews without clipping lower controls or logs.
+- **GitHub Launch & GitHub Pages CI/CD Pipeline (`.github/workflows/deploy.yml`)**:
+  - Automated deployment workflow running validation scripts (`validateJson.cjs`, `auditCodebase.cjs`), executing all 402 Vitest tests, building the production bundle, and deploying to GitHub Pages on every push.
+  - Single Page Application fallback (`public/404.html`), Jekyll bypass (`public/.nojekyll`), relative asset resolution (`base: './'`), and MIT License (`LICENSE`).
+  - Unified audit runner (`npm run audit`) verifying 464 source files, 31 JSON catalogs, and 64 test suites (402/402 passing green).
+
+
 
 
 
