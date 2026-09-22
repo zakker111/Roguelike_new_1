@@ -4,6 +4,29 @@
 
 ### Recent Gameplay, AI, UI & Stability Resolutions
 
+- **[RESOLVED] Caravan Tactical Skirmish State Restoration, Follower Map Clamping & Cache Sync (v8.8.2)**
+  - **What was reported / Fixed**: User reported an error in caravans ("there was error in caravans fix that").
+  - **Root Cause & Fix**:
+    1. In `/src/types/game.ts`, `SavedOverworldSkirmishState` was incomplete, lacking `levelWidth`, `levelHeight`, `corpses`, `bloodSplatters`, and `lootPiles`. When returning from a 24×18 tactical road skirmish, overworld level dimensions were reset or corrupted, and ground loot piles, slain corpses, and blood splatters from the overworld chunk were erased.
+    2. In `/src/hooks/ai/useEnemyAI.ts`, `nextEnemies` was being assigned to the state object *after* the `restoredOverworld` block, which overwrote `restoredOverworld.enemies` with tactical skirmish entities upon skirmish victory.
+    3. `ChunkBackgroundCache` was not invalidated upon entering skirmishes, fleeing from skirmishes, winning skirmishes, or completing caravan arrivals, leaving stale chunk background terrain rendered in the offscreen rasterizer.
+    4. In `/src/hooks/ai/useFollowerAI.ts`, follower boundary clamping and flee vectors hardcoded `LEVEL_WIDTH` (64) and `LEVEL_HEIGHT` (40) rather than dynamic map dimensions (`mapW` and `mapH`), causing followers to move or target outside the 24×18 tactical arena.
+    5. In `/src/hooks/app/movement/useChunkTransition.ts`, border crossings were not blocked during tactical combat, allowing edge steps to trigger premature overworld transitions.
+    6. In `/src/hooks/useCaravanTravel.ts`, the `boss_ambush` encounter handler lacked specific cases for `feed` (bribe with berries) and `pay` (tribute gold), erroneously triggering either false "BOSS SLAIN" logs or spurious wagon hull damage. In addition, `handleCompleteCaravanTravel` omitted `levelWidth`, `levelHeight`, `isOverworld: true`, and cache invalidation.
+    7. Fully resolved by updating `SavedOverworldSkirmishState`, updating all transition points (`ModalRouter`, `CaravanActiveOverlay`, `usePlayerAttack`, `useEnemyAI`, `useCaravanTravel`, `caravanAndTerritory`), clamping follower AI to dynamic map dimensions, and invalidating `ChunkBackgroundCache`.
+    8. Added automated test coverage in `src/tests/caravanEncounters.test.ts`. All 66 Vitest suites and 413 tests passing 100% green.
+
+- **[RESOLVED] GitHub Actions CI/CD Lockfile Missing Error on GitHub Pages Deployment (v8.8.1)**
+  - **What was reported / Fixed**: User reported GitHub Pages failed to build: `Dependencies lock file is not found in /home/runner/work/Roguelike_new_1/Roguelike_new_1. Supported file patterns: package-lock.json,npm-shrinkwrap.json,yarn.lock`.
+  - **Root Cause & Fix**:
+    1. The project root did not contain a committed `package-lock.json` file.
+    2. In `/.github/workflows/deploy.yml`, `actions/setup-node@v4` was configured with `cache: 'npm'`. When this flag is passed, the GitHub runner requires a lockfile (`package-lock.json` or `npm-shrinkwrap.json`), throwing a fatal error if missing before running any install step.
+    3. Generated the full production `package-lock.json` (65 KB) with exact version-pinned dependencies.
+    4. Hardened `deploy.yml` by making dependency installation resilient: `if [ -f package-lock.json ]; then npm ci || npm install; else npm install; fi`.
+    5. Updated `index.html` OpenGraph/Twitter card image tags to relative paths (`./og-image.png`) so subpath deployments on `username.github.io/repo/` resolve without error.
+    6. Verified full pipeline: `npm ci` completed cleanly in 11s, `validateJson.cjs` and `auditCodebase.cjs` passed with 0 errors across 498 files, all 66 Vitest suites passed (412 tests green), and `npm run build` generated static `./dist/` assets with relative `./assets/` paths.
+
+
 - **[RESOLVED] Viewport Vertical Scrolling Lockout (v8.6.1)**
   - **What was reported / Fixed**: User reported inability to scroll the game down ("it seems i cant scroll game down").
   - **Root Cause & Fix**:
@@ -204,5 +227,5 @@
 ## 📊 Current Defect Status: ZERO OPEN BUGS
 - **TypeScript Verification**: Clean (`tsc --noEmit` exit 0)
 - **Applet Build**: Production Build Clean (`npm run build` exit 0)
-- **Automated Test Suite**: 64 Vitest Test Suites Passing (399 / 399 tests green, 100%)
-- **Architectural Health**: All 464 total source and data files (433 TypeScript source files + 31 JSON data catalogs), and modular hooks synchronized and validated
+- **Automated Test Suite**: 66 Vitest Test Suites Passing (413 / 413 tests green, 100%)
+- **Architectural Health**: All 498 total source and data files (467 TypeScript source files + 31 JSON data catalogs), and modular hooks synchronized and validated

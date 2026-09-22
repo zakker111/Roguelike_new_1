@@ -1331,9 +1331,54 @@ Delivered viewport scrolling improvements and production deployment configuratio
   - Removed restrictive `overflow-hidden` constraints from `<body>` and main layout wrappers, enabling smooth natural vertical scrolling via mouse wheel, trackpad, and touch.
   - Responsive canvas stage height scaling (`h-[640px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] min-h-[500px]`), ensuring comfortable visibility on standard laptop screens and split-screen previews without clipping lower controls or logs.
 - **GitHub Launch & GitHub Pages CI/CD Pipeline (`.github/workflows/deploy.yml`)**:
-  - Automated deployment workflow running validation scripts (`validateJson.cjs`, `auditCodebase.cjs`), executing all 402 Vitest tests, building the production bundle, and deploying to GitHub Pages on every push.
+  - Automated deployment workflow running validation scripts (`validateJson.cjs`, `auditCodebase.cjs`), executing all Vitest tests, building the production bundle, and deploying to GitHub Pages on every push.
   - Single Page Application fallback (`public/404.html`), Jekyll bypass (`public/.nojekyll`), relative asset resolution (`base: './'`), and MIT License (`LICENSE`).
-  - Unified audit runner (`npm run audit`) verifying 464 source files, 31 JSON catalogs, and 64 test suites (402/402 passing green).
+  - Unified audit runner (`npm run audit`) verifying 468 source files, 31 JSON catalogs, and 65 test suites (410/410 passing green).
+
+---
+
+## 73. Modular Inventory Sub-Engine & Component Decomposition (v8.7.0)
+
+Decomposed the monolithic 1,000+ line backpack layout into lightweight, focused subcomponents adhering strictly to modular anti-monolith architecture:
+
+- **Carrying Capacity & Encumbrance Meter (`src/components/inventory/InventoryWeightBar.tsx`)**:
+  - Encapsulated dynamic weight capacity limits derived from Strength attributes and bonus perks.
+  - Color-coded real-time feedback thresholds: Teal/Cyan (<75%), Warm Amber (75-99%), and Flashing Rose (>100% overburdened) with movement stagger alerts.
+- **Inventory Filter & Sort Header (`src/components/inventory/InventoryFilterBar.tsx`)**:
+  - Extracted category sub-navigation tabs (`Allies`, `Gear`, `Food`, `Mats`) with dynamic quantity badges.
+  - Interactive "Sort & Group" action header with SVG rotation animations, success feedback, and UI click audio.
+- **Modular Sub-View Panels (`src/components/inventory/`)**:
+  - `AlliesRosterView.tsx`: Companion followers roster cards with archetype badges, level indicators, combat mode indicators, and companion equipment inspection triggers.
+  - `GearInventoryGrid.tsx`: Stashed gear cards with rarity tier borders, durability meters, unit weights, 2-Handed and Dual-Wield equip triggers, spell scroll reading, and discard gump dialogs.
+  - `ProvisionsInventoryGrid.tsx`: Provisions and potions display with explicit HP and MP recovery stats, direct eat/drink action triggers, and discard handlers.
+  - `MaterialsInventoryGrid.tsx`: Dual-column layout for crafting alloys/materials and elemental shards/catalysts with quantity tracking and discard handlers.
+- **Streamlined Master Coordinator (`src/components/inventory/BackpackSlotGrid.tsx`)**:
+  - Reduced `BackpackSlotGrid.tsx` from 1,018 lines to ~190 lines, serving as a clean coordinator composing the subcomponents.
+- **Automated Verification (`src/tests/inventoryComponents.test.ts`)**:
+  - Added unit test suite verifying subcomponent catalog lookups, tab switching, and rendering across all 65 test suites (410 tests passing 100% green).
+
+## 74. Modular Trade & Commerce Sub-Engine (v8.8.0)
+
+Decomposed the monolithic 943-line `TradeModal.tsx` into a modular, decoupled sub-engine within `/src/components/modals/trade/` adhering strictly to modular anti-monolith architecture:
+
+- **Trade Header & Merchant Identity (`src/components/modals/trade/TradeHeaderBar.tsx`)**:
+  - Renders merchant identity, dynamic NPC role badges, closing hours indicators, and safe modal exit triggers with keyboard accessibility.
+- **Regional Caravan Escort Hub (`src/components/modals/trade/CaravanRoutesWidget.tsx`)**:
+  - Calculates regional overworld travel destinations, danger tiers, distance metrics, and triggers wagon escort fast travel.
+- **Blacksmith Forge Repair Station (`src/components/modals/trade/BlacksmithRepairStation.tsx`)**:
+  - Manages weapon/armor durability, equipped gear cards, broken item pulse alerts, repair costs (0.5g per durability point lost), and forge tier upgrades.
+- **Apothecary Laboratory Station (`src/components/modals/trade/ApothecaryStation.tsx`)**:
+  - Handles laboratory upgrades, catalyst brewing tiers, and restorative potion unlocks.
+- **Tavern Services & Mercenary Guild (`src/components/modals/trade/TavernServiceStation.tsx`)**:
+  - Implements bartender gossip rumor purchases (40g), cozy room rentals (15g), and 4-tier wandering mercenary recruitment (Novice, Veteran, Champion, Merchant Guard).
+- **Storefront Stock & Liquidation Stash Grids (`src/components/modals/trade/`)**:
+  - `TradeBuyStockGrid.tsx`: Left storefront stock column with dynamic regional biome price multipliers, town reputation discounts, Guild upgrade deals, and Charisma discounts.
+  - `TradeSellStashGrid.tsx`: Right liquidation column for unequipped gear, raw materials, and catalysts with active trade license multipliers.
+- **Streamlined Master Coordinator (`src/components/modals/TradeModal.tsx`)**:
+  - Reduced `TradeModal.tsx` from 943 lines to 166 lines. Unifies all commercial sub-panels cleanly with memoized role context.
+- **Automated Verification (`src/tests/tradeModularComponents.test.ts`)**:
+  - Added dedicated test suite verifying sub-component catalog lookups, role tab rendering, and trading actions across all 66 test suites (412 tests passing 100% green).
+
 
 
 

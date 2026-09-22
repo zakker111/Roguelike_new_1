@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateRandomCaravanEncounter } from '../utils/caravanEncounters';
 import { generateCaravanSkirmishMap } from '../world/caravanSkirmishGen';
-import { GameState, CaravanEncounter, CaravanTravelState } from '../types';
+import { GameState, CaravanEncounter, CaravanTravelState, SavedOverworldSkirmishState, EnemyType, TileType } from '../types';
 import caravanEventsData from '../data/caravanEvents.json';
 import caravanBossesData from '../data/caravanBosses.json';
 
@@ -340,5 +340,45 @@ describe('Caravan Encounters & Tactical Escort System', () => {
 
     const updatedWagonHp = Math.max(0, travelState.wagonHp - (travelState.currentEncounter?.wagonDamagePenalty || 20));
     expect(updatedWagonHp).toBe(55);
+  });
+
+  it('preserves and restores level dimensions, corpses, blood splatters, and loot piles across skirmish transitions', () => {
+    const mockOverworldCorpses = [{
+      id: 'corpse_1',
+      x: 5,
+      y: 5,
+      char: '%',
+      name: 'Goblin Corpse',
+      enemyType: EnemyType.Goblin,
+      type: 'enemy' as const,
+      color: '#999',
+      decayed: false,
+      decayTurns: 0
+    }];
+    const mockBloodSplatters = [{ id: 'blood_1', x: 5, y: 5, intensity: 0.8, color: '#a00' }];
+    const mockLootPiles = [{ id: 'loot_1', x: 5, y: 5, gold: 20, materials: ['mat_iron'], catalysts: ['cat_flame'], equipment: [] }];
+
+    const saved: SavedOverworldSkirmishState = {
+      map: [[TileType.Grass, TileType.Path]],
+      levelWidth: 64,
+      levelHeight: 40,
+      discovered: [[true, true]],
+      visible: [[true, true]],
+      enemies: [],
+      dungeonProps: [],
+      corpses: mockOverworldCorpses,
+      bloodSplatters: mockBloodSplatters,
+      lootPiles: mockLootPiles,
+      playerX: 12,
+      playerY: 18,
+      currentChunkX: 1,
+      currentChunkY: 2
+    };
+
+    expect(saved.levelWidth).toBe(64);
+    expect(saved.levelHeight).toBe(40);
+    expect(saved.corpses.length).toBe(1);
+    expect(saved.bloodSplatters.length).toBe(1);
+    expect(saved.lootPiles.length).toBe(1);
   });
 });

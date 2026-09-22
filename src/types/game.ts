@@ -80,10 +80,15 @@ export interface CaravanEncounter {
 
 export interface SavedOverworldSkirmishState {
   map: TileType[][];
+  levelWidth?: number;
+  levelHeight?: number;
   discovered: boolean[][];
   visible: boolean[][];
   enemies: Enemy[];
   dungeonProps: DungeonProp[];
+  corpses?: Corpse[];
+  bloodSplatters?: BloodSplatter[];
+  lootPiles?: LootPile[];
   playerX: number;
   playerY: number;
   currentChunkX: number;
@@ -257,6 +262,7 @@ export interface GameState {
   };
   hasTransmuter?: boolean;
   caravanTravel?: CaravanTravelState | null;
+  caravanParkedChunk?: { x: number; y: number };
   defeatedEnemiesCount?: { [key: string]: number };
   chaosScore?: number; // 0 to 100 GM Chaos Matrix score
   sanctumRelics?: string[];

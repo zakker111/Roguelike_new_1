@@ -5,14 +5,16 @@ export const syncCaravanState = (prev: any, nextTimeVal: number, nextNpcs: NPC[]
   let finalNpcs = [...nextNpcs];
   let finalEnemies = [...nextEnemies];
 
-  if (prev.isOverworld) {
+  if (prev.isOverworld && !prev.caravanTravel?.isTacticalCombat) {
     const currentDay = Math.floor(nextTimeVal / 1440) + 1;
     const cycle = (currentDay - 1) % 4; // 4-day cycle
     
-    // Oakhaven owns caravan on Day 1 & 2 (cycle 0,1). Other towns own it on Day 3 & 4 (cycle 2,3)
+    // Oakhaven owns caravan on Day 1 & 2 (cycle 0,1). Other towns own it on Day 3 & 4 (cycle 2,3).
+    // Also respect explicitly parked caravan chunk.
     const hasTownInCurrentChunk = hasTownAtChunk(prev.currentChunkX, prev.currentChunkY);
     const isCaravanParkedHere = hasTownInCurrentChunk && (
-      (prev.currentChunkX === 0 && prev.currentChunkY === 0) ? (cycle === 0 || cycle === 1) : (cycle === 2 || cycle === 3)
+      (prev.caravanParkedChunk && prev.caravanParkedChunk.x === prev.currentChunkX && prev.caravanParkedChunk.y === prev.currentChunkY) ||
+      ((prev.currentChunkX === 0 && prev.currentChunkY === 0) ? (cycle === 0 || cycle === 1) : (cycle === 2 || cycle === 3))
     );
 
     if (isCaravanParkedHere) {

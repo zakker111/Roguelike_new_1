@@ -6,6 +6,84 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.8.2] — Caravan Skirmish State Restoration, Follower Clamping & CI Hardening (September 22, 2026)
+*Resolved state restoration defects during caravan journeys and tactical road battles. Enhanced `SavedOverworldSkirmishState` with level dimensions (`levelWidth`, `levelHeight`), corpses, blood splatters, and loot piles; fixed enemy list priority in `useEnemyAI` to prevent tactical entities from overwriting restored overworld actors; clamped follower AI to dynamic map dimensions; invalidated `ChunkBackgroundCache` across skirmish entry, retreat, victory, and arrival; and streamlined `.github/workflows/deploy.yml` with resilient `npm install`.*
+
+- **1. Zero-Loss Skirmish State Restoration (`SavedOverworldSkirmishState`)**:
+  - Expanded `SavedOverworldSkirmishState` in `/src/types/game.ts` to include `levelWidth`, `levelHeight`, `corpses`, `bloodSplatters`, and `lootPiles`.
+  - Updated `/src/components/ModalRouter.tsx` (`handleDeployTacticalBattle`) to capture full overworld state snapshot upon entering skirmishes.
+  - Updated `/src/components/modals/CaravanActiveOverlay.tsx` (flee action) and `/src/hooks/usePlayerAttack.ts` (victory action) to restore level dimensions, loot, corpses, and blood.
+- **2. Enemy Overwrite Resolution in AI Engine (`src/hooks/ai/useEnemyAI.ts`)**:
+  - Fixed return structure so `restoredOverworld` takes complete precedence for enemies, preventing `nextEnemies` from overwriting restored overworld enemies upon tactical skirmish victory.
+- **3. Dynamic Map Clamping for Follower AI (`src/hooks/ai/useFollowerAI.ts`)**:
+  - Replaced hardcoded `LEVEL_WIDTH` (64) and `LEVEL_HEIGHT` (40) constants with dynamic map dimensions (`mapW` and `mapH`), preventing followers from pathfinding or fleeing outside the 24×18 skirmish arena bounds.
+- **4. Chunk Transition & Skirmish Isolation (`src/hooks/app/movement/useChunkTransition.ts`)**:
+  - Blocked overworld chunk border transitions while `gameState.caravanTravel?.isTacticalCombat` is active.
+- **5. Encounter Resolution & Arrival Hardening (`src/hooks/useCaravanTravel.ts`)**:
+  - Handled `boss_ambush` encounter options `feed` and `pay` safely without spurious damage or false boss slay logs.
+  - Enhanced `handleCompleteCaravanTravel` with `isOverworld: true`, `levelWidth`, `levelHeight`, `biome`, and cache invalidation.
+- **6. Automated Test Coverage (`src/tests/caravanEncounters.test.ts`)**:
+  - Added unit test coverage for skirmish state dimensions and loot preservation. 100% green across all 66 test suites and 413 tests.
+
+## [v8.8.1] — GitHub Pages Resilient CI/CD & Production Publishing Hardening (September 22, 2026)
+*Eliminated the missing lockfile barrier in GitHub Actions deployment (`deploy.yml`), generated an exact version-pinned `package-lock.json`, made dependency installation resilient with dynamic fallback (`npm ci || npm install`), ensured 100% relative subpath resolution in `index.html` for GitHub Pages URLs, and passed full verification across 66 test suites and 412 tests.*
+
+- **1. Dedicated Root Lockfile (`package-lock.json`)**:
+  - Generated and verified a clean 65 KB `package-lock.json` mapping all 242 direct and transitive dependencies.
+  - Verified local and CI runtime with `npm ci` executing deterministically in 11 seconds.
+- **2. Resilient Deployment CI/CD Workflow (`.github/workflows/deploy.yml`)**:
+  - Removed the hard failure condition on `actions/setup-node@v4` by removing unbuffered `cache: 'npm'`.
+  - Added an adaptive installation step (`if [ -f package-lock.json ]; then npm ci || npm install; else npm install; fi`), ensuring zero deployment interruptions across any repository fork or OS runner.
+- **3. Relative SEO & OpenGraph Asset Paths (`index.html`)**:
+  - Updated Twitter card image meta tag from `/og-image.png` to `./og-image.png`, ensuring assets load smoothly on subpaths like `https://<user>.github.io/<repo>/`.
+- **4. Comprehensive Pipeline Verification**:
+  - Validated 31 JSON data catalogs and 467 TypeScript source files with `scripts/validateJson.cjs` and `scripts/auditCodebase.cjs` (0 errors).
+  - Executed all 66 Vitest test suites (412 tests, 100% green pass rate).
+  - Built production bundle (`dist/`) verifying relative `./assets/` chunks and static SPA fallback routing.
+
+## [v8.8.0] — Modular Trade & Commerce Sub-Engine Decomposition (September 21, 2026)
+*Decomposed the monolithic 943-line TradeModal into modular, decoupled sub-components within `/src/components/modals/trade/` according to the anti-monolith guidelines. Extracted regional caravan escort routing, blacksmith forge durability repairs and tier upgrades, apothecary laboratory synthesis unlocks, tavern gossip & mercenary recruitment boards, and twin-column storefront buy & liquidation stash sell grids.*
+
+- **1. Dedicated Trade Header & NPC Role Context (`src/components/modals/trade/TradeHeaderBar.tsx`)**:
+  - Encapsulated dynamic merchant identification, NPC role badges, closing hours indicators, and safe modal exit triggers.
+- **2. Regional Caravan Escort & Fast Travel Hub (`src/components/modals/trade/CaravanRoutesWidget.tsx`)**:
+  - Dynamically computes nearby town destinations and major continental citadels (Oakhaven, Vanguard Harbor, Ironforge, Sunfire Oasis, Frostpeak, Shadowfen, Stormwatch).
+  - Evaluates distance, regional safety risk factors, and gold escort bounties.
+- **3. Blacksmith Forge Durability Repair Station (`src/components/modals/trade/BlacksmithRepairStation.tsx`)**:
+  - Itemized durability cards for equipped weapons, armor sets, shields, accessories, and backpack inventory gear.
+  - Features broken gear pulse alerts and forge tier upgrade progression (Tier 1 through Tier 3).
+- **4. Apothecary Laboratory Upgrade Station (`src/components/modals/trade/ApothecaryStation.tsx`)**:
+  - Displays laboratory tiers, unlock requirements, and restorative elixir brewing progression.
+- **5. Tavern Gossip, Inn Rest & Mercenary Recruitment (`src/components/modals/trade/TavernServiceStation.tsx`)**:
+  - Rumor mongering gossip purchases (40g) and room rental (15g).
+  - 4-tier wandering mercenary recruitment (Novice Swordsman, Veteran Raider, Champion Gladiator, Merchant Guard).
+- **6. Twin-Column Storefront & Liquidation Stash Grids (`src/components/modals/trade/`)**:
+  - `TradeBuyStockGrid.tsx`: Left storefront column with dynamic biome price multipliers, town reputation discounts, Guild upgrade deals, Charisma discounts, and Artificer enchanted gear.
+  - `TradeSellStashGrid.tsx`: Right liquidation column for unequipped gear, raw materials, and catalysts with caravan trade license bonuses.
+- **7. Streamlined Master Composer (`src/components/modals/TradeModal.tsx`)**:
+  - Reduced from 943 lines to 166 lines, cleanly unifying all commercial sub-panels.
+- **8. Automated Verification & Testing (`src/tests/tradeModularComponents.test.ts`)**:
+  - Added test suite validating sub-components. 100% green pass rate across all 66 test suites (412 tests passing).
+
+## [v8.7.0] — Modular Inventory Decomposition & Sub-Component Architecture (September 21, 2026)
+*Decomposed the monolithic 1,000+ line BackpackSlotGrid into focused, decoupled subcomponents following the engine's strict anti-monolith guidelines. Extracted dynamic weight limits, responsive category tabs with count badges, and dedicated sub-views for companions, equipment, provisions, and crafting materials.*
+
+- **1. Real-Time Carrying Capacity Meter (`src/components/inventory/InventoryWeightBar.tsx`)**:
+  - Encapsulated hero weight capacity calculations based on Base Strength and storage perks.
+  - Implemented color-coded progress feedback: Cyan (<75%), Amber (75-99%), and Flashing Rose (>100% overburdened) with movement stagger alert banners.
+- **2. Inventory Filter & Action Bar (`src/components/inventory/InventoryFilterBar.tsx`)**:
+  - Modularized category tabs (`Allies`, `Gear`, `Food`, `Mats`) with responsive inventory item count badges.
+  - Implemented interactive "Sort & Group" action header with SVG rotation animations and success feedback.
+- **3. Dedicated Inventory Sub-Views (`src/components/inventory/`)**:
+  - `AlliesRosterView.tsx`: Companion follower roster with archetype badges, level indicators, combat status badges, and equipment inspection triggers.
+  - `GearInventoryGrid.tsx`: Equipment items display with rarity tier badges, durability bars, weights, scroll reading, 2-Handed / Dual-Wield equip triggers, and discard gump handlers.
+  - `ProvisionsInventoryGrid.tsx`: Consumables and apothecary potions display with HP/MP recovery stats, direct eat/drink triggers, and discard handlers.
+  - `MaterialsInventoryGrid.tsx`: Dual-column layout for crafting alloys/materials and elemental shards/catalysts with quantity counts and discard buttons.
+- **4. Streamlined Master Coordinator (`src/components/inventory/BackpackSlotGrid.tsx`)**:
+  - Refactored `BackpackSlotGrid.tsx` from 1,018 lines to ~190 lines as a clean coordinator composing the modular subcomponents.
+- **5. Automated Testing & Verification (`src/tests/inventoryComponents.test.ts`)**:
+  - Validated subcomponent rendering, catalog lookups, and tab navigation. 100% green pass rate across all 65 test suites (410 tests passing).
+
 ## [v8.6.1] — Viewport Layout Ergonomics, Smooth Vertical Scrolling & GitHub Pages CI/CD (September 20, 2026)
 *Resolved page scrolling lockout by removing restrictive overflow-hidden directives from root layout shells, enabled natural vertical document flow across desktop and mobile devices, implemented responsive viewport heights for canvas stages, and configured full GitHub Pages deployment with automated CI/CD.*
 

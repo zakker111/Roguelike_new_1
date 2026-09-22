@@ -7,6 +7,7 @@ import { computeFOV } from '../utils/ai';
 import { spawnFollowersOnLevelLoadByReset } from '../utils/dungeon';
 import { LEVEL_WIDTH, LEVEL_HEIGHT, findNearestSafePlayerTile, isLunarBlessingActive, getEffectiveAttribute } from '../utils/gameUtils';
 import { combatVfxEngine } from '../canvas/combatVfxEngine';
+import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 
 interface UseCaravanTravelOptions {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -334,14 +335,17 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
           resultLog = `🌿 You mash 12 Wild Berries into a thick, sweet anti-toxic paste for the draft horses and guards. The natural fruit acids fully filter out the worst of the toxic fumes! Gained +${xpGained} XP. Used 12 Wild Berries.`;
         }
       } else if (encounter.type === 'boss_ambush') {
-        if (isSuccess) {
+        if (option.id === 'pay') {
+          resultLog = `🪙 You surrendered tribute gold to appease ${encounter.bossName || 'the Boss'}. The highway terror lets the caravan proceed, but your wallet is much lighter.`;
+        } else if (option.id === 'feed') {
+          xpGained = 50;
+          resultLog = `🥩 You threw out a feast of 25 Wild Berries to lure away ${encounter.bossName || 'the beast pack'}. Distracted by the food, they let the convoy slip past undamaged! Gained +${xpGained} XP.`;
+        } else if (isSuccess) {
           xpGained = 180;
           const rewardBonus = 300;
           nextGold += rewardBonus;
           nextMats['cat_fire'] = (nextMats['cat_fire'] || 0) + 1;
           resultLog = `🎲 Rolled ${d20} + Mod ${modifier} = ${totalRoll} (vs Diff ${option.difficulty}). 👑 BOSS SLAIN! You vanquished ${encounter.bossName || 'the World Threat Boss'}! Gained +${xpGained} XP, +${rewardBonus} Gold, and 1 Catalyst! The wagon is protected!`;
-        } else if (option.id === 'pay') {
-          resultLog = `🪙 You surrendered tribute gold to appease ${encounter.bossName || 'the Boss'}. The highway terror lets the caravan proceed, but your wallet is much lighter.`;
         } else {
           hpChange = -32;
           const dmg = encounter.wagonDamagePenalty || 35;
@@ -350,7 +354,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
       }
 
       let currentWagonHp = travel.wagonHp ?? 100;
-      if (!isSuccess && option.id !== 'pay' && option.id !== 'ignore') {
+      if (!isSuccess && option.id !== 'pay' && option.id !== 'ignore' && option.id !== 'feed') {
         const dmg = encounter.wagonDamagePenalty || 15;
         currentWagonHp = Math.max(0, currentWagonHp - dmg);
       }
@@ -513,8 +517,15 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         [targetChunkKey]: targetChunk
       }, destX, destY, 25);
 
+      ChunkBackgroundCache.getInstance().invalidate();
+
       return {
         ...prev,
+        isOverworld: true,
+        levelWidth: targetChunk.map[0]?.length || LEVEL_WIDTH,
+        levelHeight: targetChunk.map.length || LEVEL_HEIGHT,
+        biome: targetChunk.biome || prev.biome,
+        caravanParkedChunk: { x: destX, y: destY },
         playerX: finalPx,
         playerY: finalPy,
         currentChunkX: destX,

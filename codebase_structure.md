@@ -234,7 +234,13 @@ This document is the authoritative structural reference for the entire **Soverei
   - `HeroBiometricsCard.tsx`: Hero profile, level progress, and interactive Core RPG Attribute point allocation (STR, DEX, INT, CHA, LCK).
   - `EquipmentPaperdoll.tsx`: 8-slot equipped gear display (Helmet, Armor, Boots, Weapon R-Hand, Shield L-Hand, Gauntlets, Amulet) with durability bars, 2-handed occupied badge, humanoid cat wireframe, active scars visual overlay, and broken item indicators.
   - `CombatStatsSummary.tsx`: Calculated combat statistics, Cat Lover special trait card, and Permanent Battle Scars list with simulate scar trigger.
-  - `BackpackSlotGrid.tsx`: Carrying weight limit bar, overburdened status alert, Sort & Group stashes trigger, 4 sub-navigation tabs (Allies, Gear, Food, Resources/Mats), and discard long-press/gump modal triggers.
+  - `InventoryWeightBar.tsx`: Real-time carrying capacity limit gauge, color-coded capacity thresholds, and overburdened warnings.
+  - `InventoryFilterBar.tsx`: Sub-navigation category tabs (Allies, Gear, Food, Mats) and "Sort & Group" actions header.
+  - `AlliesRosterView.tsx`: Active party follower roster, combat modes, and follower gear inspection triggers.
+  - `GearInventoryGrid.tsx`: Equipment cards, rarity tier badges, durability bars, 2H / dual-wield buttons, and discard handlers.
+  - `ProvisionsInventoryGrid.tsx`: Provisions and potion consumables display, recovery metrics, direct eat/drink triggers.
+  - `MaterialsInventoryGrid.tsx`: Dual-column layout for crafting alloys/materials and elemental shards/catalysts.
+  - `BackpackSlotGrid.tsx`: Master coordinator composing weight bar, filter bar, and tab grid views.
   - `AlchemicalTransmuterPanel.tsx`: Portable Wild Alchemical Transmuter UI (catalyst alignment shifter, Unstable Wild Reactor surge button, offline fallback card).
   - `index.ts`: Inventory sub-components barrel export.
 - `src/components/CraftingPanel.tsx`: Multi-tab crafting station (Forge, Alchemy, Cooking, Scriptorium, Catalysts, Upgrades, Mutations).
@@ -280,10 +286,15 @@ This document is the authoritative structural reference for the entire **Soverei
   - `StartScreen.tsx`: Title screen, class selection, and new game initializer.
   - `GameOverScreen.tsx` / `VictoryScreen.tsx`: Permadeath summary, run statistics, and restart triggers.
 - `src/components/god/`: 25 modular God Mode developer tools (`GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
-- `src/components/modals/`: Dialogue modals, town shops, bed resting, and fishing/lockpicking minigames.
+- `src/components/modals/`: Dialogue modals, town shops, bed resting, and fishing/lockpicking minigames:
+  - `TradeModal.tsx`: Slim master composer coordinating modular trade sub-panels.
+  - `src/components/modals/trade/`: Modular Trade & Commerce Sub-Engine (`TradeHeaderBar`, `CaravanRoutesWidget`, `BlacksmithRepairStation`, `ApothecaryStation`, `TavernServiceStation`, `TradeBuyStockGrid`, `TradeSellStashGrid`, `types.ts`, `index.ts`).
+  - `DialogueModal.tsx`: Dynamic NPC branching dialogue trees and gossip.
+  - `CaravanActiveOverlay.tsx`: Interactive caravan journey progress and wagon combat.
+  - `DiscardItemModal.tsx`: Loot discard and ground item drop gump.
 
 ---
 
 ### 10. `/src/tests/` — Automated Test Suite
-- 63 comprehensive Vitest test suites (390 unit, simulation, and integration tests passing 100% green) covering elemental propagation & cellular reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), living ecosystem & predator-prey simulation (`livingEcosystemSim.test.ts`), faction matrix & hostility (`factionMatrix.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding, tree/wood obstacle collisions, behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
+- 66 comprehensive Vitest test suites (412 unit, simulation, and integration tests passing 100% green) covering elemental propagation & cellular reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), living ecosystem & predator-prey simulation (`livingEcosystemSim.test.ts`), faction matrix & hostility (`factionMatrix.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding, tree/wood obstacle collisions, behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, modular inventory sub-components (`inventoryComponents.test.ts`), and modular trade sub-engine components (`tradeModularComponents.test.ts`).
 

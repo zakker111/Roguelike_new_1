@@ -1,6 +1,7 @@
 import React from 'react';
 import { GameState } from '../../types';
 import { getEffectiveAttribute } from '../../utils/gameUtils';
+import { ChunkBackgroundCache } from '../../canvas/chunkBackgroundCache';
 
 export interface CaravanActiveOverlayProps {
   gameState: GameState;
@@ -76,6 +77,7 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
             <span>🎯 Defend the central wagon carriage & eliminate all ambushers!</span>
             <button
               onClick={() => {
+                ChunkBackgroundCache.getInstance().invalidate();
                 setGameState(prev => {
                   if (!prev.caravanTravel) return prev;
                   const saved = prev.caravanTravel.savedOverworldState;
@@ -83,10 +85,15 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
                     ...prev,
                     ...(saved ? {
                       map: saved.map,
+                      levelWidth: saved.levelWidth || saved.map[0]?.length || 64,
+                      levelHeight: saved.levelHeight || saved.map.length || 40,
                       discovered: saved.discovered,
                       visible: saved.visible,
                       enemies: saved.enemies,
                       dungeonProps: saved.dungeonProps,
+                      corpses: saved.corpses || [],
+                      bloodSplatters: saved.bloodSplatters || [],
+                      lootPiles: saved.lootPiles || [],
                       playerX: saved.playerX,
                       playerY: saved.playerY,
                       currentChunkX: saved.currentChunkX,

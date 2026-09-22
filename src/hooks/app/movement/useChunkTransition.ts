@@ -38,7 +38,7 @@ export function handleChunkBorderCrossing(
   addLogMessage: (text: string, type?: any) => void,
   executeEnemiesTurn: (px: number, py: number) => void
 ): boolean {
-  if (!gameState.isOverworld) return false;
+  if (!gameState.isOverworld || gameState.caravanTravel?.isTacticalCombat) return false;
 
   let nextCx = gameState.currentChunkX;
   let nextCy = gameState.currentChunkY;

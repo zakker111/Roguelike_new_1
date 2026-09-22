@@ -166,7 +166,13 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── HeroBiometricsCard.tsx  # Hero profile & Core RPG Attribute point allocation
   │   │   ├── EquipmentPaperdoll.tsx  # 8-slot equipped gear display & durability renderer
   │   │   ├── CombatStatsSummary.tsx  # Integrated combat stats, Cat Lover & Battle Scars
-  │   │   ├── BackpackSlotGrid.tsx    # Weight bar, sorting, and Allies/Gear/Food/Mats tabs
+  │   │   ├── InventoryWeightBar.tsx  # Real-time carrying capacity limit gauge & overburdened alerts
+  │   │   ├── InventoryFilterBar.tsx  # Sub-navigation tabs (Allies, Gear, Food, Mats) & Sort/Group actions
+  │   │   ├── AlliesRosterView.tsx    # Active party follower roster & follower gear inspection
+  │   │   ├── GearInventoryGrid.tsx   # Equipment cards, rarity tiers, 2H/Dual-Wield & discard gump
+  │   │   ├── ProvisionsInventoryGrid.tsx # Consumables & potions display with recovery metrics & eat/drink
+  │   │   ├── MaterialsInventoryGrid.tsx  # Dual-column layout for crafting alloys and elemental catalysts
+  │   │   ├── BackpackSlotGrid.tsx    # Master coordinator composing weight bar, filters, and tab grids
   │   │   ├── AlchemicalTransmuterPanel.tsx # Portable Wild Alchemical Transmuter UI
   │   │   └── index.ts                # Inventory components barrel export
   │   ├── 📂 worldmap            # Modular Cartography World Map & Sector Intelligence
@@ -212,7 +218,17 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── GameOverScreen.tsx      # Permadeath summary & run stats
   │   │   └── VictoryScreen.tsx       # Campaign victory screen
   │   ├── 📂 modals              # Standalone Modal Overlays
-  │   │   ├── TradeModal.tsx     # Merchant trading & caravan departures
+  │   │   ├── TradeModal.tsx     # Master composer coordinating modular trade sub-components
+  │   │   ├── 📂 trade           # Modular Trade Sub-Engine Components
+  │   │   │   ├── types.ts       # Trade modal interfaces, role context & caravan destinations
+  │   │   │   ├── TradeHeaderBar.tsx # Trader counter header, NPC role badge & exit trigger
+  │   │   │   ├── CaravanRoutesWidget.tsx # Regional caravan fast travel & route escort planner
+  │   │   │   ├── BlacksmithRepairStation.tsx # Durability repair station, gear cards & forge tier upgrades
+  │   │   │   ├── ApothecaryStation.tsx # Laboratory upgrade station & potion tier unlocks
+  │   │   │   ├── TavernServiceStation.tsx # Rumor mongering gossip, room rental & mercenary recruitment
+  │   │   │   ├── TradeBuyStockGrid.tsx # Left storefront buy column with dynamic price multipliers & charisma discounts
+  │   │   │   ├── TradeSellStashGrid.tsx # Right liquidation sell column for gear, raw materials & catalysts
+  │   │   │   └── index.ts       # Trade sub-components barrel export
   │   │   ├── DialogueModal.tsx  # NPC conversation trees & tavern gossip
   │   │   ├── CaravanActiveOverlay.tsx # Caravan travel progress & wagon HP
   │   │   └── DiscardItemModal.tsx # Item discard & ground loot drop gump
@@ -469,7 +485,7 @@ const spell = getSpellById('solar_flare');
 
 ## 🧪 Automated Unit & Engine Test Suite (Vitest)
 
-The engine features 50 test suites (308 unit & simulation tests passing 100% green) covering procedural generation, pathfinding AI, player combat execution (`usePlayerAttack`), directional shadows, water ripples, ambient particles, save/load validation and state migration, crafting, weather mechanics, dual-element synergies, GM Storyteller performance evaluation, and watchtower siege mechanics.
+The engine features 65 test suites (410 unit & simulation tests passing 100% green) covering procedural generation, pathfinding AI, player combat execution (`usePlayerAttack`), directional shadows, water ripples, ambient particles, save/load validation and state migration, crafting, weather mechanics, dual-element synergies, GM Storyteller performance evaluation, living ecosystem simulation, modular inventory sub-components, and watchtower siege mechanics.
 
 Run all automated unit tests:
 ```bash
@@ -1712,6 +1728,50 @@ The caravan travel system orchestrates inter-settlement trade expeditions, rando
 
 ---
 
+## 🎒 Modular Inventory Architecture & Decomposition (`src/components/inventory/`)
+
+The inventory system was decomposed from a monolithic 1,000+ line component into lightweight, decoupled subcomponents following the engine's strict anti-monolith guidelines.
+
+### Component Map & Responsibilities
+- **`InventoryWeightBar.tsx`**:
+  - Dynamically calculates hero carrying capacity based on Base Strength attributes and backpack capacity perks.
+  - Implements smooth color-coded thresholds: Cyan/Teal (<75%), Warm Amber (75-99%), and Flashing Rose (>100% encumbered).
+  - Emits real-time warning badges alerting the player to movement stagger penalties when overburdened.
+- **`InventoryFilterBar.tsx`**:
+  - Encapsulates inventory category tabs (`Allies`, `Gear`, `Food`, `Mats`) with responsive item count badges.
+  - Houses the "Sort & Group" action header with SVG rotation animations and transient success feedback.
+  - Triggers distinct procedural audio cues (`ui_click`) on selection.
+- **`AlliesRosterView.tsx`**:
+  - Displays recruited party followers with archetype badges, level indicators, and combat posture statuses.
+  - Features companion equipment inspection triggers and dismiss/manage workflows.
+- **`GearInventoryGrid.tsx`**:
+  - Renders equipped and stashed equipment cards with rarity borders (`Common`, `Uncommon`, `Rare`, `Epic`, `Legendary`).
+  - Renders weapon/armor durability bars, unit weights, and attack/defense statistics.
+  - Supports contextual equip actions: 1-Handed, 2-Handed, and Dual-Wield off-hand equipping.
+  - Integrates spell scroll reading and the custom item discard gump dialog.
+- **`ProvisionsInventoryGrid.tsx`**:
+  - Manages consumables, cooked campfire rations, wild forageables, and apothecary potions.
+  - Shows explicit health and mana restoration values before consumption.
+  - Integrates direct Eat/Drink action buttons with consumption audio triggers.
+- **`MaterialsInventoryGrid.tsx`**:
+  - Structured dual-column inventory for raw crafting materials (Wood, Copper, Iron, Herbs) and elemental catalysts (Fire, Ice, Shock, Poison, Shadow).
+  - Displays individual resource counts, icons, and contextual drop/discard handlers.
+- **`BackpackSlotGrid.tsx` (Master Coordinator)**:
+  - Reduced from 1,018 lines to ~190 lines. Composes the weight bar, filter controls, and active sub-view tabs, maintaining pure reactive state bindings without monolithic layout code.
+
+### 27. Modular Trade & Commerce Sub-Engine (`/src/components/modals/trade/`)
+The commerce and town trading interface (`TradeModal.tsx`), formerly a 943-line monolithic modal, has been decoupled into dedicated sub-components within `/src/components/modals/trade/`:
+- **`TradeHeaderBar.tsx`**: Renders dynamic trader identity, NPC role badges, closing hours indicators, and safe modal exit triggers.
+- **`CaravanRoutesWidget.tsx`**: Calculates regional overworld destinations, risk factors, distance metrics, and triggers wagon escort fast travel.
+- **`BlacksmithRepairStation.tsx`**: Manages weapon/armor durability, equipped gear cards, broken item alerts, repair costs (0.5g per durability point lost), and forge tier upgrades.
+- **`ApothecaryStation.tsx`**: Handles laboratory upgrades, catalyst brewing tiers, and restorative potion unlocks.
+- **`TavernServiceStation.tsx`**: Implements bartender gossip rumor purchases (40g), cozy room rentals (15g), and 4-tier wandering mercenary recruitment (Novice, Veteran, Champion, Merchant Guard).
+- **`TradeBuyStockGrid.tsx`**: Storefront stock column with dynamic regional biome price multipliers, town reputation discounts, Guild upgrade deals, and Charisma discounts. Includes Artificer enchanted gear, Blacksmith arms, Merchant provisions, Apothecary potions, and Seppo the Smith's rare wares.
+- **`TradeSellStashGrid.tsx`**: Liquidation column for stashed equipment, raw crafting materials, and elemental catalysts with active trade license multipliers.
+- **`TradeModal.tsx` (Master Coordinator)**: Reduced from 943 lines to 166 lines. Unifies all commercial sub-panels cleanly with memoized role context.
+
+---
+
 ## 🚀 Build, CI/CD Pipeline & GitHub Pages Deployment
 
 ### 1. Verification Scripts & Automated Testing
@@ -1732,9 +1792,9 @@ node scripts/validateJson.cjs
 # Scan all source modules for circular dependencies and broken imports:
 node scripts/auditCodebase.cjs
 ```
-- **Test Suite Status**: 64 test suites, 402 tests passing 100% green.
+- **Test Suite Status**: 66 test suites, 412 tests passing 100% green.
 - **Catalog Validation**: 31 JSON catalogs validated with zero schema defects.
-- **Import Audit**: 464 source files scanned with zero broken imports or orphaned modules.
+- **Import Audit**: 467 source files scanned with zero broken imports or orphaned modules.
 
 ### 2. GitHub Pages Build & Deployment Pipeline
 - **Production Build Scripts**:

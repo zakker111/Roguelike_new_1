@@ -6,4 +6,5 @@ export * from './useHostileAI';
 export * from './useCivilianAI';
 export * from './aiCombatAggregator';
 export * from './factionMorale';
+export * from './tactics';
 export * from './useEnemyAI';

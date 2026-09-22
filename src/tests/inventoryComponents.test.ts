@@ -12,7 +12,16 @@ import {
   EquipmentPaperdoll,
   CombatStatsSummary,
   BackpackSlotGrid,
+  InventoryWeightBar,
+  InventoryFilterBar,
+  AlliesRosterView,
+  GearInventoryGrid,
+  ProvisionsInventoryGrid,
+  MaterialsInventoryGrid,
   AlchemicalTransmuterPanel,
+  EATABLES_CATALOG,
+  CRAFTING_MATERIALS_LIST,
+  ELEMENTAL_CATALYSTS_LIST,
 } from '../components/inventory';
 import { UnifiedInventoryPanel } from '../components/UnifiedInventoryPanel';
 import { EquipmentItem, WeaponBaseType } from '../types';
@@ -23,8 +32,26 @@ describe('Inventory Sub-Components Decoupling & Rarity Evaluation', () => {
     expect(EquipmentPaperdoll).toBeDefined();
     expect(CombatStatsSummary).toBeDefined();
     expect(BackpackSlotGrid).toBeDefined();
+    expect(InventoryWeightBar).toBeDefined();
+    expect(InventoryFilterBar).toBeDefined();
+    expect(AlliesRosterView).toBeDefined();
+    expect(GearInventoryGrid).toBeDefined();
+    expect(ProvisionsInventoryGrid).toBeDefined();
+    expect(MaterialsInventoryGrid).toBeDefined();
     expect(AlchemicalTransmuterPanel).toBeDefined();
     expect(UnifiedInventoryPanel).toBeDefined();
+  });
+
+  it('validates food, material and catalyst catalog definitions', () => {
+    expect(EATABLES_CATALOG.length).toBeGreaterThanOrEqual(15);
+    expect(EATABLES_CATALOG.some((item) => item.id === 'mat_bread')).toBe(true);
+    expect(EATABLES_CATALOG.some((item) => item.id === 'scroll_recall')).toBe(true);
+
+    expect(CRAFTING_MATERIALS_LIST.length).toBeGreaterThanOrEqual(10);
+    expect(CRAFTING_MATERIALS_LIST.some((mat) => mat.id === 'mat_iron')).toBe(true);
+
+    expect(ELEMENTAL_CATALYSTS_LIST.length).toBe(5);
+    expect(ELEMENTAL_CATALYSTS_LIST.some((cat) => cat.id === 'cat_fire')).toBe(true);
   });
 
   it('getItemRarityValue categorizes items correctly based on colors', () => {

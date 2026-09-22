@@ -153,12 +153,14 @@ describe('Phase E5: Ecosystem Telemetry & Test Verification Suite', () => {
       const allEnemies = [alphaWolf, packPup1, packPup2];
       const logMessages: string[] = [];
 
-      // Trigger morale break on leader death
+      // Trigger morale break on leader death (mock Math.random for deterministic panic)
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
       const moraleResult = triggerSquadMoraleBreakOnLeaderDeath(
         alphaWolf,
         allEnemies,
         (msg) => logMessages.push(msg)
       );
+      randomSpy.mockRestore();
 
       // Pack members should panic
       expect(moraleResult.panickedCount).toBeGreaterThanOrEqual(1);

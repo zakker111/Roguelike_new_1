@@ -9,6 +9,7 @@ import { processHostileTurn } from './useHostileAI';
 import { resolveCivilianNpcTurns } from './useCivilianAI';
 import { emitAggregatedDamageFloater, checkTacticalCaravanVictory } from './aiCombatAggregator';
 import { appendBoundedLogs } from '../../utils/logBuffer';
+import { ChunkBackgroundCache } from '../../canvas/chunkBackgroundCache';
 
 export function useEnemyAI({
   setGameState,
@@ -328,9 +329,15 @@ export function useEnemyAI({
         finalLogs = appendBoundedLogs(prev.logs, formattedLogs, 200);
       }
 
+      if (restoredOverworld) {
+        ChunkBackgroundCache.getInstance().invalidate();
+      }
+
       return {
         ...prev,
         map: restoredOverworld ? restoredOverworld.map : nextMap,
+        levelWidth: restoredOverworld?.levelWidth || (restoredOverworld ? (restoredOverworld.map[0]?.length || 64) : prev.levelWidth),
+        levelHeight: restoredOverworld?.levelHeight || (restoredOverworld ? (restoredOverworld.map.length || 40) : prev.levelHeight),
         elementalFields: nextElementalFields || prev.elementalFields || [],
         ...gmStateUpdates,
         ...(restoredOverworld ? {
@@ -338,11 +345,19 @@ export function useEnemyAI({
           visible: restoredOverworld.visible,
           enemies: restoredOverworld.enemies,
           dungeonProps: restoredOverworld.dungeonProps,
+          corpses: restoredOverworld.corpses || [],
+          bloodSplatters: restoredOverworld.bloodSplatters || [],
+          lootPiles: restoredOverworld.lootPiles || [],
           playerX: restoredOverworld.playerX,
           playerY: restoredOverworld.playerY,
           currentChunkX: restoredOverworld.currentChunkX,
           currentChunkY: restoredOverworld.currentChunkY,
-        } : {}),
+        } : {
+          corpses: nextCorpses,
+          bloodSplatters: nextSplatters,
+          lootPiles: nextLootPiles,
+          enemies: nextEnemies,
+        }),
         isBraced: false,
         equippedArmor: nextArmor,
         equippedHelmet: nextHelmet,
@@ -358,12 +373,8 @@ export function useEnemyAI({
         merchantGold: merchantGoldUpdate,
         merchantStock: merchantStockUpdate,
         activeFoodBuff: nextFoodBuff,
-        corpses: nextCorpses,
-        bloodSplatters: nextSplatters,
-        lootPiles: nextLootPiles,
         caravanTravel: nextCaravanTravel,
         followers: nextFollowers.filter(f => f && f.hp > 0),
-        enemies: nextEnemies,
         npcs: nextNpcs,
         traps: nextTraps,
         logs: finalLogs,

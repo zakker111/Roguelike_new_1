@@ -5,6 +5,7 @@ import QuestBoardOverlay from './QuestBoardOverlay';
 import CaravanActiveOverlay from './modals/CaravanActiveOverlay';
 import AudioSettingsModal from './AudioSettingsModal';
 import { generateCaravanSkirmishMap } from '../world/caravanSkirmishGen';
+import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 
 export interface ModalRouterProps extends AppOverlaysProps {
   handleResolveCaravanEncounterOption?: (optionId: any) => void;
@@ -29,13 +30,19 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
 
   const handleDeployTacticalBattle = (encounter: any) => {
     const skirmish = generateCaravanSkirmishMap(gameState, encounter);
+    ChunkBackgroundCache.getInstance().invalidate();
     setGameState((prev) => ({
       ...prev,
       map: skirmish.map,
+      levelWidth: skirmish.map[0]?.length || 24,
+      levelHeight: skirmish.map.length || 18,
       discovered: skirmish.discovered,
       visible: skirmish.visible,
       enemies: skirmish.enemies,
       dungeonProps: skirmish.props,
+      corpses: [],
+      bloodSplatters: [],
+      lootPiles: [],
       playerX: skirmish.playerX,
       playerY: skirmish.playerY,
       caravanTravel: prev.caravanTravel ? {
@@ -45,10 +52,15 @@ export const ModalRouter: React.FC<ModalRouterProps> = (props) => {
         isTacticalCombat: true,
         savedOverworldState: {
           map: prev.map,
+          levelWidth: prev.levelWidth,
+          levelHeight: prev.levelHeight,
           discovered: prev.discovered,
           visible: prev.visible,
           enemies: prev.enemies,
           dungeonProps: prev.dungeonProps || [],
+          corpses: prev.corpses || [],
+          bloodSplatters: prev.bloodSplatters || [],
+          lootPiles: prev.lootPiles || [],
           playerX: prev.playerX,
           playerY: prev.playerY,
           currentChunkX: prev.currentChunkX,

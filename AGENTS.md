@@ -26,7 +26,7 @@ This document serves as the authoritative structural map and development ruleset
 - `package.json` / `tsconfig.json` / `vite.config.ts`: Project manifest, TypeScript build configs, and Vite dev server (`base: './'`).
 - `metadata.json`: Platform metadata (app name, description, capabilities).
 - `LICENSE`: Open-source MIT License.
-- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 402 tests, builds, and deploys to GitHub Pages).
+- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 413 tests, builds, and deploys to GitHub Pages).
 - `public/`:
   - `404.html`: SPA fallback redirect for GitHub Pages.
   - `.nojekyll`: Disables Jekyll asset processing on GitHub Pages.
@@ -133,7 +133,18 @@ This document serves as the authoritative structural map and development ruleset
   - `aiTurnEnvironment.ts`: Status effect resolution (DoTs, HoTs), weather/seasons, day/night cycles, and roaming spawns.
   - `useFollowerAI.ts`: Follower targeting, ranged/melee attacks, dynamic weapon range, and player escorting.
   - `useTownGuardAI.ts`: Town defense threat response, 30-tile alarm broadcast, and shift schedules.
-  - `useHostileAI.ts`: Stagger recovery, telegraphed attacks, wagon targeting, and flanking behavior.
+  - `useHostileAI.ts`: Master turn resolution coordinator for hostile monsters and factions.
+  - `tactics/`: Modular Hostile AI Strategy Pattern Sub-Engine:
+    - `types.ts`: Behavior strategy contracts, `AITacticContext`, and event dispatch helpers.
+    - `aiKitingTactics.ts`: Ranged standoff distancing, retreat corridors, and firing sweet spot evaluation.
+    - `aiFlankingTactics.ts`: Coordinated pack encircling and multi-angle surrounding positions.
+    - `aiTelegraphTactics.ts`: Heavy brute windup warnings and delayed high-impact ground strikes.
+    - `aiSupportTactics.ts`: Ally healing and bloodlust buffing incantations.
+    - `aiDefenderCombatTactics.ts`: Caravan wagons, companions, town guards, and inter-faction turf skirmishes.
+    - `aiPlayerAttackTactics.ts`: Direct player attacks, dodge rolls, armor penetration, and permanent scars.
+    - `aiRetreatPatrolTactics.ts`: Wounded reinforcement alerts, retreat to camps, and waypoint patrols.
+    - `aiBossPhaseTactics.ts`: Multi-phase boss triggers and companion perception warnings.
+    - `index.ts`: Tactics barrel export.
   - `useCivilianAI.ts`: Cat playful wandering, civilian daily routines, weather shelter reactions, and barks.
   - `factionMorale.ts`: Pack/squad morale breaks on leader/alpha death, panic scatter, and desperate surrender calculations.
   - `aiCombatAggregator.ts`: Aggregated visual floating text dispatcher and skirmish victory checks.
@@ -149,6 +160,8 @@ This document serves as the authoritative structural map and development ruleset
 - `src/hooks/useAppHotkeys.ts` / `src/hooks/input/`: Key bindings, modal hotkeys, and directional controls.
 - `src/hooks/god/useGodPanelState.ts`: Dedicated orchestrator for God Mode cheats, sandbox tweaks, and testing.
 - `src/hooks/app/`: Application orchestration hooks:
+  - `useAppModalState.ts`: Consolidated modal, overlay, dialog, and targeted scroll state manager.
+  - `useAppTurnCoordinator.ts`: Master turn sequencing coordinator wrapping movement dispatch, game loop ticks, enemy AI, brace defense, and tile targeting.
   - `usePlayerTurnMovement.ts`: Turn-based step resolver and movement dispatcher.
   - `movement/`: Modular Movement Sub-Engine (`useStepResolver`, `useTerrainHazards`, `useTileLooting`, `useChunkTransition`).
   - `useGKeyInteraction.ts`: Multi-context G-key interaction router (signs, beds, bushes, NPCs, shrines).
@@ -249,7 +262,13 @@ This document serves as the authoritative structural map and development ruleset
   - `HeroBiometricsCard.tsx`: Profile, level progress, and interactive RPG attribute point allocation (STR, DEX, INT, CHA, LCK).
   - `EquipmentPaperdoll.tsx`: 8-slot equipped gear display with durability meters, 2H badge, and scars overlay.
   - `CombatStatsSummary.tsx`: Combat statistics, Cat Lover trait, and permanent battle scars list.
-  - `BackpackSlotGrid.tsx`: Carrying weight bar, sort/group triggers, sub-tabs (Allies, Gear, Food, Mats), and item discard.
+  - `InventoryWeightBar.tsx`: Real-time carrying capacity limit gauge, color thresholds, and overburdened warnings.
+  - `InventoryFilterBar.tsx`: Sub-navigation tabs (Allies, Gear, Food, Mats) and "Sort & Group" actions header.
+  - `AlliesRosterView.tsx`: Active party follower roster, combat modes, and follower gear inspection triggers.
+  - `GearInventoryGrid.tsx`: Equipment inventory cards, rarity badges, durability bars, 2H / dual-wield buttons, and discard handlers.
+  - `ProvisionsInventoryGrid.tsx`: Provisions and potion consumables display, recovery metrics, direct eat/drink triggers.
+  - `MaterialsInventoryGrid.tsx`: Dual-column layout for crafting alloys/materials and elemental shards/catalysts.
+  - `BackpackSlotGrid.tsx`: Master coordinator composing weight bar, filter bar, and tab grid views.
   - `AlchemicalTransmuterPanel.tsx`: Portable Wild Alchemical Transmuter UI.
   - `index.ts`: Inventory sub-components barrel export.
 - `src/components/CraftingPanel.tsx`: Composer coordinating modular crafting stations.
@@ -286,20 +305,30 @@ This document serves as the authoritative structural map and development ruleset
 - `src/components/worldmap/`: Modular Cartography World Map & Sector Intelligence:
   - `types.ts`: World map POIs, chunk map info, custom pins, filter state, and biome models.
   - `chunkTileRasterizer.ts`: Micro-tile surface rasterizer with topographic hillshading and dual LRU cache bitmaps.
+  - `useWorldMapViewport.ts`: High-performance viewport hook for zoom, pan, drag inertia physics, and coordinate transforms.
+  - `worldMapTerrainRenderer.ts`: Pure canvas rendering engine for terrain chunks, biome shading, highways, and fog of war.
+  - `worldMapPinsRenderer.ts`: Pure canvas rendering engine for static POIs, custom pins, hero beacons, and dynamic leyline auras.
+  - `WorldMapControls.tsx`: Mobile compass navigation overlay, directional D-pad, and quick zoom presets.
+  - `WorldMapPinsOverlay.tsx`: Dynamic canvas layer component coordinating overlay markers, auras, and reticles.
   - `WorldMapHeader.tsx`: Compass header with coordinate tracking, inspect breadcrumbs, and filter toggles.
-  - `WorldMapCanvas.tsx`: Dual-canvas architecture with frustum culling, drag-to-pan inertia, and mobile D-pad.
+  - `WorldMapCanvas.tsx`: Master coordinator orchestrating terrain canvas, pins overlay, and viewport controls.
   - `WorldMapChunkTooltip.tsx`: Sector inspection dossier with collapsible minimize/expand pill toggle.
   - `WorldMapPinsList.tsx` / `CustomPinEditorModal.tsx` / `WorldMapLegend.tsx`: Custom pin management and legend.
   - `WorldMapModal.tsx`: Top-level modal container coordinating map components and hotkeys.
   - `index.ts`: World map barrel export.
 - `src/components/god/`: 27 God Mode developer tools (`TilesetTesterTab`, `GodCatalogLiveTuner`, `GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
-- `src/components/modals/`: Dialogue modals, town shops, bed resting, caravan battles, and fishing/lockpicking minigames.
+- `src/components/modals/`: Dialogue modals, town shops, bed resting, caravan battles, and fishing/lockpicking minigames:
+  - `TradeModal.tsx`: Slim master coordinator component.
+  - `src/components/modals/trade/`: Modular Trade Sub-Engine (`TradeHeaderBar`, `CaravanRoutesWidget`, `BlacksmithRepairStation`, `ApothecaryStation`, `TavernServiceStation`, `TradeBuyStockGrid`, `TradeSellStashGrid`, `types.ts`, `index.ts`).
+  - `DialogueModal.tsx`: NPC conversation trees and tavern gossip.
+  - `CaravanActiveOverlay.tsx`: Caravan journey progress and wagon combat.
+  - `DiscardItemModal.tsx`: Item discard and ground drop gump.
 - `src/components/PerformanceHud.tsx`: Real-Time Performance & Resource HUD with live FPS graph, memory meters, voice monitor, entity distribution gauges, viewport resolution, and position cycling.
 
 ---
 
 ### 10. `/src/tests/` — Automated Test Suite
-- 63 comprehensive Vitest test suites (390 unit, simulation, and integration tests passing 100% green) covering elemental propagation and environmental chain reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), morale and surrender sub-engine (`moraleAndSurrenderE2.test.ts`), performance telemetry & HUD (`performanceHudAndMonitoring.test.ts`), live data catalog tuning (`catalogLiveTuner.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, and modular inventory sub-components.
+- 66 comprehensive Vitest test suites (412 unit, simulation, and integration tests passing 100% green) covering elemental propagation and environmental chain reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), morale and surrender sub-engine (`moraleAndSurrenderE2.test.ts`), living ecosystem simulation (`livingEcosystemSim.test.ts`), performance telemetry & HUD (`performanceHudAndMonitoring.test.ts`), live data catalog tuning (`catalogLiveTuner.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, modular inventory sub-components (`inventoryComponents.test.ts`), and modular trade sub-engine components (`tradeModularComponents.test.ts`).
 
 ---
 

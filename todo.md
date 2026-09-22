@@ -533,6 +533,105 @@ Advance the core roguelike engine into a deeply systemic, emergent, living world
   - Added SPA route fallback (`public/404.html`), Jekyll bypass (`public/.nojekyll`), and open-source license (`LICENSE`).
   - Added `npm run build:pages` and compound `npm run audit` commands to `package.json`.
 
+---
+
+## 🏗️ Codebase Modularization & Developer Extensibility Roadmap (v8.7.0+)
+
+### 🎯 Primary Architectural Objective
+Eliminate remaining monolithic code files (>800-1,600 lines), establish pluggable strategy patterns, and decouple canvas drawing from UI event logic. This enables developers and modders to easily implement new enemy tactics, custom map overlays, game items, UI components, and debug commands without touching complex core engine files.
+
+---
+
+### 📦 Phase M1: `App.tsx` Coordinator De-Monolithization
+*Current size: ~1,191 lines. Target size: ~350-400 lines.*
+- [x] **Phase M1.1: Extract `useAppModalState.ts`** (`src/hooks/app/useAppModalState.ts`)
+  - Successfully extracted all 24 modal, overlay, dialog, and targeted scroll states into a modular sub-hook.
+  - Simplified `ModalRouter` props in `App.tsx` using `{...modalState}` spread.
+  - Exported and integrated cleanly through `src/hooks/app/index.ts`.
+- [x] **Phase M1.2: Extract `useAppTurnCoordinator.ts`** (`src/hooks/app/useAppTurnCoordinator.ts`)
+  - Successfully decoupled turn step sequencing, player movement dispatching, game loop difficulty ticks, enemy AI turns, tactical brace defense, automated autoplay steps, and tile targeting from layout rendering.
+  - Reduced `App.tsx` by ~150 lines and removed redundant turn coordination boilerplate.
+  - **Dev Outcome**: Isolates turn timing and autoplay hooks from UI rendering.
+
+---
+
+### 🗺️ Phase M2: World Map Architecture Modularization (`WorldMapCanvas.tsx`)
+*Current size: ~1,552 lines. Target size: ~350 lines per module.*
+- [x] **Phase M2.1: Extract `useWorldMapViewport.ts`** (`src/components/worldmap/useWorldMapViewport.ts`)
+  - Isolated zoom clamping (`0.4x - 3.5x`), pan offsets, mouse/touch drag velocity, inertia physics, and screen-to-world coordinate projections.
+- [x] **Phase M2.2: Extract `worldMapTerrainRenderer.ts`** (`src/components/worldmap/worldMapTerrainRenderer.ts`)
+  - Moved pure canvas drawing passes (chunk tile blitting from LRU cache, biomes, rivers, roads, fog of war, and grid outlines) into dedicated pure functions.
+- [x] **Phase M2.3: Extract `WorldMapPinsOverlay.tsx` & `worldMapPinsRenderer.ts`** (`src/components/worldmap/WorldMapPinsOverlay.tsx`)
+  - Rendered towns, castles, dungeons, quest POIs, custom waystones, leyline auras, and hover tooltips as a lightweight, interactive overlay layer with extracted `WorldMapControls.tsx`.
+  - **Dev Outcome**: Modders and developers can design new POI markers or tweak terrain visuals without touching drag/zoom physics.
+
+---
+
+### ⚔️ Phase M3: Hostile AI Tactics & Strategy Pattern (`useHostileAI.ts`) (Completed)
+- [x] **Phase M3.1: Define AI Behavior Strategy Interface** (`src/hooks/ai/tactics/types.ts`)
+  - Created standard contract: `executeAITactic(context: AITacticContext): AITacticResult | null`, `HostileAIParams`, `HostileActionResult`, and event dispatch helpers.
+- [x] **Phase M3.2: Extract Modular Tactic Strategies** (`src/hooks/ai/tactics/`)
+  - `aiKitingTactics.ts`: Ranged archers/mages maintaining standoff distance and dynamic firing corridors.
+  - `aiFlankingTactics.ts`: Pack hunters (wolves, bandits) coordinating surrounding positions.
+  - `aiTelegraphTactics.ts`: Heavy brutes charging up high-impact telegraphed slams.
+  - `aiSupportTactics.ts`: Dedicated healer/buffer spells for friendly wounded and elite allies.
+  - `aiDefenderCombatTactics.ts`: Caravan wagon, companion followers, town guard, and rival faction targeting.
+  - `aiPlayerAttackTactics.ts`: Direct player attack resolution, dodge checks, armor penetration, equipment durability loss, and scars.
+  - `aiRetreatPatrolTactics.ts`: Wounded retreat to alert sleeping/patrolling allies and waypoint navigation.
+  - `aiBossPhaseTactics.ts`: Multi-phase boss transformations, summons, and elite perception warnings.
+  - **Dev Outcome**: Monster tactics are now cleanly decoupled into dedicated modular strategy files, reducing `useHostileAI.ts` from 1,224 lines to a concise master coordinator. Covered by 65 test suites and 409 passing tests.
+
+---
+
+### 🎒 Phase M4: Inventory & Equipment Component Decomposition (`BackpackSlotGrid.tsx`)
+*Current size: Decoupled into modular components (~100-250 lines each).*
+- [x] **Phase M4.1: Extract `InventoryFilterBar.tsx`** (`src/components/inventory/InventoryFilterBar.tsx`)
+  - Sub-navigation tabs (Allies, Gear, Food, Mats), inventory item counter badges, and "Sort & Group" actions header with visual feedback.
+- [x] **Phase M4.2: Extract `InventoryWeightBar.tsx`** (`src/components/inventory/InventoryWeightBar.tsx`)
+  - Real-time carrying capacity limit gauge, color-coded capacity thresholds (teal, amber, rose pulse), and overburdened movement stagger rate warnings.
+- [x] **Phase M4.3: Extract Modular Inventory Tab Sub-Views**
+  - `AlliesRosterView.tsx`: Active party followers roster with archetype badges, level indicators, combat mode indicators, and companion equipment inspection triggers.
+  - `GearInventoryGrid.tsx`: Equipment items display with rarity tier badges, durability bars, weights, scroll reading, 2-Handed and Dual-Wield equip triggers, and discard gump handlers.
+  - `ProvisionsInventoryGrid.tsx`: Provisions and potion consumables display with healing/mana recovery metrics, direct eat/drink triggers, and discard handlers.
+  - `MaterialsInventoryGrid.tsx`: Dual-column layout for crafting alloys/materials and elemental shards/catalysts with quantity counts and discard buttons.
+- [x] **Phase M4.4: Streamline Master `BackpackSlotGrid.tsx`**
+  - Refactored `BackpackSlotGrid.tsx` from 1,018 lines to ~190 lines as a clean coordinator composing the extracted modular subcomponents.
+  - **Dev Outcome**: Developers can easily customize backpack tab views, weight gauges, or equipment slots in isolated, lightweight subcomponents. Covered by 65 test suites and 410 passing tests.
+- [x] **Phase M4.5: Modular Trade & Commerce Sub-Engine Decomposition (`TradeModal.tsx`)**
+  - Extracted modular commercial subcomponents into `/src/components/modals/trade/`: `TradeHeaderBar.tsx`, `CaravanRoutesWidget.tsx`, `BlacksmithRepairStation.tsx`, `ApothecaryStation.tsx`, `TavernServiceStation.tsx`, `TradeBuyStockGrid.tsx`, and `TradeSellStashGrid.tsx`.
+  - Refactored master `TradeModal.tsx` from 943 lines to 166 lines.
+  - **Dev Outcome**: Added dedicated test suite `tradeModularComponents.test.ts`. All 66 test suites (412 tests) passing 100% green.
+- [x] **Phase M4.6: GitHub Pages CI/CD Resilient Lockfile Workflow (`.github/workflows/deploy.yml`)**
+  - Generated dedicated root `package-lock.json` (65 KB).
+  - Hardened GitHub Actions deploy workflow with adaptive fallback (`npm ci || npm install`) eliminating the "Dependencies lock file is not found" failure.
+  - Set all asset paths to relative (`./og-image.png`) in `index.html`. Fully verified on production build.
+
+---
+
+### 🎨 Phase M5: Procedural Atlas Synthesis Decomposition (`MockupAtlasGenerator.ts`)
+*Current size: ~1,616 lines. Target size: ~350-400 lines per theme generator.*
+- [ ] **Phase M5.1: Create Modular Atlas Theme Generators** (`src/canvas/atlas/`)
+  - `classicAtlasGenerator.ts`: Standard fantasy medieval pixel-art tiles and sprites.
+  - `cyberAtlasGenerator.ts`: Sci-fi neon cyber-grid terrain and mechanical entities.
+  - `forestAtlasGenerator.ts`: Lush verdant woodland tiles, flora, and beasts.
+  - `infernalAtlasGenerator.ts`: Volcanic obsidian, lava pools, and demon sprites.
+- [ ] **Phase M5.2: Streamline Master `MockupAtlasGenerator.ts`**
+  - Act as a lightweight dispatcher delegating to the selected theme generator.
+  - **Dev Outcome**: Adding a new visual theme (e.g. Desert, Celestial, Underworld) only requires adding a single isolated generator module.
+
+---
+
+### 💻 Phase M6: Declarative GM & Debug Command System (`gmCommands.ts`)
+*Current size: ~1,430 lines. Target size: Schema-driven modular command registry.*
+- [ ] **Phase M6.1: Command Registry Pattern** (`src/data/commands/`)
+  - `teleportCommands.ts`: Teleport to chunks, biomes, dungeons, towns.
+  - `spawnCommands.ts`: Spawn items, gold, bosses, enemies, NPCs.
+  - `environmentCommands.ts`: Set weather, time of day, seasons, chaos score.
+  - `characterCommands.ts`: God mode, level up, max stats, heal.
+- [ ] **Phase M6.2: Auto-Generated Command Auto-Complete & Help**
+  - Derive command descriptions, arguments, and suggestions directly from the registry.
+  - **Dev Outcome**: Adding testing tools for any new game mechanic takes ~10 lines of declarative code.
+
 
 
 

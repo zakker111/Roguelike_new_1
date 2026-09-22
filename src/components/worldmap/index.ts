@@ -7,3 +7,8 @@ export * from './WorldMapPinsList';
 export * from './CustomPinEditorModal';
 export * from './WorldMapModal';
 export * from './chunkTileRasterizer';
+export * from './useWorldMapViewport';
+export * from './worldMapTerrainRenderer';
+export * from './worldMapPinsRenderer';
+export * from './WorldMapPinsOverlay';
+export * from './WorldMapControls';

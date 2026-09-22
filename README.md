@@ -494,7 +494,7 @@ Maintain codebase health with our automated import and catalog scanner:
 # Run codebase import integrity check + TypeScript linter + Vitest suite
 npm run audit
 ```
-This checks all 464 source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 64 Vitest test suites (**402/402 tests passing 100% green**).
+This checks all 467 source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 66 Vitest test suites (**413/413 tests passing 100% green**).
 
 ---
 
@@ -503,7 +503,8 @@ This checks all 464 source files and 31 JSON data catalogs for broken relative i
 Abyss Rogue is configured for out-of-the-box deployment to **GitHub Pages** using automated GitHub Actions CI/CD.
 
 ### Features Configured for GitHub Launch:
-- **Automated CI/CD Workflow (`.github/workflows/deploy.yml`)**: Automatically validates JSON catalogs, tests imports, runs the full test suite, builds the production bundle, and deploys to GitHub Pages on every push to `main` or `master`.
+- **Resilient CI/CD Workflow (`.github/workflows/deploy.yml`)**: Automatically validates JSON catalogs, tests imports, runs the full test suite, builds the production bundle, and deploys to GitHub Pages on every push to `main` or `master`. Features an automated lockfile fallback (`npm ci || npm install`) ensuring seamless execution regardless of platform differences.
+- **Dedicated Lockfile (`package-lock.json`)**: Version-pinned lockfile committed in repository root for fast, deterministic, reproducible builds.
 - **Subpath & Custom Domain Compatibility**: Configured `base: './'` in `vite.config.ts` and relative paths in `public/manifest.json` and `index.html` so the game runs on `https://<username>.github.io/<repo>/` or any custom domain.
 - **SPA Fallback Routing (`public/404.html`)**: Prevents 404 errors on deep links or manual refreshes by redirecting back to the root application.
 - **Jekyll Disabled (`public/.nojekyll`)**: Bypasses GitHub Jekyll processing so all Vite asset files and underscored directories load smoothly.
@@ -514,7 +515,7 @@ Abyss Rogue is configured for out-of-the-box deployment to **GitHub Pages** usin
    ```bash
    git init
    git add .
-   git commit -m "feat: initial commit for Abyss Rogue v8.6.1"
+   git commit -m "feat: Abyss Rogue v8.8.2 release"
    git branch -M main
    git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY_NAME>.git
    git push -u origin main

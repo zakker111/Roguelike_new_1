@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TileType, Enemy, Trap, Chest, GameState, PlayerStats, GameLogMessage, WeaponBaseType, EnemyState, EnemyType, EquipmentItem, LootPile, NPC, OverworldChunk, Follower, DungeonProp, DungeonLevelState, GlyphScribingResult } from './types';
 import { generateLevel, spawnFollowersOnLevelLoadByReset, generateDungeonProps } from './utils/dungeon';
-import { computeFOV, bresenhamLine } from './utils/ai';
+import { computeFOV } from './utils/ai';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './utils/itemsData';
 import { playSound, getAudioSettings, toggleAudioMute } from './utils/audio';
 import { generateOverworldChunk, formatGameTime, setWorldSeed, getDeterministicTownName, hasTownAtChunk, prng, getCurrentWorldSeed, getOrganicBiome } from './utils/overworld';
@@ -27,7 +27,6 @@ import { useAppHotkeys } from './hooks/useAppHotkeys';
 import { useWorldEventHandlers } from './hooks/useWorldEventHandlers';
 import { useSaveLoad } from './hooks/useSaveLoad';
 import { usePlayerMovement } from './hooks/usePlayerMovement';
-import { useCombatEngine } from './hooks/useCombatEngine';
 import { useNpcInteraction } from './hooks/useNpcInteraction';
 import { usePoiAndWilderness } from './hooks/usePoiAndWilderness';
 import { usePlayerAttack } from './hooks/usePlayerAttack';
@@ -37,7 +36,6 @@ import { useTradeEconomy } from './hooks/useTradeEconomy';
 import { useQuestsAndGuild } from './hooks/useQuestsAndGuild';
 import { useCaravanTravel } from './hooks/useCaravanTravel';
 import { useTownServices } from './hooks/useTownServices';
-import { useGameLoop } from './hooks/useGameLoop';
 import { getSiegeCombatants } from './utils/siegeUtils';
 import { handleDecorInteraction } from './utils/decorEngine';
 import { StartScreen } from './components/screens/StartScreen';
@@ -71,9 +69,9 @@ import {
   useQuestAndGuildHandlers,
   useShrineAndChestHandlers,
   useConsumablesAndCatalysts,
-  useAutoplayAgent,
   useGKeyInteraction,
-  usePlayerTurnMovement,
+  useAppModalState,
+  useAppTurnCoordinator,
 } from './hooks/app';
 import { createNewGameRun } from './utils/gameStateFactory';
 import { exportAndDownloadGameLogs } from './utils/logExporter';
@@ -159,32 +157,35 @@ export default function App() {
 
   const activeMobileView = forceLayoutMode === 'mobile';
 
-  // Overlay states
-  const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
+  // Overlay & modal states managed by modular sub-hook
+  const modalState = useAppModalState();
+  const {
+    isAudioSettingsOpen, setIsAudioSettingsOpen,
+    isHelpOpen, setIsHelpOpen,
+    isWorldThreatOpen, setIsWorldThreatOpen,
+    isWorldMapOpen, setIsWorldMapOpen,
+    isGodPanelOpen, setIsGodPanelOpen,
+    isGmPanelOpen, setIsGmPanelOpen,
+    isSleepOpen, setIsSleepOpen,
+    isPerfHudOpen, setIsPerfHudOpen,
+    isBestiaryOpen, setIsBestiaryOpen,
+    isFishingOpen, setIsFishingOpen,
+    isLockpickingOpen, setIsLockpickingOpen,
+    isScriptoriumOpen, setIsScriptoriumOpen,
+    activeScriptoriumScrollTemplateId, setActiveScriptoriumScrollTemplateId,
+    isWeatherControlOpen, setIsWeatherControlOpen,
+    activeLockpickingChestIndex, setActiveLockpickingChestIndex,
+    unlawfulGuardTarget, setUnlawfulGuardTarget,
+    activePoi, setActivePoi,
+    activeDrunkNpc, setActiveDrunkNpc,
+    activeTravelerNpc, setActiveTravelerNpc,
+    activeDialogueNpc, setActiveDialogueNpc,
+    isAutoplayActive, setIsAutoplayActive,
+    activeRelicDraft, setActiveRelicDraft,
+    activeRecallScroll, setActiveRecallScroll,
+    activeTargetedScroll, setActiveTargetedScroll,
+  } = modalState;
   const [isMuted, setIsMuted] = useState(() => getAudioSettings().isAudioMuted);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [isWorldThreatOpen, setIsWorldThreatOpen] = useState(false);
-  const [isWorldMapOpen, setIsWorldMapOpen] = useState(false);
-  const [isGodPanelOpen, setIsGodPanelOpen] = useState(false);
-  const [isGmPanelOpen, setIsGmPanelOpen] = useState(false);
-  const [isSleepOpen, setIsSleepOpen] = useState(false);
-  const [isPerfHudOpen, setIsPerfHudOpen] = useState(() => performanceMonitor.isHudOpen());
-  const [isBestiaryOpen, setIsBestiaryOpen] = useState(false);
-  const [isFishingOpen, setIsFishingOpen] = useState(false);
-  const [isLockpickingOpen, setIsLockpickingOpen] = useState(false);
-  const [isScriptoriumOpen, setIsScriptoriumOpen] = useState(false);
-  const [activeScriptoriumScrollTemplateId, setActiveScriptoriumScrollTemplateId] = useState<string | null>(null);
-  const [isWeatherControlOpen, setIsWeatherControlOpen] = useState(false);
-  const [activeLockpickingChestIndex, setActiveLockpickingChestIndex] = useState<number | null>(null);
-  const [unlawfulGuardTarget, setUnlawfulGuardTarget] = useState<{ enemy: Enemy, index: number, pathPoints: any[] } | null>(null);
-  const [activePoi, setActivePoi] = useState<PoiType | null>(null);
-  const [activeDrunkNpc, setActiveDrunkNpc] = useState<NPC | null>(null);
-  const [activeTravelerNpc, setActiveTravelerNpc] = useState<NPC | null>(null);
-  const [activeDialogueNpc, setActiveDialogueNpc] = useState<NPC | null>(null);
-  const [isAutoplayActive, setIsAutoplayActive] = useState(false);
-  const [activeRelicDraft, setActiveRelicDraft] = useState<SanctumRelic[] | null>(null);
-  const [activeRecallScroll, setActiveRecallScroll] = useState<EquipmentItem | null>(null);
-  const [activeTargetedScroll, setActiveTargetedScroll] = useState<EquipmentItem | null>(null);
 
   // Core App Game State
   const [gameState, setGameState] = useState<GameState>(() => createNewGameRun(12345));
@@ -204,15 +205,6 @@ export default function App() {
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
-
-  // Cleanly handle player death to prevent React side-effect state update crashes
-  useEffect(() => {
-    if (isPlaying && !isGameOver && !isVictory && gameState.playerStats && gameState.playerStats.hp <= 0) {
-      playSound('defeat');
-      setIsGameOver(true);
-    }
-  }, [gameState.playerStats?.hp, isPlaying, isGameOver, isVictory]);
-
 
   // Hook for world background events, cat traits, and playthrough session snapshots
   const { allSessionLogsRef, allSessionStateSnapshotsRef, resetSession } = useWorldEventHandlers({
@@ -319,14 +311,6 @@ export default function App() {
       sessionSnapshots: allSessionStateSnapshotsRef.current,
     });
   };
-
-  // Real-time difficulty ticking game loop hook
-  useGameLoop({
-    isPlaying,
-    isGameOver,
-    isVictory,
-    setGameState,
-  });
 
   // Command logs helper
   const addLogMessage = (text: string, type: GameLogMessage['type'] = 'info') => {
@@ -590,21 +574,26 @@ export default function App() {
     gameConfig,
   });
 
-  const { makeMove } = usePlayerTurnMovement({
+  // Turn Coordinator: step sequencing, player movement, enemy AI turns, brace defense, autoplay, and tile clicks
+  const {
+    makeMove,
+    handleBraceDefense,
+    handleTileClick,
+    handleConfirmUnlawfulAttack,
+  } = useAppTurnCoordinator({
     isPlaying,
     isGameOver,
+    setIsGameOver,
     isVictory,
     gameState,
+    gameStateRef,
     setGameState,
     playSound,
     addLogMessage,
-    executeEnemiesTurn,
-    setIsGameOver,
+    hasEquippedTrait,
     setShakeTrigger,
     setActiveTab,
-    setActiveLockpickingChestIndex,
-    setIsLockpickingOpen,
-    setUnlawfulGuardTarget,
+    executeEnemiesTurn,
     handleOverworldStairsTransition,
     handleResourceHarvest,
     handleOpenDoor,
@@ -613,115 +602,10 @@ export default function App() {
     interactWithNpc,
     performPlayerAttack,
     handleOpenChest,
-    hasEquippedTrait,
+    interactWithFollower,
+    executeSpellScrollCast,
+    modalState,
   });
-
-
-  // Callback when a tile is clicked on GameCanvas (allows moving or shooting)
-  const handleTileClick = (tx: number, ty: number) => {
-    // Manhattan click offset distance
-    const dx = tx - gameState.playerX;
-    const dy = ty - gameState.playerY;
-
-    if (activeTargetedScroll) {
-      const template = SPELL_SCROLLS.find(t => activeTargetedScroll.id.includes(t.id));
-      const isMasterwork = activeTargetedScroll.isMasterwork || activeTargetedScroll.name?.includes('Masterwork');
-      const requiredMp = isMasterwork ? 0 : (template ? template.mpCost : 20);
-
-      if (gameState.playerStats.mp < requiredMp) {
-        addLogMessage(`❌ Insufficient Mana! You need at least ${requiredMp} MP to channel the scroll.`, 'system');
-        setActiveTargetedScroll(null);
-        return;
-      }
-
-      const success = executeSpellScrollCast(tx, ty, gameState, activeTargetedScroll, requiredMp);
-      if (success) {
-        executeEnemiesTurn(gameState.playerX, gameState.playerY);
-      }
-      return;
-    }
-
-    if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
-      // Normal adjacent standard move / strike
-      makeMove(dx, dy);
-    } else {
-      // Ranged active combat click
-      // e.g., if we hold a Staff, Spear or Bow, check if clicked coordinate intersects target range
-      const weapon = gameState.currentWeapon || STARTING_WEAPON;
-      const targetEnemyIdx = gameState.enemies.findIndex((e) => e.x === tx && e.y === ty);
-
-      if (targetEnemyIdx !== -1) {
-        const enemy = gameState.enemies[targetEnemyIdx];
-        const distance = Math.floor(Math.sqrt(dx ** 2 + dy ** 2));
-
-        if (distance <= weapon.range) {
-          // Direct Line of Sight blocks check
-          const bresenline = bresenhamLine(gameState.playerX, gameState.playerY, tx, ty);
-          let obscured = false;
-          
-          for (let i = 1; i < bresenline.length - 1; i++) {
-            const pt = bresenline[i];
-            const tile = gameState.map[pt.y][pt.x];
-            if (tile === TileType.Wall || tile === TileType.Door) {
-              obscured = true;
-              break;
-            }
-          }
-
-          if (!obscured) {
-            // If the target is a follower or companion, trigger friendly chat instead of attacking
-            if (enemy.isFollower || (enemy.isCaptive && enemy.isFreed)) {
-              interactWithFollower(enemy);
-              return;
-            }
-
-            // If the target is a town guard and they are not yet hostile, trigger prompt!
-            if (enemy.isTownGuard && !gameState.areGuardsHostile) {
-              setUnlawfulGuardTarget({ enemy, index: targetEnemyIdx, pathPoints: bresenline });
-              return;
-            }
-            // Shoot Ranged strike!
-            const acted = performPlayerAttack(enemy, targetEnemyIdx, bresenline);
-            if (acted) {
-              executeEnemiesTurn(gameState.playerX, gameState.playerY);
-            }
-          } else {
-            addLogMessage(`❌ Direct vision trajectory is obscured by wall barriers.`, 'system');
-          }
-        } else {
-          addLogMessage(`❌ Enemy resides outside this weapon's active assault reach (${weapon.range} tiles).`, 'system');
-        }
-      } else {
-        addLogMessage(`❌ Click Adjacent cells to walk. Distance is too great.`, 'system');
-      }
-    }
-  };
-
-  const handleConfirmUnlawfulAttack = () => {
-    if (!unlawfulGuardTarget) return;
-    const { enemy, index, pathPoints } = unlawfulGuardTarget;
-    setUnlawfulGuardTarget(null);
-
-    // Make town guards permanently hostile and log criminal offense
-    setGameState(prev => {
-      return {
-        ...prev,
-        areGuardsHostile: true,
-        logs: appendBoundedLogs(prev.logs, {
-          id: `unlawful_${Date.now()}`,
-          text: `⚖️ [CRIMINAL OFFENSE]: You have assaulted a peacekeeper of the crown! Town guards are now hostile!`,
-          type: 'danger' as const,
-          timestamp: formatGameTime(prev.gameTime).timeStr
-        }, 200)
-      };
-    });
-
-    // Execute the unlawful assault
-    const acted = performPlayerAttack(enemy, index, pathPoints);
-    if (acted) {
-      executeEnemiesTurn(gameState.playerX, gameState.playerY);
-    }
-  };
 
   const { handleGKeyInteract } = useGKeyInteraction({
     gameState,
@@ -736,24 +620,6 @@ export default function App() {
     setIsSleepOpen,
     interactWithNpc,
     handleInteractWithDungeonShrine,
-  });
-
-  const { handleBraceDefense } = useCombatEngine({
-    gameStateRef,
-    setGameState,
-    addLogMessage,
-    playSound,
-    makeMove,
-  });
-
-  useAutoplayAgent({
-    isAutoplayActive,
-    isPlaying,
-    isGameOver,
-    isVictory,
-    gameState,
-    setGameState,
-    makeMove,
   });
 
   // Global Hotkeys & Keyboard Controller Hook
@@ -1020,52 +886,7 @@ export default function App() {
       )}
       overlays={(
         <ModalRouter
-          isHelpOpen={isHelpOpen}
-          setIsHelpOpen={setIsHelpOpen}
-          isWorldThreatOpen={isWorldThreatOpen}
-          setIsWorldThreatOpen={setIsWorldThreatOpen}
-          isWorldMapOpen={isWorldMapOpen}
-          setIsWorldMapOpen={setIsWorldMapOpen}
-          isPerfHudOpen={isPerfHudOpen}
-          setIsPerfHudOpen={setIsPerfHudOpen}
-          isGodPanelOpen={isGodPanelOpen}
-          setIsGodPanelOpen={setIsGodPanelOpen}
-          isGmPanelOpen={isGmPanelOpen}
-          setIsGmPanelOpen={setIsGmPanelOpen}
-          isSleepOpen={isSleepOpen}
-          setIsSleepOpen={setIsSleepOpen}
-          isBestiaryOpen={isBestiaryOpen}
-          setIsBestiaryOpen={setIsBestiaryOpen}
-          isFishingOpen={isFishingOpen}
-          setIsFishingOpen={setIsFishingOpen}
-          isLockpickingOpen={isLockpickingOpen}
-          setIsLockpickingOpen={setIsLockpickingOpen}
-          isScriptoriumOpen={isScriptoriumOpen}
-          setIsScriptoriumOpen={setIsScriptoriumOpen}
-          activeScriptoriumScrollTemplateId={activeScriptoriumScrollTemplateId}
-          setActiveScriptoriumScrollTemplateId={setActiveScriptoriumScrollTemplateId}
-          handleScriptoriumSuccess={handleScriptoriumSuccess}
-          handleScriptoriumFailure={handleScriptoriumFailure}
-          onTriggerScriptorium={handleTriggerScriptorium}
-          activeLockpickingChestIndex={activeLockpickingChestIndex}
-          setActiveLockpickingChestIndex={setActiveLockpickingChestIndex}
-          activePoi={activePoi}
-          setActivePoi={setActivePoi}
-          activeDrunkNpc={activeDrunkNpc}
-          setActiveDrunkNpc={setActiveDrunkNpc}
-          activeTravelerNpc={activeTravelerNpc}
-          setActiveTravelerNpc={setActiveTravelerNpc}
-          activeDialogueNpc={activeDialogueNpc}
-          setActiveDialogueNpc={setActiveDialogueNpc}
-          onOpenNpcTrade={handleOpenNpcTrade}
-          unlawfulGuardTarget={unlawfulGuardTarget}
-          setUnlawfulGuardTarget={setUnlawfulGuardTarget}
-          activeRelicDraft={activeRelicDraft}
-          setActiveRelicDraft={setActiveRelicDraft}
-          activeRecallScroll={activeRecallScroll}
-          setActiveRecallScroll={setActiveRecallScroll}
-          isAutoplayActive={isAutoplayActive}
-          setIsAutoplayActive={setIsAutoplayActive}
+          {...modalState}
           gameState={gameState}
           setGameState={setGameState}
           addLogMessage={addLogMessage}
@@ -1089,8 +910,10 @@ export default function App() {
           handleResolveCaravanEncounterOption={handleResolveCaravanEncounterOption}
           handleAdvanceCaravanTravel={handleAdvanceCaravanTravel}
           handleCompleteCaravanTravel={handleCompleteCaravanTravel}
-          isAudioSettingsOpen={isAudioSettingsOpen}
-          setIsAudioSettingsOpen={setIsAudioSettingsOpen}
+          handleScriptoriumSuccess={handleScriptoriumSuccess}
+          handleScriptoriumFailure={handleScriptoriumFailure}
+          onTriggerScriptorium={handleTriggerScriptorium}
+          onOpenNpcTrade={handleOpenNpcTrade}
         />
       )}
     >

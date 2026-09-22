@@ -28,6 +28,7 @@ import {
   updateShieldDurability
 } from './combat';
 import { triggerSquadMoraleBreakOnLeaderDeath } from './ai/factionMorale';
+import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 
 export type { UsePlayerAttackParams };
 
@@ -543,24 +544,34 @@ export function usePlayerAttack({
           }
         }
 
+        if (restoredSkirmishOverworld) {
+          ChunkBackgroundCache.getInstance().invalidate();
+        }
+
         return {
           ...prev,
           ...(restoredSkirmishOverworld ? {
             map: restoredSkirmishOverworld.map,
+            levelWidth: restoredSkirmishOverworld.levelWidth || restoredSkirmishOverworld.map[0]?.length || 64,
+            levelHeight: restoredSkirmishOverworld.levelHeight || restoredSkirmishOverworld.map.length || 40,
             discovered: restoredSkirmishOverworld.discovered,
             visible: restoredSkirmishOverworld.visible,
             enemies: restoredSkirmishOverworld.enemies,
             dungeonProps: restoredSkirmishOverworld.dungeonProps,
+            corpses: restoredSkirmishOverworld.corpses || [],
+            bloodSplatters: restoredSkirmishOverworld.bloodSplatters || [],
+            lootPiles: restoredSkirmishOverworld.lootPiles || [],
             playerX: restoredSkirmishOverworld.playerX,
             playerY: restoredSkirmishOverworld.playerY,
             currentChunkX: restoredSkirmishOverworld.currentChunkX,
             currentChunkY: restoredSkirmishOverworld.currentChunkY,
-          } : {}),
+          } : {
+            enemies: nextEnemies,
+            lootPiles: nextLootPiles,
+            corpses: nextCorpses,
+            bloodSplatters: nextSplatters,
+          }),
           caravanTravel: nextCaravanTravel,
-          enemies: nextEnemies,
-          lootPiles: nextLootPiles,
-          corpses: nextCorpses,
-          bloodSplatters: nextSplatters,
           currentWeapon: nextWeapon,
           equippedShield: nextShield,
           townReputation: nextRep,

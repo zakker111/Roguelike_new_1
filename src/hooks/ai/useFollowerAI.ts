@@ -163,6 +163,8 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
 
   // Follower Movement Logic
   if (!attackedEnemy) {
+    const mapW = prev.map?.[0]?.length || LEVEL_WIDTH;
+    const mapH = prev.map?.length || LEVEL_HEIGHT;
     const distToPlayer = Math.abs(px - e.x) + Math.abs(py - e.y);
     let targetX = px;
     let targetY = py;
@@ -171,8 +173,8 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
       // Flee away from hostile enemy towards player's rear / safety
       const dirX = Math.sign(e.x - nearestTarget.x);
       const dirY = Math.sign(e.y - nearestTarget.y);
-      targetX = Math.max(0, Math.min(LEVEL_WIDTH - 1, e.x + (dirX !== 0 ? dirX * 3 : (px > e.x ? 2 : -2))));
-      targetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + (dirY !== 0 ? dirY * 3 : (py > e.y ? 2 : -2))));
+      targetX = Math.max(0, Math.min(mapW - 1, e.x + (dirX !== 0 ? dirX * 3 : (px > e.x ? 2 : -2))));
+      targetY = Math.max(0, Math.min(mapH - 1, e.y + (dirY !== 0 ? dirY * 3 : (py > e.y ? 2 : -2))));
 
       if (Math.random() < 0.25 && ((prev.visible[e.y]?.[e.x] ?? false) || (prev.visible[py]?.[px] ?? false))) {
         if (isCat) {
@@ -189,8 +191,8 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
           // Tactical Retreat: Back away from melee attackers to maintain optimal firing distance
           const dirX = Math.sign(e.x - nearestTarget.x);
           const dirY = Math.sign(e.y - nearestTarget.y);
-          targetX = Math.max(0, Math.min(LEVEL_WIDTH - 1, e.x + dirX * 2));
-          targetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + dirY * 2));
+          targetX = Math.max(0, Math.min(mapW - 1, e.x + dirX * 2));
+          targetY = Math.max(0, Math.min(mapH - 1, e.y + dirY * 2));
         } else {
           targetX = nearestTarget.x;
           targetY = nearestTarget.y;
@@ -211,7 +213,7 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
       for (const off of offsets) {
         const cx = px + off.dx;
         const cy = py + off.dy;
-        if (cx >= 0 && cx < LEVEL_WIDTH && cy >= 0 && cy < LEVEL_HEIGHT) {
+        if (cx >= 0 && cx < mapW && cy >= 0 && cy < mapH) {
           const tile = prev.map[cy]?.[cx];
           const isWalkable = isTileWalkableForEntity(tile, { canOpenDoors: true });
           if (isWalkable) {
