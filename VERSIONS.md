@@ -6,6 +6,255 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.12.0] — High-Clarity Combat Log & Tactical Feed Sub-Engine (October 4, 2026)
+*Decomposed the 569-line `GameLog.tsx` monolith into a high-clarity, modular sub-engine under `src/components/log/` following domain-native visual hierarchy and strict zero-pill discipline (Phase L1 & L2). Polished canvas floating combat text with anti-overlap radial drift, stagger offsets, and 9 distinct kinetic archetypes (Phase L3). Features unboxed category glowing pips (Crimson danger, Amber combat, Emerald healing, Amethyst story/lore, Gold loot/spoils, Teal crafting, Cyan system/weather), clean monospace turn and chrono timestamps (`T:84 · 14:15`), smart consecutive duplicate message stacking (`×4`), expandable post-combat encounter tally widget (damage dealt/taken/blocked, enemies slain, gold/materials looted), and one-click combat recap clipboard export. All 81 test suites (533 tests) passing 100% green.*
+
+- **1. Zero-Pill Unboxed Typography & Category Pips (`LogPipIndicator.tsx`, `LogMessageItem.tsx`)**:
+  - Unboxed glowing category indicator pips replacing noisy container chips.
+  - Turn number and chrono timestamp integration in clean monospace font (`T:42 · 14:22:05`).
+  - Animated duplicate badges grouping rapid consecutive combat lines (`×3`).
+  - Dynamic keyword highlighting for bracketed damage/heals, critical strikes, dodges, and dragon scales.
+  - Hover copy action button on every line for instantaneous debug/combat reporting.
+- **2. Post-Combat Encounter Recap & Tally Widget (`LogEncounterRecapBar.tsx`)**:
+  - `computeEncounterTally` scans recent combat logs for damage dealt, damage received, damage blocked by shield/bracing, defeated enemies, and looted gold/items.
+  - Expandable, sleek recap banner at the top of the combat feed with quick stat metrics.
+  - One-click "Copy Recap" button generating clean Markdown-formatted battle summaries.
+- **3. Canvas Floating Combat Text Polish & Anti-Overlap Stagger (`src/canvas/combatVfxEngine.ts`, `src/utils/combatFloaterDrift.ts`)**:
+  - Anti-overlap radial stagger calculation (`calculateDirectionalDrift` with `staggerIndex` tracking active nearby tile floaters): prevents numbers from superimposing during rapid multi-attacks and spell combos by fanning outward with vertical and angle jitter.
+  - 9 distinct kinetic archetypes:
+    - 💥 **Critical Strikes (`crit`)**: Parabolic gravity bounce with pop-in scale zoom (1.45x down to 1.0x) and radiant gold aura.
+    - 🩸 **Player Damage (`player_damage`)**: Crimson tremor horizontal vibration (`Math.sin` oscillation) with red shadow blur.
+    - 💨 **Dodges & Evades (`dodge`)**: Swift italic sky-blue diagonal slip.
+    - 🛡️ **Shield & Braced Blocks (`shield`)**: Metallic teal deflection pop with firm stance.
+    - 🔥 **Elemental Burning (`burning`)**: Flickering rising ember drift with horizontal wave oscillation.
+    - 🧪 **Elemental Poison (`poison`)**: Sluggish toxic emerald dripping descent.
+    - ⚡ **Elemental Shock (`shock`)**: Erratic high-frequency electrical jitter.
+    - 💚 **Healing (`heal`)**: Buoyant emerald upward ascent.
+    - 🔷 **Mana (`mana`)**: Astral blue upward drift.
+- **4. Modular Subcomponent Decomposition (`src/components/log/`)**:
+  - `LogHeaderBar.tsx`: Top bar coordinating branding, segmented category buttons, density toggle, sort order, and export.
+  - `LogFilterControls.tsx`: Tactical category buttons with live counts and search input.
+  - `LogMessageItem.tsx`: High-performance memoized row component.
+  - `LogPipIndicator.tsx`: Domain-native glowing pips and category resolution engine.
+  - `GameLog.tsx`: Streamlined from 569 lines down to ~270 lines.
+- **5. Comprehensive Unit Tests & Integrity (`src/tests/modularLogSubEngine.test.tsx`, `src/tests/combatFloaterDrift.test.ts`)**:
+  - 19 automated unit tests verifying category resolution, glowing pip titles, turn timestamp rendering, duplicate count stacking, search filtering, encounter tally calculations, empty state rendering, anti-overlap stagger offsets, and floater archetype physics.
+
+## [v8.11.0] — Modular Procedural Atlas Synthesis Sub-Engine (October 4, 2026)
+*Decomposed the 1,617-line atlas generator monolith into a clean, modular strategy pattern under `src/canvas/atlas/` (Phase M5). Extracted specialized procedural theme generators (`ClassicAtlasGenerator`, `ForestAtlasGenerator`, `InfernalAtlasGenerator`), decoupled sub-renderers for terrain autotiles, animated directional entity sheets, oversized multi-tile boss sprites, and equipment/items atlases. Reduced the master `MockupAtlasGenerator.ts` coordinator down to 117 lines and removed it from anti-monolith exemptions in `workflowIntegrityAndArchitecture.test.ts`. Verified with 80 test suites and 523 passing tests (100% green).*
+
+- **1. Modular Theme Generators & Strategy Pattern (`src/canvas/atlas/`)**:
+  - `IThemeAtlasGenerator` contract implemented by `ClassicAtlasGenerator`, `ForestAtlasGenerator`, and `InfernalAtlasGenerator`.
+  - Dynamic strategy resolution via `getThemeAtlasGenerator(theme)`.
+  - Adding new procedural themes (Desert, Celestial, Underworld) now requires only adding an isolated strategy class with zero changes to core rendering.
+- **2. Decoupled Sub-Renderers & Drawing Primitives**:
+  - `mainTilesetRenderer.ts`: 16x16 terrain tileset with Wang autotiling for walls, water, and roads, doors, portals, stairs, trees, furniture, and dungeon traps.
+  - `entityTilesetRenderer.ts`: 16x72 character, hero, guard, spider, wolf, fauna, companion, and monster directional animation sheets (16 frames across 4 cardinal directions).
+  - `bossTilesetRenderer.ts`: 512x512 oversized boss canvas (Abyssal Fire Dragon, Ancient Stone Titan Golem, Towering Arch-Demon).
+  - `itemsTilesetRenderer.ts`: 16x16 weapons, armors, potions, scrolls, and crafting catalysts.
+  - `themePalettes.ts` & `drawingPrimitives.ts`: Typed color registries with fallbacks and pixel-art drawing primitives.
+- **3. Anti-Monolith Compliance & Architecture Hardening**:
+  - Streamlined `MockupAtlasGenerator.ts` coordinator from 1,617 lines to 117 lines with 100% backwards-compatible API.
+  - Removed `MockupAtlasGenerator.ts` from anti-monolith exemptions in `workflowIntegrityAndArchitecture.test.ts`.
+- **4. Verification & Testing**:
+  - Dedicated unit test suite `src/tests/modularAtlasGenerators.test.ts` (9 tests passing).
+  - Overall engine test suite expanded to **80 test files / 523 passing tests** (100% green).
+
+## [v8.10.0] — Dynamic Turf Wars, Emergent Skirmishes & Faction Spoils (October 3, 2026)
+*Implemented Phase 5 of the Roguelike Engine Roadmap: Dynamic Turf Wars, Ambush Encounters, and Territory Rewards. Built the modular `src/world/skirmish/` sub-engine (`emergentSkirmishGenerator.ts`, `factionSpoils.ts`) generating 3 dynamic ambient battlefield encounters: Active Plaza Melees (Dawn Vanguard vs Orc Clan clash), High-Ground Crossbow Ambushes (range 4 snipers with concealed spike traps), and Base Siege Redoubts (palisade strongholds led by Warlord bosses). Wired squad morale breaks and territory War Chest unlocks upon boss defeat into `usePlayerAttack.ts` and introduced 5 exclusive Faction Spoils equipment items into `combatLoot.ts`. Fully verified with 79 test suites and 514 passing tests (100% green).*
+
+- **1. Emergent Skirmish State Generator (`src/world/skirmish/`)**:
+  - `active_plaza_melee`: Two rival squads (Dawn Vanguard Crusaders vs Orc Goreaxe Berserkers) actively engaged in battle at crossroads.
+  - `high_ground_ambush`: Outlaw sharpshooters perched on wooden watch platforms with range 4 crossbows and choke-point spike traps.
+  - `base_siege_redoubt`: Palisade-walled stockade garrison with gates, torches, campfires, and an Orc or Bandit Warlord boss (`warlord_boss_`) accompanied by linked sentries.
+- **2. Morale Break & Territory Chest Unlock Cascade**:
+  - Defeating a Warlord triggers squad morale panic (`triggerSquadMoraleBreakOnLeaderDeath`), scattering coins and causing minions to flee.
+  - Automatically unlocks the garrison's locked Faction War Chest within radius 15, broadcasting victory logs and celebratory floating text.
+- **3. Faction Spoils & Scavenging Loops (`factionSpoils.ts`)**:
+  - 5 authentic faction weapons and armors: *Goreaxe War Cleaver* (+18% crit, bleed), *Goreaxe Spiked Buckler* (+7 def, spike retaliation), *Outlaw Stalker Leather* (+12% crit evasion), *Syndicate Shadow Satchel* (+5 LCK, loot finding), and *Dawn Vanguard Crusader Plate* (+10 def).
+  - Warlord defeats in `combatLoot.ts` award these faction armaments onto battlefield loot piles.
+- **4. Verification & Testing**:
+  - Dedicated test suite `src/tests/emergentSkirmishesAndFactionSpoils.test.ts` (9 tests passing).
+  - Overall engine test suite expanded to **79 test files / 514 tests passing 100% green**.
+
+## [v8.9.9] — Automated Data Integrity & Architecture Guardian Suite (October 2, 2026)
+*Implemented a comprehensive developer workflow guardian suite (`src/tests/workflowIntegrityAndArchitecture.test.ts`) that programmatically verifies cross-catalog foreign key referential integrity across all 31 data registries, enforces strict anti-monolith architectural boundaries (max 999 lines for gameplay modules), and ensures game state serialization / migration resilience. Corrected catalog inconsistencies in `recipes.json` and `quests.json` identified by the guardian. Added the unified `npm run verify` workflow command for instant 5-second pre-commit auditing. Verified with 78 test suites and 505 passing tests.*
+
+- **1. Cross-Catalog Referential Integrity Guardian**:
+  - Enforces valid foreign key references between input materials/catalysts in `recipes.json`, `spellScrolls.json`, `tileRegistry.ts`, and `quests.json` against `materials.json` and `catalysts.json`.
+  - Fixed legacy typo references in `recipes.json` (`mat_raw_meat` -> `mat_prime_meat` for `glacial_frost_ribs` and `shadow_smoked_jerky`).
+  - Aligned wilderness traveler quest target items in `quests.json` to authoritative material catalog keys (`mat_forest_truffle`, `mat_thick_hide`, `mat_feybone`).
+- **2. Strict Anti-Monolith & Codebase Architecture Linter**:
+  - Automatically scans all TypeScript source files across `/src/components`, `/src/hooks`, `/src/world`, `/src/utils`, and `/src/canvas`.
+  - Ensures no engine component or hook exceeds the 999-line monolith threshold, permanently locking in our modular sub-engine architectural standard.
+- **3. Unified Developer Verification Command (`npm run verify`)**:
+  - Added `"verify"` npm script executing JSON catalog linting, codebase import/dead-code graph auditing, TypeScript type-checking, and the 11-test integrity guardian suite in a single fast pipeline.
+- **4. Test Suite Milestone**:
+  - Expanded test coverage to **78 test files / 505 total passing tests** (100% green).
+
+## [v8.9.8] — Modular POI & Landmark Sub-Engine (October 2, 2026)
+*Decomposed the landmark and wilderness interaction monolith (`src/hooks/usePoiAndWilderness.ts`, 817 lines) into a suite of dedicated sub-hooks under `src/hooks/poi/`. Isolates wilderness camping & nocturnal ambush calculations, wandering traveler moral crime and barter logic, landmark/shrine buffs and leveling progression, and leyline waystone fast travel and biome guardian trials. Reduced the central coordinator down to 85 lines. Verified with dedicated test suite `src/tests/poiWildernessModularSubEngine.test.tsx` (77 test suites, 494 total tests passing 100% green).*
+
+- **1. Modular Sub-Hooks Architecture (`src/hooks/poi/`)**:
+  - `useWildernessSleep.ts`: Campsite surroundings analysis, nocturnal ambush checks, rest interruption, exhaustion clearance, and shelter buffs.
+  - `useTravelerInteractions.ts`: Wandering herbalists/hunters/pilgrims, assault witness tracking, reputation penalties, quest failures, and drunk NPC boons.
+  - `useShrineAndPoiChoices.ts`: Landmark choices, status effect applications (Blessed, Shielded), XP level-up loops, and history chapter unlocks.
+  - `useWaystoneAndGuardian.ts`: Leyline waystone attunement, fast travel chunk transitions, and awakening ancient biome guardians.
+- **2. Slim Coordinator Facade (`src/hooks/usePoiAndWilderness.ts`)**:
+  - Reduced from 817 lines down to 85 lines, acting as a lightweight delegate with 100% backwards compatibility for `App.tsx`.
+- **3. Automated Vitest Verification (`src/tests/poiWildernessModularSubEngine.test.tsx`)**:
+  - 5 automated unit tests covering peaceful sleep, nocturnal ambush handling, shrine buffs, waystone teleportation, and coordinator integration.
+
+## [v8.9.7] — Mini-Game Monolith Decomposition (September 30, 2026)
+*Decomposed the two largest interactive mini-game monoliths—`ScriptoriumMiniGame.tsx` (1,076 lines) and `LockpickingMiniGame.tsx` (708 lines)—into cleanly decoupled, highly modular sub-engines under `src/components/minigames/scriptorium/` and `src/components/minigames/lockpicking/`. Extracted canvas visual renderers, high-performance animation physics loops, and scorecard grading modals while reducing the top-level files by over 1,340 combined lines. Verified with dedicated test suite `src/tests/minigamesModularDecomposition.test.tsx` (76 test suites, 489 total tests passing 100% green).*
+
+- **1. Scriptorium Mini-Game Sub-Engine (`src/components/minigames/scriptorium/`)**:
+  - `useScriptoriumLogic.ts`: Encapsulates multi-stage glyph progression, rhythm pace evaluation, dynamic leylines surges, and mathematical accuracy scoring.
+  - `RuneCanvasRenderer.tsx`: SVG slate renderer for glyph nodes, interactive pointer tracing conduits, and hyper-glow filters.
+  - `ScriptoriumScoreCard.tsx`: Masterwork qualification banner, mana cost reduction summary, accuracy metrics, and claim reward dialog.
+  - Reduced `ScriptoriumMiniGame.tsx` from 1,076 lines down to 240 lines.
+- **2. Lockpicking Mini-Game Sub-Engine (`src/components/minigames/lockpicking/`)**:
+  - `useLockpickingPhysics.ts`: 60 FPS requestAnimationFrame physics loop managing pick angle, sweet spot distance, pick durability stress, and lock snapping.
+  - `TumblerCanvasRenderer.tsx`: Dedicated hardware-accelerated renderer for cylinder dial, keyway pins, tension wrench, and pick needle.
+  - Reduced `LockpickingMiniGame.tsx` from 708 lines down to 198 lines.
+- **3. Automated Vitest Verification (`src/tests/minigamesModularDecomposition.test.tsx`)**:
+  - 5 automated unit tests verifying safe rendering, scoring card evaluation, and physics interaction.
+
+## [v8.9.6] — Declarative Resource Harvesting & Tile Registry Integration (September 30, 2026)
+*Integrated the resource harvesting engine (`src/utils/harvestEngine.ts`) with the authoritative master tile registry (`src/world/tileRegistry.ts`). Replaced hardcoded tile branching with declarative schema lookups (`isHarvestable`, `harvestTool`, `harvestYield`, `harvestReplacementTile`). Added primary and secondary resource yields across trees and metal veins, enabling automatic support for dynamically registered custom harvestable tiles via `registerCustomTile`. Verified with dedicated test suite `src/tests/harvestEngineRegistryIntegration.test.ts` (75 test suites, 484 total tests passing 100% green).*
+
+- **1. Declarative Tile Registry Harvesting Attributes (`src/world/tileRegistry.ts`)**:
+  - `TileHarvestYield` schema defining primary material IDs, counts, secondary material IDs, and display names.
+  - Added harvest yield declarations and replacement tile rules to `TileType.Tree`, `TileType.PineTree`, `TileType.BirchTree`, `TileType.CopperVein`, and `TileType.IronVein`.
+  - Added helper accessors: `isTileHarvestable`, `getTileHarvestTool`, `getTileHarvestYield`, and `getTileHarvestReplacement`.
+- **2. Decoupled Harvest Engine (`src/utils/harvestEngine.ts`)**:
+  - Eliminated hardcoded `tile === TileType.Tree` checks in favor of registry-driven tool and yield lookups.
+  - Dynamically registered custom tiles (e.g. Mithril Veins, Magic Trees) can now be harvested immediately without editing the engine.
+- **3. Automated Vitest Verification (`src/tests/harvestEngineRegistryIntegration.test.ts`)**:
+  - 4 automated unit tests verifying registry query helpers, rejection of non-harvestable obstacles, primary/secondary yield awarding, and dynamic runtime custom tile harvesting.
+
+## [v8.9.5] — De-Monolithization & Unified App Modal Router (September 30, 2026)
+*De-monolithized the application root (`src/App.tsx`) by extracting a unified modal and overlay coordinator (`src/components/modals/AppModalRouter.tsx`). Consolidates 20+ standalone modals, overlays, minigames, and system tools with clean grouping across tactical, world, social, and developer interfaces. Extracted global custom registry bootstrapping to `src/utils/customRegistryInit.ts` and location live-regeneration to `src/utils/locationRegenerator.ts`, trimming over 100 lines of complex state mutations and dead code from `App.tsx`. Verified with dedicated test suite `src/tests/appModalRouter.test.tsx` (74 test suites, 480 total tests passing 100% green).*
+
+- **1. Unified Modal & Overlay Router (`src/components/modals/AppModalRouter.tsx`)**:
+  - Encapsulates rendering and lifecycle routing for all modals and overlays: `HelpOverlay`, `RecallScrollOverlay`, `FollowerInspectOverlay`, `QuestBoardOverlay`, `GodPanelOverlay`, `GmPanelOverlay`, `SleepOverlay`, `BestiaryOverlay`, `FishingMiniGame`, `LockpickingMiniGame`, `ScriptoriumMiniGame`, `PoiInteractionOverlay`, `DrunkInteractionOverlay`, `TravelerInteractionOverlay`, `DialogueModal`, `UnlawfulAssaultModal`, `WorldThreatModal`, `WorldMapModal`, `SanctumRelicsDraftOverlay`, `PerformanceHud`, `CaravanActiveOverlay`, `AudioSettingsModal`.
+  - Seamlessly re-exported from `src/components/ModalRouter.tsx` to maintain 100% backwards compatibility with existing imports.
+- **2. Subsystem Extraction & Cleanup (`src/App.tsx`)**:
+  - `src/utils/customRegistryInit.ts`: Extracted global custom modding runtime initialization.
+  - `src/utils/locationRegenerator.ts`: Extracted overworld chunk and dungeon live-regeneration logic.
+  - Cleaned up obsolete trade/weapon variables and reduced `App.tsx` from 1,022 lines to 919 lines.
+- **3. Automated Vitest Verification (`src/tests/appModalRouter.test.tsx`)**:
+  - 6 comprehensive tests verifying clean render, modal isolation, and individual activation triggers.
+
+## [v8.9.4] — Unified Status Effects & Buffs Sub-Engine (September 29, 2026)
+*Architected a dedicated modular Status Effects Sub-Engine (`src/effects/statusEffectRegistry.ts` & `src/effects/statusEngine.ts`) establishing declarative data schemas, standardized buff/debuff definitions, duration refreshes, and stat modifier aggregations. Replaced brittle inline array mutations in step resolution and shrine interactions. Verified with dedicated test suite `src/tests/statusEffectsEngine.test.ts` (73 test suites, 474 total tests passing 100% green).*
+
+- **1. Master Status Effect Registry (`src/effects/statusEffectRegistry.ts`)**:
+  - Declarative `StatusEffectDefinition` schema with standard fields (`id`, `name`, `type`, `icon`, `color`, `description`, `defaultDuration`, `damagePerTurn`, `healPerTurn`, `statModifiers`, `preventsAction`).
+  - Standard catalog of core afflictions and blessings: `poison`, `bleeding`, `burning`, `frozen`, `stunned`, `weakened`, `blessed`, `shielded`, `regeneration`, `bloodlust`, `clarity`.
+- **2. Status Engine Helpers (`src/effects/statusEngine.ts`)**:
+  - `createActiveStatus`: Creates an active `PlayerEffect` populated from registry defaults.
+  - `applyStatusToList`: Safely adds or refreshes status without duplicate list entries.
+  - `removeStatusFromList` & `hasStatusInList`: Type-safe queries and removals.
+  - `aggregateStatusModifiers`: Calculates net ATK, DEF, CRIT, LCK, and SPEED modifiers across all active effects.
+- **3. Subsystem Integration**:
+  - Updated `src/hooks/usePoiAndWilderness.ts` and `src/hooks/app/movement/useStepResolver.ts` to use standardized engine helpers.
+- **4. Automated Vitest Verification (`src/tests/statusEffectsEngine.test.ts`)**:
+  - 7 comprehensive tests covering registry completeness, action prevention, status refreshes, and stat aggregations.
+
+## [v8.9.3] — Unified Master Tile Registry & 1-Step Tile Extensibility (September 29, 2026)
+*Consolidated the scattered tile system into a single authoritative Master Tile Registry (`src/world/tileRegistry.ts`). Eliminates hardcoded multi-file tile checks across AI pathfinding, raytracing line-of-sight, directional drop shadows, indoor acoustic shelters, and NPC spawning. Adding any new tile is now an effortless 1-step declarative object that automatically propagates across collisions, rendering, shadows, and spawning. Verified with dedicated test suite `src/tests/tileRegistry.test.ts` (72 test suites, 467 total tests passing 100% green).*
+
+- **1. Master Tile Registry (`src/world/tileRegistry.ts`)**:
+  - Declarative `TileDefinition` schema encapsulating default glyph, colors, movement obstacle flags, door opening hooks, vision occlusion, directional shadow casting (`wall`, `tree`, `prop`, `structure`), indoor shelter ratings, and light source emissions.
+  - Complete registration of all 36 core `TileType` values.
+  - Dynamic runtime registry (`registerCustomTile`) enabling modders and creators to register custom tiles on the fly.
+- **2. Subsystem Consolidation**:
+  - **AI Movement & Collision (`src/utils/ai.ts`)**: `isTileBlockedForEntity` and `isTileWalkableForEntity` now delegate directly to `isTileObstacle` / `isTileWalkable`.
+  - **Vision & Line of Sight (`src/utils/ai.ts`)**: `hasLineOfSight` and `computeFOV` / `castRay` now use `doesTileBlockVision`.
+  - **Directional Shadows (`src/canvas/shadowRenderer.ts`)**: `isShadowCastingTile` and shadow canopy classification now dynamically query `isTileShadowCaster` and `getTileShadowType`.
+  - **Acoustic Shelter (`src/utils/buildingAudio.ts`)**: `isPlayerIndoors` queries `isTileIndoor`.
+  - **NPC Spawning Safety (`src/world/overworldNpcSpawning.ts`)**: `isTileSafeForNpc` queries `isTileSafeForNpc`.
+  - **Canvas Renderer (`src/canvas/tileMapRenderer.ts`)**: Added fallback resolution to `resolveTileStyle` so any custom or newly added tile renders immediately without requiring code edits in the renderer.
+- **3. Automated Vitest Verification (`src/tests/tileRegistry.test.ts`)**:
+  - 18 comprehensive tests verifying enum completeness, obstacle traversal options (doors, water, beds), line of sight occlusion, shadow archetypes, indoor detection, NPC safety, and 1-step custom tile creation.
+
+## [v8.9.2] — Procedural Weather & Ambient Environmental Synthesizer (September 29, 2026)
+*Architected and deployed a dedicated WebAudio procedural soundscape sub-engine (`src/utils/audio/weatherSynthEngine.ts`) bringing dynamic, multi-layered acoustic realism to weather phenomena and subterranean environments without any external audio files. Features Paul Kellet 6-pole Pink Noise filtering, leaky integration Brown Noise synthesis, multi-layer rainfall with indoor timber roof patter, howling blizzard gales with resonant frequency sweeps, swirling desert sandstorms, damp ethereal fog drones, and procedural distant rolling thunderclaps with spatial stereo panning. Verified with dedicated test suite `src/tests/weatherAudioSynth.test.ts` (71 test suites, 449 total tests passing 100% green).*
+
+- **1. Multi-Flavor Organic Noise Synthesis (`src/utils/audio/weatherSynthEngine.ts`)**:
+  - `createPinkNoiseBuffer`: Paul Kellet 6-pole filter approximation (-3dB/octave) generating warm, natural organic noise for rain, foliage, and wind.
+  - `createBrownNoiseBuffer`: Leaky Brownian integration (-6dB/octave) generating deep subterranean bass and visceral thunder rumbling.
+- **2. Procedural Weather Soundscapes**:
+  - **Pouring Rain & Storms (`rainy`)**: Dual-layer pink noise with ground soil patter and modulated foliage splashes (0.25 Hz sine LFO); smoothly adapts to timber roof drumming when player steps indoors (`isIndoor`).
+  - **Blizzard & Winter Gales (`blizzard`)**: Pitch-swept resonant bandpass filter (sweeping 650Hz–1650Hz via LFO at Q=3.8), deep sub-bass frozen gale (110Hz lowpass), and crystalline ice particle hissing.
+  - **Swirling Sandstorms (`sandstorm`)**: Gritty dual-bandpass particulate friction (1400Hz & 2700Hz) modulated with a 1.3Hz tremolo LFO over warm desert dune drafts.
+  - **Gentle Snowfall (`snowy`)**: Crisp, peaceful winter hush with subtle 0.09Hz respiratory amplitude modulation.
+  - **Thick Ambient Fog (`foggy`)**: Damp lowpass silence paired with a subtle, eerie ethereal harmonic sine drone (110Hz A2).
+  - **Clear Skies & Wilderness Breeze (`clear`)**: Warm gentle pink noise filtered at 380Hz with ultra-slow natural swells (0.06Hz).
+  - **Subterranean Caverns (`dungeon`)**: Deep cavity hum (55Hz sine tone) and low subterranean earth rumble (90Hz lowpass brown noise).
+- **3. Procedural Distant Rolling Thunder (`playProceduralThunder`)**:
+  - Transient sharp lightning crack (bandpassed pink noise, 0.05s).
+  - Swept sub-bass boom (75Hz -> 28Hz sine sweep over 2.8s).
+  - Rolling reverberation tail (exponentially decaying lowpassed brown noise over 3.8s) with spatial stereo panning (-0.8 to +0.8).
+  - Automatic dynamic scheduling every 22-38 seconds during rainstorms outside or inside (muffled).
+- **4. Sound Catalog & Environmental Sound Expansion**:
+  - Added `thunder_rumble`, `wind_gust`, and `blizzard_howl` to `soundCatalog.json`, `soundCatalog.ts`, and `src/utils/audio/soundCatalog.ts`.
+- **5. Automated Vitest Verification (`src/tests/weatherAudioSynth.test.ts`)**:
+  - 16 new unit & integration tests covering noise buffer generation, multi-layer weather group construction, indoor roof attenuation, thunder generation, lifecycle stops, and sound catalog triggers.
+  - Codebase import audit, JSON validation, and production build pass with 0 errors.
+
+## [v8.9.1] — Player Idle Detection & Real-Time Threat Escalation Safeguard (September 29, 2026)
+*Resolved turn-based roguelike pacing defect where real-time chaos threat escalation (`⚠️ THE ATMOSPHERE HEAVENS GROWS HEAVIER - Chaos Threat has scaled! Monsters are reinforced!`) and game clock progression continued firing while the player was idle or AFK. Implemented multi-modal activity tracking (keyboard strokes, mouse/touch clicks, turn progress, and Event Bus activity) with a 30-second idle ceiling, freezing real-time threat increments and requiring turn progression before subsequent threat reinforcements can trigger. Verified with dedicated test suite `src/tests/useGameLoopIdle.test.ts`.*
+
+- **1. Multi-Modal Inactivity & Idle Detection (`src/hooks/useGameLoop.ts`)**:
+  - Implemented `DEFAULT_IDLE_TIMEOUT_MS = 30000` (configurable via `idleTimeoutMs` prop).
+  - Listens to global `keydown` and `pointerdown` events to reset idle timers.
+  - Subscribed to `gameEventBus.on('*')` to seamlessly reset idle status on any player combat, movement, spell, or item action.
+  - Detects `turnsPlayed` increments as active engagement.
+- **2. Turn Progression Enforcement for Chaos Scaling**:
+  - Requires `currentTurns > lastEscalationTurnsRef.current` in addition to real-time intervals before broadcasting `threat_escalation` logs or triggering trap alarm SFX.
+  - Completely eliminates AFK difficulty death spirals.
+- **3. Automated Test Coverage (`src/tests/useGameLoopIdle.test.ts`)**:
+  - Validates idle freezing, turn requirement gating, and event-bus wakeups (5 passing tests).
+
+## [v8.9.0] — Unified Event Bus & Hook Pipeline Sub-Engine (September 25, 2026)
+*Architected and deployed a modular, high-performance Unified Event Bus & Action Mutator Hook Pipeline under `/src/events/` for extreme modifiability and decoupled reactivity. Features priority-ordered event delivery, sandboxed error boundaries, wildcard event namespaces, composable middleware action pipelines (Damage, Movement, Loot, Spellcasting), declarative modding registry (`HookRegistry`), reactive Storyteller GM listener, and a live Sovereign Developer Inspector tab in the God Suite. Verified with 3 new Vitest test suites (428 total tests passing 100% green).*
+
+- **1. Priority-Ordered Event Bus (`src/events/core/EventBus.ts` & `src/events/types.ts`)**:
+  - Implemented `GameEventBusEngine` and `gameEventBus` singleton.
+  - Supports 6 priority tiers: `FIRST` (200), `HIGH` (100), `NORMAL` (0), `LOW` (-100), `LAST` (-200), and `MONITOR` (-1000).
+  - Sandboxed execution boundaries isolate subscriber exceptions to prevent faulty plugins from halting game logic.
+  - Wildcard prefix subscription matching (`combat:*`, `movement:*`, `*`).
+  - Circular recursion depth protection and rolling 50-event telemetry log.
+  - Built React subscription lifecycle hook `useGameEvent` with automatic cleanup on unmount.
+- **2. Composable Action Mutator Middleware Pipelines (`src/events/pipeline/`)**:
+  - Implemented generic waterfall middleware pipeline `HookPipeline` with early exit / cancellation support (`ctx.cancel(reason)`).
+  - Built standard action pipelines:
+    - `damagePipeline`: Intercepts `DamageContext` (crit multipliers, combo scaling, catalyst infusions, armor soaking, flat bonuses).
+    - `movementPipeline`: Intercepts `MovementContext` (terrain penalties, stamina drain, barrier blocks).
+    - `lootPipeline`: Intercepts `LootContext` (gold multipliers, luck attribute scaling, bonus drop tables).
+    - `spellPipeline`: Intercepts `SpellCastContext` (mana cost scaling, elemental empowerment, silence prevention).
+- **3. Core Engine Wiring & Combat Integration**:
+  - Integrated `executeDamagePipeline` into `src/hooks/combat/combatMath.ts`.
+  - Wired `combat:attack`, `combat:damage`, and `combat:kill` into `src/hooks/usePlayerAttack.ts`.
+  - Wired `movement:step` into `src/hooks/app/movement/useStepResolver.ts`.
+  - Wired `spell:cast` into `src/hooks/useSpellcasting.ts`.
+- **4. Reactive AI Game Master Storyteller (`src/utils/storyteller/storytellerEventListener.ts`)**:
+  - Attached event subscribers to `combat:kill`, `weather:changed`, and `chaos:surged` to reactively adapt narrative tension, boredom, and memories without polling.
+  - Initialized lifecycle listeners in `src/App.tsx`.
+- **5. Declarative Modding Registry (`src/events/registry/HookRegistry.ts`)**:
+  - Declarative API: `registerDamageHook`, `registerMovementHook`, `registerLootHook`, `registerSpellHook`, `registerEventListener`.
+  - Enables writing new relics, traits, or custom game mechanics in ~10 lines of declarative TypeScript.
+- **6. Sovereign Developer Event Bus Inspector UI (`src/components/god/GodEventInspectorTab.tsx`)**:
+  - Added "⚡ Event Bus" tab in Sovereign Developer Console (`GodPanelOverlay.tsx`).
+  - Features real-time throughput counter (events/sec, total dispatched), pipeline health & latency metrics, 50-event live stream with expandable JSON payloads, and an interactive test event dispatcher.
+- **7. Comprehensive Automated Test Coverage (69 test suites, 428 tests)**:
+  - Added `eventBus.test.ts` (priority sorting, wildcards, sandboxed errors, async dispatch, telemetry).
+  - Added `hookPipeline.test.ts` (action mutator pipelines, context mutation, early cancellation, dynamic mod registration).
+  - Added `engineEventsIntegration.test.ts` (Storyteller GM reactive adaptation, kill events, weather & chaos surges).
+  - Codebase audit, JSON validation, and production build passing 100% with 0 errors.
+
 ## [v8.8.2] — Caravan Skirmish State Restoration, Follower Clamping & CI Hardening (September 22, 2026)
 *Resolved state restoration defects during caravan journeys and tactical road battles. Enhanced `SavedOverworldSkirmishState` with level dimensions (`levelWidth`, `levelHeight`), corpses, blood splatters, and loot piles; fixed enemy list priority in `useEnemyAI` to prevent tactical entities from overwriting restored overworld actors; clamped follower AI to dynamic map dimensions; invalidated `ChunkBackgroundCache` across skirmish entry, retreat, victory, and arrival; and streamlined `.github/workflows/deploy.yml` with resilient `npm install`.*
 

@@ -218,21 +218,23 @@ export const AudioOscilloscopeStudio: React.FC<AudioOscilloscopeStudioProps> = (
         ctx.lineWidth = 2;
         ctx.beginPath();
 
-        const sliceWidth = width / waveBuffer.length;
-        let x = 0;
+        if (waveBuffer.length > 0) {
+          const sliceWidth = width / waveBuffer.length;
+          let x = 0;
 
-        for (let i = 0; i < waveBuffer.length; i++) {
-          const v = waveBuffer[i] / 128.0;
-          const y = (v * targetH) / 2;
+          for (let i = 0; i < waveBuffer.length; i++) {
+            const v = waveBuffer[i] / 128.0;
+            const y = (v * targetH) / 2;
 
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+            x += sliceWidth;
           }
-          x += sliceWidth;
+          ctx.stroke();
         }
-        ctx.stroke();
         ctx.shadowBlur = 0;
       }
 

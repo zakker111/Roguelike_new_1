@@ -51,6 +51,9 @@ export type SoundType =
   | 'equip'
   | 'tab_click'
   | 'potion_drink'
+  | 'thunder_rumble'
+  | 'wind_gust'
+  | 'blizzard_howl'
   | (string & {});
 
 export interface SoundMetadata {

@@ -29,6 +29,7 @@ import {
 } from './combat';
 import { triggerSquadMoraleBreakOnLeaderDeath } from './ai/factionMorale';
 import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
+import { gameEventBus } from '../events/core/EventBus';
 
 export type { UsePlayerAttackParams };
 
@@ -89,6 +90,15 @@ export function usePlayerAttack({
         thornsDmg
       } = hitCalc;
       let nextDebuffs = hitCalc.nextDebuffs;
+
+      // Emit combat:attack event across Event Bus
+      gameEventBus.emit('combat:attack', {
+        attackerId: 'player',
+        targetId: (enemy as any).id || String(enemy.name),
+        isPlayerAttacker: true,
+        rawDamage: finalDmg,
+        isCrit: rollCrit,
+      });
 
       if (isMagic) {
         playSound('spell');
@@ -299,6 +309,18 @@ export function usePlayerAttack({
           });
         }
 
+        // Emit combat:damage event
+        gameEventBus.emit('combat:damage', {
+          attackerId: 'player',
+          targetId: (enemy as any).id || String(enemy.name),
+          damage: finalDmg,
+          isCrit: rollCrit,
+          absorbedDamage: 0,
+          remainingTargetHp: Math.max(0, updatedEnemy.hp),
+          isCancelled: false,
+          cancel: () => {},
+        });
+
         if (updatedEnemy.hp <= 0) {
           const lootData = generateCombatLoot(prev, updatedEnemy, gameConfig);
           gainedXp = lootData.gainedXp;
@@ -309,6 +331,16 @@ export function usePlayerAttack({
           nextLootPiles.push(lootData.newLootPile);
           updatedLogs.push(...lootData.extraLogs);
           addLogMessage(lootData.killLog, 'loot');
+
+          // Emit combat:kill event
+          gameEventBus.emit('combat:kill', {
+            killerId: 'player',
+            victimId: (enemy as any).id || String(enemy.name),
+            victimName: enemy.name,
+            isVictimBoss: Boolean(enemy.isBoss),
+            xpAwarded: gainedXp,
+            goldAwarded: lootData.newLootPile?.gold || 0,
+          });
 
           const currentPrimaryIndexForSplice = nextEnemies.findIndex((e) => e.id === enemy.id);
           if (currentPrimaryIndexForSplice !== -1) {
@@ -394,6 +426,7 @@ export function usePlayerAttack({
         const currentRep = prev.townReputation !== undefined ? prev.townReputation : 100;
         let nextRep = currentRep;
         let nextGuardsHostile = prev.areGuardsHostile !== undefined ? prev.areGuardsHostile : false;
+        let nextChests = prev.chests;
 
         if (enemy.isTownGuard) {
           let decrease = 25;
@@ -504,6 +537,40 @@ export function usePlayerAttack({
               });
             });
           }
+
+          // Phase 5.3: Unlock Faction War Chests and Camp Caches upon Warlord / Boss Defeat
+          if (
+            updatedEnemy.isBoss ||
+            updatedEnemy.factionRank === 'warlord' ||
+            updatedEnemy.name.toLowerCase().includes('warlord') ||
+            updatedEnemy.name.toLowerCase().includes('chieftain')
+          ) {
+            let unlockedCount = 0;
+            nextChests = (prev.chests || []).map((chest) => {
+              if (chest.isLocked && !chest.isOpened) {
+                const dist = Math.hypot(chest.x - updatedEnemy.x, chest.y - updatedEnemy.y);
+                if (dist <= 15 || chest.id.includes(`_${prev.currentChunkX}_${prev.currentChunkY}`)) {
+                  unlockedCount++;
+                  return { ...chest, isLocked: false };
+                }
+              }
+              return chest;
+            });
+
+            if (unlockedCount > 0) {
+              updatedLogs.push({
+                id: `chest_unlocked_${Date.now()}`,
+                text: `🔓 [TERRITORY LIBERATED]: With the defeat of ${updatedEnemy.name}, the garrison's locked Faction War Chest clicks open! Collect your hard-earned spoils!`,
+                type: 'loot',
+                timestamp: formatGameTime(prev.gameTime).timeStr,
+              });
+              const ev = new CustomEvent('spawn-game-effect', {
+                detail: { x: updatedEnemy.x, y: updatedEnemy.y, text: '🔓 WAR CHEST UNLOCKED!', color: '#22c55e', type: 'heal' },
+              });
+              window.dispatchEvent(ev);
+              playSound('loot');
+            }
+          }
         }
 
         let nextCaravanTravel = prev.caravanTravel;
@@ -570,6 +637,7 @@ export function usePlayerAttack({
             lootPiles: nextLootPiles,
             corpses: nextCorpses,
             bloodSplatters: nextSplatters,
+            chests: nextChests,
           }),
           caravanTravel: nextCaravanTravel,
           currentWeapon: nextWeapon,

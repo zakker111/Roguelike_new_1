@@ -592,6 +592,7 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
                     {poi.type === 'watchtower' && '🏹'}
                     {poi.type === 'ruin' && '🏛️'}
                     {poi.type === 'camp' && '🏕️'}
+                    {(poi.type as string) === 'skirmish' && '⚔️'}
                   </span>
                   <div className="truncate">
                     <div className="font-bold text-slate-200 truncate text-[11px]">
@@ -605,6 +606,7 @@ export const WorldMapChunkTooltip: React.FC<WorldMapChunkTooltipProps> = ({
                       {poi.type === 'watchtower' && 'Wilderness Sentry Watchtower'}
                       {poi.type === 'ruin' && 'Forgotten Empire Ruins'}
                       {poi.type === 'camp' && 'Explorer Campfire'}
+                      {(poi.type as string) === 'skirmish' && 'Contested Skirmish Field'}
                     </div>
                   </div>
                 </div>

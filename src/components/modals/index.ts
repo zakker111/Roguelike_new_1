@@ -6,3 +6,4 @@ export * from './PoiChoiceModal';
 export * from './TradeModal';
 export * from './UnlawfulAssaultModal';
 export * from './WorldThreatModal';
+export * from './AppModalRouter';

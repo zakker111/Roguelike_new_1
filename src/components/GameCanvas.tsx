@@ -630,6 +630,9 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
     const handleAddEffect = (event: CustomEvent<{ x: number; y: number; text: string; type: 'dmg' | 'crit' | 'heal' | 'mana'; sourceX?: number; sourceY?: number }>) => {
       const { x, y, text, type, sourceX, sourceY } = event.detail;
 
+      const currentGS = gameStateRef.current;
+      const isPlayer = currentGS.playerX === x && currentGS.playerY === y;
+
       // Dispatch to modern unified combat VFX engine
       combatVfxEngine.dispatchEffect({
         x,
@@ -638,6 +641,7 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         sourceY,
         text,
         type,
+        isPlayerTarget: isPlayer,
         onImpactShake: (intensity) => {
           shakeRef.current.intensity = Math.max(shakeRef.current.intensity, intensity);
         },
@@ -645,8 +649,6 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
 
       // 💥 Handle CSS Shake for damage taking!
       if (type === 'dmg' || type === 'crit') {
-        const currentGS = gameStateRef.current;
-        const isPlayer = currentGS.playerX === x && currentGS.playerY === y;
         const enemy = currentGS.enemies.find(e => e.x === x && e.y === y);
 
         if (isPlayer) {

@@ -80,4 +80,5 @@ export type GodActiveTab =
   | 'npc_planner'
   | 'dungeon_editor'
   | 'modding_api'
-  | 'catalog_tuner';
+  | 'catalog_tuner'
+  | 'event_bus';

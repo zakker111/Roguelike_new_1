@@ -1,4 +1,5 @@
 import { TileType } from '../types';
+import { isTileShadowCaster, getTileShadowType } from '../world/tileRegistry';
 
 export interface ShadowParams {
   dx: number;
@@ -69,24 +70,7 @@ export function getDirectionalShadowParams(gameTime: number = 720, weather?: str
  * Checks whether a given tile type casts an environmental directional drop shadow.
  */
 export function isShadowCastingTile(tile: TileType): boolean {
-  return (
-    tile === TileType.Wall ||
-    tile === TileType.Tree ||
-    tile === TileType.PineTree ||
-    tile === TileType.BirchTree ||
-    tile === TileType.CopperVein ||
-    tile === TileType.IronVein ||
-    tile === TileType.WatchtowerWall ||
-    tile === TileType.WatchtowerSlit ||
-    tile === TileType.WatchtowerBarricade ||
-    tile === TileType.WatchtowerFlag ||
-    tile === TileType.DungeonEntrance ||
-    tile === TileType.TownGate ||
-    tile === TileType.Sign ||
-    tile === TileType.Bush ||
-    tile === TileType.Anvil ||
-    tile === TileType.Fireplace
-  );
+  return isTileShadowCaster(tile);
 }
 
 /**
@@ -103,8 +87,9 @@ export function renderTileDirectionalShadow(
   ctx.save();
   ctx.fillStyle = shadowParams.color;
 
-  const isTree = tile === TileType.Tree || tile === TileType.PineTree || tile === TileType.BirchTree;
-  const isWallOrStructure = tile === TileType.Wall || tile === TileType.WatchtowerWall || tile === TileType.CopperVein || tile === TileType.IronVein;
+  const shadowType = getTileShadowType(tile);
+  const isTree = shadowType === 'tree';
+  const isWallOrStructure = shadowType === 'wall';
 
   if (isTree) {
     // Tree canopy shadow: soft slanted oval extending in shadow direction

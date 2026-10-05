@@ -204,14 +204,15 @@ A dedicated, fully decoupled global Faction Sub-Engine paired with dynamic Ruine
 
 ---
 
-### ⚔️ Phase 5: Dynamic Turf Wars, Ambush Encounters & Territory Rewards
-- [ ] **Phase 5.1**: Emergent Skirmish State Generator
-  - Ambient battle scenes: Active Plazas Melee, High-Ground Crossbow Ambushes, and Base Sieges.
-- [ ] **Phase 5.2**: Morale Break & Retreat AI
-  - Slaying an Orc Warlord or Bandit Leader triggers morale panic in surviving grunts.
-- [ ] **Phase 5.3**: Faction Spoils & Scavenging Loops
-  - Faction gear drops (Orc Cleavers, Spiked Shields, Bandit Leather, Smuggler Satchels).
-  - Boss chests unlocked upon clearing faction camps.
+### ⚔️ Phase 5: Dynamic Turf Wars, Ambush Encounters & Territory Rewards (COMPLETED)
+- [x] **Phase 5.1**: Emergent Skirmish State Generator (`src/world/skirmish/emergentSkirmishGenerator.ts`)
+  - Ambient battle scenes: Active Plazas Melee (Dawn Vanguard vs Orc Clan clash), High-Ground Crossbow Ambushes (range 4 snipers + spike traps), and Base Sieges (fortified palisade redoubts with Warlord boss).
+- [x] **Phase 5.2**: Morale Break & Retreat AI (`src/hooks/ai/factionMorale.ts`)
+  - Slaying an Orc Warlord or Bandit Leader triggers squad morale panic, dropped scrap/coin piles, and retreat states in surviving minions.
+- [x] **Phase 5.3**: Faction Spoils & Scavenging Loops (`src/world/skirmish/factionSpoils.ts`)
+  - Exclusive faction gear drops: *Goreaxe War Cleaver*, *Goreaxe Spiked Buckler*, *Outlaw Stalker Leather*, *Syndicate Shadow Satchel*, and *Dawn Vanguard Crusader Plate*.
+  - Faction War Chests unlocked upon clearing garrisons and defeating warlords.
+  - Dedicated test suite `src/tests/emergentSkirmishesAndFactionSpoils.test.ts` (9 tests passing).
 
 ---
 
@@ -608,15 +609,17 @@ Eliminate remaining monolithic code files (>800-1,600 lines), establish pluggabl
 
 ---
 
-### 🎨 Phase M5: Procedural Atlas Synthesis Decomposition (`MockupAtlasGenerator.ts`)
-*Current size: ~1,616 lines. Target size: ~350-400 lines per theme generator.*
-- [ ] **Phase M5.1: Create Modular Atlas Theme Generators** (`src/canvas/atlas/`)
+### 🎨 Phase M5: Procedural Atlas Synthesis Decomposition (`MockupAtlasGenerator.ts`) (COMPLETED)
+*Decomposed the 1,617-line atlas generator monolith into modular theme generators and sub-renderers under `src/canvas/atlas/`. Master coordinator reduced to 117 lines.*
+- [x] **Phase M5.1: Create Modular Atlas Theme Generators** (`src/canvas/atlas/`)
   - `classicAtlasGenerator.ts`: Standard fantasy medieval pixel-art tiles and sprites.
-  - `cyberAtlasGenerator.ts`: Sci-fi neon cyber-grid terrain and mechanical entities.
   - `forestAtlasGenerator.ts`: Lush verdant woodland tiles, flora, and beasts.
   - `infernalAtlasGenerator.ts`: Volcanic obsidian, lava pools, and demon sprites.
-- [ ] **Phase M5.2: Streamline Master `MockupAtlasGenerator.ts`**
+  - Extracted modular renderers: `mainTilesetRenderer.ts`, `entityTilesetRenderer.ts`, `bossTilesetRenderer.ts`, `itemsTilesetRenderer.ts`, `themePalettes.ts`, and `drawingPrimitives.ts`.
+- [x] **Phase M5.2: Streamline Master `MockupAtlasGenerator.ts`**
   - Act as a lightweight dispatcher delegating to the selected theme generator.
+  - Removed `MockupAtlasGenerator.ts` from anti-monolith exemptions in `workflowIntegrityAndArchitecture.test.ts`.
+  - Added dedicated test suite `src/tests/modularAtlasGenerators.test.ts` (9 tests passing).
   - **Dev Outcome**: Adding a new visual theme (e.g. Desert, Celestial, Underworld) only requires adding a single isolated generator module.
 
 ---
@@ -632,10 +635,176 @@ Eliminate remaining monolithic code files (>800-1,600 lines), establish pluggabl
   - Derive command descriptions, arguments, and suggestions directly from the registry.
   - **Dev Outcome**: Adding testing tools for any new game mechanic takes ~10 lines of declarative code.
 
+---
 
+## ⚡ Unified Event Bus & Hook Pipeline Sub-Engine (Extreme Modifiability)
 
+### 🎯 Architecture Overview
+Transform the Roguelike Engine from tightly-coupled procedural calls into an event-driven, pipeline-extensible architecture. Systems, relics, mutations, traits, weather, status effects, and custom player/mod extensions can intercept, modify, cancel, or enrich actions (Combat, Movement, Spells, Loot, Turns, Chaos) without mutating core engine loops.
 
+---
 
+### 📋 Phases Breakdown
+
+#### Phase E1: Core Event Bus & Priority Subscription Engine (`src/events/core/`)
+- [x] **Phase E1.1: Event Types & Contracts Definition** (`src/events/types.ts`)
+  - Strongly-typed `GameEventType` enums / string unions:
+    - Combat: `COMBAT_BEFORE_ATTACK`, `COMBAT_ATTACK`, `COMBAT_DAMAGE`, `COMBAT_CRIT`, `COMBAT_KILL`, `COMBAT_DEATH`
+    - Movement: `MOVEMENT_BEFORE_STEP`, `MOVEMENT_STEP`, `MOVEMENT_TILE_ENTER`, `MOVEMENT_CHUNK_TRANSITION`
+    - Magic: `SPELL_BEFORE_CAST`, `SPELL_CAST`, `SPELL_RESOLVE`
+    - Inventory & Loot: `ITEM_USED`, `ITEM_EQUIPPED`, `ITEM_UNEQUIPPED`, `LOOT_DROPPED`, `LOOT_COLLECTED`
+    - World & Atmosphere: `WEATHER_CHANGED`, `TIME_CHANGED`, `CHAOS_SURGED`, `FACTION_REPUTATION_CHANGED`
+    - Lifecycle: `TURN_STARTED`, `TURN_COMPLETED`, `DUNGEON_ENTERED`, `DUNGEON_STAIRS_USED`
+  - Strongly-typed `GameEventPayloadMap` mapping event names to payloads.
+  - Event priority levels: `MONITOR`, `FIRST`, `HIGH`, `NORMAL`, `LOW`, `LAST`.
+  - Cancellable event pattern (`isCancelled`, `cancelReason`).
+- [x] **Phase E1.2: High-Performance Singleton & Scoped Event Bus** (`src/events/core/EventBus.ts`)
+  - Register callbacks: `on<T>()`, `once<T>()`, `off()`.
+  - Synchronous dispatch (`emit()`) with priority sorting and isolation error boundary (a failing subscriber won't crash the engine).
+  - Asynchronous dispatch (`emitAsync()`).
+  - Wildcard / prefix listeners (e.g. `combat:*`, `movement:*`).
+  - Circular dispatch protection and event depth guards.
+  - Rolling telemetry log (last 50 dispatched events, timestamp, duration, subscriber count) for debug inspection.
+- [x] **Phase E1.3: React Subscription Lifecycle Hooks** (`src/events/core/useGameEvent.ts`)
+  - `useGameEvent(eventType, handler, deps, priority)` with automatic unmount unsubscription.
+  - `useEventBus()` accessor hook.
+
+---
+
+#### Phase E2: Interceptor & Middleware Hook Pipeline (Action Mutators) (`src/events/pipeline/`)
+- [x] **Phase E2.1: Hook Pipeline Core Middleware Engine** (`src/events/pipeline/HookPipeline.ts` & `pipelineTypes.ts`)
+  - Composable interceptor pipeline (waterfall / onion pattern) where handlers can inspect and mutate an in-flight context.
+  - Early exit / cancellation support (`ctx.cancel(reason)`).
+  - Strongly typed contexts for each pipeline.
+- [x] **Phase E2.2: Standard Action Mutator Pipelines** (`src/events/pipeline/pipelines/`)
+  - `DamagePipeline`: Intercepts `DamageContext` (`attacker`, `target`, `baseDamage`, `damageType`, `catalystMultiplier`, `critMultiplier`, `armorMitigation`, `elementalModifiers`, `cancelled`, `cancelReason`, `combatLogNotes`).
+  - `MovementPipeline`: Intercepts `MovementContext` (`actor`, `from`, `to`, `terrainCost`, `stealthCheck`, `hazardsTriggered`, `staminaCost`, `blocked`, `blockReason`).
+  - `LootPipeline`: Intercepts `LootContext` (`sourceEntity`, `killerEntity`, `luckMultiplier`, `itemRolls`, `goldRoll`, `catalystDropChance`).
+  - `SpellCastPipeline`: Intercepts `SpellCastContext` (`caster`, `spellId`, `manaCost`, `cooldown`, `targetTile`, `empoweredModifiers`, `prevented`).
+
+---
+
+#### Phase E3: Engine Integration & Event Dispatch Wiring
+- [x] **Phase E3.1: Combat Pipeline & Event Integration**
+  - Integrated `DamagePipeline` and combat events into `src/hooks/combat/combatMath.ts` and `src/hooks/usePlayerAttack.ts`.
+  - Dispatches `combat:attack`, `combat:damage`, and `combat:kill` during encounters.
+- [x] **Phase E3.2: Movement Pipeline & Event Integration**
+  - Integrated `MovementPipeline` into `src/hooks/app/movement/useStepResolver.ts`.
+  - Dispatches `movement:step` across the Unified Event Bus.
+- [x] **Phase E3.3: Spellcasting & Turn Loop Integration**
+  - Wired `SpellCastPipeline` and events into `src/hooks/useSpellcasting.ts`.
+  - Dispatches `spell:cast` on arcane scroll casting.
+- [x] **Phase E3.4: Reactive Storyteller & Narrative Wiring**
+  - Wired Storyteller GM Engine (`src/utils/storyteller/storytellerEventListener.ts`) to listen for events reactively to drive tension, boredom, and reactions.
+
+---
+
+#### Phase E4: Declarative Modding & Hook Registry (`src/events/registry/`)
+- [x] **Phase E4.1: Dynamic Hook Registry Pattern** (`src/events/registry/HookRegistry.ts`)
+  - Declarative API: `registerDamageHook`, `registerMovementHook`, `registerLootHook`, `registerSpellHook`, `registerEventListener`.
+- [x] **Phase E4.2: Runtime Modding & Custom Extensibility**
+  - Exposed easy registration interface for custom items, traits, spells, and third-party scripts.
+
+---
+
+#### Phase E5: Developer Event Bus Inspector & Diagnostics UI
+- [x] **Phase E5.1: Real-time Event Inspector Component** (`src/components/god/GodEventInspectorTab.tsx`)
+  - Live throughput counter (events/sec, total dispatched).
+  - Recent event stream viewer (last 50 events) with expandable JSON payload viewer.
+  - Active subscriber table with priority, handler names, and hook registration counts.
+  - Test Dispatcher: UI console to emit test events with custom JSON payloads.
+- [x] **Phase E5.2: God Cheats Integration**
+  - Added "⚡ Event Bus" tab directly in Sovereign Developer Console (`GodPanelOverlay.tsx`).
+
+---
+
+#### Phase E6: Comprehensive Verification & Unit Tests
+- [x] **Phase E6.1: Dedicated Unit Test Suites** (`src/tests/eventBus.test.ts`, `src/tests/hookPipeline.test.ts`, `src/tests/engineEventsIntegration.test.ts`)
+  - Tested listener registration, priority ordering, async dispatch, wildcards, error isolation.
+  - Tested `DamagePipeline`, `MovementPipeline`, `LootPipeline`, and `SpellCastPipeline` mutations and cancellation.
+  - Tested React hook subscription and cleanup.
+- [x] **Phase E6.2: Full Codebase Audit & Compilation**
+  - Ran `npm test`, `npm run audit`, `npm run lint`, and `compile_applet`. All 69 test suites (428 tests) passing with 0 errors.
+
+---
+
+## 🏛️ Comprehensive Engine Architectural Refactoring Roadmap
+
+### 1. 🧪 Unified Status Effects & Buffs Sub-Engine (Completed)
+- [x] **1.1: Master Status Effect Registry (`src/effects/statusEffectRegistry.ts`)**
+  - Declarative definition schema (`StatusEffectDefinition`) with id, name, icon/glyph, color, category (`buff` | `debuff`), stack behavior, tick effects, stat modifiers, and narrative logs.
+  - Complete catalog of statuses (`poison`, `bleeding`, `burning`, `frozen`, `stunned`, `weakened`, `blessed`, `shielded`, `regeneration`, `bloodlust`, `clarity`).
+- [x] **1.2: Typed Entity Status Engine (`src/effects/statusEngine.ts`)**
+  - Modular helpers: `createActiveStatus`, `applyStatusToList`, `removeStatusFromList`, `hasStatusInList`, and `aggregateStatusModifiers`.
+  - Replaced manual array slicing and filtering across movement step resolution and shrine interactions.
+- [x] **1.3: Unit Tests & Verification (`src/tests/statusEffectsEngine.test.ts`)**
+  - 7 automated Vitest unit tests verifying registry integrity, action inhibition (`frozen`, `stunned`), status refresh/stacking, removal, and aggregated stat calculations.
+
+### 2. 🪟 App Overlay & Modal Router (`App.tsx` De-Monolithization) (Completed)
+- [x] **2.1: Extract `AppModalRouter.tsx` (`src/components/modals/AppModalRouter.tsx`)**
+  - Unified all modal and minigame overlay routing (`HelpOverlay`, `RecallScrollOverlay`, `FollowerInspectOverlay`, `QuestBoardOverlay`, `GodPanelOverlay`, `GmPanelOverlay`, `SleepOverlay`, `BestiaryOverlay`, `FishingMiniGame`, `LockpickingMiniGame`, `ScriptoriumMiniGame`, `PoiInteractionOverlay`, `DrunkInteractionOverlay`, `TravelerInteractionOverlay`, `DialogueModal`, `UnlawfulAssaultModal`, `WorldThreatModal`, `WorldMapModal`, `SanctumRelicsDraftOverlay`, `PerformanceHud`, `CaravanActiveOverlay`, `AudioSettingsModal`).
+  - Extracted global modding registry initialization to `src/utils/customRegistryInit.ts`.
+  - Extracted dynamic location live-regeneration to `src/utils/locationRegenerator.ts`.
+  - Cleaned up obsolete trade/weapon variables and reduced `App.tsx` from 1,022 lines down to 919 lines.
+- [x] **2.2: Automated Vitest Verification (`src/tests/appModalRouter.test.tsx`)**
+  - 6 unit tests verifying clean mount, overlay visibility triggers, and modal isolation.
+
+### 3. 🪓 Resource Harvesting Engine Integration (`harvestEngine.ts`) (Completed)
+- [x] **3.1: Connect `harvestEngine.ts` to `tileRegistry.ts`**
+  - Replaced hardcoded `TileType` branch logic in `src/utils/harvestEngine.ts` with declarative lookups: `isTileHarvestable`, `getTileHarvestTool`, `getTileHarvestYield`, and `getTileHarvestReplacement`.
+  - Added `TileHarvestYield` schema and populated harvest yields and replacement tiles across deciduous trees, pine trees, birch trees, copper veins, and iron veins in `src/world/tileRegistry.ts`.
+  - Enabled dynamic custom harvestable tile registration via `registerCustomTile` with zero engine code changes required.
+- [x] **3.2: Automated Vitest Verification (`src/tests/harvestEngineRegistryIntegration.test.ts`)**
+  - 4 automated unit tests verifying registry query helpers, rejection of non-harvestable obstacles, primary/secondary yield awarding, and dynamic runtime custom tile harvesting.
+
+### 4. 📜 Decomposition of Mini-Game Monoliths (Completed)
+- [x] **4.1: Refactor `ScriptoriumMiniGame.tsx` (1,076 lines -> 240 lines)**
+  - Extracted `useScriptoriumLogic.ts`, `RuneCanvasRenderer.tsx`, and `ScriptoriumScoreCard.tsx` under `src/components/minigames/scriptorium/`.
+- [x] **4.2: Refactor `LockpickingMiniGame.tsx` (708 lines -> 198 lines)**
+  - Extracted `useLockpickingPhysics.ts` and `TumblerCanvasRenderer.tsx` under `src/components/minigames/lockpicking/`.
+- [x] **4.3: Automated Vitest Verification (`src/tests/minigamesModularDecomposition.test.tsx`)**
+  - 5 automated unit tests verifying safe rendering, scoring card evaluation, and physics interaction.
+
+### 5. ⛩️ Modular POI & Landmark Engine (`usePoiAndWilderness.ts`) (Completed)
+- [x] **5.1: Decompose `usePoiAndWilderness.ts` (817 lines -> 85 lines)**
+  - Extracted modular sub-hooks under `src/hooks/poi/`:
+    - `useWildernessSleep.ts`: Campsite surroundings analysis, nocturnal ambush checks, rest interruption, exhaustion clearance, and shelter buffs.
+    - `useTravelerInteractions.ts`: Wandering herbalists/hunters/pilgrims, assault witness tracking, reputation penalties, quest failures, and drunk NPC boons.
+    - `useShrineAndPoiChoices.ts`: Landmark choices, status effect applications (Blessed, Shielded), XP level-up loops, and history chapter unlocks.
+    - `useWaystoneAndGuardian.ts`: Leyline waystone attunement, fast travel chunk transitions, and awakening ancient biome guardians.
+- [x] **5.2: Automated Vitest Verification (`src/tests/poiWildernessModularSubEngine.test.tsx`)**
+  - 5 automated unit tests covering peaceful sleep, nocturnal ambush handling, shrine buffs, waystone teleportation, and coordinator integration.
+
+---
+
+## 📜 Milestone: Enhanced Combat Log & Tactical Floaters (v8.12.0)
+
+### 🎯 Architecture Objective
+Transform the combat log and canvas floating text into a high-clarity, satisfying feedback system with domain-native visual hierarchy (zero-pill anti-slop design), color-coded category bullet pips, smart duplicate stacking, turn timestamps, post-combat encounter recaps, and anti-overlap floating combat text.
+
+### 📋 Phases Breakdown
+
+#### Phase L1: High-Clarity Visual Log Feed & Color-Coded Pips (`src/components/GameLog.tsx`, `src/components/log/`) (COMPLETED)
+- [x] **Phase L1.1: Category Bullet Pips & Unboxed Typography**
+  - Implement unboxed category pips: 🔴 Crimson (incoming damage/crits/danger), 🟠 Amber (outgoing attacks/hits), 🟢 Emerald (healing/recovery), 🟣 Amethyst (storyteller/lore/relics), 🟡 Gold (loot/spoils), 🔵 Cyan (weather/stances).
+  - Clean monospace turn and chrono timestamps (`T:84 · 14:15`).
+- [x] **Phase L1.2: Smart Duplicate Stacking & Animated Badges**
+  - Group consecutive identical messages with an animated count badge (`[x4]`) to prevent spam during rapid multi-attacks.
+- [x] **Phase L1.3: Modular Log Subcomponents Decomposition**
+  - Decomposed `GameLog.tsx` (~570 lines down to ~270 lines) into modular subcomponents under `src/components/log/`: `LogHeaderBar.tsx`, `LogMessageItem.tsx`, `LogFilterControls.tsx`, `LogPipIndicator.tsx`, and `types.ts`.
+
+#### Phase L2: Post-Combat Encounter Recap & Tally Widget (COMPLETED)
+- [x] **Phase L2.1: Dynamic Encounter Statistics Tally**
+  - Track per-encounter metrics: damage dealt, damage taken, enemies slain, gold/materials looted in `LogEncounterRecapBar.tsx`.
+  - Render an expandable, sleek encounter summary bar at the top of the combat feed.
+- [x] **Phase L2.2: One-Click Combat Recap Clipboard Export**
+  - Copy formatted battle recap to system clipboard for sharing and bug reporting.
+
+#### Phase L3: Canvas Floating Combat Text Polish (`src/canvas/combatVfxEngine.ts`) (COMPLETED)
+- [x] **Phase L3.1: Anti-Overlap Radial Drift & Stagger**
+  - Prevent floater overlap during rapid multi-attacks with horizontal jitter, vertical stagger, and velocity angle dispersal in `src/utils/combatFloaterDrift.ts` and `combatVfxEngine.ts`.
+- [x] **Phase L3.2: Categorized Floater Archetypes**
+  - Golden bouncing arcs for critical strikes, crimson tremor for player damage, gliding italic sky-blue for dodges, metallic teal for shields, and elemental ember drifts for burning/poison ticks with dynamic glowing shadows and typography scaling.
 
 
 

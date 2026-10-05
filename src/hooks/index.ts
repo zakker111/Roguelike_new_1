@@ -17,3 +17,5 @@ export * from './useTownServices';
 export * from './useTradeEconomy';
 export * from './useWorldEventHandlers';
 export * from './useWorldInteraction';
+export * from './usePoiAndWilderness';
+export * from './poi';

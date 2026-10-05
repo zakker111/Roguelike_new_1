@@ -1,4 +1,16 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { GameState, TileType, EquipmentItem, CraftedWeapon, isToolItem } from '../types';
+import {
+  getTileDefinition,
+  isTileHarvestable,
+  getTileHarvestTool,
+  getTileHarvestYield,
+  getTileHarvestReplacement
+} from '../world/tileRegistry';
 
 export interface HarvestResult {
   handled: boolean;
@@ -11,20 +23,23 @@ export interface HarvestResult {
   isBroken?: boolean;
 }
 
+/**
+ * Harvests a resource tile (tree, ore vein, etc.) from the game world based on declarative definitions
+ * registered in the authoritative tile registry.
+ */
 export function harvestWorldResource(
   tile: TileType,
   targetX: number,
   targetY: number,
   gameState: GameState
 ): HarvestResult {
-  const isTree = tile === TileType.Tree || tile === TileType.PineTree || tile === TileType.BirchTree;
-  const isOre = tile === TileType.CopperVein || tile === TileType.IronVein;
-
-  if (!isTree && !isOre) {
+  const tileDef = getTileDefinition(tile);
+  if (!tileDef || !tileDef.isHarvestable || !tileDef.harvestTool || tileDef.harvestTool === 'none') {
     return { handled: false, success: false };
   }
 
-  const toolType = isTree ? 'hatchet' : 'pickaxe';
+  const toolType = tileDef.harvestTool; // 'hatchet' | 'pickaxe'
+  const isTree = toolType === 'hatchet';
   let toolInfo: { location: 'right' | 'left' | 'inventory'; item: EquipmentItem | CraftedWeapon; index?: number } | null = null;
   let brokenToolFound: EquipmentItem | CraftedWeapon | null = null;
 
@@ -72,10 +87,8 @@ export function harvestWorldResource(
     }
   }
 
-  // Perform harvesting
-  const replacementTile = isTree
-    ? TileType.TreeStump
-    : (gameState.isOverworld ? TileType.Grass : TileType.Floor);
+  // Perform harvesting with declarative replacement tile
+  const replacementTile = getTileHarvestReplacement(tile, gameState.isOverworld);
 
   const nextMap = gameState.map.map((row, y) =>
     row.map((cell, x) => (x === targetX && y === targetY ? replacementTile : cell))
@@ -86,23 +99,24 @@ export function harvestWorldResource(
   const newDurability = Math.max(0, curDurability - 20);
   const isBroken = newDurability <= 0;
 
-  let resourceName = '';
-  let resId = '';
-
-  if (isTree) {
-    resId = tile === TileType.PineTree ? 'mat_pine_log' : (tile === TileType.BirchTree ? 'mat_birch_log' : 'mat_wood');
-    resourceName = tile === TileType.PineTree ? 'Aromatic Pine Log 🌲' : (tile === TileType.BirchTree ? 'Pale Birch Log 🌳' : 'Scrap Wood 🌲');
-  } else {
-    resId = tile === TileType.CopperVein ? 'mat_copper_ore' : 'mat_iron_ore';
-    resourceName = tile === TileType.CopperVein ? 'Raw Copper Ore ⛋' : 'Raw Iron Ore ⛋';
-  }
+  // Declarative yield resolution from tileRegistry
+  const yieldDef = tileDef.harvestYield || {
+    materialId: isTree ? 'mat_wood' : 'mat_copper_ore',
+    name: tileDef.name,
+    count: 1
+  };
+  const resId = yieldDef.materialId;
+  const count = yieldDef.count ?? 1;
+  const resourceName = yieldDef.name;
 
   const nextMats = {
     ...gameState.inventoryMaterials,
-    [resId]: (gameState.inventoryMaterials[resId] || 0) + 1
+    [resId]: (gameState.inventoryMaterials[resId] || 0) + count
   };
-  if (isTree) {
-    nextMats['mat_wood'] = (gameState.inventoryMaterials['mat_wood'] || 0) + 1;
+
+  if (yieldDef.secondaryMaterialId) {
+    const secCount = yieldDef.secondaryCount ?? 1;
+    nextMats[yieldDef.secondaryMaterialId] = (gameState.inventoryMaterials[yieldDef.secondaryMaterialId] || 0) + secCount;
   }
 
   const nextChunks = { ...gameState.overworldChunks };
@@ -168,9 +182,9 @@ export function harvestWorldResource(
     isBroken,
     soundToPlay: isBroken ? 'bump' : 'spell',
     logMessage: isBroken
-      ? `💥 TOOL BROKE: Your ${toolInfo.item.name} broke into pieces from wear and was destroyed! (+1 ${resourceName})`
+      ? `💥 TOOL BROKE: Your ${toolInfo.item.name} broke into pieces from wear and was destroyed! (+${count} ${resourceName})`
       : `${isTree ? '🪓' : '⛏️'} You harvested ${resourceName} using your ${toolInfo.item.name}! [Durability: ${newDurability}/${maxDurability}]`,
     logType: isBroken ? 'danger' : 'loot',
-    effectText: isBroken ? `💥 Tool Broke!` : `${isTree ? '🪓' : '⛏️'} +1 Harvest`
+    effectText: isBroken ? `💥 Tool Broke!` : `${isTree ? '🪓' : '⛏️'} +${count} Harvest`
   };
 }

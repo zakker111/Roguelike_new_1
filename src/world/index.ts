@@ -7,3 +7,4 @@ export * from './overworldStructures';
 export * from './poiGenerators';
 export * from './structureGenerators';
 export * from './organic';
+export * from './tileRegistry';

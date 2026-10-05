@@ -84,7 +84,7 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
 
   const saveScrollTemplate = () => {
     if (!spellId.trim() || !spellName.trim()) {
-      alert("Spell ID and Spell Display Name are required.");
+      triggerSuccessLog("⚠️ Warning: Spell ID and Spell Display Name are required.");
       return;
     }
 
@@ -138,7 +138,7 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
   const deleteScrollTemplate = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (SPELL_SCROLLS.length <= 1) {
-      alert("Cannot delete the last remaining spell scroll template.");
+      triggerSuccessLog("⚠️ Warning: Cannot delete the last remaining spell scroll template.");
       return;
     }
     const removed = SPELL_SCROLLS.splice(idx, 1)[0];

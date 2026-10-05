@@ -24,3 +24,4 @@ export * from './GodDungeonEditor';
 export * from './GodModdingTab';
 export * from './GodMinigamesTab';
 export * from './GodCatalogLiveTuner';
+export * from './GodEventInspectorTab';

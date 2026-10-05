@@ -29,7 +29,7 @@ export function useGodDesignerState(
   const [selectedPresetId, setSelectedPresetId] = useState<string>('tiny_shelter');
 
   const [structuresJsonText, setStructuresJsonText] = useState(() => {
-    const list = (window as any).customStructures || [
+    const list = (typeof window !== 'undefined' ? (window as any).customStructures : undefined) || [
       {
         id: 'combat_arena_custom',
         name: 'Custom Training Grounds',
@@ -51,7 +51,7 @@ export function useGodDesignerState(
         ]
       }
     ];
-    if (!(window as any).customStructures) {
+    if (typeof window !== 'undefined' && !(window as any).customStructures) {
       (window as any).customStructures = list;
     }
     return JSON.stringify(list, null, 2);

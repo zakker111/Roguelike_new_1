@@ -18,6 +18,7 @@ import {
   isLunarBlessingActive
 } from '../../utils/gameUtils';
 import { WEATHER_EFFECTS } from '../../utils/weatherEngine';
+import { executeDamagePipeline } from '../../events/pipeline/pipelines/damagePipeline';
 
 export interface CombatHitResult {
   isMagic: boolean;
@@ -298,7 +299,27 @@ export function calculatePlayerCombatHit(
     { archetype: enemy.archetype, def: effectiveArmor },
     rawDmg
   );
-  const finalDmg = archetypeAdj.damage;
+
+  // Unified Action Pipeline: Intercept and mutate damage via registered hooks/relics
+  const pipelineResult = executeDamagePipeline({
+    attackerId: 'player',
+    targetId: (enemy as any).id || String(enemy.name),
+    attackerName: 'Player',
+    targetName: enemy.name,
+    isPlayerAttacker: true,
+    baseDamage: archetypeAdj.damage,
+    damageType: isMagic ? 'arcane' : 'physical',
+    isCrit: rollCrit,
+    critMultiplier: critMult,
+    comboMultiplier: 1.0,
+    flavorNotes: archetypeAdj.logNote ? [archetypeAdj.logNote] : [],
+    metadata: {
+      critAlreadyApplied: true,
+      comboAlreadyApplied: true,
+    }
+  });
+
+  const finalDmg = pipelineResult.cancelled ? 0 : pipelineResult.finalDamage;
 
   let isPhased = false;
   if (enemy.affixes?.includes('phasing') && Math.random() < 0.25) {

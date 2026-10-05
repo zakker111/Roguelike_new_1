@@ -1,36 +1,6 @@
 import { TileType } from '../types';
-
-/**
- * Safety guard: ensure NO npcs spawn in walls or other solid/blocked tiles
- */
-export function isTileSafeForNpc(tile: TileType): boolean {
-  return (
-    tile !== TileType.Wall &&
-    tile !== TileType.Window &&
-    tile !== TileType.Tree &&
-    tile !== TileType.PineTree &&
-    tile !== TileType.BirchTree &&
-    tile !== TileType.CopperVein &&
-    tile !== TileType.IronVein &&
-    tile !== TileType.Water &&
-    tile !== TileType.Table &&
-    tile !== TileType.Campfire &&
-    tile !== TileType.Empty &&
-    tile !== TileType.WatchtowerWall &&
-    tile !== TileType.WatchtowerSlit &&
-    tile !== TileType.WatchtowerBarricade &&
-    tile !== TileType.WatchtowerFlag &&
-    tile !== TileType.Bed &&
-    tile !== TileType.Chair &&
-    tile !== TileType.Fireplace &&
-    tile !== TileType.Torch &&
-    tile !== TileType.Sign &&
-    tile !== TileType.DungeonEntrance &&
-    tile !== TileType.TownGate &&
-    tile !== TileType.Bush &&
-    tile !== TileType.Door
-  );
-}
+import { isTileSafeForNpc } from './tileRegistry';
+export { isTileSafeForNpc };
 
 /**
  * Find nearest walkable, open tile for NPC placement

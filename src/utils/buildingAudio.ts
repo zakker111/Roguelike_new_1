@@ -1,4 +1,5 @@
 import { TileType } from '../types/map';
+import { isTileIndoor } from '../world/tileRegistry';
 
 export interface IndoorCheckParams {
   isOverworld?: boolean;
@@ -27,17 +28,6 @@ export function isPlayerIndoors(params?: IndoorCheckParams): boolean {
   const currentTile = params.map[py]?.[px];
   if (!currentTile) return false;
 
-  // Interior floor & structure tiles carved inside buildings
-  return (
-    currentTile === TileType.Floor ||
-    currentTile === TileType.Bed ||
-    currentTile === TileType.Table ||
-    currentTile === TileType.Chair ||
-    currentTile === TileType.Anvil ||
-    currentTile === TileType.Fireplace ||
-    currentTile === TileType.StairsUp ||
-    currentTile === TileType.StairsDown ||
-    currentTile === TileType.Door ||
-    currentTile === TileType.WatchtowerDeck
-  );
+  // Interior floor & structure tiles evaluated via master tile registry
+  return isTileIndoor(currentTile);
 }

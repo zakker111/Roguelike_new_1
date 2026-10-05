@@ -2,12 +2,16 @@ import { useEffect, useRef, Dispatch, SetStateAction } from 'react';
 import { GameState, OverworldChunk, Enemy } from '../types';
 import { playSound } from '../utils/audio';
 import { getSiegeCombatants } from '../utils/siegeUtils';
+import { gameEventBus } from '../events/core/EventBus';
+
+export const DEFAULT_IDLE_TIMEOUT_MS = 30000; // 30 seconds of inactivity = idle
 
 export interface UseGameLoopProps {
   isPlaying: boolean;
   isGameOver: boolean;
   isVictory: boolean;
   setGameState: Dispatch<SetStateAction<GameState>>;
+  idleTimeoutMs?: number;
 }
 
 export const useGameLoop = ({
@@ -15,17 +19,60 @@ export const useGameLoop = ({
   isGameOver,
   isVictory,
   setGameState,
+  idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS,
 }: UseGameLoopProps) => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastActivityTimeRef = useRef<number>(Date.now());
+  const lastTurnsPlayedRef = useRef<number>(-1);
+  const lastEscalationTurnsRef = useRef<number>(0);
+
+  // Track user input activity across the window and event bus
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const recordActivity = () => {
+      lastActivityTimeRef.current = Date.now();
+    };
+
+    window.addEventListener('keydown', recordActivity, { passive: true });
+    window.addEventListener('pointerdown', recordActivity, { passive: true });
+
+    // Also reset idle timer on any player action dispatched across the Event Bus
+    const eventBusSub = gameEventBus.on('*', recordActivity);
+
+    return () => {
+      window.removeEventListener('keydown', recordActivity);
+      window.removeEventListener('pointerdown', recordActivity);
+      eventBusSub.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (isPlaying && !isGameOver && !isVictory) {
       timerRef.current = setInterval(() => {
+        const now = Date.now();
+        const isIdle = now - lastActivityTimeRef.current >= idleTimeoutMs;
+
+        // If player is idle, do not advance real-time seconds or trigger threat escalation
+        if (isIdle) {
+          return;
+        }
+
         setGameState((prev) => {
+          const currentTurns = prev.playerStats?.turnsPlayed || 0;
+
+          // If turns played advanced, record activity
+          if (lastTurnsPlayedRef.current !== -1 && currentTurns > lastTurnsPlayedRef.current) {
+            lastActivityTimeRef.current = now;
+          }
+          lastTurnsPlayedRef.current = currentTurns;
+
           const nextSec = prev.playerStats.realTimeSeconds + 1;
           
           let nextLogs = prev.logs;
-          if (nextSec % 120 === 0) {
+          // Only scale chaos threat if player is active AND has progressed turns since last escalation
+          if (nextSec % 120 === 0 && currentTurns > lastEscalationTurnsRef.current) {
+            lastEscalationTurnsRef.current = currentTurns;
             nextLogs = [...prev.logs, {
               id: `threat_escalation_${nextSec}`,
               text: `⚠️ THE ATMOSPHERE HEAVENS GROWS HEAVIER - Chaos Threat has scaled! Monsters are reinforced!`,

@@ -49,6 +49,15 @@ export function generateDungeonRooms(
     }
   }
 
+  // Ensure minimum room connectivity of at least 2 rooms
+  if (rooms.length < 2) {
+    const fallbackX = Math.max(2, width - 10);
+    const fallbackY = Math.max(2, height - 10);
+    const fallbackRoom: Room = { x: fallbackX, y: fallbackY, w: 6, h: 6, type: 'standard' };
+    rooms.push(fallbackRoom);
+    carveRoomOnMap(map, fallbackRoom);
+  }
+
   return rooms;
 }
 

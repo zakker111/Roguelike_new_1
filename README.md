@@ -494,7 +494,16 @@ Maintain codebase health with our automated import and catalog scanner:
 # Run codebase import integrity check + TypeScript linter + Vitest suite
 npm run audit
 ```
-This checks all 467 source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 66 Vitest test suites (**413/413 tests passing 100% green**).
+This checks all source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 69 Vitest test suites (**428/428 tests passing 100% green**), including the newly verified Unified Event Bus, Action Mutator Hook Pipelines, and Reactive Storyteller suites.
+
+---
+
+### ⚡ Unified Event Bus & Hook Pipeline Engine (Extreme Modifiability)
+Abyss Rogue features an extensible event-driven architecture (`/src/events/`) that decouples state resolution from audio, UI, narrative, and mod plugins:
+- **Priority-Ordered Event Bus (`EventBus.ts`)**: Supports synchronous & asynchronous typed dispatch with 6 priority tiers (`FIRST` to `MONITOR`), wildcard namespaces (`combat:*`), and safe error boundaries.
+- **Action Mutator Middleware Pipelines (`HookPipeline.ts`)**: Koa/Express-style waterfall pipelines (`damagePipeline`, `movementPipeline`, `lootPipeline`, `spellPipeline`) allowing relics, traits, weather, and custom mods to inspect, modify, or cancel actions in-flight.
+- **Declarative Hook Registry (`HookRegistry.ts`)**: Add custom mechanics, relics, or spells in ~10 lines of declarative TypeScript.
+- **Sovereign Event Bus Inspector**: Live telemetry counter, stream viewer, and interactive test dispatcher inside the Sovereign God Suite.
 
 ---
 
@@ -515,7 +524,7 @@ Abyss Rogue is configured for out-of-the-box deployment to **GitHub Pages** usin
    ```bash
    git init
    git add .
-   git commit -m "feat: Abyss Rogue v8.8.2 release"
+   git commit -m "feat: Abyss Rogue v8.9.8 release"
    git branch -M main
    git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY_NAME>.git
    git push -u origin main

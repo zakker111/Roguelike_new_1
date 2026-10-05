@@ -77,6 +77,30 @@ This document serves as the authoritative structural map and development ruleset
 
 ---
 
+### 3d. `/src/events/` — Unified Event Bus & Hook Pipeline Sub-Engine (Extreme Modifiability)
+- `src/events/types.ts`: Strongly typed event payloads (`combat:*`, `movement:*`, `spell:*`, `item:*`, `weather:*`, `chaos:*`, `turn:*`), priority tiers (`FIRST` to `MONITOR`), and cancellable event contracts.
+- `src/events/core/EventBus.ts`: High-performance singleton and scoped event engine with priority dispatch, error boundaries, wildcard subscriptions (`combat:*`), async emissions, and rolling telemetry log.
+- `src/events/core/useGameEvent.ts`: React subscription lifecycle hook with automated unmount cleanup and `useEventBus` accessor.
+- `src/events/pipeline/pipelineTypes.ts`: Domain context interfaces for Action Mutator pipelines (`DamageContext`, `MovementContext`, `LootContext`, `SpellCastContext`).
+- `src/events/pipeline/HookPipeline.ts`: Composable, priority-ordered synchronous middleware pipeline (Koa/Express onion pattern) with early exit cancellation.
+- `src/events/pipeline/pipelines/damagePipeline.ts`: Combat damage action mutator pipeline for relics, traits, catalysts, and weather.
+- `src/events/pipeline/pipelines/movementPipeline.ts`: Actor movement and traversal cost mutator pipeline.
+- `src/events/pipeline/pipelines/lootPipeline.ts`: Gold and drop roll multiplier pipeline.
+- `src/events/pipeline/pipelines/spellPipeline.ts`: Mana cost and spellcasting empowerment pipeline.
+- `src/events/registry/HookRegistry.ts`: Unified declarative modding registry (`registerDamageHook`, `registerMovementHook`, `registerEventListener`).
+- `src/components/god/GodEventInspectorTab.tsx`: Sovereign developer telemetry monitor, active pipeline hook inspector, and interactive sandbox event dispatcher.
+- `src/utils/storyteller/storytellerEventListener.ts`: Reactive Game Master adapter listening to combat, kills, weather, and chaos events.
+- `src/events/index.ts`: Event bus and pipeline barrel export.
+
+---
+
+### 3e. `/src/effects/` — Unified Status Effects & Buffs Sub-Engine
+- `src/effects/statusEffectRegistry.ts`: Authoritative Master Status Effect Registry with declarative definitions for buffs and debuffs (`poison`, `bleeding`, `burning`, `frozen`, `stunned`, `weakened`, `blessed`, `shielded`, `regeneration`, `bloodlust`, `clarity`), duration caps, tick handlers, and action inhibition flags.
+- `src/effects/statusEngine.ts`: Status engine helper library (`createActiveStatus`, `applyStatusToList`, `removeStatusFromList`, `hasStatusInList`, `aggregateStatusModifiers`).
+- `src/effects/index.ts`: Status effects sub-engine barrel export.
+
+---
+
 ### 4. `/src/canvas/` — 2D Grid & Graphics Rendering Engine
 - `src/canvas/types.ts` / `src/canvas/IGraphicsRenderer.ts`: Pluggable renderer interfaces (`IVisualRenderer`, `GraphicsVisualMode`, `TilesetSourceType`).
 - `src/canvas/HybridGraphicsEngine.ts`: Primary rendering coordinator (supports hot-swapping `Classic ASCII`, `Classic PNG Mockup`, `Classic Code Canvas`).
@@ -103,7 +127,8 @@ This document serves as the authoritative structural map and development ruleset
 - `src/canvas/entityInterpolationManager.ts`: Entity render position interpolation (lerp) with quadratic tweening.
 - `src/canvas/cameraController.ts`: Smooth player-centered camera tracking and screen-shake decay.
 - `src/canvas/AssetPreloader.ts`: Sprite preloading, in-memory canvas registration, and bitmap caching.
-- `src/canvas/MockupAtlasGenerator.ts`: Procedural pixel-art atlas synthesis engine (Classic, Cyber, Forest, Infernal; 16–128px; 4 generated sheets).
+- `src/canvas/atlas/`: Modular Procedural Atlas Synthesis Sub-Engine (`classicAtlasGenerator`, `forestAtlasGenerator`, `infernalAtlasGenerator`, `mainTilesetRenderer`, `entityTilesetRenderer`, `bossTilesetRenderer`, `itemsTilesetRenderer`, `themePalettes`, `drawingPrimitives`, `types`, `index.ts`).
+- `src/canvas/MockupAtlasGenerator.ts`: Master procedural pixel-art atlas coordinator (Classic, Forest, Infernal; 16–128px; 4 generated sheets).
 - `src/canvas/index.ts`: Graphics engine barrel export.
 
 ---
@@ -152,7 +177,9 @@ This document serves as the authoritative structural map and development ruleset
   - `index.ts`: Modular AI engine barrel export.
 - `src/hooks/useCraftingEngine.ts`: Central crafting dispatcher (`useEquipmentCrafting`, `useSurvivalCrafting`, `useUtilityCrafting`).
 - `src/hooks/useCaravanTravel.ts` / `src/hooks/useTradeEconomy.ts`: Merchant caravan routes, fast travel, and regional trade tariffs.
-- `src/hooks/usePoiAndWilderness.ts` / `src/hooks/useOverworldEvents.ts`: Shrines, bushes, ruins, dungeons, and world events.
+- `src/hooks/poi/`: Modular POI & Landmark Interaction Sub-Engine (`useWildernessSleep`, `useTravelerInteractions`, `useShrineAndPoiChoices`, `useWaystoneAndGuardian`, `types.ts`, `index.ts`).
+- `src/hooks/usePoiAndWilderness.ts`: Facade re-exporting and coordinating the modular POI sub-engine.
+- `src/hooks/useOverworldEvents.ts`: Shrines, bushes, ruins, dungeons, and world events.
 - `src/hooks/useQuestsAndGuild.ts` / `src/hooks/useTownServices.ts`: Guild mission tracking, inn resting, and town services.
 - `src/hooks/useNpcInteraction.ts`: Conversational branching, trading, and companion hiring.
 - `src/hooks/useSaveLoad.ts`: LocalStorage and cloud save game state serializer/deserializer.
@@ -204,6 +231,7 @@ This document serves as the authoritative structural map and development ruleset
   - `index.ts`: Organic world sub-engine barrel export.
 - `src/world/overworldStructures.ts` / `src/world/structureGenerators.ts`: Towns, houses, castles, and taverns.
 - `src/world/overworldNpcSpawning.ts`: Townspeople, guards, merchants, and roaming fauna.
+- `src/world/tileRegistry.ts`: Authoritative Master Tile Registry, declarative `TileDefinition` schema, and 1-step dynamic tile registration.
 - `src/world/caravanSkirmishGen.ts`: Dedicated 24×18 tactical skirmish road battle generator for caravan ambushes.
 - `src/utils/overworld/overworldChunkGen.ts`: Dynamic streaming chunk generator for the infinite world.
 - `src/utils/overworld/asyncChunkBatcher.ts`: Asynchronous chunk streaming and time-sliced background pre-generation.
@@ -228,7 +256,7 @@ This document serves as the authoritative structural map and development ruleset
 - `src/utils/audio/`: Modular WebAudio Synthesizer Sub-Engine:
   - `types.ts` / `voiceManager.ts`: 8-voice concurrency cap, 4-tier priority classification, and node graph recycling.
   - `synthEngine.ts` / `spatialAudio.ts`: Oscillators, ADSR envelopes, filters, and 2D spatial panning.
-  - `ambientSoundscapes.ts` / `soundCatalog.ts`: Continuous environmental audio layers and procedural SFX definitions.
+  - `ambientSoundscapes.ts` / `weatherSynthEngine.ts` / `soundCatalog.ts`: Continuous environmental audio layers, multi-layer weather soundscapes (pink/brown noise, howling blizzards, desert sandstorms, procedural thunderclaps), and procedural SFX definitions.
   - `acousticOcclusion.ts`: Bresenham obstacle raycasting, behind-door lowpass muffling, transmission volume absorption, and cavity resonance.
   - `index.ts`: Audio engine barrel export.
 - `src/utils/buildingAudio.ts`: Indoor detection and acoustic sound dampening.
@@ -238,7 +266,7 @@ This document serves as the authoritative structural map and development ruleset
 - `src/utils/npcDialogue.ts` / `src/utils/companionAdvice.ts`: NPC dialogue trees and companion advisory quips.
 - `src/utils/decorEngine.ts` / `src/utils/structurePlacer.ts`: Housing tile placement and decor furniture system.
 - `src/utils/moddingEngine.ts`: Runtime custom item, spell, and enemy modding engine.
-- `src/utils/harvestEngine.ts`: Resource harvesting engine enforcing tool requirements and durability checks.
+- `src/utils/harvestEngine.ts`: Declarative resource harvesting engine coupled to `tileRegistry.ts` (`harvestYield`, `harvestTool`, `harvestReplacementTile`) enforcing tool requirements and durability checks.
 - `src/utils/gameStateFactory.ts`: Initial game state and faction territory bootstrap factory.
 - `src/utils/spatial/`: Bit-packed `(y << 16) | (x & 0xFFFF)` 2D spatial hash grid supporting $O(1)$ lookups.
 - `src/utils/overworld/chunkMemoryManager.ts`: Active chunk windowing manager with lossless RLE compression (25-chunk cap).
@@ -255,7 +283,15 @@ This document serves as the authoritative structural map and development ruleset
 - `src/components/AppHeaderBar.tsx`: Game title, turn counter, gold, biome indicator, time of day, and main menu buttons.
 - `src/components/AppNavigationTabs.tsx`: Tab navigation for Inventory, Crafting, Guild, Bestiary, Relics, and God Mode.
 - `src/components/GameCanvas.tsx`: Canvas wrapper handling resize observation, touch/mouse drag, and rendering loop.
-- `src/components/GameLog.tsx`: Real-time combat, story, and world interaction event log with 6 tactical category filters.
+- `src/components/GameLog.tsx`: Real-time combat, story, and world interaction event log coordinator with unboxed pips, turn timestamps, and smart duplicate stacking.
+- `src/components/log/`: Modular Game Log Sub-Engine:
+  - `types.ts`: Log filter categories, encounter tallies, collapsed log entries, and pip categories.
+  - `LogPipIndicator.tsx`: Unboxed category glowing pips (danger crimson, combat amber, heal emerald, story amethyst, loot gold, craft teal, system cyan).
+  - `LogMessageItem.tsx`: Unboxed message renderer with turn & chrono timestamps, duplicate stacking badges (`×4`), keyword highlights, and clipboard copy.
+  - `LogFilterControls.tsx`: Tactical category filter segmented buttons with live counts and search input.
+  - `LogHeaderBar.tsx`: Top bar coordinating branding, filters, density toggle (Compact/Spaced), sort order, and export/clear actions.
+  - `LogEncounterRecapBar.tsx`: Post-combat encounter statistics tally (damage dealt/taken/blocked, slain enemies, looted gold/items) with one-click export.
+  - `index.ts`: Log sub-engine barrel export.
 - `src/components/UnifiedInventoryPanel.tsx`: Composer coordinating modular inventory sub-components.
 - `src/components/inventory/`: Modular Inventory Sub-Engine:
   - `types.ts`: Inventory interfaces and rarity analyzer utilities.
@@ -318,11 +354,15 @@ This document serves as the authoritative structural map and development ruleset
   - `index.ts`: World map barrel export.
 - `src/components/god/`: 27 God Mode developer tools (`TilesetTesterTab`, `GodCatalogLiveTuner`, `GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
 - `src/components/modals/`: Dialogue modals, town shops, bed resting, caravan battles, and fishing/lockpicking minigames:
+  - `AppModalRouter.tsx`: Top-level unified modal and overlay coordinator managing all 20+ overlays outside `App.tsx`.
   - `TradeModal.tsx`: Slim master coordinator component.
   - `src/components/modals/trade/`: Modular Trade Sub-Engine (`TradeHeaderBar`, `CaravanRoutesWidget`, `BlacksmithRepairStation`, `ApothecaryStation`, `TavernServiceStation`, `TradeBuyStockGrid`, `TradeSellStashGrid`, `types.ts`, `index.ts`).
   - `DialogueModal.tsx`: NPC conversation trees and tavern gossip.
   - `CaravanActiveOverlay.tsx`: Caravan journey progress and wagon combat.
   - `DiscardItemModal.tsx`: Item discard and ground drop gump.
+- `src/components/minigames/`: Modular interactive tactical mini-game sub-engines:
+  - `src/components/minigames/scriptorium/`: Arcane Scriptorium sub-engine (`useScriptoriumLogic`, `RuneCanvasRenderer`, `ScriptoriumScoreCard`, `types.ts`, `index.ts`).
+  - `src/components/minigames/lockpicking/`: Lock tumbler sub-engine (`useLockpickingPhysics`, `TumblerCanvasRenderer`, `types.ts`, `index.ts`).
 - `src/components/PerformanceHud.tsx`: Real-Time Performance & Resource HUD with live FPS graph, memory meters, voice monitor, entity distribution gauges, viewport resolution, and position cycling.
 
 ---

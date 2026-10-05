@@ -17,7 +17,8 @@ export const MAX_GAME_LOGS = 200;
 export function createGameLogMessage(
   text: string,
   type: GameLogMessage['type'] = 'info',
-  timestampOverride?: string
+  timestampOverride?: string,
+  turn?: number
 ): GameLogMessage {
   return {
     id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -26,6 +27,7 @@ export function createGameLogMessage(
     timestamp:
       timestampOverride ||
       new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    ...(turn !== undefined ? { turn } : {}),
   };
 }
 

@@ -445,7 +445,7 @@ export function spawnDungeonStandardEnemies(
 ): Enemy[] {
   const enemies: Enemy[] = [...existingEnemies];
   let enemyId = 0;
-  const roomsForChests = rooms.slice(1);
+  const roomsForChests = rooms.length > 1 ? rooms.slice(1) : rooms;
 
   roomsForChests.forEach((room) => {
     const spawnCount = Math.floor(Math.random() * 2) + 1 + (depth > 4 ? 1 : 0);

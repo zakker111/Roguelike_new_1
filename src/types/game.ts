@@ -13,6 +13,7 @@ export interface GameLogMessage {
   text: string;
   type: 'combat' | 'loot' | 'trap' | 'craft' | 'system' | 'info' | 'danger' | 'quest' | 'event' | string;
   timestamp: string;
+  turn?: number;
 }
 
 export interface Quest {

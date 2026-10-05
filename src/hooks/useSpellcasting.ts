@@ -9,6 +9,7 @@ import { formatGameTime } from '../utils/overworld';
 import { hasLineOfSight } from '../utils/ai';
 import { calculateArchetypeDamageAdjustment, checkBossPhaseEnrage } from '../utils/combatArchetypes';
 import { igniteTile, freezeWaterAt, electrifyConnectedWater, spawnPoisonGasAt } from '../utils/elemental';
+import { gameEventBus } from '../events/core/EventBus';
 
 export interface UseSpellcastingProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -228,6 +229,18 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
       const nextHp = targetEnemyState.hp;
 
       playSound('spell');
+
+      // Emit spell:cast event across the Unified Event Bus
+      gameEventBus.emit('spell:cast', {
+        casterId: 'player',
+        spellId: activeTargetedScroll.id,
+        spellName: template?.name || activeTargetedScroll.name || 'Arcane Scroll',
+        manaCost: requiredMp,
+        targetX: tx,
+        targetY: ty,
+        damage: totalDmg,
+        effectType: debuffToApply?.type || 'arcane',
+      });
 
       // Dispatch arcane scroll projectile
       let scrollProjType = 'magic_staff';

@@ -39,6 +39,8 @@ export { default as TravelerInteractionOverlay } from './TravelerInteractionOver
 export { default as UnifiedInventoryPanel } from './UnifiedInventoryPanel';
 
 export * from './modals';
+export * from './minigames/scriptorium';
+export * from './minigames/lockpicking';
 export * from './panels/PlayerSidebarPanel';
 export * from './panels/MobileHudBar';
 export * from './panels/MobileCommandPad';

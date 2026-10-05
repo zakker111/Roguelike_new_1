@@ -1,4 +1,5 @@
 import { TileType, GameState } from '../types';
+import { getTileDefinition } from '../world/tileRegistry';
 import { SpriteSheetConfig } from './types';
 import { drawSpriteOrAscii } from './spriteRenderer';
 import { getDirectionalShadowParams, isShadowCastingTile, renderTileDirectionalShadow } from './shadowRenderer';
@@ -404,6 +405,14 @@ export function resolveTileStyle(
       glyphColor = isVisible ? '#38bdf8' : '#0284c7';
     } else {
       glyphColor = isVisible ? '#cbd5e1' : '#64748b';
+    }
+  } else {
+    // Master Tile Registry dynamic fallback (renders any newly created custom tile automatically!)
+    const def = getTileDefinition(tile);
+    if (def) {
+      char = def.defaultChar;
+      tileColor = isVisible ? def.defaultTileColor : '#0f172a';
+      glyphColor = isVisible ? def.defaultGlyphColor : '#334155';
     }
   }
 

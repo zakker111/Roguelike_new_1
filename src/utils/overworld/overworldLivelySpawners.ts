@@ -13,6 +13,7 @@ import {
   generatePointsOfInterest,
 } from "../../world/poiGenerators";
 import { ensureEntranceClearance, connectPoiSpokeToTrail } from "../../world/organic";
+import { generateEmergentSkirmish } from "../../world/skirmish";
 import { OverworldGenContext } from "./types";
 
 export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
@@ -492,6 +493,32 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
           workY: caravanY + 1,
           scheduleState: 'work',
           dialogue: mDialogue
+        });
+      }
+    } else if (campAndCaravanSeed >= 0.60 && campAndCaravanSeed < 0.85) {
+      // 25% chance of an Emergent Skirmish battlefield!
+      const skirmish = generateEmergentSkirmish(map, {
+        chunkX,
+        chunkY,
+        width,
+        height,
+        playerLevel: ctx.playerStats?.level || 1,
+        chaosScore: 20
+      });
+      if (skirmish) {
+        enemies.push(...skirmish.enemies);
+        chests.push(...skirmish.chests);
+        traps.push(...skirmish.traps);
+        if (skirmish.props.length > 0 && ctx.props) {
+          ctx.props.push(...skirmish.props);
+        }
+        poisList.push({
+          id: `skirmish_${chunkX}_${chunkY}`,
+          x: skirmish.centerX,
+          y: skirmish.centerY,
+          name: skirmish.name,
+          type: 'skirmish',
+          description: skirmish.description
         });
       }
     }

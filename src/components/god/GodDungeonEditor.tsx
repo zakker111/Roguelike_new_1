@@ -105,6 +105,7 @@ export const GodDungeonEditor: React.FC<GodDungeonEditorProps> = ({
   const [selectedEnemy, setSelectedEnemy] = useState<typeof ENEMY_TEMPLATES[0]>(ENEMY_TEMPLATES[0]);
 
   const [jsonInput, setJsonInput] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [copiedSuccess, setCopiedSuccess] = useState(false);
 
@@ -350,9 +351,10 @@ export const GodDungeonEditor: React.FC<GodDungeonEditorProps> = ({
   // Import JSON Blueprint
   const handleImportJSON = () => {
     try {
+      setImportError(null);
       const parsed = JSON.parse(jsonInput);
       if (!parsed.width || !parsed.height || !parsed.mapGrid) {
-        alert('Invalid dungeon blueprint JSON format. Must contain width, height, and mapGrid.');
+        setImportError('Invalid dungeon blueprint JSON format. Must contain width, height, and mapGrid.');
         return;
       }
       setDungeonTitle(parsed.name || 'Imported Vault');
@@ -368,7 +370,7 @@ export const GodDungeonEditor: React.FC<GodDungeonEditorProps> = ({
       playSound('magic_cast');
       triggerSuccessLog('📥 IMPORTED: Blueprint loaded onto editor canvas!');
     } catch (err: any) {
-      alert(`JSON Parse Error: ${err.message}`);
+      setImportError(`JSON Parse Error: ${err.message}`);
     }
   };
 
@@ -670,13 +672,24 @@ export const GodDungeonEditor: React.FC<GodDungeonEditorProps> = ({
             <textarea
               rows={8}
               value={jsonInput}
-              onChange={(e) => setJsonInput(e.target.value)}
+              onChange={(e) => {
+                setJsonInput(e.target.value);
+                if (importError) setImportError(null);
+              }}
               placeholder="Paste JSON dungeon blueprint here..."
               className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs font-mono text-emerald-300 outline-none focus:border-indigo-500"
             />
+            {importError && (
+              <div className="p-2 bg-rose-950/80 border border-rose-500/60 rounded text-rose-300 text-xs">
+                {importError}
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setShowJsonModal(false)}
+                onClick={() => {
+                  setShowJsonModal(false);
+                  setImportError(null);
+                }}
                 className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold text-xs"
               >
                 Cancel

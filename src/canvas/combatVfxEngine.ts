@@ -1,19 +1,51 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { projectileEngine, ProjectileSpawnParams, ActiveProjectile } from './projectileEngine';
 import { meleeVfxEngine, MeleeSlashSpawnParams } from './meleeVfxEngine';
-import { calculateDirectionalDrift } from '../utils/combatFloaterDrift';
+import {
+  calculateDirectionalDrift,
+  resolveFloaterArchetype,
+  getArchetypeVisuals,
+  FloaterArchetype,
+} from '../utils/combatFloaterDrift';
 
 export interface FloatingCombatText {
   id: string;
   x: number;
   y: number;
+  baseX: number;
   text: string;
   color: string;
+  strokeColor: string;
+  shadowColor: string;
+  shadowBlur: number;
   vx: number;
   vy: number;
+  gravity: number;
   life: number;
   maxLife: number;
   size: number;
+  scale: number;
   isCrit: boolean;
+  archetype: FloaterArchetype;
+  tremorIntensity: number;
+  waveFrequency: number;
+  timeAlive: number;
+}
+
+export interface SpawnFloatingTextOptions {
+  x: number;
+  y: number;
+  sourceX?: number;
+  sourceY?: number;
+  text: string;
+  color?: string;
+  isCrit?: boolean;
+  type?: string;
+  isPlayerTarget?: boolean;
 }
 
 export interface SpawnCombatEffectOptions {
@@ -26,6 +58,7 @@ export interface SpawnCombatEffectOptions {
   weaponType?: string;
   element?: string;
   onImpactShake?: (intensity: number) => void;
+  isPlayerTarget?: boolean;
 }
 
 export class CombatVfxEngine {
@@ -42,14 +75,24 @@ export class CombatVfxEngine {
         id: `floater_slot_${i}`,
         x: 0,
         y: 0,
+        baseX: 0,
         text: '',
         color: '#ffffff',
+        strokeColor: 'rgba(2, 6, 23, 0.92)',
+        shadowColor: 'rgba(0, 0, 0, 0)',
+        shadowBlur: 0,
         vx: 0,
         vy: 0,
+        gravity: 0,
         life: 0,
         maxLife: 1.0,
-        size: 12,
+        size: 13,
+        scale: 1.0,
         isCrit: false,
+        archetype: 'enemy_damage',
+        tremorIntensity: 0,
+        waveFrequency: 14,
+        timeAlive: 0,
       };
     }
   }
@@ -63,6 +106,10 @@ export class CombatVfxEngine {
 
   public getActiveFloaterCount(): number {
     return this.activeFloaterCount;
+  }
+
+  public getFloatingTexts(): readonly FloatingCombatText[] {
+    return this.floatingTexts.slice(0, this.activeFloaterCount);
   }
 
   public clearFloaters(): void {
@@ -84,28 +131,26 @@ export class CombatVfxEngine {
   /**
    * Dispatches a ranged projectile with full bezier flight & impact physics
    */
-  public spawnProjectile(params: ProjectileSpawnParams, onScreenShake?: (intensity: number) => void): ActiveProjectile {
+  public spawnProjectile(
+    params: ProjectileSpawnParams,
+    onScreenShake?: (intensity: number) => void
+  ): ActiveProjectile {
     const defaultImpact = params.onImpact;
     return projectileEngine.spawn({
       ...params,
       onImpact: (p) => {
         if (defaultImpact) defaultImpact(p);
-        
+
         // Spawn impact floating text if provided
         if (p.impactText) {
           const isCrit = p.impactType === 'crit';
-          let col = '#f87171';
-          if (p.impactType === 'crit') col = '#fbbf24';
-          else if (p.impactType === 'heal') col = '#22c55e';
-          else if (p.impactType === 'mana') col = '#60a5fa';
-
           this.spawnFloatingText({
             x: p.targetX,
             y: p.targetY,
             sourceX: p.startX,
             sourceY: p.startY,
             text: p.impactText,
-            color: col,
+            type: p.impactType,
             isCrit,
           });
 
@@ -128,7 +173,7 @@ export class CombatVfxEngine {
             x: p.startX,
             y: p.startY - 0.2,
             text: p.impactHealingText,
-            color: '#22c55e',
+            type: 'heal',
             isCrit: false,
           });
         }
@@ -139,7 +184,10 @@ export class CombatVfxEngine {
   /**
    * Dispatches a directional melee weapon slash arc
    */
-  public spawnMeleeSlash(params: MeleeSlashSpawnParams, onScreenShake?: (intensity: number) => void): void {
+  public spawnMeleeSlash(
+    params: MeleeSlashSpawnParams,
+    onScreenShake?: (intensity: number) => void
+  ): void {
     meleeVfxEngine.spawnSlash(params);
 
     if (params.isCrit) {
@@ -149,29 +197,41 @@ export class CombatVfxEngine {
   }
 
   /**
-   * Spawns floating combat damage / crit / heal text with organic directional drift
-   * utilizing zero-allocation pre-allocated ring-buffer pooling.
+   * Spawns floating combat damage / crit / heal text with organic directional drift,
+   * anti-overlap radial stagger, and domain-native visual archetypes.
    */
-  public spawnFloatingText(params: {
-    x: number;
-    y: number;
-    sourceX?: number;
-    sourceY?: number;
-    text: string;
-    color?: string;
-    isCrit?: boolean;
-  }): void {
-    const isCrit = !!params.isCrit;
+  public spawnFloatingText(params: SpawnFloatingTextOptions): void {
+    // 1. Calculate active floaters nearby on this target tile for anti-overlap staggering
+    let nearbyActiveCount = 0;
+    for (let j = 0; j < this.activeFloaterCount; j++) {
+      const active = this.floatingTexts[j];
+      if (
+        Math.hypot(active.x - params.x, active.y - params.y) < 1.1 &&
+        active.life > 0.15
+      ) {
+        nearbyActiveCount++;
+      }
+    }
+
+    // 2. Resolve visual & physics archetype
+    const archetype = resolveFloaterArchetype(params.type, params.text, params.isPlayerTarget);
+    const visuals = getArchetypeVisuals(archetype);
+    const isCrit = !!params.isCrit || archetype === 'crit';
+
+    // 3. Directional drift with anti-overlap stagger
     const drift = calculateDirectionalDrift({
       targetX: params.x,
       targetY: params.y,
       sourceX: params.sourceX,
       sourceY: params.sourceY,
       isCrit,
+      staggerIndex: nearbyActiveCount,
+      archetype,
     });
 
-    const col = params.color || (isCrit ? '#fbbf24' : '#f87171');
+    const col = params.color || visuals.primaryColor;
 
+    // 4. Zero-allocation ring buffer pooling
     let floater: FloatingCombatText;
     if (this.activeFloaterCount < this.floaterCapacity) {
       floater = this.floatingTexts[this.activeFloaterCount];
@@ -188,14 +248,24 @@ export class CombatVfxEngine {
     floater.id = `floater_${this.nextFloaterId++}`;
     floater.x = drift.spawnX;
     floater.y = drift.spawnY;
+    floater.baseX = drift.spawnX;
     floater.text = params.text;
     floater.color = col;
+    floater.strokeColor = visuals.strokeColor;
+    floater.shadowColor = visuals.shadowColor;
+    floater.shadowBlur = visuals.shadowBlur;
     floater.vx = drift.vx;
     floater.vy = drift.vy;
+    floater.gravity = visuals.gravity;
     floater.life = 1.0;
     floater.maxLife = 1.0;
-    floater.size = isCrit ? 15 : 12;
+    floater.size = visuals.defaultSize;
+    floater.scale = visuals.initialScale;
     floater.isCrit = isCrit;
+    floater.archetype = archetype;
+    floater.tremorIntensity = visuals.tremorIntensity;
+    floater.waveFrequency = 12 + (this.nextFloaterId % 5);
+    floater.timeAlive = 0;
   }
 
   /**
@@ -203,15 +273,13 @@ export class CombatVfxEngine {
    */
   public dispatchEffect(options: SpawnCombatEffectOptions): void {
     const isCrit = options.type === 'crit';
-    let color = '#f87171';
-
-    if (options.type === 'crit') color = '#f59e0b';
-    else if (options.type === 'heal') color = '#22c55e';
-    else if (options.type === 'mana') color = '#60a5fa';
-    else if (options.type === 'status') color = '#a78bfa';
 
     // Melee slash visual if source and target coordinates exist
-    if (options.sourceX !== undefined && options.sourceY !== undefined && (options.sourceX !== options.x || options.sourceY !== options.y)) {
+    if (
+      options.sourceX !== undefined &&
+      options.sourceY !== undefined &&
+      (options.sourceX !== options.x || options.sourceY !== options.y)
+    ) {
       const dist = Math.hypot(options.x - options.sourceX, options.y - options.sourceY);
       if (dist <= 1.8) {
         let slashType: any = isCrit ? 'heavy_smash' : 'steel_arc';
@@ -242,8 +310,9 @@ export class CombatVfxEngine {
         sourceX: options.sourceX,
         sourceY: options.sourceY,
         text: options.text,
-        color,
+        type: options.type,
         isCrit,
+        isPlayerTarget: options.isPlayerTarget,
       });
     }
 
@@ -260,11 +329,80 @@ export class CombatVfxEngine {
     projectileEngine.update();
     meleeVfxEngine.update();
 
+    const dt = 0.016;
+
     // Update floating combat numbers in-place with O(1) swap-and-pop removal
     for (let i = this.activeFloaterCount - 1; i >= 0; i--) {
       const t = this.floatingTexts[i];
-      t.x += t.vx;
-      t.y += t.vy;
+      t.timeAlive += dt;
+
+      // Archetype-specific physics routines
+      switch (t.archetype) {
+        case 'crit':
+          // Parabolic bouncing arc: initial upward pop, downward gravity
+          t.x += t.vx;
+          t.vy += t.gravity;
+          t.y += t.vy;
+          // Scale pop zooms in and settles to 1.0
+          t.scale = Math.max(1.0, t.scale - 0.045);
+          break;
+
+        case 'player_damage':
+          // Crimson tremor: shudders horizontally around baseX while floating upward
+          t.baseX += t.vx;
+          t.y += t.vy;
+          {
+            const tremorDecay = t.life / t.maxLife;
+            const tremorOffset = Math.sin(t.timeAlive * 36) * (t.tremorIntensity * tremorDecay);
+            t.x = t.baseX + tremorOffset;
+          }
+          break;
+
+        case 'burning':
+          // Flickering rising ember drift: wavering horizontal sine-wave
+          t.baseX += t.vx;
+          t.y += t.vy;
+          t.x = t.baseX + Math.sin(t.timeAlive * t.waveFrequency) * 0.022;
+          break;
+
+        case 'poison':
+          // Acid dripping/bubbling: sluggish slow drift
+          t.baseX += t.vx;
+          t.vy += t.gravity;
+          t.y += t.vy;
+          t.x = t.baseX + Math.sin(t.timeAlive * 7) * 0.012;
+          break;
+
+        case 'dodge':
+          // Swift diagonal glide
+          t.x += t.vx;
+          t.y += t.vy;
+          t.scale = Math.max(0.9, t.scale - 0.015);
+          break;
+
+        case 'shield':
+          // Firm metallic deflection pop
+          t.x += t.vx;
+          t.y += t.vy;
+          t.scale = Math.max(1.0, t.scale - 0.04);
+          break;
+
+        case 'shock':
+          // High-frequency electric jitter
+          t.baseX += t.vx;
+          t.y += t.vy;
+          t.x = t.baseX + (Math.random() - 0.5) * t.tremorIntensity;
+          break;
+
+        case 'heal':
+        case 'mana':
+        case 'enemy_damage':
+        default:
+          t.x += t.vx;
+          t.y += t.vy;
+          break;
+      }
+
       t.life -= 0.025; // Gentle float life decay
 
       if (t.life <= 0) {
@@ -281,20 +419,35 @@ export class CombatVfxEngine {
   /**
    * Render ground decals layer (Under entities)
    */
-  public renderUnderLayer(ctx: CanvasRenderingContext2D, camX: number, camY: number, tileSize: number): void {
+  public renderUnderLayer(
+    ctx: CanvasRenderingContext2D,
+    camX: number,
+    camY: number,
+    tileSize: number
+  ): void {
     meleeVfxEngine.renderGroundDecals(ctx, camX, camY, tileSize);
   }
 
   /**
    * Render active projectiles, slashes, and floating text layer (Over entities)
    */
-  public renderOverLayer(ctx: CanvasRenderingContext2D, camX: number, camY: number, tileSize: number): void {
+  public renderOverLayer(
+    ctx: CanvasRenderingContext2D,
+    camX: number,
+    camY: number,
+    tileSize: number
+  ): void {
     meleeVfxEngine.renderSlashes(ctx, camX, camY, tileSize);
     projectileEngine.render(ctx, camX, camY, tileSize);
     this.renderFloatingTexts(ctx, camX, camY, tileSize);
   }
 
-  private renderFloatingTexts(ctx: CanvasRenderingContext2D, camX: number, camY: number, tileSize: number): void {
+  private renderFloatingTexts(
+    ctx: CanvasRenderingContext2D,
+    camX: number,
+    camY: number,
+    tileSize: number
+  ): void {
     if (this.activeFloaterCount === 0) return;
 
     for (let i = 0; i < this.activeFloaterCount; i++) {
@@ -308,16 +461,30 @@ export class CombatVfxEngine {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
-      ctx.font = t.isCrit
-        ? 'bold 15px "Space Grotesk", system-ui, sans-serif'
-        : '900 13px "Inter", system-ui, sans-serif';
+      // Dynamic Archetype Typography
+      const fontSize = Math.round(t.size * t.scale);
+      if (t.archetype === 'crit') {
+        ctx.font = `900 ${fontSize}px "Space Grotesk", system-ui, sans-serif`;
+      } else if (t.archetype === 'dodge') {
+        ctx.font = `italic 800 ${fontSize}px "Inter", system-ui, sans-serif`;
+      } else if (t.archetype === 'player_damage' || t.archetype === 'shock') {
+        ctx.font = `900 ${fontSize}px "Space Grotesk", system-ui, sans-serif`;
+      } else {
+        ctx.font = `800 ${fontSize}px "Inter", system-ui, sans-serif`;
+      }
+
+      // Archetype Luminous Shadow Glow
+      if (t.shadowBlur > 0) {
+        ctx.shadowColor = t.shadowColor;
+        ctx.shadowBlur = t.shadowBlur;
+      }
 
       // Crisp dark text outline for readability
-      ctx.lineWidth = t.isCrit ? 3.5 : 2.5;
-      ctx.strokeStyle = 'rgba(2, 6, 23, 0.92)';
+      ctx.lineWidth = t.isCrit ? 4.0 : 2.8;
+      ctx.strokeStyle = t.strokeColor;
       ctx.strokeText(t.text, rx, ry);
 
-      // Vibrant fill
+      // Vibrant Fill
       ctx.fillStyle = t.color;
       ctx.fillText(t.text, rx, ry);
 

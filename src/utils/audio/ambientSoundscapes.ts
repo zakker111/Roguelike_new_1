@@ -9,9 +9,9 @@ import {
   getAmbientGainNode,
   getAmbientMuffleFilterNode,
   getIsAudioMuted,
-  createNoiseBuffer,
 } from './synthEngine';
 import { playSound } from './soundCatalog';
+import { weatherSynthEngine } from './weatherSynthEngine';
 
 let activeAmbientLoops: ActiveAmbientLoop[] = [];
 let currentSoundscapeKey = '';
@@ -19,6 +19,8 @@ let accentTimer: any = null;
 let heartbeatTimer: any = null;
 
 export function stopAmbientSoundscape() {
+  weatherSynthEngine.stop();
+
   if (accentTimer) {
     clearInterval(accentTimer);
     accentTimer = null;
@@ -92,125 +94,15 @@ export function updateAmbientSoundscape(params: AmbientParams) {
   stopAmbientSoundscape();
   currentSoundscapeKey = key;
 
+  // Delegate procedural multi-layer weather and environmental wind/precipitation to weatherSynthEngine
+  weatherSynthEngine.update(params);
+
   const ambientGainNode = getAmbientGainNode();
   if (!ambientGainNode) return;
 
   const now = ctx.currentTime;
-  const noiseBuf = createNoiseBuffer(ctx, 4);
 
-  // LAYER 1: BASE ENVIRONMENTAL WIND / DRONE
-  try {
-    const noiseNode = ctx.createBufferSource();
-    noiseNode.buffer = noiseBuf;
-    noiseNode.loop = true;
-
-    const filter = ctx.createBiquadFilter();
-    const layerGain = ctx.createGain();
-
-    if (params.inDungeon) {
-      // Cavernous sub-bass rumble
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(180, now);
-      layerGain.gain.setValueAtTime(0.001, now);
-      layerGain.gain.linearRampToValueAtTime(0.08, now + 0.5);
-    } else if (params.biome === 'desert' || params.weather === 'sandstorm') {
-      // Dry whistling wind
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(650, now);
-      filter.Q.setValueAtTime(2.5, now);
-      layerGain.gain.setValueAtTime(0.001, now);
-      layerGain.gain.linearRampToValueAtTime(0.06, now + 0.5);
-    } else if (params.biome === 'tundra' || params.weather === 'blizzard') {
-      // Freezing blizzard howl
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(1200, now);
-      filter.Q.setValueAtTime(3.5, now);
-      layerGain.gain.setValueAtTime(0.001, now);
-      layerGain.gain.linearRampToValueAtTime(0.07, now + 0.5);
-    } else if (params.biome === 'swamp') {
-      // Murky swamp hum
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(350, now);
-      layerGain.gain.setValueAtTime(0.001, now);
-      layerGain.gain.linearRampToValueAtTime(0.05, now + 0.5);
-    } else {
-      // Forest gentle leaf rustle
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(480, now);
-      layerGain.gain.setValueAtTime(0.001, now);
-      layerGain.gain.linearRampToValueAtTime(0.05, now + 0.5);
-    }
-
-    noiseNode.connect(filter);
-    filter.connect(layerGain);
-    layerGain.connect(ambientGainNode);
-
-    noiseNode.start(now);
-    activeAmbientLoops.push({ source: noiseNode, gainNode: layerGain, type: 'base_wind' });
-  } catch (e) {
-    // Safe buffer fallback
-  }
-
-  // LAYER 2: RAIN / WEATHER OVERLAY (Organic multi-layer rain with gentle swell modulation)
-  if (params.weather === 'rainy') {
-    try {
-      // 1. Soft low-frequency patter on soil/roofs
-      const rainLow = ctx.createBufferSource();
-      rainLow.buffer = noiseBuf;
-      rainLow.loop = true;
-
-      const rainLowFilter = ctx.createBiquadFilter();
-      rainLowFilter.type = 'lowpass';
-      rainLowFilter.frequency.setValueAtTime(800, now);
-
-      const rainLowGain = ctx.createGain();
-      rainLowGain.gain.setValueAtTime(0.001, now);
-      rainLowGain.gain.linearRampToValueAtTime(0.04, now + 0.5);
-
-      rainLow.connect(rainLowFilter);
-      rainLowFilter.connect(rainLowGain);
-      rainLowGain.connect(ambientGainNode);
-
-      rainLow.start(now);
-      activeAmbientLoops.push({ source: rainLow, gainNode: rainLowGain, type: 'rain_low' });
-
-      // 2. Modulated high rain droplets swell (slow organic 0.3Hz swell)
-      const rainHigh = ctx.createBufferSource();
-      rainHigh.buffer = noiseBuf;
-      rainHigh.loop = true;
-
-      const rainHighFilter = ctx.createBiquadFilter();
-      rainHighFilter.type = 'bandpass';
-      rainHighFilter.frequency.setValueAtTime(2200, now);
-      rainHighFilter.Q.setValueAtTime(1.2, now);
-
-      const lfo = ctx.createOscillator();
-      lfo.type = 'sine';
-      lfo.frequency.setValueAtTime(0.3, now);
-
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(0.012, now);
-
-      const rainHighGain = ctx.createGain();
-      rainHighGain.gain.setValueAtTime(0.02, now);
-
-      lfo.connect(lfoGain);
-      lfoGain.connect(rainHighGain.gain);
-
-      rainHigh.connect(rainHighFilter);
-      rainHighFilter.connect(rainHighGain);
-      rainHighGain.connect(ambientGainNode);
-
-      rainHigh.start(now);
-      lfo.start(now);
-
-      activeAmbientLoops.push({ source: rainHigh, gainNode: rainHighGain, type: 'rain_high' });
-    } catch (e) {
-      // Safe fallback
-    }
-  }
-
-  // LAYER 3: COMBAT TENSION DRONE
+  // LAYER: COMBAT TENSION DRONE
   if (params.hostileCountNearPlayer > 0) {
     try {
       const tensionOsc = ctx.createOscillator();

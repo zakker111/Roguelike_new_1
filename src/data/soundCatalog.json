@@ -42,5 +42,8 @@
   { "id": "eat", "name": "Eat Rations", "category": "ui", "description": "Crunchy food consumption" },
   { "id": "drink", "name": "Drink Water", "category": "ui", "description": "Liquid gulping sound" },
   { "id": "potion_drink", "name": "Potion Gulp", "category": "ui", "description": "Glass vial uncork and drink" },
-  { "id": "equip", "name": "Gear Equip", "category": "ui", "description": "Armor strap & sword sheath clank" }
+  { "id": "equip", "name": "Gear Equip", "category": "ui", "description": "Armor strap & sword sheath clank" },
+  { "id": "thunder_rumble", "name": "Rolling Thunder", "category": "environment", "description": "Distant deep rolling atmospheric thunderclap" },
+  { "id": "wind_gust", "name": "Wind Gust", "category": "environment", "description": "Atmospheric wind gust swell" },
+  { "id": "blizzard_howl", "name": "Blizzard Howl", "category": "environment", "description": "Freezing howling winter storm wind" }
 ]

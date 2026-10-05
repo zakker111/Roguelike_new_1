@@ -5,6 +5,7 @@
 
 import { TileType } from '../types';
 import { ElementalTile } from '../types/elemental';
+import { isTileObstacle, isTileWalkable, doesTileBlockVision } from '../world/tileRegistry';
 
 /**
  * Zero-allocation line tracer using Bresenham's algorithm.
@@ -90,19 +91,7 @@ export function hasLineOfSight(
       return true;
     }
     const tile = map[y]?.[x];
-    if (
-      tile === TileType.Wall ||
-      tile === TileType.Door ||
-      tile === TileType.WatchtowerWall ||
-      tile === TileType.WatchtowerSlit ||
-      tile === TileType.WatchtowerBarricade ||
-      tile === TileType.Tree ||
-      tile === TileType.PineTree ||
-      tile === TileType.BirchTree ||
-      tile === TileType.CopperVein ||
-      tile === TileType.IronVein ||
-      tile === TileType.FieldTent
-    ) {
+    if (doesTileBlockVision(tile)) {
       clear = false;
       return false; // early stop
     }
@@ -225,21 +214,9 @@ export function computeFOV(
 
       visible[y][x] = true;
 
-      // Wall blocks light
+      // Obstacles block light
       const tile = map[y][x];
-      if (
-        tile === TileType.Wall ||
-        tile === TileType.Door ||
-        tile === TileType.WatchtowerWall ||
-        tile === TileType.WatchtowerSlit ||
-        tile === TileType.WatchtowerBarricade ||
-        tile === TileType.Tree ||
-        tile === TileType.PineTree ||
-        tile === TileType.BirchTree ||
-        tile === TileType.CopperVein ||
-        tile === TileType.IronVein ||
-        tile === TileType.FieldTent
-      ) {
+      if (doesTileBlockVision(tile)) {
         return false;
       }
       return true;
@@ -261,56 +238,14 @@ export interface TilePassabilityOptions {
 }
 
 /**
- * Authoritative check for whether a tile is impassable (blocks walking/movement) for entities.
- * Includes all obstacles: Wall, Window, Table, Chair, Tree, PineTree, BirchTree, TreeStump,
- * Bush, Sign, Torch, WatchtowerFlag, CopperVein, IronVein, WatchtowerWall, WatchtowerSlit,
- * WatchtowerBarricade, Campfire, Fireplace, Anvil, FieldTent, Empty, and conditionally Water/Door/Bed.
+ * Checks whether a given tile is impassable (blocks walking/movement) for entities.
+ * Evaluates via the central Master Tile Registry.
  */
 export function isTileBlockedForEntity(
   tile: TileType | undefined,
   options?: TilePassabilityOptions
 ): boolean {
-  if (!tile) return true;
-
-  if (
-    tile === TileType.Wall ||
-    tile === TileType.Window ||
-    tile === TileType.Table ||
-    tile === TileType.Chair ||
-    tile === TileType.Tree ||
-    tile === TileType.PineTree ||
-    tile === TileType.BirchTree ||
-    tile === TileType.Bush ||
-    tile === TileType.Sign ||
-    tile === TileType.Torch ||
-    tile === TileType.WatchtowerFlag ||
-    tile === TileType.CopperVein ||
-    tile === TileType.IronVein ||
-    tile === TileType.WatchtowerWall ||
-    tile === TileType.WatchtowerSlit ||
-    tile === TileType.WatchtowerBarricade ||
-    tile === TileType.Campfire ||
-    tile === TileType.Fireplace ||
-    tile === TileType.Anvil ||
-    tile === TileType.FieldTent ||
-    tile === TileType.Empty
-  ) {
-    return true;
-  }
-
-  if (tile === TileType.Water && !options?.isWaterWalkable) {
-    return true;
-  }
-
-  if (tile === TileType.Door && !options?.canOpenDoors) {
-    return true;
-  }
-
-  if (tile === TileType.Bed && !options?.isBedWalkable) {
-    return true;
-  }
-
-  return false;
+  return isTileObstacle(tile, options);
 }
 
 export function isTileWalkableForEntity(

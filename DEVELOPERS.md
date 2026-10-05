@@ -24,6 +24,19 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── items.ts               # EquipmentItem, Recipe & Material Types
   │   └── elemental.ts           # Elemental Ground Fields, Intensities & Propagation Contracts
   │
+  ├── 📂 events                  # Unified Event Bus & Hook Pipeline Sub-Engine (Extreme Modifiability)
+  │   ├── types.ts               # Event payload maps, priority weights, and CancellableEvent interfaces
+  │   ├── 📂 core                # Priority-Ordered Event Bus & React Lifecycle Hooks
+  │   │   ├── EventBus.ts        # Singleton event bus with priority dispatch, wildcards, sandboxing & telemetry
+  │   │   └── useGameEvent.ts    # React lifecycle hook with automated unmount cleanup & useEventBus
+  │   ├── 📂 pipeline            # Composable Action Mutator Pipelines (Waterfall Middleware Pattern)
+  │   │   ├── pipelineTypes.ts   # DamageContext, MovementContext, LootContext, SpellCastContext
+  │   │   ├── HookPipeline.ts    # Generic priority-ordered synchronous middleware pipeline
+  │   │   └── 📂 pipelines       # Standard Action Mutators (damagePipeline, movementPipeline, lootPipeline, spellPipeline)
+  │   ├── 📂 registry            # Declarative Modding & Plugin Registry
+  │   │   └── HookRegistry.ts    # Unified registry API for mods, relics, traits & custom game logic
+  │   └── index.ts               # Unified events barrel export
+  │
   ├── 📂 hooks                   # Custom Domain Engine Hooks
   │   ├── 📂 ai                  # Modular AI Behavior & Enemy/Civilian Decision Trees
   │   │   ├── types.ts           # AI parameter context and state interfaces
@@ -36,6 +49,13 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   └── useEnemyAI.ts      # Turnkey AI coordinator executing turn-based AI resolution
   │   ├── 📂 god                 # God Mode & Developer Sandbox Orchestration
   │   │   └── useGodPanelState.ts # Centralized cheats, arena warp, spawn dispatch & sim runners
+  │   ├── 📂 poi                 # Modular POI & Landmark Interaction Sub-Engine
+  │   │   ├── types.ts           # POI context and choice effect interfaces
+  │   │   ├── useWildernessSleep.ts # Wilderness camping, campsite analysis & nocturnal ambush checks
+  │   │   ├── useTravelerInteractions.ts # Traveler dialogue, barter, assault crime tracking & drunk boons
+  │   │   ├── useShrineAndPoiChoices.ts # Shrine blessings, status effects, chapter lore & level progression
+  │   │   ├── useWaystoneAndGuardian.ts # Leyline waystones, fast travel chunk hops & biome guardian boss trials
+  │   │   └── index.ts           # POI sub-engine barrel export
   │   ├── 📂 app                 # Extracted App-Level Orchestration Hooks
   │   │   ├── usePlayerTurnMovement.ts # Turn steps, chunk loading, terrain hazards, traps, and looting
   │   │   ├── 📂 movement        # Modular Movement & Collision Sub-Engine
@@ -69,7 +89,7 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── useCraftingEngine.ts   # Forging, cooking, campfires, anvils, repairs & mutation forge
   │   ├── useSpellcasting.ts     # Spell casting, mana verification, projectile targeting & scroll consumption
   │   ├── useWorldInteraction.ts # Overworld stairs, resource harvesting (trees/ore), door opening
-  │   ├── usePoiAndWilderness.ts # Landmark interactions, waystone network, and wilderness events
+  │   ├── usePoiAndWilderness.ts # Backward-compatible POI facade delegating to /src/hooks/poi/
   │   ├── useNpcInteraction.ts   # NPC dialogue routing, merchant trading, and crime witness checks
   │   ├── useModalManager.ts     # Modal router state and overlay lifecycle management
   │   ├── useEquipmentHandlers.ts# Equipment equipping, unequipping, swapping, durability & stat hooks
@@ -132,6 +152,11 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── vegetationClusterGen.ts # Cellular automata forest groves & mineral ore lodes
   │   │   ├── roadNetworkGen.ts  # Cross-chunk meandering highway trails
   │   │   └── index.ts           # Organic world sub-engine barrel export
+  │   ├── 📂 skirmish             # Emergent Battlefield Skirmishes & Faction Spoils Sub-Engine
+  │   │   ├── types.ts           # Skirmish scenarios (active plaza melee, high-ground ambush, base siege)
+  │   │   ├── factionSpoils.ts   # 5 authentic faction weapons & armors (Goreaxe, Stalker, Satchel, Crusader)
+  │   │   ├── emergentSkirmishGenerator.ts # Procedural emergent skirmish battlefield generator
+  │   │   └── index.ts           # Skirmish sub-engine barrel export
   │   ├── overworldGen.ts        # Overworld chunk generation & landmark placement
   │   ├── overworldBiomes.ts     # Whittaker biome distribution (7 biomes) & noise matrices
   │   ├── overworldStructures.ts # Settlement tier layouts (Hamlets, Towns, Citadel Capitals)
@@ -139,7 +164,8 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── poiGenerators.ts       # Landmark POI generators & Finnish mythology shrines
   │   ├── caravanSkirmishGen.ts  # Tactical "Defend the Wagon" Skirmish Map Generator
   │   ├── overworldNpcSpawning.ts# Safe tile locator & NPC coordinate validator
-  │   └── overworldPoiGenerator.ts# Chunk point-of-interest generator wrappers
+  │   ├── overworldPoiGenerator.ts# Chunk point-of-interest generator wrappers
+  │   └── tileRegistry.ts        # Authoritative Master Tile Registry & 1-step declarative tile definitions
   │
   ├── 📂 components              # Modular UI Components & Screens
   │   ├── MainAppLayout.tsx      # Top-level shell layout, HUD & log viewports
@@ -218,6 +244,7 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── GameOverScreen.tsx      # Permadeath summary & run stats
   │   │   └── VictoryScreen.tsx       # Campaign victory screen
   │   ├── 📂 modals              # Standalone Modal Overlays
+  │   │   ├── AppModalRouter.tsx # Top-level unified modal and overlay orchestrator
   │   │   ├── TradeModal.tsx     # Master composer coordinating modular trade sub-components
   │   │   ├── 📂 trade           # Modular Trade Sub-Engine Components
   │   │   │   ├── types.ts       # Trade modal interfaces, role context & caravan destinations
@@ -232,6 +259,18 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── DialogueModal.tsx  # NPC conversation trees & tavern gossip
   │   │   ├── CaravanActiveOverlay.tsx # Caravan travel progress & wagon HP
   │   │   └── DiscardItemModal.tsx # Item discard & ground loot drop gump
+  │   ├── 📂 minigames           # Modular Tactical Minigame Sub-Engines
+  │   │   ├── 📂 scriptorium     # Arcane Scriptorium Mini-Game Sub-Engine
+  │   │   │   ├── types.ts       # Glyph node coordinates, surge events & element themes
+  │   │   │   ├── useScriptoriumLogic.ts # Glyph tracing, leylines surge & rhythm pace logic
+  │   │   │   ├── RuneCanvasRenderer.tsx # SVG vector drawing slate & hyper-glow filters
+  │   │   │   ├── ScriptoriumScoreCard.tsx # Masterwork inscription & mana recovery scorecard
+  │   │   │   └── index.ts       # Scriptorium barrel export
+  │   │   └── 📂 lockpicking     # Tumbler & Cylinder Lockpicking Mini-Game Sub-Engine
+  │   │       ├── types.ts       # Tension angles, pick health & status
+  │   │       ├── useLockpickingPhysics.ts # 60 FPS requestAnimationFrame physics & stress loop
+  │   │       ├── TumblerCanvasRenderer.tsx # Lock cylinder, keyway, pick & wrench visualizer
+  │   │       └── index.ts       # Lockpicking barrel export
   │   ├── ChunkMinimap.tsx       # Overworld 2D Canvas Minimap & POI visualizer
   │   ├── DifficultyTracker.tsx  # Dynamic Chaos Matrix & Adaptive Threat Level HUD
   │   ├── ChaosConsole.tsx       # Chaos surge visualizer & mitigation dashboard
@@ -286,6 +325,7 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   ├── synthEngine.ts     # WebAudio node graphs, oscillators, ADSR envelopes, filters & gain control
   │   │   ├── spatialAudio.ts    # 2D tile coordinate panning, low-pass distance muffling & volume falloff
   │   │   ├── ambientSoundscapes.ts # Continuous environmental audio layers (rain, blizzards, winds, caves)
+  │   │   ├── weatherSynthEngine.ts # Procedural Weather & Ambient Environmental Synthesizer (pink/brown noise, thunder, gales)
   │   │   ├── acousticOcclusion.ts  # Raytraced acoustic occlusion, Bresenham obstacle raycasting & door muffling
   │   │   ├── soundCatalog.ts    # Procedural sound design definitions for UI, spells, combat, loot, crafting
   │   │   └── index.ts           # Unified audio barrel export
@@ -342,9 +382,10 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── wildernessCamping.ts   # Wilderness Campsite Quality, Insulation & Night-Watch Sentry Engine
   │   └── worldThreat.ts         # Adaptive world threat & chaos calculation
   │
-  └── 📂 tests                   # Automated Vitest Engine Test Suites (64 test files, 399 tests)
+  └── 📂 tests                   # Automated Vitest Engine Test Suites (81 test files, 537 passing tests)
       ├── ai.test.ts             # Pathfinding, Bresenham line of sight & enemy AI tests
       ├── appHooksAndGameStateFactory.test.ts # App hooks & game state factory tests
+      ├── appModalRouter.test.tsx # Unified App Modal Router component mounting & overlay isolation tests
       ├── audioEngineModular.test.ts # WebAudio synthesizer node graphs & sound catalog
       ├── automatedButtonSuite.test.ts # Interactive UI buttons across all top-level tabs & overlays
       ├── automatedCraftingButtonSuite.test.ts # Crafting, smithing, alchemy & cooking action buttons
@@ -358,7 +399,7 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
       ├── caravanEncounters.test.ts # D20 caravan road encounter triggers & rewards
       ├── combat.test.ts         # Combat damage, armor mitigation & attack resolution
       ├── combatBatching.test.ts # Turn combat batching & performance tests
-      ├── combatFloaterDrift.test.ts # Directional outward drift & projectile impact alignment
+      ├── combatFloaterDrift.test.ts # Anti-overlap radial stagger, archetype physics, bounce arcs & tremor
       ├── combatSimulation.test.ts # Simulated combat encounters and multi-turn balance
       ├── companionAdvice.test.ts# Companion tactical advice & narrative triggers
       ├── comprehensiveGameplayScalingSimulation.test.ts # End-to-end 100-turn scaling simulation
@@ -366,35 +407,49 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
       ├── dataCatalogs.test.ts   # JSON catalog validation and schema checks
       ├── dustDevils.test.ts     # Desert dust devil vortex particle physics
       ├── economyAndEvents.test.ts # Settlement trade, reputation & caravan event triggers
+      ├── emergentSkirmishesAndFactionSpoils.test.ts # Emergent battlefield generation, faction spoils gear & warlord chest unlocks
       ├── endToEndGameplaySimulation.test.ts # End-to-end 50-turn gameplay, commerce, guild & save
+      ├── engineEventsIntegration.test.ts # Reactive Storyteller, kill events & chaos surges
+      ├── eventBus.test.ts       # Priority subscription, wildcards, sandboxed errors & telemetry
       ├── fallingLeaves.test.ts  # Ambient falling leaf, blossom & spore particles
       ├── gameplaySimulation.test.ts # Simulated multi-turn dungeon crawls & turn solver
       ├── guildModularPanels.test.ts # Sunder Guild modular panels & safehouse storage
       ├── harborPort.test.ts     # Coastal harbor towns, docks & nautical trades
+      ├── harvestEngineRegistryIntegration.test.ts # Declarative harvest engine & tile registry integration tests
+      ├── hookPipeline.test.ts   # Action mutator pipelines, context mutation & cancellation
       ├── hooksIntegration.test.ts # Domain hook integration & state synchronization
       ├── inventoryComponents.test.ts # Modular inventory sub-components & biometrics
       ├── itemsAndInventory.test.ts # Inventory stacking, weight encumbrance & item durability
       ├── logAndDiagnostics.test.ts # Combat log formatting, diagnostic events & level scaling
+      ├── minigamesModularDecomposition.test.tsx # Modular minigames sub-engines, SVG slate & physics loop tests
       ├── modularAIEngine.test.ts# Autonomous AI modular sub-engine tests
       ├── npcDialogue.test.ts    # Weather and time reactive NPC dialogue trees
       ├── npcSchedulesAndShelter.test.ts # NPC daily routines, weather shelter & tavern drinking
       ├── organicWorldGen.test.ts# Multi-octave continuous noise, rivers & clustered vegetation
+      ├── poiWildernessModularSubEngine.test.tsx # Modular POI & Wilderness sub-engine tests (sleep, shrines, waystones, travelers)
       ├── saveLoad.test.ts       # Serialization, save integrity validation & corruption handling
       ├── settlementScalingAndTaverns.test.ts # Settlement tier scaling & tavern layouts
       ├── shadowRenderer.test.ts # Dynamic sun & moon 24h directional drop shadows
       ├── spatialAcousticsAndVfx.test.ts # Raytraced acoustic occlusion, water caustics, bloom & vignette
       ├── spellsAndMana.test.ts  # Active spells catalog, mana costs & scroll conversions
+      ├── statusEffectsEngine.test.ts # Unified status effects registry, action inhibition & stat modifier tests
       ├── storytellerAI.test.ts  # GM state, personality shifts & encounter triggers
       ├── storytellerModule.test.ts # Modular GM Storyteller sub-engine & chaos surges
+      ├── tileRegistry.test.ts   # Central Master Tile Registry & 1-step tile extensibility tests
       ├── toolHarvestingDurability.test.ts # Hatchet/pickaxe tool requirements & durability decay
+      ├── useGameLoopIdle.test.ts    # Player idle detection & real-time chaos threat freeze tests
       ├── waterShimmerAndAtmosphere.test.ts # Water ripple sine-waves & micro-particle atmosphere
       ├── waystonesAndCustomPins.test.ts # Leyline waystones, custom pins & fast travel
       ├── weatherAndMutations.test.ts # Weather effects, catalyst multipliers & dual-element synergies
+      ├── weatherAudioSynth.test.ts # Procedural Weather & Ambient Environmental Synthesizer (pink/brown noise & thunder)
       ├── wildernessEnemyTierVariance.test.ts # Wilderness monster tier variance & affix scaling
       ├── worldDungeonModular.test.ts # Modular dungeon sub-engine & room generation
       ├── worldGen.test.ts       # Chunk generation, biomes & dungeon floor layouts
       ├── worldMap.test.ts       # World map cartography, tile rasterizer & sector intelligence
-      └── worldMapPngExporter.test.ts # 40% scale Realm PNG exporter rasterization & export tests
+      ├── worldMapPngExporter.test.ts # 40% scale Realm PNG exporter rasterization & export tests
+      ├── workflowIntegrityAndArchitecture.test.ts # Cross-catalog foreign keys, anti-monolith linter & save migration tests
+      ├── modularAtlasGenerators.test.ts # Modular procedural atlas synthesis, theme strategies & canvas tests
+      └── modularLogSubEngine.test.tsx # Modular combat log sub-engine, unboxed pips, recap & duplicate badges tests
 ```
 
 ---
@@ -522,6 +577,182 @@ The engine is completely turn-based. Actions by the player trigger a cascade of 
    - Re-evaluates Field-of-View (FOV).
    - Computes movement steps using pathfinding towards the player.
    - Processes ranged or melee attacks, applying on-hit debuffs and ticking damage-over-turn conditions.
+
+---
+
+## ⚡ Unified Event Bus & Hook Pipeline Sub-Engine (Extreme Modifiability)
+
+The roguelike engine incorporates a high-performance **Unified Event Bus & Hook Pipeline** under `/src/events/`. This decouples reactive game systems, narrative listeners, and sound effects from core state mutators, allowing developers and modders to intercept, modify, cancel, or enrich actions (Combat, Movement, Spells, Loot, Turns, Chaos) without editing monolithic loops.
+
+### 🏛️ Architecture Overview
+
+```
+                      ┌─────────────────────────────────────────┐
+                      │            Player / AI Action           │
+                      └────────────────────┬────────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────┐
+                        │   Action Mutator Pipeline (Sync)    │
+                        │  (Damage, Movement, Loot, Spells)   │
+                        │  - Priority-ordered middleware      │
+                        │  - Context mutation & cancellation  │
+                        └──────────────────┬──────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────┐
+                        │        Core State Resolution        │
+                        │      (HP, Position, Inventory)      │
+                        └──────────────────┬──────────────────┘
+                                           │
+                        ┌──────────────────▼──────────────────┐
+                        │        GameEventBus (Emit)          │
+                        │  - Priority dispatch (FIRST-MONITOR)│
+                        │  - Wildcard matching (combat:*)     │
+                        │  - Fault-isolated error boundaries  │
+                        └────┬─────────────┬─────────────┬────┘
+                             │             │             │
+                             ▼             ▼             ▼
+                      ┌─────────────┐┌─────────────┐┌─────────────┐
+                      │ Reactive GM ││  Audio / UI ││ Custom Mods │
+                      │ Storyteller ││  Animations ││   Plugins   │
+                      └─────────────┘└─────────────┘└─────────────┘
+```
+
+---
+
+### 1. The Core Event Bus (`src/events/core/EventBus.ts`)
+
+The `gameEventBus` provides deterministic, priority-ordered pub/sub event delivery with safe sandboxed execution boundaries:
+
+```typescript
+import { gameEventBus } from './events/core/EventBus';
+
+// Subscribe to a specific typed event
+const sub = gameEventBus.on('combat:attack', (payload) => {
+  console.log(`Attacker ${payload.attackerId} struck ${payload.targetId} for ${payload.rawDamage} damage!`);
+}, { priority: 'HIGH', tag: 'combat_tracker' });
+
+// Wildcard namespace subscriptions
+gameEventBus.on('combat:*', (payload) => {
+  // Catches combat:attack, combat:damage, combat:kill, etc.
+});
+
+// One-time listener
+gameEventBus.once('weather:changed', (payload) => {
+  console.log(`First weather change: ${payload.newWeather}`);
+});
+
+// Emit synchronous event with priority sorting
+gameEventBus.emit('combat:kill', {
+  killerId: 'player',
+  victimId: 'dragon_1',
+  victimName: 'Infernal Wyrm',
+  isVictimBoss: true,
+  xpAwarded: 500,
+  goldAwarded: 150,
+});
+
+// Cleanup subscription
+sub.unsubscribe();
+```
+
+#### Event Priority Levels (`src/events/types.ts`)
+1. `FIRST` (Weight: 200): Pre-calculation interceptors and validation.
+2. `HIGH` (Weight: 100): High-priority buffs, stances, and elemental conversions.
+3. `NORMAL` (Weight: 0): Default listeners and standard effects.
+4. `LOW` (Weight: -100): Cleanup, stat damping, or debuff tracking.
+5. `LAST` (Weight: -200): Final state reconciliation.
+6. `MONITOR` (Weight: -1000): Read-only observers (Storyteller, UI badges, audio triggers).
+
+---
+
+### 2. Action Mutator Middleware Pipelines (`src/events/pipeline/`)
+
+Action Mutator pipelines use the Koa/Express onion-ring pattern to mutate in-flight parameters before state settles:
+
+- **`damagePipeline`**: Intercepts `DamageContext` (`attackerId`, `targetId`, `baseDamage`, `damageType`, `critMultiplier`, `armorReduction`, `finalDamage`, `cancelled`).
+- **`movementPipeline`**: Intercepts `MovementContext` (`fromX`, `fromY`, `toX`, `toY`, `terrainCost`, `staminaCost`, `blocked`).
+- **`lootPipeline`**: Intercepts `LootContext` (`baseGold`, `luckScore`, `goldMultiplier`, `finalGold`).
+- **`spellPipeline`**: Intercepts `SpellCastContext` (`spellId`, `baseManaCost`, `manaCostMultiplier`, `prevented`).
+
+#### Example: How to Register a Custom Relic in 10 Lines of Code
+
+Using the declarative `hookRegistry` (`src/events/registry/HookRegistry.ts`), you can inject custom behaviors without touching engine files:
+
+```typescript
+import { hookRegistry } from './events/registry/HookRegistry';
+
+// Register a "Vampiric Blade" relic that adds +15 Fire Damage and logs flavor text
+const unregister = hookRegistry.registerDamageHook({
+  id: 'relic_vampiric_blade',
+  priority: 150, // Runs before armor soak
+  tag: 'relic',
+  description: 'Infuses physical strikes with +15 burning damage',
+  handler: (ctx, next) => {
+    if (ctx.isPlayerAttacker) {
+      ctx.baseDamage += 15;
+      ctx.flavorNotes.push('🔥 Vampiric Blade +15');
+    }
+    next(); // Pass to subsequent middleware in chain
+  }
+});
+
+// To remove the hook later (e.g. unequipped):
+unregister();
+```
+
+#### Cancelling Actions (Dodges, Stuns, Barriers)
+Any middleware in an action pipeline can halt downstream processing by setting `ctx.cancelled = true`:
+
+```typescript
+movementPipeline.use('status_frozen', (ctx, next) => {
+  if (ctx.metadata?.isFrozen) {
+    ctx.cancelled = true;
+    ctx.blockReason = 'Frozen in ice!';
+    return; // Downstream movement resolution bypassed!
+  }
+  next();
+}, 200);
+```
+
+---
+
+### 3. React Lifecycle Hook (`src/events/core/useGameEvent.ts`)
+
+Components can subscribe to any event with automatic cleanup on unmount:
+
+```tsx
+import React from 'react';
+import { useGameEvent } from '../events/core/useGameEvent';
+
+export const BossAlertBanner: React.FC = () => {
+  useGameEvent('combat:kill', (payload) => {
+    if (payload.isVictimBoss) {
+      alert(`Boss ${payload.victimName} has been vanquished!`);
+    }
+  });
+
+  return null;
+};
+```
+
+---
+
+### 4. Reactive AI Game Master Storyteller (`src/utils/storyteller/storytellerEventListener.ts`)
+
+Instead of aggressive polling, the AI Game Master Storyteller listens reactively to events:
+- **`combat:kill`**: Player kills reduce GM boredom; Boss kills break high combat tension.
+- **`weather:changed`**: GM commits weather transitions to long-term memory.
+- **`chaos:surged`**: Increases tension curves and triggers narrative observations.
+
+---
+
+### 5. Sovereign Developer Event Bus Inspector UI
+
+Open the Sovereign Developer Console (`GodPanelOverlay.tsx` via `F1` or God Mode tab) and navigate to **⚡ Event Bus**:
+- **Live Throughput**: Real-time counter of events/second and total lifetime dispatches.
+- **Action Pipeline Health**: Active middlewares, execution counts, and latency in milliseconds for Damage, Movement, Loot, and Spell pipelines.
+- **Event Stream Viewer**: Rolling history of the last 50 events with expandable JSON payload inspect tools.
+- **Interactive Event Dispatcher**: Send simulated events with custom JSON payloads directly into the live engine for playtesting.
 
 ---
 
@@ -1481,9 +1712,8 @@ The engine provides a complete procedural sprite sheet and tileset generation ar
      - `entity_tileset`: 4-directional 4-frame animation sheets for Player, Warrior, Mage, Rogue, Town Guards, Goblins, Skeletons, Orcs, Spiders, Wolves, Slimes, and Cats.
      - `boss_tileset`: Oversized multi-tile bosses (2x2 Dragons, 2x2 Titan Golems, 3x3 Demon Lords).
      - `items_tileset`: Weapons, shields, helmets, armor, potions, rings, scrolls, and catalysts.
-   - Supports 4 distinct visual themes:
+   - Supports 3 distinct visual themes:
      - `classic`: 16-bit retro fantasy (warm stone, verdant foliage, golden trim).
-     - `cyber`: Neon cyan gridlines, magenta energy, holo-circuits.
      - `forest`: Verdant deepwood, mossy slate, emerald leaf particles.
      - `infernal`: Volcanic basalt, molten lava, hellfire embers.
 
@@ -1505,7 +1735,7 @@ import { assetPreloader } from './canvas/AssetPreloader';
 import { tilesetAtlasManager } from './canvas/TilesetAtlasManager';
 
 // 1. Generate all procedural atlases with a theme and sprite size
-mockupAtlasGenerator.generateAllAtlases('cyber', 32);
+mockupAtlasGenerator.generateAllAtlases('forest', 32);
 
 // 2. Or switch theme on the fly
 mockupAtlasGenerator.setTheme('infernal');
@@ -1541,7 +1771,7 @@ tilesetAtlasManager.registerOversizedEntity('minotaur', {
 ### 4. Developer Suite: Tileset Studio Tab
 
 Access the **Tileset Studio** tab in the Sovereign Dev Panel (`F1` or God button):
-- **Theme Switcher**: Instant one-click toggle between Classic, Cyber, Forest, and Infernal themes.
+- **Theme Switcher**: Instant one-click toggle between Classic, Forest, and Infernal themes.
 - **Resolution Scaler**: Live slider (16px to 64px) dynamically re-rasterizing the atlas and canvas.
 - **Atlas Sheet Inspector**: High-resolution zoomable viewer with coordinate grid overlays and PNG export.
 - **Character & Boss Animator**: Interactive 4-directional state machine previewer (Idle, Walk, Attack, Hurt, Cast) with adjustable FPS.
@@ -1566,7 +1796,7 @@ The engine establishes **two authoritative classic tileset sources** that share 
 2. **Instinct Classic (Procedural Code)** (`TilesetSourceType: 'classic_code'`):
    - **Source Location**: `src/canvas/MockupAtlasGenerator.ts`.
    - **Asset Builder**: Synthesizes 4 complete pixel-art texture atlas sheets in-memory directly onto HTML5 `CanvasRenderingContext2D` objects.
-   - **Characteristics**: Infinite procedural themes (`classic`, `cyber`, `forest`, `infernal`), dynamic resolution scaling (16px–128px), and instant modifiability purely via TypeScript.
+   - **Characteristics**: Infinite procedural themes (`classic`, `forest`, `infernal`), dynamic resolution scaling (16px–128px), and instant modifiability purely via TypeScript.
 
 ---
 
@@ -1577,7 +1807,7 @@ All graphics, sprite-sheets, texture atlases, autotiling matrices, and tile-to-c
 | File Path | Core Role & Contents |
 | :--- | :--- |
 | **`/public/tilesets/*.png`** | **Instinct Classic (PNG Mockups)**: Ready-to-use PNG atlases (`main_tileset.png`, `entity_tileset.png`, `animations_tileset.png`, `boss_tileset.png`, `items_tileset.png`) generated by `scripts/generateMockupPngs.cjs`. |
-| **`src/canvas/MockupAtlasGenerator.ts`** | **Instinct Classic (Procedural Code)**: Draws the 4 in-memory texture atlases (`main_tileset`, `entity_tileset`, `boss_tileset`, `items_tileset`) across 4 themes (`classic`, `cyber`, `forest`, `infernal`). Renders procedural pixel art directly onto HTML5 Canvas elements. |
+| **`src/canvas/MockupAtlasGenerator.ts`** | **Instinct Classic (Procedural Code)**: Draws the 4 in-memory texture atlases (`main_tileset`, `entity_tileset`, `boss_tileset`, `items_tileset`) across 3 themes (`classic`, `forest`, `infernal`). Renders procedural pixel art directly onto HTML5 Canvas elements. |
 | **`src/canvas/TilesetAtlasManager.ts`** | **Coordinate & Bitmask Mapping Registry**: Defines grid coordinates (column, row, atlas key) for every `TileType`, trap, chest, door, static prop, dynamic Wang autotile 16-bitmask matrix, entity animation frame mapping, and oversized boss dimensions. |
 | **`src/canvas/AssetPreloader.ts`** | **Image & Canvas Loader / Cache**: Manages loading external PNG images via `preloadAtlas(key, url)` and in-memory canvases via `registerCanvas(key, canvas)`. Emits reactive update notifications when an atlas is swapped. |
 | **`src/canvas/spriteRenderer.ts`** | **Unified Sprite Drawing Engine**: Translates high-level draw requests (`drawSpriteOrAscii`) into pixel-perfect atlas sub-rectangle clipping (`ctx.drawImage(atlas, sx, sy, sw, sh, dx, dy, dw, dh)`), handling frame rate ticks and visual modes. |

@@ -31,7 +31,6 @@ interface TilesetTesterTabProps {
 
 const PALETTE_THEMES: { id: MockupPaletteTheme; label: string; desc: string; color: string; bg: string }[] = [
   { id: 'classic', label: 'Classic Fantasy', desc: '16-bit earthen stones, verdant meadows, and steel gear', color: 'text-amber-400', bg: 'bg-amber-950/40 border-amber-500/50' },
-  { id: 'cyber', label: 'Cyber Synthwave', desc: 'Neon cyan gridlines, magenta energy, and holo-circuits', color: 'text-cyan-400', bg: 'bg-cyan-950/40 border-cyan-500/50' },
   { id: 'forest', label: 'Verdant Deepwood', desc: 'Lush mossy canopy, ancient pines, and emerald glades', color: 'text-emerald-400', bg: 'bg-emerald-950/40 border-emerald-500/50' },
   { id: 'infernal', label: 'Infernal Brimstone', desc: 'Volcanic magma stone, obsidian basalt, and hellfire embers', color: 'text-red-400', bg: 'bg-red-950/40 border-red-500/50' }
 ];
@@ -579,7 +578,7 @@ export function TilesetTesterTab({ gameState, setGameState, addLogMessage }: Til
                   <div className="bg-slate-950/80 rounded-lg p-2.5 border border-slate-800/80 space-y-1 text-[11px] font-mono">
                     <div className="flex items-center justify-between text-slate-300">
                       <span className="text-slate-400">Themes</span>
-                      <span className="text-purple-300 font-bold">4 (Classic, Cyber, Forest, Infernal)</span>
+                      <span className="text-purple-300 font-bold">3 (Classic, Forest, Infernal)</span>
                     </div>
                     <div className="flex items-center justify-between text-slate-300">
                       <span className="text-slate-400">Resolution</span>

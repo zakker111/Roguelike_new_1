@@ -22,6 +22,8 @@ import { evaluateScarAcquisition } from '../../../utils/scars';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from '../../../utils/itemsData';
 import gameConfig from '../../../data/gameConfig.json';
 import { UsePlayerTurnMovementProps } from './types';
+import { gameEventBus } from '../../../events/core/EventBus';
+import { applyStatusToList } from '../../../effects/statusEngine';
 
 export function resolveStepEffects(
   targetX: number,
@@ -433,16 +435,9 @@ export function resolveStepEffects(
   setGameState((prev) => {
     let activeEffectsList = prev.playerStats.activeEffects ? [...prev.playerStats.activeEffects] : [];
     if (isPoisonedMove) {
-      activeEffectsList = activeEffectsList.filter((e) => e.id !== 'poison');
-      activeEffectsList.push({
-        id: 'poison',
-        name: 'Poisoned',
-        type: 'debuff',
-        icon: '🤢',
-        description: 'Sustained toxic damage over time. Deals -2 HP per turn.',
-        turnsRemaining: 15,
-        color: '#10b981',
-        damagePerTurn: 2
+      activeEffectsList = applyStatusToList(activeEffectsList, 'poison', {
+        duration: 15,
+        damagePerTurn: 2,
       });
     }
 
@@ -674,6 +669,16 @@ export function resolveStepEffects(
     setIsGameOver(true);
     return;
   }
+
+  // Emit movement:step event across the Unified Event Bus
+  gameEventBus.emit('movement:step', {
+    actorId: 'player',
+    fromX: gameState.playerX,
+    fromY: gameState.playerY,
+    toX: targetX,
+    toY: targetY,
+    distance: 1,
+  });
 
   executeEnemiesTurn(targetX, targetY);
 }

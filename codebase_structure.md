@@ -80,6 +80,23 @@ This document is the authoritative structural reference for the entire **Soverei
 
 ---
 
+### 3d. `/src/events/` — Unified Event Bus & Hook Pipeline Sub-Engine (Extreme Modifiability)
+- `src/events/types.ts`: Strongly typed event payloads (`combat:*`, `movement:*`, `spell:*`, `item:*`, `weather:*`, `chaos:*`, `turn:*`), priority tiers (`FIRST` to `MONITOR`), and cancellable event contracts.
+- `src/events/core/EventBus.ts`: High-performance singleton and scoped event engine with priority dispatch, error boundaries, wildcard subscriptions (`combat:*`), async emissions, and rolling telemetry log.
+- `src/events/core/useGameEvent.ts`: React subscription lifecycle hook with automated unmount cleanup and `useEventBus` accessor.
+- `src/events/pipeline/pipelineTypes.ts`: Domain context interfaces for Action Mutator pipelines (`DamageContext`, `MovementContext`, `LootContext`, `SpellCastContext`).
+- `src/events/pipeline/HookPipeline.ts`: Composable, priority-ordered synchronous middleware pipeline (Koa/Express onion pattern) with early exit cancellation.
+- `src/events/pipeline/pipelines/damagePipeline.ts`: Combat damage action mutator pipeline for relics, traits, catalysts, and weather.
+- `src/events/pipeline/pipelines/movementPipeline.ts`: Actor movement and traversal cost mutator pipeline.
+- `src/events/pipeline/pipelines/lootPipeline.ts`: Gold and drop roll multiplier pipeline.
+- `src/events/pipeline/pipelines/spellPipeline.ts`: Mana cost and spellcasting empowerment pipeline.
+- `src/events/registry/HookRegistry.ts`: Unified declarative modding registry (`registerDamageHook`, `registerMovementHook`, `registerEventListener`).
+- `src/components/god/GodEventInspectorTab.tsx`: Sovereign developer telemetry monitor, active pipeline hook inspector, and interactive sandbox event dispatcher.
+- `src/utils/storyteller/storytellerEventListener.ts`: Reactive Game Master adapter listening to combat, kills, weather, and chaos events.
+- `src/events/index.ts`: Event bus and pipeline barrel export.
+
+---
+
 ### 4. `/src/canvas/` — 2D Grid & Graphics Rendering Engine
 - `src/canvas/HybridGraphicsEngine.ts`: Primary rendering coordinator (supports canvas 2D & WebGL fallbacks).
 - `src/canvas/tileMapRenderer.ts`: Efficient viewport chunk renderer for terrain, water, roads, biomes, and indoor tiles.

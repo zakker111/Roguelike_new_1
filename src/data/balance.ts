@@ -38,9 +38,10 @@ export function getXpForLevel(level: number): number {
 export function calculateNetDamage(rawDamage: number, targetArmor: number): number {
   if (rawDamage <= 0) return 0;
   // Standard diminishing returns mitigation formula
+  const safeArmor = Math.max(0, targetArmor || 0);
   const mitigationFraction = Math.min(
     BALANCE_CONFIG.ARMOR_MITIGATION_CAP,
-    targetArmor / (targetArmor + 40)
+    safeArmor / (safeArmor + 40)
   );
   const netDamage = rawDamage * (1 - mitigationFraction);
   return Math.max(1, Math.round(netDamage));

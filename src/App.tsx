@@ -18,7 +18,9 @@ import gameConfig from './data/gameConfig.json';
 
 import { useAmbientAudio } from './hooks/useAmbientAudio';
 import { isPlayerIndoors } from './utils/buildingAudio';
-import ModalRouter from './components/ModalRouter';
+import { AppModalRouter } from './components/modals/AppModalRouter';
+import { initCustomRegistries } from './utils/customRegistryInit';
+import { regenerateCurrentLocation } from './utils/locationRegenerator';
 import { useEquipmentHandlers } from './hooks/useEquipmentHandlers';
 import { useSpellcasting } from './hooks/useSpellcasting';
 import { useWorldInteraction } from './hooks/useWorldInteraction';
@@ -51,6 +53,7 @@ import { STARTING_WEAPON, STARTING_ARMOR } from './utils/spellsAndEquipment';
 import { consumeItemFromInventory } from './utils/scrollUtils';
 import { SanctumRelic } from './utils/relics';
 import { performanceMonitor } from './utils/performanceMonitor';
+import { initStorytellerEventListeners } from './utils/storyteller';
 import { DEFAULT_QUESTS } from './utils/questData';
 import { getMerchantConfig } from './utils/shopData';
 import { appendBoundedLogs } from './utils/logBuffer';
@@ -77,34 +80,7 @@ import { createNewGameRun } from './utils/gameStateFactory';
 import { exportAndDownloadGameLogs } from './utils/logExporter';
 
 // Initialize global registries for custom modifiable components
-if (typeof window !== 'undefined') {
-  if (!(window as any).customEnemies) {
-    (window as any).customEnemies = [
-      { type: 'Rat', name: "Giant Plague Rat", baseHp: 6, baseAtk: 1, baseDef: 0, range: 1, speed: 1.0, char: "r", color: "#a1a1aa" },
-      { type: 'Goblin', name: "Scavenger Goblin", baseHp: 12, baseAtk: 2, baseDef: 1, range: 1, speed: 1.0, char: "g", color: "#eab308" },
-      { type: 'Mage', name: "Skeleton Spellflinger", baseHp: 14, baseAtk: 4, baseDef: 0, range: 4, speed: 1.0, char: "S", color: "#60a5fa" },
-      { type: 'Brute', name: "Orc Skullbreaker", baseHp: 30, baseAtk: 6, baseDef: 3, range: 1, speed: 1.3, char: "O", color: "#ea580c" },
-      { type: 'Trapmaster', name: "Kobold Trapsmith", baseHp: 22, baseAtk: 4, baseDef: 2, range: 3, speed: 1.0, char: "K", color: "#22c55e" },
-      { type: 'Dragon', name: "Sunder Ashwyrm Dragon", baseHp: 120, baseAtk: 11, baseDef: 6, range: 3, speed: 1.2, char: "🐉", color: "#ef4444" },
-      { type: 'Hiisi', name: "Hiisi Forest Fiend", baseHp: 25, baseAtk: 5, baseDef: 2, range: 1, speed: 1.0, char: "👹", color: "#16a34a" },
-      { type: 'Nakki', name: "Näkki Water Kelpie", baseHp: 22, baseAtk: 4, baseDef: 1, range: 2, speed: 0.9, char: "🧜", color: "#06b6d4" },
-      { type: 'Otso', name: "Otso the Honey-Paw", baseHp: 180, baseAtk: 12, baseDef: 7, range: 1, speed: 1.1, char: "🐻", color: "#b45309" },
-      { type: 'Louhi', name: "Louhi, Mistress of Pohjola", baseHp: 260, baseAtk: 15, baseDef: 10, range: 4, speed: 0.8, char: "🦅", color: "#c084fc" },
-      { type: 'IkuTurso', name: "Iku-Turso Eternal Leviathan", baseHp: 200, baseAtk: 14, baseDef: 8, range: 2, speed: 1.0, char: "🦑", color: "#0ea5e9" },
-      { type: 'Kalma', name: "Kalma Grave Goddess", baseHp: 90, baseAtk: 8, baseDef: 4, range: 3, speed: 0.9, char: "💀", color: "#a855f7" }
-    ];
-  }
-  if (!(window as any).customHouses) {
-    (window as any).customHouses = [
-      { id: 'blacksmith', name: 'Blacksmith Shop', x: 4, y: 3, w: 8, h: 8 },
-      { id: 'apothecary', name: 'Apothecary Shop', x: 37, y: 3, w: 8, h: 8 },
-      { id: 'tavern', name: 'Tavern & Inn', x: 18, y: 3, w: 14, h: 8 },
-      { id: 'villager1', name: 'Villager Cottage Left', x: 4, y: 19, w: 8, h: 8 },
-      { id: 'villager2', name: 'Villager Cottage Right', x: 37, y: 19, w: 8, h: 8 },
-      { id: 'barracks', name: 'Guard Barracks', x: 18, y: 20, w: 14, h: 7 }
-    ];
-  }
-}
+initCustomRegistries();
 
 export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -153,6 +129,12 @@ export default function App() {
     };
     window.addEventListener('pointerdown', handleGlobalButtonPress);
     return () => window.removeEventListener('pointerdown', handleGlobalButtonPress);
+  }, []);
+
+  // Initialize reactive Storyteller Event Bus listeners
+  useEffect(() => {
+    const unsubscribeStoryteller = initStorytellerEventListeners();
+    return () => unsubscribeStoryteller();
   }, []);
 
   const activeMobileView = forceLayoutMode === 'mobile';
@@ -218,78 +200,10 @@ export default function App() {
   });
 
   const handleRegenerateCurrentLocation = () => {
-    if (gameState.isOverworld) {
-      const updatedChunk = generateOverworldChunk(
-        gameState.currentChunkX,
-        gameState.currentChunkY,
-        LEVEL_WIDTH,
-        LEVEL_HEIGHT,
-        gameState.spawnedCats,
-        gameState.spawnedSeppo,
-        gameState.playerStats,
-        gameState.currentWeapon
-      );
-      setGameState((prev) => {
-        // compute initial visibility mask around the player
-        const visibleMask = computeFOV(prev.playerX, prev.playerY, updatedChunk.map, 6);
-        const nextLogs = appendBoundedLogs(prev.logs, {
-          id: `regen_${Date.now()}`,
-          text: `⚡ SYSTEM: Live-regenerated Overworld Chunk (${prev.currentChunkX}, ${prev.currentChunkY}) using modified JSON configurations!`,
-          type: 'system' as const,
-          timestamp: 'GOD'
-        }, 200);
-        const nextSpawnedCats = prev.spawnedCats ? [...prev.spawnedCats] : [];
-        updatedChunk.npcs.forEach(n => {
-          if (n.id?.startsWith('npc_cat_')) {
-            const catName = n.name.split(' (')[0];
-            if (!nextSpawnedCats.includes(catName)) {
-              nextSpawnedCats.push(catName);
-            }
-          }
-        });
-        const hasSeppo = updatedChunk.npcs.some(n => n.id === 'npc_seppo');
-        return {
-          ...prev,
-          map: updatedChunk.map,
-          npcs: updatedChunk.npcs,
-          enemies: updatedChunk.enemies,
-          chests: updatedChunk.chests,
-          traps: updatedChunk.traps,
-          discovered: visibleMask,
-          visible: visibleMask,
-          spawnedCats: nextSpawnedCats,
-          spawnedSeppo: prev.spawnedSeppo || hasSeppo,
-          overworldChunks: {
-            ...prev.overworldChunks,
-            [`${prev.currentChunkX},${prev.currentChunkY}`]: updatedChunk
-          },
-          logs: nextLogs
-        };
-      });
-    } else {
-      const newDungeon = generateLevel(LEVEL_WIDTH, LEVEL_HEIGHT, gameState.playerStats.depth, gameState.playerStats.turnsPlayed, gameState.playerStats.realTimeSeconds, gameState.playerStats, gameState.currentWeapon, gameState.defeatedEnemiesCount, gameState.clearedCamps?.length || 0);
-      setGameState((prev) => {
-        const visibleMask = computeFOV(newDungeon.playerX, newDungeon.playerY, newDungeon.map, 6);
-        const nextLogs = appendBoundedLogs(prev.logs, {
-          id: `regen_${Date.now()}`,
-          text: `⚡ SYSTEM: Live-regenerated Dungeon Level ${prev.playerStats.depth} using modified JSON enemy templates!`,
-          type: 'system' as const,
-          timestamp: 'GOD'
-        }, 200);
-        return {
-          ...prev,
-          map: newDungeon.map,
-          playerX: newDungeon.playerX,
-          playerY: newDungeon.playerY,
-          enemies: newDungeon.enemies,
-          chests: newDungeon.chests,
-          traps: newDungeon.traps,
-          discovered: visibleMask,
-          visible: visibleMask,
-          logs: nextLogs
-        };
-      });
-    }
+    setGameState((prev) => ({
+      ...prev,
+      ...regenerateCurrentLocation(prev),
+    }));
   };
 
   // Initialize a fresh new application run
@@ -844,15 +758,6 @@ export default function App() {
     });
   }
   const effectivePlayerDef = Math.max(0, getEffectiveStats(gameState.playerStats).def - brokenArmorDefReduction + activeEffectsDefBonus);
-
-  // Market trade helper variables for correct role checks
-  const activeNpcRole = gameState.npcs?.find(n => n.id === gameState.activeTradeNpcId)?.role;
-  const isBlacksmith = activeNpcRole === 'blacksmith' || activeNpcRole === 'npc_blacksmith';
-  const isMerchant = activeNpcRole === 'merchant' || activeNpcRole === 'npc_merchant' || activeNpcRole === 'traveler_hunter' || activeNpcRole === 'traveler_pilgrim';
-  const isApothecary = activeNpcRole === 'apothecary' || activeNpcRole === 'npc_apothecary' || activeNpcRole === 'traveler_herbalist';
-  const isTavernMaster = activeNpcRole === 'tavern_master';
-  const isSeppo = activeNpcRole === 'merchant_seppo' || activeNpcRole === ('merchant_seppo' as any);
-
   const effectiveMaxHp = isLunarBlessingActive(gameState, 'waxing_gibbous') ? getEffectiveStats(gameState.playerStats).maxHp + 15 : getEffectiveStats(gameState.playerStats).maxHp;
 
   useAmbientAudio(gameState);
@@ -885,7 +790,7 @@ export default function App() {
         />
       )}
       overlays={(
-        <ModalRouter
+        <AppModalRouter
           {...modalState}
           gameState={gameState}
           setGameState={setGameState}

@@ -14,6 +14,7 @@ import {
 } from './synthEngine';
 import { getVoiceManager, getSoundPriority, getSoundDuration } from './voiceManager';
 import { calculateAcousticOcclusion, getAcousticListenerContext } from './acousticOcclusion';
+import { playProceduralThunder } from './weatherSynthEngine';
 
 export { SOUND_CATALOG, SOUND_SYNTH_PRESETS };
 
@@ -1148,6 +1149,79 @@ export function playSound(
       gain.connect(destNode);
       osc.start(now);
       osc.stop(now + 0.13);
+      break;
+    }
+    case 'thunder_rumble': {
+      try {
+        playProceduralThunder(ctx, destNode, {
+          volume: vol * 0.5,
+          pan: panX,
+          isIndoor: isIndoorEvent,
+        });
+      } catch (e) {
+        // Fallback
+      }
+      break;
+    }
+    case 'wind_gust': {
+      try {
+        const bufferSize = Math.floor(ctx.sampleRate * 1.2);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(450 * pitch, now);
+        filter.frequency.linearRampToValueAtTime(850 * pitch, now + 0.5);
+        filter.frequency.linearRampToValueAtTime(320 * pitch, now + 1.2);
+        filter.Q.setValueAtTime(2.2, now);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.12 * vol, now + 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(destNode);
+        noise.start(now);
+        noise.stop(now + 1.2);
+      } catch (e) {
+        // Fallback
+      }
+      break;
+    }
+    case 'blizzard_howl': {
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(700 * pitch, now);
+        osc.frequency.linearRampToValueAtTime(1200 * pitch, now + 0.4);
+        osc.frequency.linearRampToValueAtTime(500 * pitch, now + 0.9);
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(950 * pitch, now);
+        filter.Q.setValueAtTime(4.0, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.08 * vol, now + 0.35);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.88);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(destNode);
+        osc.start(now);
+        osc.stop(now + 0.9);
+      } catch (e) {
+        // Fallback
+      }
       break;
     }
     case 'click':

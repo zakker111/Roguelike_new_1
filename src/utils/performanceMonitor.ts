@@ -136,7 +136,7 @@ export class PerformanceMonitor {
           if (f < min) min = f;
           if (f > max) max = f;
         }
-        this.avgFps = Math.round(sumFps / this.frameTimes.length);
+        this.avgFps = this.frameTimes.length > 0 ? Math.round(sumFps / this.frameTimes.length) : this.currentFps;
         this.minFps = min === 999 ? this.currentFps : min;
         this.maxFps = max === 0 ? this.currentFps : max;
       }
@@ -155,7 +155,7 @@ export class PerformanceMonitor {
       sumDur += d;
       if (d > peak) peak = d;
     }
-    this.avgFrameTimeMs = Number((sumDur / this.frameDurations.length).toFixed(2));
+    this.avgFrameTimeMs = this.frameDurations.length > 0 ? Number((sumDur / this.frameDurations.length).toFixed(2)) : 16.6;
     this.peakFrameTimeMs = Number(peak.toFixed(2));
   }
 

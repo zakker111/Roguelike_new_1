@@ -9,6 +9,7 @@ import {
 } from '../../types';
 import { getEffectiveAttribute, generateRandomLootGear } from '../../utils/gameUtils';
 import { formatGameTime } from '../../utils/overworld';
+import { getRandomFactionSpoils } from '../../world/skirmish/factionSpoils';
 
 export interface CombatLootResult {
   gainedXp: number;
@@ -36,8 +37,8 @@ export function generateCombatLoot(
       : '#dc2626';
   const finalSplatterColor = isLootGoblin ? '#f59e0b' : splatterColor;
 
-  const xpMult = (window as any).arenaXpMultiplier || 1.0;
-  const goldMult = (window as any).arenaGoldMultiplier || 1.0;
+  const xpMult = (typeof window !== 'undefined' ? (window as any).arenaXpMultiplier : 1.0) || 1.0;
+  const goldMult = (typeof window !== 'undefined' ? (window as any).arenaGoldMultiplier : 1.0) || 1.0;
   const isBoss = !!updatedEnemy.isBoss;
   const isDragon = updatedEnemy.type === EnemyType.Dragon;
 
@@ -217,13 +218,19 @@ export function generateCombatLoot(
 
   // Faction Turf War & Elite Spoils
   if (
+    updatedEnemy.factionRank === 'warlord' ||
     updatedEnemy.name?.toLowerCase().includes('warlord') ||
+    updatedEnemy.name?.toLowerCase().includes('chieftain') ||
     updatedEnemy.name?.toLowerCase().includes('goreaxe')
   ) {
     finalMats = [...finalMats, 'mat_refined_iron', 'mat_tempered_scrap'];
+    const factionGear = getRandomFactionSpoils(updatedEnemy.faction);
+    if (factionGear) {
+      droppedEquip.push(factionGear);
+    }
     extraLogs.push({
       id: `orc_spoils_${Date.now()}`,
-      text: `🏆 [WARLORD SPOILS]: Defeated ${updatedEnemy.name}! High-grade Refined Iron and Tempered Scrap scatter on the battlefield!`,
+      text: `🏆 [WARLORD SPOILS]: Defeated ${updatedEnemy.name}! High-grade Refined Iron, Scavenged Scrap, and ${factionGear ? factionGear.name : 'rare gear'} claimed on the battlefield!`,
       type: 'loot',
       timestamp: formatGameTime(prev.gameTime).timeStr
     });

@@ -49,6 +49,7 @@ import { GodModdingTab } from './god/GodModdingTab';
 import { GodMinigamesTab } from './god/GodMinigamesTab';
 import { TilesetTesterTab } from './god/TilesetTesterTab';
 import { GodCatalogLiveTuner } from './god/GodCatalogLiveTuner';
+import { GodEventInspectorTab } from './god/GodEventInspectorTab';
 import { PALETTE_TILES } from './god/GodHouseDesigner';
 
 export { DESIGNER_LEGEND, PALETTE_TILES };
@@ -416,7 +417,8 @@ function GodPanelOverlayComponent({
             { id: 'bestiary_test', label: 'Bestiary', icon: Skull, color: 'text-orange-400' },
             { id: 'dungeon_editor', label: 'Dungeon Floors', icon: Grid, color: 'text-purple-400' },
             { id: 'modding_api', label: 'Modding API', icon: Code, color: 'text-pink-400' },
-            { id: 'catalog_tuner', label: 'Catalog Tuner', icon: Sliders, color: 'text-amber-400' }
+            { id: 'catalog_tuner', label: 'Catalog Tuner', icon: Sliders, color: 'text-amber-400' },
+            { id: 'event_bus', label: 'Event Bus', icon: Zap, color: 'text-cyan-400' }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -760,6 +762,11 @@ function GodPanelOverlayComponent({
           {/* In-Game Data Catalog Live Tuner */}
           {activeTab === 'catalog_tuner' && (
             <GodCatalogLiveTuner />
+          )}
+
+          {/* Unified Event Bus & Hook Pipeline Monitor */}
+          {activeTab === 'event_bus' && (
+            <GodEventInspectorTab />
           )}
         </div>
 

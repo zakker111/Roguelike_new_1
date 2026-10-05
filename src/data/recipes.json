@@ -42,7 +42,7 @@
       "description": "Chilled deep in everfrost powder. Instantly restores 50 HP and grants a resilient +3 Defense bonus for 25 turns.",
       "restoringHp": 50,
       "restoringMp": 0,
-      "materials": { "mat_raw_meat": 1, "mat_berry": 1 },
+      "materials": { "mat_prime_meat": 1, "mat_berry": 1 },
       "catalysts": { "cat_frost": 1 },
       "buff": {
         "name": "Everfrost Bulwark ❄️",
@@ -60,7 +60,7 @@
       "description": "Smoked in ambient twilight fumes. Instantly restores 35 HP and completely purges player physical exhaustion to 0%!",
       "restoringHp": 35,
       "restoringMp": 0,
-      "materials": { "mat_raw_meat": 1, "mat_wood": 1 },
+      "materials": { "mat_prime_meat": 1, "mat_wood": 1 },
       "catalysts": { "cat_shadow": 1 },
       "buff": null
     },
