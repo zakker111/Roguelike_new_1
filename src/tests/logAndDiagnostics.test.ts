@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CatalystType, EnemyState, EnemyType, TileType } from '../types';
+import { CatalystType } from '../types';
 
 describe('12.6 Log Integrity, UI Renderers & System Diagnostics Suite', () => {
   it('entityLayerRenderer string safety check prevents crashes on null or missing corpse names', () => {

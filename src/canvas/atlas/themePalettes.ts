@@ -5,7 +5,7 @@
 
 import { MockupPaletteTheme, ThemePaletteColors } from './types';
 
-export const THEME_PALETTES: Record<MockupPaletteTheme, ThemePaletteColors> = {
+export const THEME_PALETTES: Record<string, ThemePaletteColors> = {
   classic: {
     wallBase: '#475569',
     wallHighlight: '#94a3b8',
@@ -68,6 +68,10 @@ export const THEME_PALETTES: Record<MockupPaletteTheme, ThemePaletteColors> = {
   },
 };
 
-export function getThemePalette(theme: MockupPaletteTheme = 'classic'): ThemePaletteColors {
+export function registerThemePalette(themeName: string, colors: ThemePaletteColors): void {
+  THEME_PALETTES[themeName] = colors;
+}
+
+export function getThemePalette(theme: string = 'classic'): ThemePaletteColors {
   return THEME_PALETTES[theme] || THEME_PALETTES.classic;
 }

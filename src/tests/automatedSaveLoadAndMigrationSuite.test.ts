@@ -1,11 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { 
   migrateSaveData, 
-  validateSaveData, 
-  normalizeMaterialStorage, 
   normalizeEquippedItem, 
   CURRENT_SAVE_VERSION,
-  DEFAULT_SAVE_KEY,
   SaveFilePayload
 } from '../hooks/useSaveLoad';
 import { exportAndDownloadGameLogs } from '../utils/logExporter';

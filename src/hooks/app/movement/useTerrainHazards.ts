@@ -1,7 +1,6 @@
-import { GameState, TileType } from '../../../types';
+import { GameState } from '../../../types';
 import { getCurrentWeight, getMaxWeight } from '../../../utils/itemWeight';
 import { WEATHER_EFFECTS } from '../../../utils/weatherEngine';
-import { isPlayerInvincible } from '../../../utils/invincibility';
 
 export function checkOverburdenedMovement(
   gameState: GameState,

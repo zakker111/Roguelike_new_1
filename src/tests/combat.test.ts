@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { calculateNetDamage, calculateCritDamage, getXpForLevel, BALANCE_CONFIG } from '../data/balance';
+import { calculateNetDamage, calculateCritDamage, getXpForLevel } from '../data/balance';
 import { evaluateScarAcquisition, getEffectiveStats, SCAR_DATABASE } from '../utils/scars';
-import { CatalystType, EnemyState, EnemyType } from '../types';
+import { CatalystType, EnemyType } from '../types';
 
 describe('12.2 Combat Engine, Invasion Events & Debuff Property Safety', () => {
   it('calculateNetDamage applies armor mitigation formula correctly', () => {

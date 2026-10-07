@@ -41,9 +41,6 @@ describe('12.3 World Generation, Chunk Scrolling & Camera Focus Tests', () => {
   });
 
   it('Camera target calculation snaps camera on chunk boundary transition', () => {
-    const levelWidth = 64;
-    const levelHeight = 40;
-
     // Player moves to new chunk boundary (x: 0, y: 0) -> camera target centers on player
     const playerX = 32;
     const playerY = 20;

@@ -1379,6 +1379,45 @@ Decomposed the monolithic 943-line `TradeModal.tsx` into a modular, decoupled su
 - **Automated Verification (`src/tests/tradeModularComponents.test.ts`)**:
   - Added dedicated test suite verifying sub-component catalog lookups, role tab rendering, and trading actions across all 66 test suites (412 tests passing 100% green).
 
+## 75. Modular POI & Landmark Sub-Engine (v8.9.8)
+
+Decomposed the landmark and wilderness interaction monolith (`src/hooks/usePoiAndWilderness.ts`, 817 lines down to 85 lines) into modular sub-hooks under `src/hooks/poi/`:
+- **useWildernessSleep.ts**: Campsite surroundings analysis, nocturnal ambush checks, rest interruption, exhaustion clearance, and shelter buffs.
+- **useTravelerInteractions.ts**: Wandering herbalists/hunters/pilgrims, assault witness tracking, reputation penalties, quest failures, and drunk NPC boons.
+- **useShrineAndPoiChoices.ts**: Landmark choices, status effect applications (Blessed, Shielded), XP level-up loops, and history chapter unlocks.
+- **useWaystoneAndGuardian.ts**: Leyline waystone attunement, fast travel chunk transitions, and awakening ancient biome guardians.
+
+## 76. Dynamic Turf Wars, Emergent Skirmishes & Faction Spoils (v8.10.0)
+
+Integrated dynamic ambient battlefield skirmishes into the Overworld and Ruined Cities under `src/world/skirmish/`:
+- **Emergent Skirmish Encounters**: Active Plaza Melees (Dawn Vanguard vs Orc Clan), High-Ground Crossbow Ambushes (concealed spike traps), and Base Siege Redoubts (Warlord bosses).
+- **Morale Breaks & War Chest Unlocks**: Defeating a Warlord triggers minion panic and unlocks the garrison's locked Faction War Chest.
+- **5 Authentic Faction Spoils**: Goreaxe War Cleaver (+18% crit, bleed), Goreaxe Spiked Buckler (+7 def, spike retaliation), Outlaw Stalker Leather (+12% crit evasion), Syndicate Shadow Satchel (+5 LCK), and Dawn Vanguard Crusader Plate (+10 def).
+
+## 77. Modular Procedural Atlas Synthesis Sub-Engine (v8.11.0)
+
+Decomposed the 1,617-line atlas generator monolith into a clean, modular strategy pattern under `src/canvas/atlas/`:
+- **Theme Generators**: `ClassicAtlasGenerator`, `ForestAtlasGenerator`, `InfernalAtlasGenerator`.
+- **Decoupled Sub-Renderers**: `mainTilesetRenderer.ts`, `entityTilesetRenderer.ts`, `bossTilesetRenderer.ts`, `itemsTilesetRenderer.ts`.
+- **Master Dispatcher**: Streamlined `MockupAtlasGenerator.ts` from 1,617 lines down to 117 lines.
+
+## 78. High-Clarity Combat Log & Tactical Feed Sub-Engine (v8.12.0)
+
+Decomposed `GameLog.tsx` into a modular sub-engine under `src/components/log/` following domain-native visual hierarchy and zero-pill discipline:
+- **Unboxed Glowing Category Bullet Pips**: Crimson (danger), Amber (combat), Emerald (heal), Amethyst (lore), Gold (loot), Cyan (weather/stances).
+- **Monospace Turn Timestamps**: Clean `T:84 · 14:15` format.
+- **Smart Consecutive Duplicate Stacking**: Badges grouping identical messages (`×4`).
+- **Post-Combat Encounter Recap Bar**: Expandable summary banner with damage dealt, damage taken, enemies slain, gold/materials looted, and a 1-click clipboard export button.
+- **Canvas Floating Combat Text Polish**: Anti-overlap radial stagger calculation with 9 kinetic archetypes in `combatVfxEngine.ts`.
+
+## 79. Cinematic Tone Mapping, Biome Color Grading & Volumetric Sunbeams (v8.13.0)
+
+Zero-allocation dynamic color grading and volumetric lighting pipeline in `src/canvas/colorGradingEngine.ts`:
+- **Astronomical 24h Clock Mapping**: 6 distinct astronomical phases (Dawn, Morning, Midday, Golden Hour, Twilight, Night) with smooth color temperature transitions.
+- **Rich Nocturnal Moonlit Navy**: Replaces muddy gray darkness with deep midnight navy & moonlit cyan undertones, making fires and magic spells pop with high contrast.
+- **Biome & Subterranean Tone Matrix**: Distinctive chromatic profiles for Forest, Desert, Tundra, Swamp, Volcanic, Ruined Cities, and tiered Dungeon Depths (crypt, ancient deeps, magma underworld).
+- **Volumetric Crepuscular Sunbeams (God Rays)**: Rotating diagonal light shafts with harmonic breathing and floating atmospheric dust motes.
+
 
 
 

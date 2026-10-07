@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { generateOverworldChunk } from '../utils/overworld';
 import { generateLevel } from '../utils/dungeon';
 import { calculateNetDamage, calculateCritDamage, getXpForLevel } from '../data/balance';
 import { getEffectiveStats, evaluateScarAcquisition, getScarStatus } from '../utils/scars';
-import { TileType, PlayerStats, Enemy } from '../types';
-import { BLACKSMITH_SHOP_ITEMS, MERCHANT_RESOURCES, TAVERN_SHOP_ITEMS, APOTHECARY_ITEMS } from '../utils/shopData';
+import { PlayerStats, Enemy } from '../types';
+import { BLACKSMITH_SHOP_ITEMS, MERCHANT_RESOURCES, APOTHECARY_ITEMS } from '../utils/shopData';
 import { GUILD_UPGRADES, GUILD_DECORS } from '../utils/tradeEconomy';
 import { getGMStorytellerState, setGMStorytellerState, GM_ENCOUNTERS_DATABASE, GMPersonality } from '../utils/gmStoryteller';
 import { validateSaveData } from '../hooks/useSaveLoad';

@@ -1,5 +1,48 @@
 import { GameState } from '../types';
 
+export interface BiomeAtmosphereConfig {
+  enabled: boolean;
+  densityMultiplier: number;
+}
+
+class BiomeAtmosphereConfigManager {
+  private static instance: BiomeAtmosphereConfigManager;
+  private enabled = true;
+  private densityMultiplier = 1.0;
+
+  private constructor() {}
+
+  public static getInstance(): BiomeAtmosphereConfigManager {
+    if (!BiomeAtmosphereConfigManager.instance) {
+      BiomeAtmosphereConfigManager.instance = new BiomeAtmosphereConfigManager();
+    }
+    return BiomeAtmosphereConfigManager.instance;
+  }
+
+  public setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
+  public getIsEnabled(): boolean {
+    return this.enabled;
+  }
+
+  public setDensityMultiplier(multiplier: number): void {
+    this.densityMultiplier = Math.max(0, multiplier);
+  }
+
+  public getDensityMultiplier(): number {
+    return this.densityMultiplier;
+  }
+
+  public reset(): void {
+    this.enabled = true;
+    this.densityMultiplier = 1.0;
+  }
+}
+
+export const biomeAtmosphereConfig = BiomeAtmosphereConfigManager.getInstance();
+
 /**
  * Ambient environmental particle & biome micro-atmosphere renderer:
  * 1. Tundra / Winter: Gentle swirling snowflakes and ice crystal glints
@@ -12,6 +55,7 @@ export function renderBiomeMicroAtmosphere(
   dimensions: { width: number; height: number },
   gameState: GameState
 ) {
+  if (!biomeAtmosphereConfig.getIsEnabled()) return;
   const biome = gameState.biome || 'forest';
   const season = gameState.season || 'spring';
   const isOverworld = gameState.isOverworld;

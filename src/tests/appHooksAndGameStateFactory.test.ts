@@ -11,7 +11,6 @@ import {
   useShrineAndChestHandlers
 } from '../hooks/app';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../utils/gameUtils';
-import { GameState } from '../types';
 
 describe('App Hooks and GameState Factory Tests', () => {
   it('createNewGameRun produces a fully-populated, valid initial GameState', () => {

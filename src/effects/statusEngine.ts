@@ -4,7 +4,7 @@
  */
 
 import { PlayerEffect } from '../types/entities';
-import { STATUS_EFFECT_REGISTRY, getStatusEffectDefinition, StatusStatModifiers } from './statusEffectRegistry';
+import { getStatusEffectDefinition, StatusStatModifiers } from './statusEffectRegistry';
 
 export interface ApplyStatusOptions {
   duration?: number;

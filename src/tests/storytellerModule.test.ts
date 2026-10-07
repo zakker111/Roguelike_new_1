@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   getGMStorytellerState,
-  setGMStorytellerState,
   STORY_EVENTS_CATALOG,
   getRandomFlavorText,
   getEncounterFlavorText,
@@ -9,7 +8,6 @@ import {
   GM_ENCOUNTERS_DATABASE,
   modifyChaosScore,
   triggerManualChaosSurge,
-  executeChaosSurgeRoll,
   evaluatePityRescueAid,
   tickActiveGMStoryteller,
   forceGMEncounter

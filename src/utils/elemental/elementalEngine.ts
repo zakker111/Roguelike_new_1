@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TileType, GameState, Enemy } from '../../types';
-import { ElementalTile, ElementType, ElementalInteractionResult } from '../../types/elemental';
+import { TileType, GameState } from '../../types';
+import { ElementalTile, ElementType } from '../../types/elemental';
 import { isPlayerInvincible } from '../invincibility';
 
 export interface ElementalPropagationResult {

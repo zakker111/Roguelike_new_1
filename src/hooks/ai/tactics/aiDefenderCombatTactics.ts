@@ -16,13 +16,10 @@ import { AITacticContext, AITacticResult, safeDispatchEffect } from './types';
 export function executeDefenderCombatTactics(ctx: AITacticContext): AITacticResult | null {
   const {
     e,
-    px,
-    py,
     prev,
     nextGuardsHostile,
     nextEnemies,
     entitySpatialGrid,
-    allActiveEntities,
     isHostile,
     isWithinAttackRange,
     distToPlayer,

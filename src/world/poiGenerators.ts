@@ -5,7 +5,7 @@
 
 import { TileType, Chest, Enemy, EnemyState, EnemyType, WatchtowerState, BiomeType } from '../types';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from '../utils/itemsData';
-import { POI_BLUEPRINTS, getPOIBlueprint } from '../data/worldHistory';
+import { getPOIBlueprint } from '../data/worldHistory';
 import { ensureEntranceClearance, connectPoiSpokeToTrail } from './organic/roadNetworkGen';
 
 export function generateWatchtowerPOI(

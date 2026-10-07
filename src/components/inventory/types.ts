@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { GameState, EquipmentItem } from '../../types';
-import { DiscardGumpData } from '../DiscardGumpModal';
 
 export interface UnifiedInventoryPanelProps {
   gameState: GameState;

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { Enemy, EnemyType, EnemyState, TileType, GameState } from '../types';
+import { Enemy, EnemyType, EnemyState, TileType } from '../types';
 import { isFactionLeader, triggerSquadMoraleBreakOnLeaderDeath, checkDesperateSurrender } from '../hooks/ai/factionMorale';
 
 function mockEnemy(overrides: Partial<Enemy>): Enemy {

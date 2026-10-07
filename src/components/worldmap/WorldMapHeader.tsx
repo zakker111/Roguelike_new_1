@@ -1,6 +1,6 @@
 import React from 'react';
 import { WorldMapFilterState, CartographyStats } from './types';
-import { Compass, ZoomIn, ZoomOut, X, MapPin, Sparkles, BookOpen } from 'lucide-react';
+import { Compass, ZoomIn, ZoomOut, X, BookOpen } from 'lucide-react';
 
 interface WorldMapHeaderProps {
   currentChunkX: number;

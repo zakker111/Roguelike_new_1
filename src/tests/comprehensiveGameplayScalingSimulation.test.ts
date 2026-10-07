@@ -6,7 +6,7 @@ import { generateLevel } from '../utils/dungeon';
 import { generateOverworldChunk } from '../utils/overworld';
 import { tickActiveGMStoryteller, getGMStorytellerState, setGMStorytellerState } from '../utils/gmStoryteller';
 import { BLACKSMITH_SHOP_ITEMS, APOTHECARY_ITEMS, MERCHANT_RESOURCES } from '../utils/shopData';
-import { GameState, Enemy, PlayerStats, TileType } from '../types';
+import { Enemy, PlayerStats, TileType } from '../types';
 
 describe('Comprehensive Full-Game Scaling, Math & Multi-Turn Simulation', () => {
 

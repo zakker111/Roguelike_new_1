@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { GameState } from '../../types';
+import { useState, useEffect } from 'react';
 import {
   UseGodPanelStateProps,
   GodActiveTab,

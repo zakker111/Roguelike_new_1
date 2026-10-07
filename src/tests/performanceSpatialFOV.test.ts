@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SpatialEntityGrid, packCoord, unpackCoord, manhattanDistance, chebyshevDistance } from '../utils/spatial';
+import { SpatialEntityGrid, packCoord, unpackCoord } from '../utils/spatial';
 import { traceLine, bresenhamLine, hasLineOfSight, computeFOV } from '../utils/ai';
 import { TileType, Enemy, EnemyState, EnemyType } from '../types';
 

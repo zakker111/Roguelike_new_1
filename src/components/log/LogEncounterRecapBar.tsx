@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Swords, Shield, Heart, Coins, Trophy, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Swords, Heart, Trophy, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { GameLogMessage } from '../../types';
 import { EncounterTally } from './types';
 

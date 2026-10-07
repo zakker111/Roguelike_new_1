@@ -20,6 +20,7 @@ export class BloomEngine {
   private stampsInitialized = false;
   private bloomStamps: Map<string, HTMLCanvasElement> = new Map();
   private isEnabled = true;
+  private intensityMultiplier = 1.0;
 
   private constructor() {}
 
@@ -36,6 +37,14 @@ export class BloomEngine {
 
   public getIsEnabled(): boolean {
     return this.isEnabled;
+  }
+
+  public setIntensityMultiplier(multiplier: number): void {
+    this.intensityMultiplier = Math.max(0, multiplier);
+  }
+
+  public getIntensityMultiplier(): number {
+    return this.intensityMultiplier;
   }
 
   /**
@@ -169,7 +178,7 @@ export class BloomEngine {
       const stamp = this.bloomStamps.get(emitter.colorType) ?? this.bloomStamps.get('fire');
       if (!stamp) return;
 
-      ctx.globalAlpha = Math.min(1.0, Math.max(0, emitter.intensity));
+      ctx.globalAlpha = Math.min(1.0, Math.max(0, emitter.intensity * this.intensityMultiplier));
       const r = emitter.radius;
       ctx.drawImage(stamp, screenX - r, screenY - r, r * 2, r * 2);
     };

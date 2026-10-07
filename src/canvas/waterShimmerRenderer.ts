@@ -1,5 +1,48 @@
 import { TileType } from '../types';
 
+export interface WaterShimmerConfig {
+  enabled: boolean;
+  intensityMultiplier: number;
+}
+
+class WaterShimmerConfigManager {
+  private static instance: WaterShimmerConfigManager;
+  private enabled = true;
+  private intensityMultiplier = 1.0;
+
+  private constructor() {}
+
+  public static getInstance(): WaterShimmerConfigManager {
+    if (!WaterShimmerConfigManager.instance) {
+      WaterShimmerConfigManager.instance = new WaterShimmerConfigManager();
+    }
+    return WaterShimmerConfigManager.instance;
+  }
+
+  public setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
+  public getIsEnabled(): boolean {
+    return this.enabled;
+  }
+
+  public setIntensityMultiplier(multiplier: number): void {
+    this.intensityMultiplier = Math.max(0, multiplier);
+  }
+
+  public getIntensityMultiplier(): number {
+    return this.intensityMultiplier;
+  }
+
+  public reset(): void {
+    this.enabled = true;
+    this.intensityMultiplier = 1.0;
+  }
+}
+
+export const waterShimmerConfig = WaterShimmerConfigManager.getInstance();
+
 export interface WaterShimmerOptions {
   tileSize: number;
   timeMs?: number;
@@ -19,6 +62,7 @@ export function renderWaterTileShimmer(
   isShallow: boolean = false,
   timeMs: number = Date.now()
 ) {
+  if (!waterShimmerConfig.getIsEnabled()) return;
   const time = timeMs * 0.002;
   const isTundra = biome === 'tundra';
   const isSwamp = biome === 'swamp';

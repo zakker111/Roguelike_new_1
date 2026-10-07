@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   isScrollItem,
-  consolidateStackableItems,
   addEquipmentItemToInventory,
   consumeItemFromInventory
 } from '../utils/scrollUtils';

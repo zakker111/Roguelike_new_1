@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, MessageSquare, Scroll, ShoppingBag, Swords, ShieldAlert, Sparkles, HelpCircle, CloudRain, Sun, Snowflake, CloudFog, CupSoda, Navigation } from 'lucide-react';
+import { X, MessageSquare, ShoppingBag, Sparkles, CloudRain, Sun, Snowflake, CloudFog, CupSoda, Navigation } from 'lucide-react';
 import { NPC, PlayerStats } from '../../types';
 import { playSound } from '../../utils/audio';
 import { getWeatherTimeContextDialogue, getRegionalRumorAndGossip } from '../../utils/npcDialogue';

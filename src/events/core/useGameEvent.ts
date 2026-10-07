@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from 'react';
 import { gameEventBus, GameEventBusEngine } from './EventBus';
-import { EventPriority, GameEventType, GameEventPayloadMap } from '../types';
+import { EventPriority, GameEventPayloadMap } from '../types';
 
 export function useGameEvent<K extends keyof GameEventPayloadMap | string>(
   eventType: K,

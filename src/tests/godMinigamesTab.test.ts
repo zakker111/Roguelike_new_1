@@ -4,7 +4,6 @@ import { GameState } from '../types';
 
 describe('GodMinigamesTab Integration & Sandbox Testbed', () => {
   let mockGameState: GameState;
-  let playedSounds: string[] = [];
   let logMessages: { text: string; type?: string }[] = [];
   let lockpickingTriggerCount = 0;
   let fishingTriggerCount = 0;
@@ -20,7 +19,6 @@ describe('GodMinigamesTab Integration & Sandbox Testbed', () => {
 
   beforeEach(() => {
     mockGameState = createNewGameRun(12345);
-    playedSounds = [];
     logMessages = [];
     lockpickingTriggerCount = 0;
     fishingTriggerCount = 0;

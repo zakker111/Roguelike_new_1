@@ -1,6 +1,5 @@
-import { Enemy, GameState, TileType } from '../../types';
-import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
-import { getNextStepTowards, hasLineOfSight, isTileWalkableForEntity } from '../../utils/ai';
+import { Enemy } from '../../types';
+import { getNextStepTowards, isTileWalkableForEntity } from '../../utils/ai';
 import { incrementDefeatedEnemyCount } from '../../utils/bestiary';
 import { TownGuardAIParams, TownGuardActionResult } from './types';
 

@@ -1,18 +1,15 @@
-import { TileType, NPC, Enemy, Trap, Chest, EnemyType, EnemyState, TrapType } from "../../types";
+import { TileType, Enemy, EnemyType, EnemyState, TrapType } from "../../types";
 import { isTileWalkableForEntity } from "../ai";
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
 import { generateWatchtowerPOI, generateRuinsPOI } from "../../world/poiGenerators";
 import { generateRuinsDecorProps } from "../decorEngine";
 import worldConfig from "../../data/worldConfig.json";
-import { getEnemyTemplate } from "../dungeon";
 import { applyCombatArchetypeAndChaosScaling } from "../combatArchetypes";
 import {
   prng,
-  findNearestSafeNpcTile,
 } from "./overworldCore";
 import { OverworldGenContext } from "./types";
 import {
-  carveNaturalRiversAndLakes,
   generateOrganicVegetationAndOres,
   carveOrganicTrailsAndRoads,
   ensureEntranceClearance,
@@ -25,10 +22,7 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
     chunkY,
     width,
     height,
-    spawnedCats,
-    spawnedSeppo,
     playerStats,
-    currentWeapon,
     biome,
     map,
     npcs,
@@ -233,6 +227,7 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
 
     if (isWatchtowerChunk) {
       watchtower = generateWatchtowerPOI(map, chunkX, chunkY, prng, chests, enemies);
+      ctx.watchtower = watchtower;
     } else {
       // Spawn a Dungeon Entrance inside a small 3x3 stone building with random entrance door position
       const dungX = Math.floor(prng(chunkX, chunkY, 3) * (width - 10)) + 5;
@@ -354,26 +349,22 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
     let easyWeight = 0.50;
     let standardWeight = 0.35;
     let toughWeight = 0.15;
-    let apexWeight = 0.00;
 
     if (distFromOrigin <= 1.5) {
       // Safe / Starter Frontier near town: Strictly easy critters and light standard scouts (0% Tough, 0% Apex)
       easyWeight = 0.70;
       standardWeight = 0.30;
       toughWeight = 0.00;
-      apexWeight = 0.00;
     } else if (distFromOrigin <= 3.5) {
       // Mid Wilderness
       easyWeight = 0.45;
       standardWeight = 0.35;
       toughWeight = 0.16;
-      apexWeight = 0.04;
     } else {
       // Deep Frontier
       easyWeight = 0.35;
       standardWeight = 0.35;
       toughWeight = 0.22;
-      apexWeight = 0.08;
     }
 
     for (let i = 0; i < monsterCount; i++) {

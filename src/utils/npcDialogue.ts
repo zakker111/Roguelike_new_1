@@ -46,7 +46,7 @@ export function getTimeOfDayLabel(gameTime?: number): 'morning' | 'noon' | 'even
  * Returns contextual weather dialogue tailored to the NPC role, weather, time of day, and biome.
  */
 export function getWeatherTimeContextDialogue(npc: NPC, context: DialogueContext): string[] {
-  const { weather = 'clear', gameTime = 720, biome = 'forest', season = 'spring' } = context;
+  const { weather = 'clear', gameTime = 720 } = context;
   const timeOfDay = getTimeOfDayLabel(gameTime);
   const role = npc.role?.toLowerCase() || 'villager';
 
@@ -241,7 +241,7 @@ export function getBlizzardShelterBark(npc: NPC): string {
  * Returns dynamic, weather and environment aware regional rumors and lore.
  */
 export function getRegionalRumorAndGossip(context: DialogueContext): string {
-  const { weather = 'clear', biome = 'forest', season = 'spring' } = context;
+  const { weather = 'clear', biome = 'forest' } = context;
 
   const baseRumors = [
     "The Deep Abyss dungeons hold ancient artifacts, but tread lightly past floor 5.",

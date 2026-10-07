@@ -1,4 +1,4 @@
-import { GameState, EnemyType, TileType, GameLogMessage } from '../../types';
+import { GameState } from '../../types';
 
 export const DESIGNER_LEGEND: Record<string, string> = {
   '#': 'Wall',
@@ -64,6 +64,7 @@ export interface UseGodPanelStateProps {
 
 export type GodActiveTab =
   | 'sovereign'
+  | 'visuals_studio'
   | 'tileset_tester'
   | 'minigames'
   | 'arena'

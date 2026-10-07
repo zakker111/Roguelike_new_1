@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TileType, Trap, Chest, Enemy, EnemyType, Follower, DungeonProp } from '../../types';
+import { TileType, Trap, Chest, Enemy, EnemyType } from '../../types';
 
 export interface Room {
   x: number;

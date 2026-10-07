@@ -1,10 +1,5 @@
 import {
-  GameState,
-  TileType,
-  Enemy,
-  EnemyType,
-  EnemyState,
-  Follower
+  TileType
 } from '../../../types';
 import {
   isLunarBlessingActive,

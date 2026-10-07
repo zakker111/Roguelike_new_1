@@ -806,5 +806,50 @@ Transform the combat log and canvas floating text into a high-clarity, satisfyin
 - [x] **Phase L3.2: Categorized Floater Archetypes**
   - Golden bouncing arcs for critical strikes, crimson tremor for player damage, gliding italic sky-blue for dodges, metallic teal for shields, and elemental ember drifts for burning/poison ticks with dynamic glowing shadows and typography scaling.
 
+---
+
+## 🎨 Milestone: Cinematic Tone Mapping, Biome Color Grading & Volumetric Sunbeams (v8.13.0) (COMPLETED)
+
+### 🎯 Architecture Objective
+Elevate game visuals from flat static pixel hexes into a living, high-contrast dark fantasy atmosphere with continuous time-of-day tone mapping, biome-specific color grading, rich nocturnal moonlit indigo, and rotating volumetric crepuscular rays (god rays) with illuminated atmospheric dust motes.
+
+### 📋 Phases Breakdown
+- [x] **Phase V1.1: Astronomical Time-of-Day Phase Engine (`src/canvas/colorGradingEngine.ts`)**
+  - Continuous mathematical mapping of 24h clock into 6 distinct astronomical phases: Dawn (05:30–08:00), Morning (08:00–11:00), Midday (11:00–17:30), Golden Hour (17:30–20:00), Twilight (20:00–21:30), and Night (21:30–05:30).
+  - Dynamic sun vector angles: dawn rays angling from the east, vertical midday shafts, and golden hour rays angling from the west.
+  - Nighttime tone mapping: transforms muddy gray darkness into rich nocturnal navy & moonlit cyan with high specular contrast on torches, campfires, and spell effects.
+- [x] **Phase V1.2: Biome & Subterranean Tone Mapping Matrix**
+  - Distinctive chromatic profiles for Forest (verdant moss), Desert (sun-baked golden ochre), Tundra (glacial diamond-cyan), Swamp (murky jade mist), Volcanic (smoldering ember charcoal), and Ruined Cities (oxidized verdigris bronze).
+  - Dungeon depth atmospheric profiles: cold teal crypts (depth 1–3), arcane amethyst ruins (depth 4–5), and hellfire incandescent magma (depth 6+).
+- [x] **Phase V1.3: Volumetric Crepuscular Sunbeams (God Rays) & Ambient Dust Motes**
+  - Hardware-accelerated soft trapezoidal light shafts with harmonic breathing oscillation (`sin(now * 0.4)`).
+  - Pre-allocated pool of 18 floating dust motes drifting through illuminated light corridors without garbage collection.
+- [x] **Phase V1.4: Post-Processing Chain Integration (`GameCanvas.tsx`)**
+  - Seamlessly layered between the Luminous HDR Bloom Pass and the Atmospheric Perimeter Vignette Pass.
+  - 11 automated unit tests in `src/tests/colorGradingEngine.test.ts` (100% passing).
+
+---
+
+## 🛠️ Milestone: Dev Tools Consolidation & Visuals & Shaders Studio (v8.13.0) (COMPLETED)
+
+### 🎯 Architecture Objective
+Eliminate redundant developer components (`GodReplaySimulator.tsx` prototype, duplicate `GodAdminEditor.tsx`), consolidate raw live state export/import into `GodAdminEditorTab.tsx`, and introduce a full-featured in-game Visuals & Shaders Studio (`GodVisualsStudioTab.tsx`) connected to `visualsConfig.ts`.
+
+### 📋 Phases Breakdown
+- [x] **Phase D1.1: Dead Component Decommissioning & Admin Consolidation**
+  - Safely removed unused prototype `GodReplaySimulator.tsx` (superseded by `GodReplayTab.tsx`).
+  - Merged raw GameState JSON buffer exporter/importer and autonomous GM toggle from `GodAdminEditor.tsx` into `GodAdminEditorTab.tsx`.
+  - Removed duplicate `GodAdminEditor.tsx` file and cleaned up component exports.
+- [x] **Phase D1.2: Sovereign Visuals & Shaders Studio Tab (`src/components/god/GodVisualsStudioTab.tsx`)**
+  - 1-click preset switching: Vivid, Cinematic, Retro Clean, Performance, and Reset Defaults.
+  - Astronomical 24h clock warper: instant warps to Dawn, Morning, Midday, Golden Hour, Twilight, and Night.
+  - Live shader multipliers with sliders: Volumetric Sunbeams/God Rays, HDR Bloom, Perimeter Vignette, 24h Directional Shadows (opacity + length), Underwater Caustics, and Biome Micro-Atmosphere Particles.
+  - Active biome lighting and chromatic profile inspector.
+  - Live toggle matrix for all shader passes.
+- [x] **Phase D1.3: Automated Testing & Verification**
+  - Added unit test suite `src/tests/godVisualsStudioTab.test.tsx` (5 tests passing 100% green).
+  - All 84 test suites (561 unit tests) passing 100% green.
+  - Verified clean codebase import audit and compilation via `compile_applet`.
+
 
 

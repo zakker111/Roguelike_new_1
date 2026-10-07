@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { GameState, GameLogMessage, OverworldChunk, TileType, EquipmentItem, CraftedWeapon, isToolItem } from '../types';
+import { GameState, GameLogMessage, OverworldChunk, TileType } from '../types';
 import { playSound } from '../utils/audio';
 import { computeFOV } from '../utils/ai';
 import { harvestWorldResource } from '../utils/harvestEngine';

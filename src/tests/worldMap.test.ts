@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getContinuousTerrainMetrics } from '../world/organic/biomeNoiseEngine';
 import { getOrganicBiome } from '../world/overworldBiomes';
-import { hasTownAtChunk, getDeterministicTownName, isCastleTownAtChunk } from '../world/overworldStructures';
+import { hasTownAtChunk, getDeterministicTownName } from '../world/overworldStructures';
 
 describe('World Map Cartography & Terrain Data Verification', () => {
   it('correctly maps chunk coordinates to regional continuous metrics', () => {

@@ -14,7 +14,8 @@ import {
   Skull,
   History,
   Grid,
-  Dice5
+  Dice5,
+  Sparkles
 } from 'lucide-react';
 import { GameState } from '../types';
 import { playSound } from '../utils/audio';
@@ -34,9 +35,7 @@ import { GodHouseDesigner } from './god/GodHouseDesigner';
 import { GodNpcRoutePlanner } from './god/GodNpcRoutePlanner';
 import { GodStructureCarver } from './god/GodStructureCarver';
 import { GodEnemyBlueprintEditor } from './god/GodEnemyBlueprintEditor';
-import { GodReplaySimulator } from './god/GodReplaySimulator';
 import { GodCheatsTab } from './god/GodCheatsTab';
-import { GodAdminEditor } from './god/GodAdminEditor';
 import { GodSmoketestTab } from './god/GodSmoketestTab';
 import { GodBestiaryTab } from './god/GodBestiaryTab';
 import { GodJSONDataTab } from './god/GodJSONDataTab';
@@ -50,6 +49,7 @@ import { GodMinigamesTab } from './god/GodMinigamesTab';
 import { TilesetTesterTab } from './god/TilesetTesterTab';
 import { GodCatalogLiveTuner } from './god/GodCatalogLiveTuner';
 import { GodEventInspectorTab } from './god/GodEventInspectorTab';
+import { GodVisualsStudioTab } from './god/GodVisualsStudioTab';
 import { PALETTE_TILES } from './god/GodHouseDesigner';
 
 export { DESIGNER_LEGEND, PALETTE_TILES };
@@ -401,6 +401,7 @@ function GodPanelOverlayComponent({
         <div className="flex flex-nowrap border-b border-slate-800 bg-slate-950/60 text-xs overflow-x-auto shrink-0 scrollbar-thin">
           {[
             { id: 'sovereign', label: 'Cheats', icon: Zap, color: 'text-yellow-400' },
+            { id: 'visuals_studio', label: 'Visuals Studio', icon: Sparkles, color: 'text-rose-400' },
             { id: 'tileset_tester', label: 'Tileset Studio', icon: Palette, color: 'text-amber-400' },
             { id: 'minigames', label: 'Minigames', icon: Dice5, color: 'text-amber-400' },
             { id: 'arena', label: 'Arena Tweaker', icon: Sliders, color: 'text-blue-400' },
@@ -444,6 +445,16 @@ function GodPanelOverlayComponent({
 
         {/* Scrollable Tab Views */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-900/50">
+          {/* Visuals & Shaders Studio */}
+          {activeTab === 'visuals_studio' && (
+            <GodVisualsStudioTab
+              gameState={gameState}
+              setGameState={setGameState}
+              triggerSuccessLog={triggerSuccessLog}
+              addLogMessage={addLogMessage}
+            />
+          )}
+
           {/* Tileset & Sprite Studio Tester */}
           {activeTab === 'tileset_tester' && (
             <TilesetTesterTab

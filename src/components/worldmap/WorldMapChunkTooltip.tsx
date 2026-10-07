@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChunkMapInfo, CustomMapPin } from './types';
-import { Skull, MapPin, Navigation, Sparkles, Plus, Edit3, X, Compass, Wind, Mountain, Droplets, ShieldAlert, Trees, Package, Route, Gauge, ChevronDown, ChevronUp } from 'lucide-react';
+import { Skull, MapPin, Navigation, Sparkles, Plus, Edit3, X, Mountain, Droplets, ShieldAlert, Trees, Package, Route, Gauge, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface WorldMapChunkTooltipProps {
   chunk: ChunkMapInfo | null;

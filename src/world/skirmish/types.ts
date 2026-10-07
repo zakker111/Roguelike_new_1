@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TileType, Enemy, Chest, Trap, DungeonProp } from '../../types';
+import { Enemy, Chest, Trap, DungeonProp } from '../../types';
 
 export type SkirmishScenarioType = 'active_plaza_melee' | 'high_ground_ambush' | 'base_siege_redoubt';
 

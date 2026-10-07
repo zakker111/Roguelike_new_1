@@ -8,15 +8,9 @@ import { TileType, EnemyType } from '../types';
 import {
   generateLevel,
   generateDungeonRooms,
-  carveCorridor,
   connectDungeonRooms,
   placeDungeonDoors,
-  spawnDungeonTraps,
-  spawnDungeonChests,
   calculateGlobalThreatFactor,
-  spawnDungeonBoss,
-  spawnDungeonStandardEnemies,
-  spawnDungeonCaptivesAndJailers,
   generateDungeonProps,
   BOSS_TEMPLATES,
   getEnemyTemplate,
@@ -25,8 +19,6 @@ import {
   generateTownChunk,
   buildCastlePerimeterAndGates,
   buildPortHarborFeatures,
-  spawnTownGuards,
-  spawnTownOutskirtPests,
 } from '../world/town';
 import { OverworldGenContext } from '../utils/overworld/types';
 

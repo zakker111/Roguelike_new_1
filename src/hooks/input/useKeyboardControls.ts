@@ -350,6 +350,9 @@ export function useKeyboardControls({
         setActiveTab('inventory');
         return;
       case 'p':
+      case '`':
+      case '~':
+      case 'f12':
         e.preventDefault();
         setIsGodPanelOpen((p) => !p);
         return;

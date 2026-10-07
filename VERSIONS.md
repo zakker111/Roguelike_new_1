@@ -6,6 +6,36 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.13.0] — Cinematic Tone Mapping, Biome Color Grading & Volumetric Sunbeams Sub-Engine (October 5, 2026)
+*Engineered a zero-allocation, high-performance Color Grading & Volumetric Sunbeams Sub-Engine (`src/canvas/colorGradingEngine.ts`) integrated into the GameCanvas post-processing pipeline between the Luminous HDR Bloom Pass and the Atmospheric Perimeter Vignette Pass. Replaces flat static pixel palettes with dynamic, continuous time-of-day tone mapping (Dawn rose-gold, Morning warmth, Midday clarity, Golden Hour honey-amber, Twilight amethyst, and deep nocturnal moonlit navy). Implements rotating volumetric crepuscular rays (god rays) streaming across the screen with gentle harmonic breathing (`sin(now * 0.4)`) and a pre-allocated ring-buffer of 18 floating illuminated dust motes. Distinctive chromatic profiles for all biomes (Forest emerald, Desert golden ochre, Tundra glacial cyan, Swamp jade mist, Volcanic smoldering cinder, Ruined City oxidized bronze, and tiered Dungeon crypt/ruin/underworld depth tones). Verified with 82 test suites and 548 passing tests (100% green).*
+
+- **1. Astronomical Time-of-Day Phase Engine (`ColorGradingEngine.ts`)**:
+  - Continuously maps the 24-hour clock (0 to 1439 mins) into 6 distinct astronomical phases: Dawn (05:30–08:00), Morning (08:00–11:00), Midday (11:00–17:30), Golden Hour (17:30–20:00), Twilight (20:00–21:30), and Night (21:30–05:30).
+  - Smooth trigonometric interpolation curves eliminate abrupt color pop shifts across turn progression.
+  - Nighttime tone mapping: transforms muddy gray darkness into rich nocturnal navy & moonlit cyan with high specular contrast on torches, campfires, and spell effects.
+- **2. Biome & Subterranean Tone Mapping Matrix**:
+  - Distinctive chromatic tone grading for each environment:
+    - Forest & Woodlands: Saturated verdant moss and golden pollen warmth.
+    - Desert & Badlands: Sun-baked golden sand and terracotta tone.
+    - Tundra & Glaciers: Crisp diamond-cyan and glacial ice blue.
+    - Swamps & Marshes: Murky jade mist and stagnant olive green.
+    - Volcanic & Underworld: Smoldering obsidian charcoal and cinder ember heat.
+    - Ancient Ruined Cities: Cold desaturated ash and oxidized verdigris bronze.
+    - Subterranean Crypts (Depth 1–3): Cold damp tomb slate with spectral teal tint.
+    - Deep Dungeons (Depth 4–5): Arcane amethyst and deep violet shadow grading.
+    - Magma Underworld (Depth 6+): Hellfire incandescent magma wash.
+- **3. Volumetric Crepuscular Sunbeams (God Rays) & Ambient Dust Motes**:
+  - Diagonal crepuscular light shafts that project across the viewport with gentle harmonic breathing (`sin(now * 0.4)`).
+  - Dynamic sun vector angles: dawn rays angling from the east, vertical midday shafts, and golden hour rays angling from the west.
+  - A pre-allocated ring-pool of 18 floating atmospheric dust motes gently drifting through illuminated sunbeams (zero garbage collection).
+  - Realistic weather suppression: stormy skies and blizzards dim sunbeams, while fog diffuses them into soft haze.
+- **4. Post-Processing Chain Integration & Settings**:
+  - Seamlessly layered between the Luminous HDR Bloom Pass and the Atmospheric Perimeter Vignette Pass in `GameCanvas.tsx`.
+  - Configurable vibrancy presets (`setVibrancyMode('vivid' | 'cinematic' | 'natural')`) and accessibility toggle (`setEnabled`).
+- **5. Verification & Testing**:
+  - Dedicated unit test suite `src/tests/colorGradingEngine.test.ts` (11 tests passing 100%).
+  - Full test suite expanded to **82 test files / 548 passing tests** (100% green).
+
 ## [v8.12.0] — High-Clarity Combat Log & Tactical Feed Sub-Engine (October 4, 2026)
 *Decomposed the 569-line `GameLog.tsx` monolith into a high-clarity, modular sub-engine under `src/components/log/` following domain-native visual hierarchy and strict zero-pill discipline (Phase L1 & L2). Polished canvas floating combat text with anti-overlap radial drift, stagger offsets, and 9 distinct kinetic archetypes (Phase L3). Features unboxed category glowing pips (Crimson danger, Amber combat, Emerald healing, Amethyst story/lore, Gold loot/spoils, Teal crafting, Cyan system/weather), clean monospace turn and chrono timestamps (`T:84 · 14:15`), smart consecutive duplicate message stacking (`×4`), expandable post-combat encounter tally widget (damage dealt/taken/blocked, enemies slain, gold/materials looted), and one-click combat recap clipboard export. All 81 test suites (533 tests) passing 100% green.*
 

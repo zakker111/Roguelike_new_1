@@ -106,7 +106,9 @@ This document is the authoritative structural reference for the entire **Soverei
 - `src/canvas/VFXEmitter.ts` / `src/canvas/visualFxParticleSystem.ts`: Particle effects (sparks, magic auras, leaf drifts, dust devils).
 - `src/canvas/waterCausticsRenderer.ts`: Multi-scale dynamic water caustics, wave refraction light webs, and submerged entity refraction ribbons.
 - `src/canvas/bloomEngine.ts`: Luminous HDR bloom pass with pre-cached radial gradient bloom stamps for lanterns, shrines, spells, and elemental fields.
+- `src/canvas/colorGradingEngine.ts`: Cinematic tone mapping, time-of-day atmospheric color grading, and volumetric crepuscular god rays.
 - `src/canvas/vignetteRenderer.ts`: Atmospheric perimeter vignette with dungeon depth scaling, midnight dark frames, and blood moon / blizzard overlays.
+- `src/canvas/visualsConfig.ts`: Sovereign developer configuration control surface and visual presets (`vivid`, `cinematic`, `retro_clean`, `performance`).
 - `src/canvas/TilesetAtlasManager.ts` / `src/canvas/TilesetRenderer.ts`: Texture atlas loading and sprite-sheet tile slicing.
 - `src/canvas/spriteAnimationManager.ts` / `src/canvas/spriteRenderer.ts`: Animated sprite frame progression.
 - `src/canvas/TextRenderer.ts`: High-DPI floating numbers, overhead speech bubbles, and nametags.
@@ -293,7 +295,15 @@ This document is the authoritative structural reference for the entire **Soverei
   - `GuildTreasuryPanel.tsx`: Composed facade delegating to sub-panels.
   - `index.ts`: Guild sub-components barrel export.
 - `src/components/BestiaryOverlay.tsx`: Classified monster codex with dossier decryption, attribute telemetry, and guaranteed loot drop schedules.
-- `src/components/GameLog.tsx`: Real-time adventure chronologue with 6 tactical category filters (All, Combat, Story, Loot, Craft, System), live text search, and animated damage badges.
+- `src/components/GameLog.tsx`: Real-time adventure chronologue coordinator with unboxed pips, turn timestamps, and smart duplicate stacking.
+- `src/components/log/`: Modular Game Log Sub-Engine:
+  - `types.ts`: Log filter categories, pip color archetypes, and message contracts.
+  - `LogPipIndicator.tsx`: Domain-native glowing pips and category resolution engine.
+  - `LogMessageItem.tsx`: High-performance memoized row component with turn numbers, duplicate badges, and keyword highlighting.
+  - `LogFilterControls.tsx`: Tactical category filter buttons with live counts and search input.
+  - `LogHeaderBar.tsx`: Top navigation bar coordinating density, sort order, and export.
+  - `LogEncounterRecapBar.tsx`: Post-combat statistics tally banner (damage dealt/taken, kills, loot) with 1-click clipboard export.
+  - `index.ts`: Log subcomponents barrel export.
 - `src/components/AppOverlays.tsx` / `src/components/ModalRouter.tsx`: Modal coordinator for overlays.
 - `src/components/panels/`:
   - `PlayerSidebarPanel.tsx`: Health/Mana bars, stats, active buffs, companion roster, and quick spells.
@@ -302,7 +312,8 @@ This document is the authoritative structural reference for the entire **Soverei
 - `src/components/screens/`:
   - `StartScreen.tsx`: Title screen, class selection, and new game initializer.
   - `GameOverScreen.tsx` / `VictoryScreen.tsx`: Permadeath summary, run statistics, and restart triggers.
-- `src/components/god/`: 25 modular God Mode developer tools (`GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
+- `src/components/god/`: Modular God Mode developer tools (`TilesetTesterTab`, `GodVisualsStudioTab`, `GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
+  - `src/components/god/tileset/`: Modular Tileset Studio Sub-Engine (`TilesetOverviewSection`, `TilesetInspectorSection`, `TilesetAnimatorSection`, `TilesetAutotilingSection`, `tilesetTesterTypes.ts`, `index.ts`).
 - `src/components/modals/`: Dialogue modals, town shops, bed resting, and fishing/lockpicking minigames:
   - `TradeModal.tsx`: Slim master composer coordinating modular trade sub-panels.
   - `src/components/modals/trade/`: Modular Trade & Commerce Sub-Engine (`TradeHeaderBar`, `CaravanRoutesWidget`, `BlacksmithRepairStation`, `ApothecaryStation`, `TavernServiceStation`, `TradeBuyStockGrid`, `TradeSellStashGrid`, `types.ts`, `index.ts`).
@@ -313,5 +324,5 @@ This document is the authoritative structural reference for the entire **Soverei
 ---
 
 ### 10. `/src/tests/` — Automated Test Suite
-- 66 comprehensive Vitest test suites (412 unit, simulation, and integration tests passing 100% green) covering elemental propagation & cellular reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), living ecosystem & predator-prey simulation (`livingEcosystemSim.test.ts`), faction matrix & hostility (`factionMatrix.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding, tree/wood obstacle collisions, behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, modular inventory sub-components (`inventoryComponents.test.ts`), and modular trade sub-engine components (`tradeModularComponents.test.ts`).
+- 85 comprehensive Vitest test suites (567 unit, simulation, and integration tests passing 100% green) covering modular tileset tester subcomponents (`tilesetTesterModular.test.tsx`), Visuals & Shaders Studio (`godVisualsStudioTab.test.tsx`), visuals master config and presets (`visualsConfig.test.ts`), cinematic color grading and tone mapping (`colorGradingEngine.test.ts`), modular combat log and unboxed pips (`modularLogSubEngine.test.tsx`), modular atlas generators (`modularAtlasGenerators.test.ts`), workflow integrity & anti-monolith linter (`workflowIntegrityAndArchitecture.test.ts`), elemental propagation & cellular reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), living ecosystem & predator-prey simulation (`livingEcosystemSim.test.ts`), faction matrix & hostility (`factionMatrix.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding, tree/wood obstacle collisions, behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, modular inventory sub-components (`inventoryComponents.test.ts`), and modular trade sub-engine components (`tradeModularComponents.test.ts`).
 

@@ -8,6 +8,7 @@ import { GameState } from '../types';
 export class VignetteRenderer {
   private static instance: VignetteRenderer;
   private isEnabled = true;
+  private darknessMultiplier = 1.0;
 
   private constructor() {}
 
@@ -24,6 +25,14 @@ export class VignetteRenderer {
 
   public getIsEnabled(): boolean {
     return this.isEnabled;
+  }
+
+  public setDarknessMultiplier(multiplier: number): void {
+    this.darknessMultiplier = Math.max(0, multiplier);
+  }
+
+  public getDarknessMultiplier(): number {
+    return this.darknessMultiplier;
   }
 
   /**
@@ -76,6 +85,8 @@ export class VignetteRenderer {
         outerDarkness = Math.min(0.68, outerDarkness + 0.12);
       }
     }
+
+    outerDarkness = Math.min(1.0, outerDarkness * this.darknessMultiplier);
 
     // Atmospheric special state tints
     const isBloodMoon = (gameState.bloodMoonTurnsLeft ?? 0) > 0;

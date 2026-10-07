@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('Multi-Enemy Attack Floater Batching and Log Clarity', () => {
   it('formats aggregated turn damage floater correctly for single vs multiple attackers', () => {

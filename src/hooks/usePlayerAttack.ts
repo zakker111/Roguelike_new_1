@@ -7,8 +7,7 @@ import { useCallback } from 'react';
 import {
   Enemy,
   CraftedWeapon,
-  CatalystType,
-  TileType
+  CatalystType
 } from '../types';
 import { STARTING_WEAPON } from '../utils/spellsAndEquipment';
 import { isPlayerInvincible } from '../utils/invincibility';
@@ -18,7 +17,6 @@ import { checkBossPhaseEnrage } from '../utils/combatArchetypes';
 import { formatGameTime } from '../utils/overworld';
 import { getRandomRelicDraft } from '../utils/relics';
 import { getUpdatedTerritoriesOnKill } from '../utils/caravanAndTerritory';
-import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../utils/gameUtils';
 import {
   UsePlayerAttackParams,
   calculatePlayerCombatHit,

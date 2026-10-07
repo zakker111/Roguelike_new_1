@@ -6,9 +6,6 @@
 import { GameState, TileType, EquipmentItem, CraftedWeapon, isToolItem } from '../types';
 import {
   getTileDefinition,
-  isTileHarvestable,
-  getTileHarvestTool,
-  getTileHarvestYield,
   getTileHarvestReplacement
 } from '../world/tileRegistry';
 

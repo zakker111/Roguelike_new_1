@@ -12,7 +12,6 @@ if (typeof (globalThis as any).window === 'undefined') {
 }
 
 import { describe, it, expect, vi } from 'vitest';
-import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { ScriptoriumMiniGame } from '../components/ScriptoriumMiniGame';
 import LockpickingMiniGame from '../components/LockpickingMiniGame';

@@ -1,9 +1,8 @@
 import React from 'react';
-import { GameState, EquipmentItem, Follower } from '../../types';
+import { GameState, EquipmentItem } from '../../types';
 import { 
   GuildUpgrade, 
   GuildDecor, 
-  CompanionQuest, 
   FactionGear 
 } from '../../utils/tradeEconomy';
 

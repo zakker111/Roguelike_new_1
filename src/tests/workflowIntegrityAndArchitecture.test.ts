@@ -195,12 +195,11 @@ describe('Workflow & Referential Integrity Guardian Suite', () => {
   });
 
   describe('2. Strict Anti-Monolith & Codebase Architecture Linter', () => {
-    // Whitelist for massive audio synth catalogs and test suites
+    // Whitelist for massive audio synth catalogs and static data scripts
     const EXEMPT_FILES = new Set([
       'src/data/gmCommands.ts',
       'src/utils/storyteller/storytellerEncountersData.ts',
       'src/utils/audio/soundCatalog.ts',
-      'src/components/god/TilesetTesterTab.tsx',
     ]);
 
     const MAX_ALLOWED_LINES = 999;

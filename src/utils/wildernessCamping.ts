@@ -214,7 +214,6 @@ function generateAmbushEnemies(gameState: GameState, analysis: CampsiteAnalysis)
   const py = gameState.playerY;
   const biome = analysis.activeBiome;
   const tier = analysis.threatTier;
-  const playerLvl = gameState.playerStats.level || 1;
 
   interface AmbushArchetype {
     name: string;

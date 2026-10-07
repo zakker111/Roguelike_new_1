@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createNewGameRun } from '../utils/gameStateFactory';
 import { GameState, EquipmentItem, WeaponBaseType } from '../../src/types';
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from '../utils/itemsData';

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TileType, EnemyState, EnemyType } from '../types';
+import { TileType } from '../types';
 import townTemplates from '../data/townTemplates.json';
 import {
   getBuildingCoordinates,

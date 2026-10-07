@@ -6,7 +6,6 @@ import {
   GUILD_DECORS, 
   COMPANION_QUEST_BOARD, 
   SYNDICATE_GEAR, 
-  VANGUARD_GEAR,
   GuildUpgrade,
   GuildDecor,
   FactionGear
@@ -36,7 +35,6 @@ function createGuildController(
     
     // 1. Purchase Guild Headquarters
     handlePurchaseHQ: () => {
-      const chunkKey = getChunkKey();
       const townCenter = isTownCenter();
       if (!townCenter) {
         playSound('bump');

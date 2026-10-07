@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useGameLoop, DEFAULT_IDLE_TIMEOUT_MS } from '../hooks/useGameLoop';
 import { createNewGameRun } from '../utils/gameStateFactory';
-import * as audioModule from '../utils/audio';
-import { gameEventBus } from '../events/core/EventBus';
 
 vi.mock('../utils/audio', () => ({
   playSound: vi.fn(),

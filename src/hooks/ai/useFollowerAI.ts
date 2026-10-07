@@ -1,4 +1,4 @@
-import { Enemy, EnemyState, GameState, TileType } from '../../types';
+import { Enemy, EnemyState } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
 import { getNextStepTowards, hasLineOfSight, isTileWalkableForEntity } from '../../utils/ai';
 import { incrementDefeatedEnemyCount } from '../../utils/bestiary';

@@ -5,8 +5,8 @@
 
 import { WeaponBaseType } from '../types';
 import { WEAPON_TEMPLATES } from '../data/items';
-import { MONSTER_ENTRIES, BestiaryEntry } from '../data/monsters';
-import { SPELLS, Spell } from './spellsAndEquipment';
+import { MONSTER_ENTRIES } from '../data/monsters';
+import { SPELLS } from './spellsAndEquipment';
 import { BALANCE_CONFIG } from '../data/balance';
 import weaponTemplatesJson from '../data/weaponTemplates.json';
 import bestiaryJson from '../data/bestiary.json';

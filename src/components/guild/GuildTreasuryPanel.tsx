@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameState, EquipmentItem } from '../../types';
+import { GameState } from '../../types';
 import { GuildUpgrade, GuildDecor, FactionGear } from '../../utils/tradeEconomy';
 import { GuildHQPanel } from './GuildHQPanel';
 import { GuildSanctuaryPanel } from './GuildSanctuaryPanel';

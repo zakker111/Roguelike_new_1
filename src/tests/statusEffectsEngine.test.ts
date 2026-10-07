@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  STATUS_EFFECT_REGISTRY,
   getStatusEffectDefinition,
 } from '../effects/statusEffectRegistry';
 import {

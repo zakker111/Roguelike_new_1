@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GlyphDefinition, GlyphScribingResult } from '../../../types/minigames/glyphGame';
+import { GlyphScribingResult } from '../../../types/minigames/glyphGame';
 
 export interface ScriptoriumMiniGameProps {
   onClose: () => void;

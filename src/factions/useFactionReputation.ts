@@ -6,7 +6,7 @@
 import { useCallback, useMemo } from 'react';
 import { FACTIONS_DATABASE, normalizeFactionId } from '../data/factions';
 import { factionMatrix } from './FactionMatrix';
-import type { FactionId, FactionStandingInfo, FactionStandingTier } from './types';
+import type { FactionId, FactionStandingInfo } from './types';
 
 export interface UseFactionReputationProps {
   factionReputation?: Record<string, number>;

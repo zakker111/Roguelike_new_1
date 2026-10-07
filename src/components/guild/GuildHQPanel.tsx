@@ -1,5 +1,5 @@
 import React from 'react';
-import { GUILD_UPGRADES, GuildUpgrade } from '../../utils/tradeEconomy';
+import { GUILD_UPGRADES } from '../../utils/tradeEconomy';
 import { GuildHQPanelProps } from './types';
 
 export const GuildHQPanel: React.FC<GuildHQPanelProps> = ({

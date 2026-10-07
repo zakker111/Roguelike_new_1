@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { getEnemyTemplate } from '../../utils/dungeon';
 import townTemplates from '../../data/townTemplates.json';
 
 export function useGodBlueprintState(

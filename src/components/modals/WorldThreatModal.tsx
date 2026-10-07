@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, ShieldAlert, Zap, Skull, Award, Flame, TrendingUp, Sparkles, AlertTriangle } from 'lucide-react';
+import { X, ShieldAlert, Zap, Flame, TrendingUp, Sparkles } from 'lucide-react';
 import { GameState } from '../../types';
 import { calculateWorldThreatTier, getThreatTierInfo, getAffixMeta } from '../../utils/worldThreat';
 import { playSound } from '../../utils/audio';

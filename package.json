@@ -13,6 +13,7 @@
     "generate:tilesets": "node scripts/generateMockupPngs.cjs",
     "generate:icons": "node scripts/generateAppIcons.cjs",
     "test": "vitest run",
+    "test:watch": "vitest",
     "verify": "node scripts/validateJson.cjs && node scripts/auditCodebase.cjs && tsc --noEmit && vitest run src/tests/workflowIntegrityAndArchitecture.test.ts",
     "audit": "node scripts/validateJson.cjs && node scripts/auditCodebase.cjs && tsc --noEmit && vitest run"
   },

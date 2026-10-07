@@ -5,7 +5,7 @@
 
 import { TileType } from '../types';
 import { ElementalTile } from '../types/elemental';
-import { isTileObstacle, isTileWalkable, doesTileBlockVision } from '../world/tileRegistry';
+import { isTileObstacle, doesTileBlockVision } from '../world/tileRegistry';
 
 /**
  * Zero-allocation line tracer using Bresenham's algorithm.

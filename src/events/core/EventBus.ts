@@ -5,7 +5,6 @@
 
 import {
   EventPriority,
-  GameEventType,
   GameEventPayloadMap,
   EventListenerRegistration,
   EventSubscription,

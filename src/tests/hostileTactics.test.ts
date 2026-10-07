@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { TileType, Enemy, EnemyType, EnemyState, GameState } from '../types';
+import { TileType, Enemy, EnemyType, GameState } from '../types';
 import {
   isRangedKiterUnit,
   executeKitingMovement,
@@ -12,8 +12,6 @@ import {
   executeFlankingMovement,
   executeSupportTactics,
   resolveTelegraphedAttack,
-  checkTelegraphWindup,
-  executeDefenderCombatTactics,
   checkElitePerceptionWarning,
   AITacticContext
 } from '../hooks/ai/tactics';

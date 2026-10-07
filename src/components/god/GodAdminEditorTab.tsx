@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, Plus, Trash2, Check, Sparkles } from 'lucide-react';
+import { Sliders, Plus, Trash2, Check, Sparkles, Download, Upload, Cpu, AlertTriangle } from 'lucide-react';
 import { GameState, CatalystType } from '../../types';
 import { SCAR_DATABASE } from '../../utils/scars';
 import { SPELL_SCROLLS, SpellScrollTemplate, getSpellScrollAsEquipmentItem } from '../../utils/spellScrolls';
@@ -19,6 +19,41 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
 }) => {
   const [selectedScrollIndex, setSelectedScrollIndex] = useState<number | null>(0);
   const [spellScrollListVersion, setSpellScrollListVersion] = useState<number>(0);
+  const [jsonSaveText, setJsonSaveText] = useState('');
+  const [jsonErrorMsg, setJsonErrorMsg] = useState<string | null>(null);
+
+  const handleExportSave = () => {
+    try {
+      const dump = JSON.stringify(gameState, null, 2);
+      setJsonSaveText(dump);
+      setJsonErrorMsg(null);
+      triggerSuccessLog("Exported current live GameState to JSON buffer!");
+    } catch (err: any) {
+      setJsonErrorMsg(`Export failed: ${err.message}`);
+    }
+  };
+
+  const handleImportSave = () => {
+    try {
+      const parsed = JSON.parse(jsonSaveText);
+      if (!parsed || typeof parsed !== 'object' || !parsed.playerStats) {
+        throw new Error("Invalid GameState structure! Missing playerStats object.");
+      }
+      setGameState(parsed);
+      setJsonErrorMsg(null);
+      triggerSuccessLog("Successfully imported state into live engine memory!");
+    } catch (err: any) {
+      setJsonErrorMsg(`Import failed: ${err.message}`);
+    }
+  };
+
+  const toggleAutonomousGM = () => {
+    setGameState(prev => ({
+      ...prev,
+      gmAutonomousWeather: !(prev.gmAutonomousWeather ?? true)
+    }));
+    triggerSuccessLog(`Autonomous GM Engine toggled to ${(gameState.gmAutonomousWeather ?? true) ? 'OFF' : 'ON'}!`);
+  };
 
   const initialScroll = SPELL_SCROLLS[0];
   const initialMatEntry = initialScroll?.recipe?.materials ? Object.entries(initialScroll.recipe.materials)[0] : null;
@@ -456,6 +491,77 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
               <span>Manifest 1x & Deposit directly to Inventory Backpack</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Raw GameState Snapshot Buffer & Runtime System Toggles */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 space-y-4">
+        <div className="border-b border-slate-800/80 pb-2 flex items-center justify-between">
+          <div>
+            <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Raw GameState Snapshot & Runtime Toggles</span>
+            </h4>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Dump live engine memory to JSON, inject custom state overrides, or toggle the procedural GM storyteller.
+            </p>
+          </div>
+        </div>
+
+        {jsonErrorMsg && (
+          <div className="p-2.5 bg-rose-950/50 border border-rose-800 rounded text-rose-300 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{jsonErrorMsg}</span>
+          </div>
+        )}
+
+        {/* Runtime System Toggles */}
+        <div className="flex items-center justify-between p-2.5 bg-slate-950 rounded-lg border border-slate-800">
+          <div>
+            <div className="text-xs font-bold text-slate-200">Autonomous GM Storyteller & Climate Engine</div>
+            <div className="text-[10px] text-slate-400">Controls automatic procedural weather changes and dynamic world flavor events</div>
+          </div>
+          <button
+            onClick={toggleAutonomousGM}
+            className={`px-3 py-1.5 rounded text-xs font-bold cursor-pointer transition-colors ${
+              (gameState.gmAutonomousWeather ?? true)
+                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.3)]'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-400'
+            }`}
+          >
+            {(gameState.gmAutonomousWeather ?? true) ? 'ENABLED' : 'DISABLED'}
+          </button>
+        </div>
+
+        {/* Raw State JSON Buffer */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-300">Raw GameState Snapshot Buffer</label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExportSave}
+                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Download className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Export State</span>
+              </button>
+              <button
+                onClick={handleImportSave}
+                className="px-2.5 py-1 bg-rose-900 hover:bg-rose-800 text-rose-200 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Upload className="w-3.5 h-3.5 text-amber-400" />
+                <span>Inject State</span>
+              </button>
+            </div>
+          </div>
+
+          <textarea
+            value={jsonSaveText}
+            onChange={(e) => setJsonSaveText(e.target.value)}
+            placeholder="Click 'Export State' to generate full JSON dump or paste state to inject..."
+            rows={8}
+            className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 font-mono text-xs text-rose-300 focus:outline-none focus:border-rose-500/50 resize-y"
+          />
         </div>
       </div>
     </div>

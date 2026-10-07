@@ -106,7 +106,6 @@ export function migrateSaveData(raw: unknown): SaveFilePayload {
   }
 
   const obj = raw as Record<string, any>;
-  const version = typeof obj.version === 'string' ? obj.version : 'v1.0.0';
 
   // 1. Coordinates Sanitization
   let playerX = typeof obj.playerX === 'number' && !isNaN(obj.playerX) ? Math.floor(obj.playerX) : 15;

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { generateOverworldChunk } from '../utils/overworld';
 import { generateLevel } from '../utils/dungeon';
-import { calculateNetDamage, calculateCritDamage, getXpForLevel } from '../data/balance';
+import { calculateNetDamage } from '../data/balance';
 import { getEffectiveStats } from '../utils/scars';
-import { TileType, EnemyType, EquipmentItem, PlayerStats } from '../types';
+import { TileType, PlayerStats } from '../types';
 import { SPELL_SCROLLS } from '../utils/spellScrolls';
-import { GUILD_UPGRADES, GUILD_DECORS } from '../utils/tradeEconomy';
+import { GUILD_UPGRADES } from '../utils/tradeEconomy';
 
 describe('12.5 Comprehensive Full Gameplay Simulation Suite', () => {
   it('Simulates Overworld Exploration, Resource Harvesting & POIs', () => {

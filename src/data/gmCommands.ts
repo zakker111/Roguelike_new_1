@@ -4,9 +4,8 @@ import { isCastleTownAtChunk } from '../utils/overworld';
 import { generateLevel, generateDungeonProps } from '../utils/dungeon';
 import { computeFOV } from '../utils/ai';
 import { findStairsOrWalkablePosition } from '../utils/gameUtils';
-import { getValidWeatherForBiome, BIOME_VALID_WEATHERS } from '../utils/weatherEngine';
+import { getValidWeatherForBiome } from '../utils/weatherEngine';
 import { modifyChaosScore, triggerManualChaosSurge } from '../utils/gmStoryteller';
-import { generateTownHouseDecorProps, generateRuinsDecorProps } from '../utils/decorEngine';
 
 export interface GmCommand {
   id: string;
@@ -1133,10 +1132,8 @@ export const GM_COMMANDS: GmCommand[] = [
         });
 
         let updatedHasTransmuter = prev.hasTransmuter;
-        let transmuterText = "";
         if (includeTransmuter) {
           updatedHasTransmuter = true;
-          transmuterText = " Inside the ash, you discover the intact 🧪 Portable Alchemical Transmuter flask!";
         }
 
         return {

@@ -7,7 +7,6 @@ if (typeof (globalThis as any).window === 'undefined') {
 }
 
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { AppModalRouter } from '../components/modals/AppModalRouter';
 import { createNewGameRun } from '../utils/gameStateFactory';

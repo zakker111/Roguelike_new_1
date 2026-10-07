@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Shield, Wrench, Coins, ArrowUpCircle, Castle, Flag, Users } from 'lucide-react';
+import { X, Shield, Wrench, Coins, Castle, Flag, Users } from 'lucide-react';
 import { GameState } from '../../types';
 import { playSound } from '../../utils/audio';
 

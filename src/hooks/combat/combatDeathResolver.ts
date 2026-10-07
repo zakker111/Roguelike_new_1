@@ -1,8 +1,5 @@
-import { GameState, Enemy, CraftedWeapon, EquipmentItem } from '../../types';
+import { CraftedWeapon, EquipmentItem } from '../../types';
 import { getItemDurabilityDecay } from '../../utils/spellsAndEquipment';
-import { getRandomRelicDraft, SanctumRelic } from '../../utils/relics';
-import { getUpdatedTerritoriesOnKill } from '../../utils/caravanAndTerritory';
-import { formatGameTime } from '../../utils/overworld';
 
 export function incrementDefeatedEnemyCount(
   currentCounts: { [key: string]: number } | undefined,

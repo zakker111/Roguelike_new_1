@@ -5,7 +5,7 @@
  */
 
 import { gameEventBus } from '../core/EventBus';
-import { EventPriority, GameEventType, GameEventPayloadMap } from '../types';
+import { EventPriority, GameEventPayloadMap } from '../types';
 import { damagePipeline } from '../pipeline/pipelines/damagePipeline';
 import { movementPipeline } from '../pipeline/pipelines/movementPipeline';
 import { lootPipeline } from '../pipeline/pipelines/lootPipeline';

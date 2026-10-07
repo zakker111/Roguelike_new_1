@@ -1,6 +1,6 @@
 import React from 'react';
-import { CustomMapPin, ChunkMapInfo } from './types';
-import { MapPin, Navigation, Trash2, Edit3, Compass, Sparkles } from 'lucide-react';
+import { CustomMapPin } from './types';
+import { MapPin, Navigation, Trash2, Edit3, Sparkles } from 'lucide-react';
 
 interface WorldMapPinsListProps {
   pins: CustomMapPin[];

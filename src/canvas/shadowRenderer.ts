@@ -1,6 +1,60 @@
 import { TileType } from '../types';
 import { isTileShadowCaster, getTileShadowType } from '../world/tileRegistry';
 
+export interface ShadowRendererConfig {
+  enabled: boolean;
+  opacityMultiplier: number;
+  lengthMultiplier: number;
+}
+
+class ShadowConfigManager {
+  private static instance: ShadowConfigManager;
+  private enabled = true;
+  private opacityMultiplier = 1.0;
+  private lengthMultiplier = 1.0;
+
+  private constructor() {}
+
+  public static getInstance(): ShadowConfigManager {
+    if (!ShadowConfigManager.instance) {
+      ShadowConfigManager.instance = new ShadowConfigManager();
+    }
+    return ShadowConfigManager.instance;
+  }
+
+  public setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
+  public getIsEnabled(): boolean {
+    return this.enabled;
+  }
+
+  public setOpacityMultiplier(multiplier: number): void {
+    this.opacityMultiplier = Math.max(0, multiplier);
+  }
+
+  public getOpacityMultiplier(): number {
+    return this.opacityMultiplier;
+  }
+
+  public setLengthMultiplier(multiplier: number): void {
+    this.lengthMultiplier = Math.max(0, multiplier);
+  }
+
+  public getLengthMultiplier(): number {
+    return this.lengthMultiplier;
+  }
+
+  public reset(): void {
+    this.enabled = true;
+    this.opacityMultiplier = 1.0;
+    this.lengthMultiplier = 1.0;
+  }
+}
+
+export const shadowConfig = ShadowConfigManager.getInstance();
+
 export interface ShadowParams {
   dx: number;
   dy: number;
@@ -15,6 +69,18 @@ export interface ShadowParams {
  * Calculates dynamic sun and moon directional drop shadow parameters based on in-game time (0..1440 minutes).
  */
 export function getDirectionalShadowParams(gameTime: number = 720, weather?: string): ShadowParams {
+  if (!shadowConfig.getIsEnabled()) {
+    return {
+      dx: 0,
+      dy: 0,
+      lengthRatio: 0,
+      blur: 0,
+      color: 'rgba(0, 0, 0, 0)',
+      isNight: false,
+      shadowAngle: 0,
+    };
+  }
+
   const normMin = ((gameTime % 1440) + 1440) % 1440;
   const isNight = normMin >= 1200 || normMin < 360; // 20:00 to 06:00
 
@@ -35,11 +101,11 @@ export function getDirectionalShadowParams(gameTime: number = 720, weather?: str
     const sunAlt = Math.sin(dayProgress * Math.PI); // 0 at dawn/dusk, 1.0 at noon
 
     // Long shadows at dawn & dusk (0.8 - 1.25), compact grounded shadows at noon (0.25)
-    lengthRatio = 0.25 + (1.0 - sunAlt) * 0.85;
+    lengthRatio = (0.25 + (1.0 - sunAlt) * 0.85) * shadowConfig.getLengthMultiplier();
 
     // Adjust shadow intensity for active weather
     const weatherDim = weather === 'foggy' ? 0.4 : weather === 'rainy' || weather === 'blizzard' || weather === 'sandstorm' ? 0.5 : 1.0;
-    opacity = Math.max(0.12, 0.40 * Math.max(0.4, sunAlt) * weatherDim);
+    opacity = Math.max(0.05, 0.40 * Math.max(0.4, sunAlt) * weatherDim * shadowConfig.getOpacityMultiplier());
     color = `rgba(15, 23, 42, ${opacity.toFixed(2)})`;
   } else {
     // Nighttime: 20:00 (1200m) to 06:00 (360m)
@@ -47,8 +113,8 @@ export function getDirectionalShadowParams(gameTime: number = 720, weather?: str
     shadowAngle = -Math.PI * 0.5 + (nightProgress - 0.5) * (Math.PI * 0.6);
 
     const moonAlt = Math.sin(nightProgress * Math.PI);
-    lengthRatio = 0.3 + (1.0 - moonAlt) * 0.5;
-    opacity = Math.max(0.08, 0.22 * Math.max(0.3, moonAlt));
+    lengthRatio = (0.3 + (1.0 - moonAlt) * 0.5) * shadowConfig.getLengthMultiplier();
+    opacity = Math.max(0.04, 0.22 * Math.max(0.3, moonAlt) * shadowConfig.getOpacityMultiplier());
     color = `rgba(30, 41, 59, ${opacity.toFixed(2)})`; // Cool slate blue moonlight shadow
   }
 
@@ -84,6 +150,7 @@ export function renderTileDirectionalShadow(
   tile: TileType,
   shadowParams: ShadowParams
 ) {
+  if (!shadowConfig.getIsEnabled()) return;
   ctx.save();
   ctx.fillStyle = shadowParams.color;
 
@@ -134,6 +201,7 @@ export function renderEntityDirectionalShadow(
   shadowParams: ShadowParams,
   scale: number = 1.0
 ) {
+  if (!shadowConfig.getIsEnabled()) return;
   ctx.save();
   ctx.fillStyle = shadowParams.color;
   ctx.beginPath();

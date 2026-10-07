@@ -7,7 +7,6 @@ import { TileType, Enemy, EnemyState, EnemyType, Chest, Trap, TrapType, DungeonP
 import { applyCombatArchetypeAndChaosScaling } from '../../utils/combatArchetypes';
 import { prng } from '../../utils/overworld/overworldCore';
 import { EmergentSkirmishConfig, EmergentSkirmishResult, SkirmishScenarioType } from './types';
-import { getRandomFactionSpoils } from './factionSpoils';
 
 /**
  * Procedurally generates an emergent skirmish battlefield on an overworld chunk.

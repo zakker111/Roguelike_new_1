@@ -4,6 +4,13 @@
 
 ### Recent Gameplay, AI, UI & Stability Resolutions
 
+- **[RESOLVED] Color Grading Engine Volcanic Biome String Match & Type Fallback (v8.13.0)**
+  - **What was reported / Fixed**: In `src/canvas/colorGradingEngine.ts`, `getBiomeProfile` checked `biome.includes('volcano')`, which failed to match the authoritative `BiomeType` enum value `'volcanic'`, falling back erroneously to the default meadow green palette.
+  - **Root Cause & Fix**:
+    1. Adjusted substring predicate from `biome.includes('volcano')` to `biome.includes('volcan')` so both `'volcano'` and `'volcanic'` match the smoldering cinder and ember charcoal profile.
+    2. Updated `src/tests/colorGradingEngine.test.ts` to strictly validate `BiomeType` literals and cast test state through `unknown as GameState`.
+    3. Verified with all 82 Vitest test suites (548 tests) passing 100% green.
+
 - **[RESOLVED] Caravan Tactical Skirmish State Restoration, Follower Map Clamping & Cache Sync (v8.8.2)**
   - **What was reported / Fixed**: User reported an error in caravans ("there was error in caravans fix that").
   - **Root Cause & Fix**:

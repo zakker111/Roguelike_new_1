@@ -21,6 +21,7 @@ import { calculateDirectionalDrift } from '../utils/combatFloaterDrift';
 import { chunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 import { performanceMonitor } from '../utils/performanceMonitor';
 import { bloomEngine } from '../canvas/bloomEngine';
+import { colorGradingEngine } from '../canvas/colorGradingEngine';
 import { vignetteRenderer } from '../canvas/vignetteRenderer';
 import { setAcousticListenerContext } from '../utils/audio/acousticOcclusion';
 import {
@@ -564,6 +565,9 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
 
       // 7. Luminous HDR Bloom Pass (Torches, Fireplaces, Magic, Elemental Fields)
       bloomEngine.renderBloomPass(ctx, gameState, camX, camY, dimensions, TILE_SIZE);
+
+      // 7b. Dynamic Tone Mapping & Volumetric Sunbeams Pass (Dawn/Dusk, Biomes, Moonlit Indigo)
+      colorGradingEngine.renderColorGradingPass(ctx, dimensions, gameState);
 
       // 8. Atmospheric Perimeter Vignette Pass (Dungeon Depth, Day/Night, Storms)
       vignetteRenderer.renderVignettePass(ctx, dimensions, gameState);

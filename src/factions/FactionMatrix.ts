@@ -5,7 +5,6 @@
 
 import { FACTIONS_DATABASE, FACTIONS_MAP, normalizeFactionId } from '../data/factions';
 import type {
-  FactionDefinition,
   FactionDisposition,
   FactionId,
   FactionStandingInfo,

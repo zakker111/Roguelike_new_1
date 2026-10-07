@@ -1,6 +1,5 @@
-import { GameState, Enemy, EnemyState, EnemyType, TileType, EquipmentItem, CatalystType, Follower, TrapType, Trap } from "../../types";
-import { BIOME_VALID_WEATHERS, getValidWeatherForBiome } from "../weatherEngine";
-import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
+import { Enemy, EnemyState, EnemyType, TileType, Follower } from "../../types";
+import { BIOME_VALID_WEATHERS } from "../weatherEngine";
 import { findWalkableSpotNearPlayer, getDirectionString } from "./gmCoordinateUtils";
 import { createGMTriangleCheaterEnemy } from "../combatArchetypes";
 import { playSound } from "../audio";
@@ -901,10 +900,8 @@ export const GM_ENCOUNTERS_DATABASE: GMEncounter[] = [
       };
 
       // Also damage all active hostiles
-      let damagedAny = false;
       const updatedEnemies = gameState.enemies.map(e => {
         if (!e.isFollower && !e.isTownGuard && e.hp > 0) {
-          damagedAny = true;
           return { ...e, hp: Math.max(1, e.hp - 8) };
         }
         return e;

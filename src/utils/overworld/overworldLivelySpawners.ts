@@ -1,15 +1,10 @@
-import { TileType, NPC, Enemy, Trap, Chest, WatchtowerState, EnemyType, EnemyState, TrapType } from "../../types";
-import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from "../itemsData";
-import { getEnemyTemplate } from "../dungeon";
-import { POI_BLUEPRINTS, getPOIBlueprint } from "../../data/worldHistory";
+import { TileType, Enemy, WatchtowerState, EnemyType, EnemyState } from "../../types";
 import { applyCombatArchetypeAndChaosScaling } from "../combatArchetypes";
 import {
   prng,
   findNearestSafeNpcTile,
 } from "./overworldCore";
 import {
-  generateWatchtowerPOI,
-  generateRuinsPOI,
   generatePointsOfInterest,
 } from "../../world/poiGenerators";
 import { ensureEntranceClearance, connectPoiSpokeToTrail } from "../../world/organic";
@@ -29,7 +24,6 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
     enemies,
     chests,
     traps,
-    dungeons,
     poisList,
   } = ctx;
 
@@ -39,9 +33,6 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
   let secondFloorVisible: boolean[][] | undefined = ctx.secondFloorVisible;
 
   // --- LIVELY OVERWORLD: WILD CAMPS & CARAVAN AMBUSH PROCEDURAL SPAWNER ---
-  let isCampPlaced = false;
-  let isCaravanPlaced = false;
-
   const distFromOrigin = Math.hypot(chunkX, chunkY);
 
   if (!hasTown && distFromOrigin > 1.5) {
@@ -87,7 +78,6 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
       }
 
       if (campX !== -1) {
-        isCampPlaced = true;
         // Build the Camp:
         // Center has a campfire
         map[campY][campX] = TileType.Campfire;
@@ -309,7 +299,6 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
       }
 
       if (caravanX !== -1) {
-        isCaravanPlaced = true;
         // Build the active caravan layout:
         // Place a Carriage sign / box
         if (map[caravanY]?.[caravanX] === TileType.Grass) map[caravanY][caravanX] = TileType.Sign;
@@ -632,10 +621,6 @@ export function spawnLivelyOverworldEntities(ctx: OverworldGenContext): void {
       npc.workY = safeWork.y;
     }
   });
-
-  // Pre-fill fog arrays
-  const discovered = Array(height).fill(null).map(() => Array(width).fill(false));
-  const visible = Array(height).fill(null).map(() => Array(width).fill(false));
 
   ctx.watchtower = watchtower;
   ctx.secondFloorMap = secondFloorMap;

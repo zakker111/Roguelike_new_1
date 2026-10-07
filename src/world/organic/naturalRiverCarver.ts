@@ -15,7 +15,6 @@ export function carveNaturalRiversAndLakes(
   worldSeed: number = 8675309
 ): void {
   // Check if a macro-river passes through this region using continuous world noise
-  const worldOriginX = chunkX * width;
   const worldOriginY = chunkY * height;
 
   const isProtectedTile = (t: TileType): boolean => {

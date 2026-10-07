@@ -3,6 +3,49 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export interface WaterCausticsConfig {
+  enabled: boolean;
+  intensityMultiplier: number;
+}
+
+class WaterCausticsConfigManager {
+  private static instance: WaterCausticsConfigManager;
+  private enabled = true;
+  private intensityMultiplier = 1.0;
+
+  private constructor() {}
+
+  public static getInstance(): WaterCausticsConfigManager {
+    if (!WaterCausticsConfigManager.instance) {
+      WaterCausticsConfigManager.instance = new WaterCausticsConfigManager();
+    }
+    return WaterCausticsConfigManager.instance;
+  }
+
+  public setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
+  public getIsEnabled(): boolean {
+    return this.enabled;
+  }
+
+  public setIntensityMultiplier(multiplier: number): void {
+    this.intensityMultiplier = Math.max(0, multiplier);
+  }
+
+  public getIntensityMultiplier(): number {
+    return this.intensityMultiplier;
+  }
+
+  public reset(): void {
+    this.enabled = true;
+    this.intensityMultiplier = 1.0;
+  }
+}
+
+export const waterCausticsConfig = WaterCausticsConfigManager.getInstance();
+
 export interface WaterCausticsOptions {
   tileSize: number;
   timeMs?: number;
@@ -23,6 +66,7 @@ export function renderDynamicWaterCaustics(
   biome: string = 'forest',
   timeMs: number = Date.now()
 ): void {
+  if (!waterCausticsConfig.getIsEnabled()) return;
   const t = timeMs * 0.0018;
   const isTundra = biome === 'tundra' || biome === 'glacial';
   const isSwamp = biome === 'swamp';

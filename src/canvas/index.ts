@@ -30,4 +30,7 @@ export * from './chunkBackgroundCache';
 export * from './elementalVfxRenderer';
 export * from './waterCausticsRenderer';
 export * from './bloomEngine';
+export * from './colorGradingEngine';
 export * from './vignetteRenderer';
+export * from './shadowRenderer';
+export * from './visualsConfig';

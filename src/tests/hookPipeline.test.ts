@@ -2,13 +2,11 @@
  * Unit test suite for HookPipeline, action mutators, and HookRegistry.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { HookPipeline } from '../events/pipeline/HookPipeline';
-import { DamageContext, MovementContext, LootContext, SpellCastContext } from '../events/pipeline/pipelineTypes';
-import { executeDamagePipeline, damagePipeline } from '../events/pipeline/pipelines/damagePipeline';
-import { executeMovementPipeline, movementPipeline } from '../events/pipeline/pipelines/movementPipeline';
-import { executeLootPipeline, lootPipeline } from '../events/pipeline/pipelines/lootPipeline';
-import { executeSpellPipeline, spellPipeline } from '../events/pipeline/pipelines/spellPipeline';
+import { executeDamagePipeline } from '../events/pipeline/pipelines/damagePipeline';
+import { executeMovementPipeline } from '../events/pipeline/pipelines/movementPipeline';
+import { executeLootPipeline } from '../events/pipeline/pipelines/lootPipeline';
 import { hookRegistry } from '../events/registry/HookRegistry';
 
 describe('HookPipeline & Action Mutators', () => {

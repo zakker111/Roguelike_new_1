@@ -2,7 +2,6 @@ import {
   GameState,
   TileType,
   Enemy,
-  Follower,
   NPC
 } from '../../../types';
 

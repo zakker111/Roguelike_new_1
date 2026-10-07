@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { TileType, Enemy, EnemyState, EnemyType, GameState, TrapType } from '../types';
+import { TileType, Enemy, EnemyState, EnemyType, TrapType } from '../types';
 import {
   generateEmergentSkirmish,
   FACTION_SPOILS_ITEMS,

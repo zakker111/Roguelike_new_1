@@ -119,7 +119,9 @@ This document serves as the authoritative structural map and development ruleset
 - `src/canvas/biomeAtmosphereRenderer.ts`: Ambient particles (snowflakes, swamp fireflies/wisps, volcanic embers).
 - `src/canvas/waterCausticsRenderer.ts`: Multi-scale dynamic water caustics, wave light refraction webs, and submerged entity caustics.
 - `src/canvas/bloomEngine.ts`: Luminous HDR bloom pass with pre-cached radial gradient bloom stamps.
+- `src/canvas/colorGradingEngine.ts`: Cinematic tone mapping, time-of-day atmospheric color grading, and volumetric crepuscular god rays.
 - `src/canvas/vignetteRenderer.ts`: Contextual atmospheric perimeter vignette with dungeon depth scaling.
+- `src/canvas/visualsConfig.ts`: Master developer configuration control center and preset engine (`vivid`, `cinematic`, `retro_clean`, `performance`).
 - `src/canvas/shadowRenderer.ts`: Directional shadow projection for trees, buildings, and entities.
 - `src/canvas/particlePool.ts` / `src/canvas/VFXEmitter.ts`: Pre-allocated object pool ring-buffer and visual FX emitter.
 - `src/canvas/spriteAnimationManager.ts` / `src/canvas/spriteRenderer.ts`: Animated sprite frame progression.
@@ -353,6 +355,7 @@ This document serves as the authoritative structural map and development ruleset
   - `WorldMapModal.tsx`: Top-level modal container coordinating map components and hotkeys.
   - `index.ts`: World map barrel export.
 - `src/components/god/`: 27 God Mode developer tools (`TilesetTesterTab`, `GodCatalogLiveTuner`, `GodMinigamesTab`, `GodArenaTab`, `GodWorldEditor`, `GodEntitySpawner`, `GodItemSpawner`, `GodWeatherScarEditor`, `GodStorytellerPanel`, `GodReplayTab`, etc.).
+  - `src/components/god/tileset/`: Modular Tileset Studio Sub-Engine (`TilesetOverviewSection`, `TilesetInspectorSection`, `TilesetAnimatorSection`, `TilesetAutotilingSection`, `tilesetTesterTypes.ts`, `index.ts`).
 - `src/components/modals/`: Dialogue modals, town shops, bed resting, caravan battles, and fishing/lockpicking minigames:
   - `AppModalRouter.tsx`: Top-level unified modal and overlay coordinator managing all 20+ overlays outside `App.tsx`.
   - `TradeModal.tsx`: Slim master coordinator component.

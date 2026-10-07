@@ -211,6 +211,12 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - **24×18 Tactical Battlefield**: Road encounters spawn a specialized combat arena featuring a covered wagon (`🛒`), guard campfire, and 2 allied veteran defenders.
    - **Lossless Overworld Recovery**: Captures an immutable `SavedOverworldSkirmishState` snapshot prior to battle, restoring the overworld chunk seamlessly upon victory or retreat with zero state loss.
    - **Dynamic Wagon Integrity Rewards**: Preserving wagon hull integrity awards bonus gold, renown, and rare elemental catalysts at your trade destination.
+47. **Dynamic Lighting, Atmospheric Tone Mapping & Developer Visuals Engine (v8.12.0)**:
+   - **Astronomical 24h Time-of-Day Shading**: Smooth continuous tone mapping across 6 celestial phases (Dawn, Morning, Midday, Golden Hour, Twilight, Night) with biome-specific color profiles (Forest emerald, Desert ochre, Tundra glacial cyan, Swamp jade, Volcanic magma, Deep Ruins violet).
+   - **Directional Volumetric Sunbeams (God Rays)**: Renders dynamic crepuscular rays sweeping through forest canopies and desert dunes with floating atmospheric dust motes.
+   - **Luminous HDR Bloom & Radial Vignettes**: Pre-cached radial gradient bloom stamps for torches, campfires, shrines, and spells without GPU convolution overhead.
+   - **24-Hour Sun & Moon Directional Drop Shadows**: Calculates real-time sun altitudes and azimuths to cast realistic drop shadows for trees, walls, and entities.
+   - **Sovereign Developer Visuals API (`visualsConfig`)**: Instant 1-line control of every visual pass, with preset visual profiles (`vivid`, `cinematic`, `retro_clean`, `performance`) and runtime atlas palette registration.
 
 ---
 
@@ -487,14 +493,31 @@ To ensure seamless updates and zero-regression reliability, we have implemented 
 
 ---
 
-### 🔍 Codebase Health & Import Audit Runner (`npm run audit`)
+### 🔍 Codebase Health & Import Audit Runner (`npm run audit` / `npm run verify`)
 
 Maintain codebase health with our automated import and catalog scanner:
 ```bash
 # Run codebase import integrity check + TypeScript linter + Vitest suite
-npm run audit
+npm run verify
 ```
-This checks all source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 69 Vitest test suites (**428/428 tests passing 100% green**), including the newly verified Unified Event Bus, Action Mutator Hook Pipelines, and Reactive Storyteller suites.
+This checks all source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 82 Vitest test suites (**548/548 tests passing 100% green**), including the newly verified Unified Event Bus, Action Mutator Hook Pipelines, Reactive Storyteller, Modular Atlas Generators, High-Clarity Combat Log, and Cinematic Color Grading suites.
+
+---
+
+### 🎨 Cinematic Tone Mapping, Biome Color Grading & Volumetric Sunbeams (`src/canvas/colorGradingEngine.ts`)
+Abyss Rogue features a zero-allocation dynamic color grading and volumetric lighting pipeline:
+- **Astronomical Time-of-Day Phases**: Continuously maps the 24-hour clock into 6 distinct atmospheric phases (Dawn, Morning, Midday, Golden Hour, Twilight, Night) with smooth color temperature transitions.
+- **Rich Nocturnal Indigo & Moonlit Contrast**: Replaces muddy gray night darkness with deep midnight navy & moonlit cyan undertones, making torches, campfires, and magic spells pop with specular brilliance.
+- **Biome & Subterranean Tone Matrix**: Distinctive chromatic profiles for Verdant Forests, Deserts, Glacial Tundras, Swamps, Volcanic Zones, Ruined Cities, and tiered Dungeon Depths (crypts, ancient deeps, magma underworld).
+- **Volumetric Crepuscular Sunbeams (God Rays)**: Rotating diagonal light shafts with harmonic breathing and floating atmospheric dust motes.
+
+---
+
+### 📜 High-Clarity Combat Log & Tactical Feed (`src/components/log/`)
+- **Zero-Pill Typography**: Unboxed glowing category bullet pips (Crimson danger, Amber combat, Emerald heal, Amethyst lore, Gold spoils, Cyan weather) with clean monospace turn timestamps (`T:84 · 14:15`).
+- **Smart Duplicate Stacking**: Groups consecutive identical combat lines with animated badges (`×4`).
+- **Post-Combat Encounter Recap Bar**: Expandable summary banner with damage dealt, damage taken, enemies slain, gold/materials looted, and a 1-click clipboard export button.
+- **Anti-Overlap Radial Drift Floaters**: Radial stagger dispersion with 9 distinct kinetic archetypes (critical gold zoom, crimson tremor, italic dodge, shield pop, elemental drips).
 
 ---
 
@@ -524,7 +547,7 @@ Abyss Rogue is configured for out-of-the-box deployment to **GitHub Pages** usin
    ```bash
    git init
    git add .
-   git commit -m "feat: Abyss Rogue v8.9.8 release"
+   git commit -m "feat: Abyss Rogue v8.13.0 release"
    git branch -M main
    git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY_NAME>.git
    git push -u origin main

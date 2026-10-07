@@ -10,7 +10,6 @@ import {
   igniteTile,
   freezeWaterAt,
   electrifyConnectedWater,
-  spawnPoisonGasAt,
   isTileFlammable,
 } from '../utils/elemental';
 import { hasLineOfSight } from '../utils/ai';

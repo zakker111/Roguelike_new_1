@@ -378,5 +378,39 @@
     "speed": 1.0,
     "char": "❄️",
     "color": "#0284c7"
+  },
+  "CaveRat": {
+    "name": "Cave Rat",
+    "baseHp": 8,
+    "baseAtk": 2,
+    "baseDef": 0,
+    "range": 1,
+    "speed": 1.3,
+    "char": "🐀",
+    "color": "#a3a3a3",
+    "aiRole": "melee"
+  },
+  "GoblinArcher": {
+    "name": "Goblin Archer",
+    "baseHp": 10,
+    "baseAtk": 3,
+    "baseDef": 0,
+    "range": 4,
+    "speed": 1.0,
+    "char": "🏹",
+    "color": "#65a30d",
+    "aiRole": "skirmisher_kiting"
+  },
+  "GreenSlime": {
+    "name": "Green Slime",
+    "baseHp": 12,
+    "baseAtk": 2,
+    "baseDef": 1,
+    "range": 1,
+    "speed": 0.7,
+    "char": "●",
+    "color": "#22c55e",
+    "aiRole": "melee"
   }
 }
+

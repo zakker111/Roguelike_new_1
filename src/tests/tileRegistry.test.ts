@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TileType } from '../types/map';
 import {
-  MASTER_TILE_REGISTRY,
   getTileDefinition,
   isTileObstacle,
   isTileWalkable,

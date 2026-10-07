@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { SPELLS } from '../utils/spellsAndEquipment';
 import { SPELL_SCROLLS, getSpellScrollAsEquipmentItem } from '../utils/spellScrolls';
-import { GameState, GameLogMessage, TileType } from '../types';
+import { GameState, GameLogMessage } from '../types';
 import { CatalystType } from '../types/items';
 import { consumeItemFromInventory } from '../utils/scrollUtils';
 import { playSound } from '../utils/audio';
@@ -297,11 +297,9 @@ export function useSpellcasting({ setGameState, addLogMessage }: UseSpellcasting
       // Check if enemy slain by scroll
       let xpAwarded = 0;
       let goldLooted = 0;
-      let killedName = '';
       const updatedEnemies = [...gameState.enemies];
 
       if (nextHp <= 0) {
-        killedName = enemy.name;
         xpAwarded = (enemy as any).xpValue || Math.max(10, Math.floor(enemy.maxHp * 0.35));
         goldLooted = Math.floor(Math.random() * 10) + 5;
         updatedEnemies.splice(targetEnemyIdx, 1);

@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   populateOrcWarcamp,
   populateBanditHideout,
   populateContestedPlaza,
   RuinedCitySector
 } from '../world/ruinedCity/ruinedCityTurf';
-import { EnemyState, EnemyType } from '../types/entities';
+import { EnemyState } from '../types/entities';
 import { isHostileBetween } from '../factions/FactionMatrix';
 
 describe('Phase E4: Turf Wars & Autonomous Faction Patrols', () => {

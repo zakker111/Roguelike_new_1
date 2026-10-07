@@ -1,7 +1,6 @@
-import { GameState, OverworldChunk, TileType } from '../../types';
+import { GameState, OverworldChunk } from '../../types';
 import { getOrCreateChunkCanvas } from '../../components/worldmap/chunkTileRasterizer';
 import { getDeterministicTownName, hasTownAtChunk, isCastleTownAtChunk } from '../../world/overworldStructures';
-import { getContinuousTerrainMetrics } from '../../world/organic/biomeNoiseEngine';
 
 export interface MapExportOptions {
   scale?: number; // Default 0.4 (40%)

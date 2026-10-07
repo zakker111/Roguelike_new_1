@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { performanceMonitor, PerformanceMonitor } from '../utils/performanceMonitor';
+import { performanceMonitor } from '../utils/performanceMonitor';
 import { getChunkMemoryStats, compressChunk } from '../utils/overworld/chunkMemoryManager';
-import { GameState, TileType, OverworldChunk } from '../types';
+import { TileType, OverworldChunk } from '../types';
 
 describe('Real-Time Performance & Resource Telemetry Engine', () => {
   beforeEach(() => {

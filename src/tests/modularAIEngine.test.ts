@@ -5,7 +5,6 @@ import {
   processTownGuardTurn,
   processHostileTurn,
   resolveCivilianNpcTurns,
-  emitAggregatedDamageFloater,
   checkTacticalCaravanVictory
 } from '../hooks/ai';
 import { EnemyState, EnemyType, TileType, GameState } from '../types';
