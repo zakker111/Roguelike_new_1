@@ -38,7 +38,9 @@ jobs:
       - name: Run code validation & test suite
         run: |
           node scripts/validateJson.cjs
+          node scripts/validateContent.cjs
           node scripts/auditCodebase.cjs
+          npm run lint
           npm test
 
       - name: Build production bundle

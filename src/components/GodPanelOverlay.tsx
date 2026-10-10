@@ -15,7 +15,8 @@ import {
   History,
   Grid,
   Dice5,
-  Sparkles
+  Sparkles,
+  Volume2
 } from 'lucide-react';
 import { GameState } from '../types';
 import { playSound } from '../utils/audio';
@@ -50,6 +51,7 @@ import { TilesetTesterTab } from './god/TilesetTesterTab';
 import { GodCatalogLiveTuner } from './god/GodCatalogLiveTuner';
 import { GodEventInspectorTab } from './god/GodEventInspectorTab';
 import { GodVisualsStudioTab } from './god/GodVisualsStudioTab';
+import { GodAudioSoundboardTab } from './god/GodAudioSoundboardTab';
 import { PALETTE_TILES } from './god/GodHouseDesigner';
 
 export { DESIGNER_LEGEND, PALETTE_TILES };
@@ -419,7 +421,8 @@ function GodPanelOverlayComponent({
             { id: 'dungeon_editor', label: 'Dungeon Floors', icon: Grid, color: 'text-purple-400' },
             { id: 'modding_api', label: 'Modding API', icon: Code, color: 'text-pink-400' },
             { id: 'catalog_tuner', label: 'Catalog Tuner', icon: Sliders, color: 'text-amber-400' },
-            { id: 'event_bus', label: 'Event Bus', icon: Zap, color: 'text-cyan-400' }
+            { id: 'event_bus', label: 'Event Bus', icon: Zap, color: 'text-cyan-400' },
+            { id: 'audio_soundboard', label: 'Audio Lab', icon: Volume2, color: 'text-sky-400' }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -778,6 +781,11 @@ function GodPanelOverlayComponent({
           {/* Unified Event Bus & Hook Pipeline Monitor */}
           {activeTab === 'event_bus' && (
             <GodEventInspectorTab />
+          )}
+
+          {/* Audio Synthesizer Audition Soundboard Tab */}
+          {activeTab === 'audio_soundboard' && (
+            <GodAudioSoundboardTab triggerSuccessLog={triggerSuccessLog} />
           )}
         </div>
 

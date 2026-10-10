@@ -25,8 +25,9 @@ This document serves as the authoritative structural map and development ruleset
 ## 📁 Root Configuration & Scripts
 - `package.json` / `tsconfig.json` / `vite.config.ts`: Project manifest, TypeScript build configs, and Vite dev server (`base: './'`).
 - `metadata.json`: Platform metadata (app name, description, capabilities).
+- `ENGINE_MANUAL.md`: Master architectural manual and content authoring handbook for the reusable roguelike engine.
 - `LICENSE`: Open-source MIT License.
-- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 413 tests, builds, and deploys to GitHub Pages).
+- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 685 unit tests across 95 test suites, builds, and deploys to GitHub Pages).
 - `public/`:
   - `404.html`: SPA fallback redirect for GitHub Pages.
   - `.nojekyll`: Disables Jekyll asset processing on GitHub Pages.
@@ -34,6 +35,7 @@ This document serves as the authoritative structural map and development ruleset
 - `scripts/`:
   - `auditCodebase.cjs`: Complete graph audit script (validates all JSON schemas, imports, exports, and file references).
   - `validateJson.cjs`: Automated JSON linting & catalog syntax validator.
+  - `validateContent.cjs`: Data-driven roguelike content and referential integrity validator (Step 9).
 
 ---
 
@@ -98,6 +100,32 @@ This document serves as the authoritative structural map and development ruleset
 - `src/effects/statusEffectRegistry.ts`: Authoritative Master Status Effect Registry with declarative definitions for buffs and debuffs (`poison`, `bleeding`, `burning`, `frozen`, `stunned`, `weakened`, `blessed`, `shielded`, `regeneration`, `bloodlust`, `clarity`), duration caps, tick handlers, and action inhibition flags.
 - `src/effects/statusEngine.ts`: Status engine helper library (`createActiveStatus`, `applyStatusToList`, `removeStatusFromList`, `hasStatusInList`, `aggregateStatusModifiers`).
 - `src/effects/index.ts`: Status effects sub-engine barrel export.
+
+---
+
+### 3f. `/src/engine/` — Modular Core Roguelike Engine (`ENGINEPLAN.md`)
+- `src/engine/entities/`: Universal entity taxonomy (`BaseEntity`, `PlayerEntity`, `EnemyEntity`, `NpcEntity`, `AnimalEntity`, `SummonEntity`, `TrapEntity`, `ProjectileEntity`, `ItemEntity`, `InteractableEntity`), data-driven `EntityRegistry` blueprints, `EnemyRegistry`, `SpawnTable` weighted distribution, and `EntityManager` spatial grid indexing with turn-based lifecycle ticking.
+- `src/engine/abilities/`: Generic ability contracts (`AbilityDefinition`), catalog registry (`AbilityRegistry`), and universal execution pipeline (`AbilityExecutor`) supporting directional, self, single-target, and AOE radial targeting.
+- `src/engine/effects/`: Decoupled status effects (`EffectDefinition`, `ActiveEffect`), catalog (`EffectRegistry`), and `EffectManager` managing intensity/duration stacking, turn-based DoT/HoT ticking, damage absorption shields, and action inhibitions across all entity types.
+- `src/engine/ai/`: Reusable AI Strategy Pattern Sub-Engine (`IAIStrategy`, `AIStrategyRegistry`, `AIManager`, `aiNavigation`), data-driven behavior selection (`MeleeStrategy`, `RangedStrategy`, `KitingStrategy`, `CowardStrategy`, `AggressiveStrategy`, `DefensiveStrategy`, `SummonerStrategy`, `PatrolStrategy`, `BossStrategy` with multi-phase health adaptation).
+- `src/engine/dungeon/`: Modular Generic Dungeon Generator Sub-Engine (`IDungeonGenerator`, `DungeonGeneratorConfig`, `DungeonGenerationResult`, `DungeonGeneratorRegistry`, `RoomRegistry`, `RoomTemplate`, `DungeonManager`, `dungeonUtils`), data-driven layout generators (`RoomAndCorridorGenerator` with diverse room semantics, `BSPDungeonGenerator` with guaranteed connectivity, `CellularAutomataCaveGenerator` for natural organic caverns, `ArenaDungeonGenerator` for trial colosseums & boss arenas).
+- `src/engine/items/`: Modular Item & Weapon Registry Sub-Engine (`ItemRegistry`, `WeaponRegistry`, `ItemDefinition`, `WeaponTemplateDefinition`, catalog bootstrapping for materials, catalysts, relics, scrolls, and consumables, crafted weapon builder).
+- `src/engine/registry/`: Sovereign Master Content Registry Coordinator (`ContentRegistry`, unified access across all 8+ sub-registries: enemies, items, weapons, abilities, effects, rooms, generators, AI strategies, entity blueprints, batch catalog initialization, and cross-reference validation).
+- `src/engine/combat/`: Generic mathematical combat engine (`CombatEngine`, `Combatant`, `AttackInput`, `CombatResult`, configurable armor mitigation, critical hits, dodge, and damage variance).
+- `src/engine/inventory/`: Generic container management engine (`InventoryEngine`, `InventorySlot`, item stacking, weight capacity limits, container-to-container transfers).
+- `src/engine/map/`: Generic 2D spatial grid & geometry engine (`GridMap`, `Pathfinder`, Bresenham line-of-sight raycaster, field-of-view radial calculator, A* navigation).
+- `src/engine/rules/`: Generic turn-based energy scheduling engine (`TurnEngine`, `TurnParticipant`, speed-based action point accumulation and turn queue).
+- `src/engine/validation/`: Autonomous Content Validation Engine (`ContentValidator`, checks duplicate IDs, missing fields, invalid AI roles, invalid abilities, broken references, invalid spawn tables, room dimensions).
+- `src/engine/index.ts`: Unified engine barrel export.
+
+---
+
+### 3g. `/src/game/` — Game Content & Rules Package (`ENGINEPLAN.md` Section 9)
+- `src/game/content/`: Game-specific content definition bootstrappers (`gameEnemies`, `gameItems`, `gameWeapons`, `gameAbilities`, `gameEffects`).
+- `src/game/rules/`: Game balance progression curves (`GameBalance`, XP thresholds, depth multipliers, gold scaling).
+- `src/game/bootstrap.ts`: Master fantasy game content bootstrapper (`bootstrapGame(contentRegistry)`).
+- `src/game/demo/`: Hot-swappable alternative genre demonstration pack (`sciFiGameDemo.ts`, proving "Final Test" by executing an entire Cyberpunk/Sci-Fi roguelike on the exact same engine).
+- `src/game/index.ts`: Game content barrel export.
 
 ---
 

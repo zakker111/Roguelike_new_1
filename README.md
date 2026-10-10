@@ -493,14 +493,26 @@ To ensure seamless updates and zero-regression reliability, we have implemented 
 
 ---
 
-### 🔍 Codebase Health & Import Audit Runner (`npm run audit` / `npm run verify`)
+### 🔍 Codebase Health, Content Validation & Test Suites (`npm run audit` / `npm run verify` / `npm run validate:content`)
 
-Maintain codebase health with our automated import and catalog scanner:
+Maintain codebase health with our automated import, catalog scanner, and content validator:
 ```bash
-# Run codebase import integrity check + TypeScript linter + Vitest suite
+# Run data catalog referential integrity validation
+npm run validate:content
+
+# Run codebase import integrity check + JSON lint + content validation + TypeScript linter + Vitest suite
 npm run verify
 ```
-This checks all source files and 31 JSON data catalogs for broken relative imports, validates TypeScript types (`tsc --noEmit`), and executes all 82 Vitest test suites (**548/548 tests passing 100% green**), including the newly verified Unified Event Bus, Action Mutator Hook Pipelines, Reactive Storyteller, Modular Atlas Generators, High-Clarity Combat Log, and Cinematic Color Grading suites.
+This audits all source files and 31 JSON data catalogs for broken relative imports and referential integrity (`validateContent.cjs`), validates TypeScript types (`tsc --noEmit`), and executes all 95 Vitest test suites (**685/685 tests passing 100% green**), including the newly verified Reusable Roguelike Engine (`ENGINE_MANUAL.md`), Generic Combat & Inventory Systems, Modular Dungeon Generators, Unified Event Bus, Action Mutator Hook Pipelines, Reactive Storyteller, and Cinematic Color Grading suites.
+
+---
+
+### 🛠️ Reusable Roguelike Engine (`ENGINE_MANUAL.md`)
+Abyss Rogue is powered by a fully modular, reusable roguelike engine where engine mechanics (**HOW the game works**) are cleanly decoupled from game content (**WHAT exists in the game**):
+- **10 Core Engine Subsystems**: Generic Entities, Abilities, Effects, Strategy-Pattern AI, Procedural Dungeon Generators, Combat Math, Inventory Containers, 2D Spatial Geometry (LOS & FOV), Energy Turn Scheduler, and Master Content Coordinator.
+- **Data-Driven & Easily Extensible**: Adding new monsters, weapons, spells, or rooms requires only adding entries to JSON catalogs without touching core engine pipelines.
+- **Cross-Genre Proven**: Hot-swappable between Fantasy and Sci-Fi genres (`src/game/demo/sciFiGameDemo.ts`).
+- **Complete Documentation**: Read the full architectural handbook and content authoring guide in **[`ENGINE_MANUAL.md`](./ENGINE_MANUAL.md)**.
 
 ---
 
@@ -547,7 +559,7 @@ Abyss Rogue is configured for out-of-the-box deployment to **GitHub Pages** usin
    ```bash
    git init
    git add .
-   git commit -m "feat: Abyss Rogue v8.13.0 release"
+   git commit -m "feat: Abyss Rogue v8.14.0 release - Reusable Roguelike Engine"
    git branch -M main
    git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY_NAME>.git
    git push -u origin main

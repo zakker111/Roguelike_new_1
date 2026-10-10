@@ -649,7 +649,7 @@ export const GM_ENCOUNTERS_DATABASE: GMEncounter[] = [
       if (gmState.disableGifts) {
         return { success: false, mutatedState: {}, logText: "" };
       }
-      if (gameState.followers.length >= 3) {
+      if ((gameState.followers?.length ?? 0) >= 3) {
         return { success: false, mutatedState: {}, logText: "" };
       }
 
@@ -708,7 +708,7 @@ export const GM_ENCOUNTERS_DATABASE: GMEncounter[] = [
       };
 
       const updatedEnemies = [...gameState.enemies, newFollowerActor];
-      const updatedFollowers = [...gameState.followers, newFollowerMeta];
+      const updatedFollowers = [...(gameState.followers || []), newFollowerMeta];
       const direction = getDirectionString(px, py, sx, sy);
 
       return {

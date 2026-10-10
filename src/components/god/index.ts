@@ -24,3 +24,4 @@ export * from './GodMinigamesTab';
 export * from './GodCatalogLiveTuner';
 export * from './GodEventInspectorTab';
 export * from './GodVisualsStudioTab';
+export * from './GodAudioSoundboardTab';

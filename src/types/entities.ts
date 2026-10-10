@@ -200,7 +200,7 @@ export interface Enemy {
   maxStaggerMeter?: number;   // Max Stagger threshold before stance breaks
   isStaggered?: boolean;      // True if guard/posture is currently shattered (vulnerable)
   staggerTurns?: number;      // Remaining turns of stagger stun
-  aiRole?: 'melee' | 'skirmisher_kiting' | 'support_healer' | 'support_buffer' | 'tank' | 'ambusher'; // Advanced behavioral AI archetype
+  aiRole?: 'melee' | 'ranged' | 'flanking' | 'skirmisher_kiting' | 'support_healer' | 'support_buffer' | 'tank' | 'ambusher' | 'passive' | 'coward_flee' | 'boss'; // Advanced behavioral AI archetype
   supportSpellCooldown?: number; // Cooldown turns before support healing/buffing spells can be re-cast
   isPanicked?: boolean;          // Flag when leader falls and squad breaks formation
   panicTurns?: number;           // Remaining turns of panicked retreat

@@ -37,6 +37,28 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   │   └── HookRegistry.ts    # Unified registry API for mods, relics, traits & custom game logic
   │   └── index.ts               # Unified events barrel export
   │
+  ├── 📂 engine                  # Reusable Roguelike Engine Sub-Systems (ENGINE_MANUAL.md)
+  │   ├── 📂 entities            # Universal entity taxonomy (9 kinds), EnemyRegistry, SpawnTable, EntityManager
+  │   ├── 📂 abilities           # AbilityDefinition, AbilityRegistry, AbilityExecutor (radial/cone/LOS targeting)
+  │   ├── 📂 effects             # Decoupled EffectDefinition, EffectRegistry, EffectManager (stacks, shields, ticks)
+  │   ├── 📂 ai                  # IAIStrategy Strategy Pattern, AIStrategyRegistry, AIManager
+  │   ├── 📂 dungeon             # IDungeonGenerator, RoomRegistry, BSP, Room & Corridor, Caves, Arena
+  │   ├── 📂 items               # Data-driven ItemRegistry, WeaponRegistry & crafted weapon builder
+  │   ├── 📂 registry            # Sovereign Master ContentRegistry coordinator
+  │   ├── 📂 combat              # Generic CombatEngine (mitigation, crits, dodge, armor penetration)
+  │   ├── 📂 inventory           # Generic InventoryEngine (capacity, weight limits, item stacking, transfers)
+  │   ├── 📂 map                 # GridMap (Bresenham LOS, radial FOV) & Pathfinder (A*)
+  │   ├── 📂 rules               # TurnEngine (action energy accumulation, speed-based turn frequency)
+  │   ├── 📂 validation          # ContentValidator (automated cross-reference & catalog integrity checks)
+  │   └── index.ts               # Unified engine barrel export
+  │
+  ├── 📂 game                    # Game Content & Rules Package (ENGINEPLAN.md Section 9)
+  │   ├── 📂 content             # Game-specific content bootstrappers (enemies, items, weapons, abilities, effects)
+  │   ├── 📂 rules               # GameBalance (XP curves, threat multipliers)
+  │   ├── 📂 demo                # Hot-swappable alternative genre demo pack (sciFiGameDemo.ts)
+  │   ├── bootstrap.ts           # Master fantasy game content bootstrapper
+  │   └── index.ts               # Game content barrel export
+  │
   ├── 📂 hooks                   # Custom Domain Engine Hooks
   │   ├── 📂 ai                  # Modular AI Behavior & Enemy/Civilian Decision Trees
   │   │   ├── types.ts           # AI parameter context and state interfaces
@@ -384,7 +406,7 @@ Welcome, Sovereign Creator! This guide is designed to help you, or any developer
   │   ├── wildernessCamping.ts   # Wilderness Campsite Quality, Insulation & Night-Watch Sentry Engine
   │   └── worldThreat.ts         # Adaptive world threat & chaos calculation
   │
-  └── 📂 tests                   # Automated Vitest Engine Test Suites (84 test files, 561 passing tests)
+  └── 📂 tests                   # Automated Vitest Engine Test Suites (95 test files, 685 passing tests 100% green)
       ├── ai.test.ts             # Pathfinding, Bresenham line of sight & enemy AI tests
       ├── appHooksAndGameStateFactory.test.ts # App hooks & game state factory tests
       ├── appModalRouter.test.tsx # Unified App Modal Router component mounting & overlay isolation tests
@@ -1721,7 +1743,7 @@ The God Panel features an interactive command line that accepts GM slash command
 
 ### 3. Sovereign God Suite & Visual Developer Tools (`src/components/god/`)
 
-The Sovereign God Suite (`GodPanelOverlay.tsx`) contains **20 specialized developer tabs**:
+The Sovereign God Suite (`GodPanelOverlay.tsx`) contains **21 specialized developer tabs**:
 
 1. **Cheats (`sovereign` / `GodCheatsTab.tsx`)**:
    - Instant heal, stat overrides, gold/XP bounties, enemy wipe, decor clusters, time fast-forward, and exhaustion purge.
@@ -1789,6 +1811,13 @@ The Sovereign God Suite (`GodPanelOverlay.tsx`) contains **20 specialized develo
 
 20. **Event Bus & Pipeline Monitor (`event_bus` / `GodEventInspectorTab.tsx`)**:
     - Real-time event telemetry log, active hook pipeline middleware inspector, and interactive sandbox event dispatcher.
+
+21. **Audio Synthesizer Soundboard & Lab (`audio_soundboard` / `GodAudioSoundboardTab.tsx`)**:
+    - Complete interactive soundboard covering all 48 synthesized sound effects from `soundCatalog.json` (Combat, Movement, Environment, Crafting, UI).
+    - Real-time modulation sliders: Pitch (0.25x – 2.5x), Volume (0% – 150%), Simulated Distance (0 – 18 tiles with quadratic falloff $(1 - dist/14)^{1.5}$), Stereo Panning (L - C - R), and Indoor Acoustic Occlusion toggle.
+    - WebAudio Voice Allocation telemetry: Active Voices / 8 max concurrency, Voice Thefts, Total Allocations, and active channels.
+    - Real-time Canvas Oscilloscope & Frequency Spectrum visualizer.
+    - Raw Oscillator Synth Sandbox with waveform shapes (sawtooth, square, triangle, sine, white noise) and center frequency slider.
 
 ---
 
@@ -2553,8 +2582,11 @@ combatVfxEngine.addFloater({
 ### 1. Verification Scripts & Automated Testing
 The engine provides a unified test and audit pipeline:
 ```bash
-# Run catalog linting, file import graph audit, TypeScript typecheck, and full test suite:
+# Run catalog linting, content validation, file import graph audit, TypeScript typecheck, and full test suite:
 npm run verify
+
+# Run automated roguelike content and referential integrity validator:
+npm run validate:content
 
 # Run unit and integration tests only:
 npm test
@@ -2568,9 +2600,10 @@ node scripts/validateJson.cjs
 # Scan all source modules for circular dependencies and broken imports:
 node scripts/auditCodebase.cjs
 ```
-- **Test Suite Status**: 82 test suites, 548 tests passing 100% green.
+- **Test Suite Status**: 95 test suites, 685 unit tests passing 100% green.
 - **Catalog Validation**: 31 JSON catalogs validated with zero schema defects.
-- **Import Audit**: 573 source and data files scanned with zero broken imports or orphaned modules.
+- **Content Validation**: Automated referential integrity validator verifying enemies, items, catalysts, recipes, and weapons with 0 errors.
+- **Import Audit**: 666 source and data files scanned with zero broken imports or orphaned modules.
 
 ### 2. GitHub Pages Build & Deployment Pipeline
 - **Production Build Scripts**:

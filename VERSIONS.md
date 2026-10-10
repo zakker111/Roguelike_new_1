@@ -6,6 +6,34 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.14.0] — Reusable Roguelike Engine Architecture & Content Validation Sub-Engine (October 10, 2026)
+*Architected and executed the complete 10-step Reusable Roguelike Engine Roadmap (`ENGINEPLAN.md` & `ENGINE_MANUAL.md`). Achieved strict architectural separation between engine mechanics (HOW the game works) and game content (WHAT exists in the game). Extracted generic entity taxonomy (9 variants), modular ability pipelines, decoupled status effect management, strategy-pattern AI, 4 procedural dungeon generation algorithms, generic mathematical combat, inventory container management, 2D spatial geometry with Bresenham LOS & radial FOV, and an energy-based turn scheduler. Established a unified ContentRegistry coordinator and an automated ContentValidator auditing catalogs and cross-references. Proven via hot-swappable Cyberpunk/Sci-Fi Roguelike demonstration. Expanded the test suite to 95 test files and 685 unit tests (100% green).*
+
+- **1. Clean Enemy & Generic Entity Pipelines (`src/engine/entities/`)**:
+  - Implemented `EnemyDefinition`, `EnemyRegistry`, `SpawnTable`, and runtime scaling.
+  - Unified `BaseEntity` taxonomy supporting 9 entity kinds: Player, Enemy, NPC, Animal, Summon, Trap, Projectile, Item, and Interactable.
+  - $O(1)$ spatial coordinate indexing via `EntityManager`.
+- **2. Reusable Abilities & Decoupled Status Effects (`src/engine/abilities/`, `src/engine/effects/`)**:
+  - `AbilityDefinition`, `AbilityRegistry`, and `AbilityExecutor` supporting single-target, radial area, directional, cone, and self targeting with procedural combat VFX.
+  - `EffectDefinition`, `EffectRegistry`, and `EffectManager` managing intensity/duration stacking, turn-based DoT/HoT ticking, damage absorption shields, and action inhibitions across all entity types.
+- **3. Pluggable AI Strategy Pattern (`src/engine/ai/`)**:
+  - `IAIStrategy` interface and 9 data-driven AI behaviors: Melee, Ranged, Kiting, Coward, Aggressive, Defensive, Summoner, Patrol, and multi-phase Boss strategies.
+- **4. Modular Dungeon Generation & Room Blueprints (`src/engine/dungeon/`)**:
+  - `IDungeonGenerator` with 4 swappable algorithms: RoomAndCorridor, BSPDungeon, CellularAutomataCave, and ArenaDungeon.
+  - Semantic `RoomRegistry` supporting 10 room archetypes with bounded dimensional sampling.
+- **5. Core Generic Subsystems (`src/engine/combat/`, `src/engine/inventory/`, `src/engine/map/`, `src/engine/rules/`)**:
+  - `CombatEngine`: Mathematical combat resolution (mitigation, crits, dodge, armor penetration, variance).
+  - `InventoryEngine`: Container manager with item stacking, weight limits, and container transfers.
+  - `GridMap` & `Pathfinder`: 2D spatial grid, Bresenham LOS raycasting, radial FOV, and generic A* pathfinding.
+  - `TurnEngine`: Action energy accumulation scheduling turns dynamically based on speed.
+- **6. Engine / Game Separation & Cross-Genre Verification (`src/game/`)**:
+  - Separated fantasy game content into `src/game/content/` (`gameEnemies`, `gameItems`, `gameWeapons`, `gameAbilities`, `gameEffects`), `src/game/rules/` (`GameBalance`), and `bootstrapGame()`.
+  - Proven with `src/game/demo/sciFiGameDemo.ts`, hot-swapping the exact same engine into a Space Station / Sci-Fi roguelike with zero engine modifications.
+- **7. Automated Validation Tools & Handbook (`src/engine/validation/`, `ENGINE_MANUAL.md`)**:
+  - `ContentValidator` auditing duplicate IDs, missing fields, invalid AI roles, unverified abilities, broken effect links, and malformed spawn tables.
+  - CLI runner `scripts/validateContent.cjs` (`npm run validate:content`).
+  - Comprehensive architectural handbook: `ENGINE_MANUAL.md`.
+
 ## [v8.13.0] — Cinematic Tone Mapping, Biome Color Grading & Volumetric Sunbeams Sub-Engine (October 5, 2026)
 *Engineered a zero-allocation, high-performance Color Grading & Volumetric Sunbeams Sub-Engine (`src/canvas/colorGradingEngine.ts`) integrated into the GameCanvas post-processing pipeline between the Luminous HDR Bloom Pass and the Atmospheric Perimeter Vignette Pass. Replaces flat static pixel palettes with dynamic, continuous time-of-day tone mapping (Dawn rose-gold, Morning warmth, Midday clarity, Golden Hour honey-amber, Twilight amethyst, and deep nocturnal moonlit navy). Implements rotating volumetric crepuscular rays (god rays) streaming across the screen with gentle harmonic breathing (`sin(now * 0.4)`) and a pre-allocated ring-buffer of 18 floating illuminated dust motes. Distinctive chromatic profiles for all biomes (Forest emerald, Desert golden ochre, Tundra glacial cyan, Swamp jade mist, Volcanic smoldering cinder, Ruined City oxidized bronze, and tiered Dungeon crypt/ruin/underworld depth tones). Verified with 82 test suites and 548 passing tests (100% green).*
 

@@ -7,6 +7,7 @@ import { TileType, Enemy, EnemyType, EnemyState, Follower, LEVEL_WIDTH, LEVEL_HE
 import enemyTemplates from '../../data/enemies.json';
 import { applyCombatArchetypeAndChaosScaling } from '../../utils/combatArchetypes';
 import { getActiveCustomMonsters } from '../../utils/moddingEngine';
+import { EnemyRegistry } from '../../engine/entities/EnemyRegistry';
 import { BossTemplate, Room } from './types';
 
 export function getEnemyTemplate(type: EnemyType | string) {
@@ -47,12 +48,26 @@ export function getEnemyTemplate(type: EnemyType | string) {
     }
   }
 
-  // Alias lookup map
+  // Resolve through clean EnemyRegistry
+  const registryDef = EnemyRegistry.get(type);
+  if (registryDef) {
+    return {
+      name: registryDef.name,
+      baseHp: registryDef.baseHp,
+      baseAtk: registryDef.baseAtk,
+      baseDef: registryDef.baseDef,
+      range: registryDef.range,
+      speed: registryDef.speed,
+      char: registryDef.char,
+      color: registryDef.color
+    };
+  }
+
+  // Fallback defaults loaded from easy-to-modify JSON
   let mappedKey = type;
   if (type === 'Brute') mappedKey = 'OrcBrute';
   if (type === 'Mage') mappedKey = 'SkeletonMage';
 
-  // Fallback defaults loaded from easy-to-modify JSON
   const template = (enemyTemplates as any)[mappedKey] || (enemyTemplates as any)[type];
   if (template) {
     return {

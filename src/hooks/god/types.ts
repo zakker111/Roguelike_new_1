@@ -82,4 +82,5 @@ export type GodActiveTab =
   | 'dungeon_editor'
   | 'modding_api'
   | 'catalog_tuner'
-  | 'event_bus';
+  | 'event_bus'
+  | 'audio_soundboard';
