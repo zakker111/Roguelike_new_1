@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameState, Follower, Enemy, EnemyState } from '../types';
+import { getStandardFollowerCount } from '../utils/specialCats';
 
 interface UseTownServicesOptions {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -222,8 +223,8 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
 
   const handleHireMercenary = (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard') => {
     setGameState((gameState) => {
-      if (gameState.followers.length >= 3) {
-        addLogMessage('🗣️ Bartender: "Your party is full! You can only manage up to 3 companions."', 'system');
+      if (getStandardFollowerCount(gameState.followers) >= 3) {
+        addLogMessage('🗣️ Bartender: "Your party is full! You can only manage up to 3 standard companions. (Special cats do not count toward this limit.)"', 'system');
         return gameState;
       }
 

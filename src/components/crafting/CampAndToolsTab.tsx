@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import { Compass, Hammer } from 'lucide-react';
-import { RecipeCard, IngredientRequirement } from './RecipeCard';
+import { Compass } from 'lucide-react';
+import { RecipeCard } from './RecipeCard';
 
 export interface CampAndToolsTabProps {
   scrapWoodCount: number;

@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { TileType, Enemy, Trap, Chest, GameState } from '../types';
+import { TileType, GameState } from '../types';
 import { GraphicsVisualMode } from '../canvas/types';
 import { renderTileMap } from '../canvas/tileMapRenderer';
 import { renderElementalFields } from '../canvas/elementalVfxRenderer';
@@ -16,6 +16,7 @@ import { mockupAtlasGenerator } from '../canvas/MockupAtlasGenerator';
 import { tilesetAtlasManager } from '../canvas/TilesetAtlasManager';
 import { cameraController } from '../canvas/cameraController';
 import { entityInterpolationManager } from '../canvas/entityInterpolationManager';
+import { spriteAnimationManager } from '../canvas/spriteAnimationManager';
 import { combatVfxEngine } from '../canvas/combatVfxEngine';
 import { calculateDirectionalDrift } from '../utils/combatFloaterDrift';
 import { chunkBackgroundCache } from '../canvas/chunkBackgroundCache';
@@ -631,11 +632,49 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
   // We can write a custom DOM event or reference to inject nice numbers!
   // Let's hook up a global window listener for floating particles to decouple turn effects
   useEffect(() => {
-    const handleAddEffect = (event: CustomEvent<{ x: number; y: number; text: string; type: 'dmg' | 'crit' | 'heal' | 'mana'; sourceX?: number; sourceY?: number }>) => {
-      const { x, y, text, type, sourceX, sourceY } = event.detail;
+    const handleAddEffect = (event: CustomEvent<{
+      x: number;
+      y: number;
+      text: string;
+      type: 'dmg' | 'crit' | 'heal' | 'mana';
+      sourceX?: number;
+      sourceY?: number;
+      weaponType?: string;
+      element?: string;
+      slashType?: any;
+    }>) => {
+      let { x, y, text, type, sourceX, sourceY, weaponType, element, slashType } = event.detail;
 
       const currentGS = gameStateRef.current;
       const isPlayer = currentGS.playerX === x && currentGS.playerY === y;
+
+      // If attack damage is dealt to an enemy and source wasn't explicitly provided,
+      // fallback to player position if player is adjacent to ensure attack animations always show
+      if (!isPlayer && (type === 'dmg' || type === 'crit') && sourceX === undefined) {
+        const pDist = Math.hypot(x - currentGS.playerX, y - currentGS.playerY);
+        if (pDist <= 2.2) {
+          sourceX = currentGS.playerX;
+          sourceY = currentGS.playerY;
+          if (!weaponType && currentGS.currentWeapon) {
+            weaponType = currentGS.currentWeapon.type || currentGS.currentWeapon.baseType;
+            element = currentGS.currentWeapon.catalystUsed?.type;
+          }
+        }
+      }
+
+      // If player attacked, trigger player attack lunge & directional sprite attack animation
+      if (sourceX === currentGS.playerX && sourceY === currentGS.playerY && !isPlayer) {
+        entityInterpolationManager.triggerAttackLunge('player', x, y, 180);
+        const ldx = x - currentGS.playerX;
+        const ldy = y - currentGS.playerY;
+        let pFacing: 'north' | 'south' | 'east' | 'west' = 'south';
+        if (Math.abs(ldx) >= Math.abs(ldy)) {
+          pFacing = ldx > 0 ? 'east' : 'west';
+        } else {
+          pFacing = ldy > 0 ? 'south' : 'north';
+        }
+        spriteAnimationManager.setAnimationState('player', 'attack', pFacing);
+      }
 
       // Dispatch to modern unified combat VFX engine
       combatVfxEngine.dispatchEffect({
@@ -645,6 +684,9 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         sourceY,
         text,
         type,
+        weaponType,
+        element,
+        slashType,
         isPlayerTarget: isPlayer,
         onImpactShake: (intensity) => {
           shakeRef.current.intensity = Math.max(shakeRef.current.intensity, intensity);
@@ -845,17 +887,17 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-sm shadow-amber-400/50" />
           <span className="text-slate-400">Depth:</span>
-          <strong className="text-amber-300">{gameState.playerStats.depth === 0 ? 'Surface' : `${gameState.playerStats.depth}F`}</strong>
+          <strong className="text-amber-300">{(gameState.playerStats?.depth ?? 0) === 0 ? 'Surface' : `${gameState.playerStats?.depth}F`}</strong>
         </span>
         <span className="text-slate-700">|</span>
         <span className="flex items-center gap-1">
           <span className="text-slate-400">Turns:</span>
-          <strong className="text-slate-100">{gameState.playerStats.turnsPlayed}</strong>
+          <strong className="text-slate-100">{gameState.playerStats?.turnsPlayed ?? 0}</strong>
         </span>
         <span className="text-slate-700">|</span>
         <span className="flex items-center gap-1">
           <span className="text-slate-400">Threat:</span>
-          <strong className="text-rose-400">{(1 + (gameState.playerStats.depth - 1) * 0.25 + (gameState.playerStats.turnsPlayed / 100) * 0.05 + (gameState.playerStats.realTimeSeconds / 3600) * 0.5).toFixed(2)}x</strong>
+          <strong className="text-rose-400">{(1 + Math.max(0, ((gameState.playerStats?.depth || 0) - 1)) * 0.25 + ((gameState.playerStats?.turnsPlayed || 0) / 100) * 0.05 + ((gameState.playerStats?.realTimeSeconds || 0) / 3600) * 0.5).toFixed(2)}x</strong>
         </span>
       </div>
 

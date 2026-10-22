@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MockupPaletteTheme, IThemeAtlasGenerator } from './types';
+import { IThemeAtlasGenerator } from './types';
 import { classicAtlasGenerator } from './classicAtlasGenerator';
 import { forestAtlasGenerator } from './forestAtlasGenerator';
 import { infernalAtlasGenerator } from './infernalAtlasGenerator';

@@ -11,7 +11,6 @@ import {
   RangedStrategy,
   KitingStrategy,
   CowardStrategy,
-  AggressiveStrategy,
   DefensiveStrategy,
   SummonerStrategy,
   PatrolStrategy,
@@ -20,7 +19,6 @@ import {
   getStepTowards,
   getStepAway,
   checkBresenhamLOS,
-  AIStrategyContext,
   AISpatialQueryContext
 } from '../../engine/ai';
 import { LivingEntity } from '../../engine/entities';

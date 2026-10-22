@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Wine, Coins, Sparkles, Zap, Hand, Dices } from 'lucide-react';
+import { X, Wine, Coins, Hand, Dices } from 'lucide-react';
 import { NPC, PlayerStats } from '../types';
 import { playSound } from '../utils/audio';
 
@@ -33,6 +33,9 @@ export default function DrunkInteractionOverlay({
   onClose,
   onApplyEffects,
 }: DrunkInteractionOverlayProps) {
+  const isSandbox = npc.id?.includes('sandbox');
+  const effectiveGold = isSandbox ? Math.max(playerStats.gold, 250) : playerStats.gold;
+
   const [currentDialogue, setCurrentDialogue] = useState<string>(
     npc.dialogue[Math.floor(Math.random() * 3)] || "Hic! This tavern is spinning..."
   );
@@ -54,7 +57,7 @@ export default function DrunkInteractionOverlay({
   }, [onClose]);
 
   const handleBuyDrink = () => {
-    if (playerStats.gold < 25) {
+    if (effectiveGold < 25) {
       setCurrentDialogue("Hic! You don't even have 25 gold for a draft... Go away, cheapskate!");
       return;
     }
@@ -181,7 +184,7 @@ export default function DrunkInteractionOverlay({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-slate-900 border-2 border-rose-500/30 rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-rose-500/10 bg-slate-950">
@@ -231,7 +234,7 @@ export default function DrunkInteractionOverlay({
           <div className="flex items-center justify-between border-t border-slate-800 pt-4">
             <span className="text-[10px] text-slate-400 font-mono tracking-wider">YOUR REPUTATION / PURSE</span>
             <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-md border border-amber-500/20">
-              <Coins className="w-3.5 h-3.5" /> {playerStats.gold} Gold
+              <Coins className="w-3.5 h-3.5" /> {isSandbox ? `${playerStats.gold} Gold (Sandbox Free Bets)` : `${playerStats.gold} Gold`}
             </span>
           </div>
 
@@ -240,9 +243,9 @@ export default function DrunkInteractionOverlay({
             {/* Option 1: Buy Ale */}
             <button
               onClick={handleBuyDrink}
-              disabled={playerStats.gold < 25}
+              disabled={effectiveGold < 25}
               className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
-                playerStats.gold >= 25
+                effectiveGold >= 25
                   ? 'bg-rose-950/40 border-rose-500/40 text-rose-300 hover:bg-rose-900/40 hover:border-rose-400'
                   : 'bg-slate-950 border-slate-900 text-slate-600 cursor-not-allowed'
               }`}
@@ -269,9 +272,9 @@ export default function DrunkInteractionOverlay({
             {/* Option 3: Coin Flip (Heads) */}
             <button
               onClick={() => handleCoinFlip('heads')}
-              disabled={playerStats.gold < 25}
+              disabled={effectiveGold < 25}
               className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
-                playerStats.gold >= 25
+                effectiveGold >= 25
                   ? 'bg-slate-900 border-amber-500/20 text-slate-300 hover:border-amber-500 hover:text-white'
                   : 'bg-slate-950 border-slate-900 text-slate-600 cursor-not-allowed'
               }`}
@@ -286,9 +289,9 @@ export default function DrunkInteractionOverlay({
             {/* Option 4: Coin Flip (Tails) */}
             <button
               onClick={() => handleCoinFlip('tails')}
-              disabled={playerStats.gold < 25}
+              disabled={effectiveGold < 25}
               className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
-                playerStats.gold >= 25
+                effectiveGold >= 25
                   ? 'bg-slate-900 border-amber-500/20 text-slate-300 hover:border-amber-500 hover:text-white'
                   : 'bg-slate-950 border-slate-900 text-slate-600 cursor-not-allowed'
               }`}

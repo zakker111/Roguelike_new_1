@@ -203,6 +203,7 @@ export interface GameState {
   apothecaryTier?: number; // 1, 2, or 3
   purchasedRumors?: string[]; // 'cat', 'chest', 'boss'
   spawnedCats?: string[]; // Keeps track of unique legendary town cats that have spawned (e.g. 'Jekku', 'Pulla', 'Alli')
+  foundCats?: string[]; // Keeps track of special cats found/befriended by the player
   spawnedSeppo?: boolean; // Track if the drunk wandering merchant Seppo has spawned
   // Wandering Factions & Lively Overworld Expansion
   clearedCamps?: string[]; // Keys of cleared camps, e.g. "camp_0,1"

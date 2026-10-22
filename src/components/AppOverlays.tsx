@@ -244,6 +244,29 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
               setIsScriptoriumOpen(true);
             }
           }}
+          onTriggerDrunkGame={() => {
+            if (setActiveDrunkNpc) {
+              setActiveDrunkNpc({
+                id: 'npc_drunk_seppo_sandbox',
+                name: 'Drunk Seppo (Sandbox)',
+                role: 'drunk_villager',
+                char: 'S',
+                color: '#f59e0b',
+                x: gameState.playerX,
+                y: gameState.playerY,
+                homeX: gameState.playerX,
+                homeY: gameState.playerY,
+                workX: gameState.playerX,
+                workY: gameState.playerY,
+                scheduleState: 'leisure',
+                dialogue: [
+                  'Hic! Welcome to the Sovereign Tavern Sandbox! Wanna bet on a coin flip?',
+                  'Hic! Let me buy you a drink! Or you buy me one!',
+                  'Two gold coins walk into an Abyss dungeon... hic!'
+                ]
+              });
+            }
+          }}
           isAutoplayActive={isAutoplayActive}
           setIsAutoplayActive={setIsAutoplayActive}
           isPerfHudOpen={isPerfHudOpen}
@@ -286,7 +309,7 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
         />
       )}
 
-      {isLockpickingOpen && activeLockpickingChestIndex !== null && (
+      {isLockpickingOpen && (
         <LockpickingMiniGame
           onClose={() => {
             setIsLockpickingOpen(false);
@@ -295,18 +318,17 @@ export const AppOverlays = React.memo<AppOverlaysProps>(({
           }}
           onSuccess={(isPerfect) => {
             setIsLockpickingOpen(false);
-            if (activeLockpickingChestIndex !== null) {
-              if (activeLockpickingChestIndex === -1) {
-                addLogMessage(`🎁 Sovereign Chest Opened Successfully!${isPerfect ? ' (⭐ Perfect Lockpicking Bonus +40 XP Applied)' : ''}`, 'loot');
-              } else {
-                handleOpenChest(activeLockpickingChestIndex, isPerfect);
-              }
-              setActiveLockpickingChestIndex(null);
+            const chestIdx = activeLockpickingChestIndex ?? -1;
+            if (chestIdx === -1) {
+              addLogMessage(`🎁 Sovereign Chest Opened Successfully!${isPerfect ? ' (⭐ Perfect Lockpicking Bonus +40 XP Applied)' : ''}`, 'loot');
+            } else {
+              handleOpenChest(chestIdx, isPerfect);
             }
+            setActiveLockpickingChestIndex(null);
           }}
-          lockpickCount={activeLockpickingChestIndex === -1 ? 99 : (gameState.inventoryMaterials['mat_lockpick'] || 0)}
+          lockpickCount={(activeLockpickingChestIndex === -1 || activeLockpickingChestIndex === null) ? 99 : (gameState.inventoryMaterials['mat_lockpick'] || 0)}
           onConsumeLockpick={() => {
-            if (activeLockpickingChestIndex !== -1) {
+            if (activeLockpickingChestIndex !== -1 && activeLockpickingChestIndex !== null) {
               handleConsumeLockpick();
             }
           }}

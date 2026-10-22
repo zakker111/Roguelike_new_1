@@ -81,9 +81,9 @@ export const CaravanEscortModal: React.FC<CaravanEscortModalProps> = ({
                   <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-800" />
                   <div 
                     className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-500 transition-all duration-500" 
-                    style={{ width: `${(gameState.caravanTravel.currentStep / gameState.caravanTravel.totalSteps) * 100}%` }}
+                    style={{ width: `${Math.min(100, Math.max(0, ((gameState.caravanTravel.currentStep || 0) / Math.max(1, gameState.caravanTravel.totalSteps || 1)) * 100))}%` }}
                   />
-                  {Array.from({ length: gameState.caravanTravel.totalSteps + 1 }).map((_, i) => {
+                  {Array.from({ length: Math.max(1, Math.min(25, (gameState.caravanTravel.totalSteps || 1) + 1)) }).map((_, i) => {
                     const isCleared = i <= gameState.caravanTravel.currentStep;
                     const isCurrent = i === gameState.caravanTravel.currentStep;
                     return (

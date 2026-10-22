@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Swords, ShoppingBag, MessageSquare, ShieldAlert, Eye, EyeOff, Compass } from 'lucide-react';
+import { X, Swords, ShoppingBag, MessageSquare, Eye, EyeOff, Compass } from 'lucide-react';
 import { NPC, PlayerStats } from '../types';
 import { playSound } from '../utils/audio';
 

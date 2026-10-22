@@ -237,6 +237,7 @@ export interface NPC {
   isSitting?: boolean;
   isDrinking?: boolean;
   originalChar?: string;
+  isImmobile?: boolean;
   z?: number;
   homeZ?: number;
   workZ?: number;
@@ -265,6 +266,7 @@ export interface Follower {
   injuries: { name: string; durationTurns: number; healable: boolean }[];
   personality: string;
   temperament: string;
+  isSpecialCat?: boolean;
 }
 
 export interface Corpse {

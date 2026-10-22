@@ -4,6 +4,35 @@
 
 ### Recent Gameplay, AI, UI & Stability Resolutions
 
+- **[RESOLVED] Monster Combat Runtime Exceptions & Sanctum Error Gump Crash Inspector (v8.15.3)**
+  - **What was reported / Fixed**: User reported: "there were game breaking error when i fought monster chek when we have these errors and error gum so that i can copypaste the log and it says which line it happens in our error gump".
+  - **Root Cause & Fix**:
+    1. In `/src/hooks/usePlayerAttack.ts`, `enemy.id.startsWith(...)` was called without optional chaining in siege assist checks. When attacking enemies or summoned entities that had undefined or empty IDs, a fatal `TypeError: Cannot read properties of undefined (reading 'startsWith')` broke execution.
+    2. Similar unsafe property access occurred with `updatedEnemy.name.toLowerCase()` in warlord chest unlock triggers, `chest.id.includes(...)`, and `target.id.includes(...)` in follower target resolution. In `/src/hooks/combat/combatLoot.ts`, `prev.inventoryMaterials` lacked fallback protection against undefined keys, potentially pushing `undefined` entries into ground loot piles.
+    3. Replaced all unsafe accesses with optional chaining (`enemy.id?.startsWith`, `chest.id?.includes`, `target.id?.includes`, `(updatedEnemy.name || '').toLowerCase()`) and defensive material filtering.
+    4. Wrapped `performPlayerAttack` and `executeEnemiesTurn` in resilient `try/catch` boundaries that contain unexpected exceptions, dispatch error diagnostic events, and log warnings without freezing the game session.
+    5. Engineered the **Sanctum Error Gump** modal (`src/components/ErrorBoundary.tsx`) featuring automatic stack trace line parsing (`parseErrorLocation`), prominent location badge (`Line X in file.ts`), scrollable terminal stack trace, a one-click '📋 Copy Error Log' button producing formatted markdown for bug reports, and a '🛡️ Resume Game' session recovery button.
+    6. Added test coverage in `/src/tests/errorGump.test.ts` (98 test suites, 721 passing tests).
+
+- **[RESOLVED] Town Quest Notice Board Autonomous Movement & Panic Fleeing (v8.15.1)**
+  - **What was reported / Fixed**: User reported: "i saw guest_board moving it should not move".
+  - **Root Cause & Fix**:
+    1. In `/src/world/town/townNpcs.ts`, the town notice Quest Board was registered in the `npcs` array with `role: 'quest_board'`.
+    2. In `/src/hooks/ai/useCivilianAI.ts`, `resolveCivilianNpcTurns` processed all non-cat NPCs every turn. When hostile monsters entered town, `quest_board` fled in terror, changing its glyph to `😱` and pathfinding away. Additionally, at nighttime or during severe weather, the Quest Board departed its fixed post to seek shelter or sleep in beds (`😴`).
+    3. Added `isImmobile?: boolean` to the `NPC` interface in `/src/types/entities.ts` and set `isImmobile: true` in `/src/world/town/townNpcs.ts`.
+    4. In `/src/hooks/ai/useCivilianAI.ts`, added an explicit immobility guard freezing fixed fixtures (`npc.isImmobile`, `npc.role === 'quest_board'`, `npc.id?.startsWith('npc_questboard_')`, `npc.role === 'sign'`, `npc.role === 'inanimate'`), locking them to their fixed anchor coordinates (`homeX`/`workX`), preserving their native `▤` glyph, and preventing fleeing, sleeping, or movement.
+    5. Added unit test in `/src/tests/npcSchedulesAndShelter.test.ts` verifying Quest Board immobility across time, weather, and hostile monster presence (100% green).
+
+- **[RESOLVED] Caravan Fighting Event UI Scene Transition & Inventory Screen Lockout (v8.15.0)**
+  - **What was reported / Fixed**: User requested: "when fightning ewent starts when going in caravan it should not show caravan inventory only the scene".
+  - **Root Cause & Fix**:
+    1. In `/src/hooks/useCaravanTravel.ts`, when a fighting encounter (`bandit_ambush`, `beast_attack`, `boss_ambush`) was rolled during `handleAdvanceCaravanTravel`, it only set `currentEncounter: encounter` without deploying tactical combat (`isTacticalCombat: false`).
+    2. In `/src/components/modals/CaravanActiveOverlay.tsx`, any encounter without `isTacticalCombat` rendered the full-screen modal with journey milestones, vitality, and encounter option buttons with inventory item costs, blocking the view of the actual game canvas scene.
+    3. If the player was on another tab (e.g. `'market'` with caravan trade stock or `'inventory'`), the viewport did not switch to the battle scene.
+    4. Auto-deployed tactical combat immediately when fighting encounters trigger, switching `activeTab` to `'dungeon'`, clearing `activeTradeNpcId`, generating the 24×18 skirmish map, and setting `isTacticalCombat: true`.
+    5. In `CaravanActiveOverlay.tsx`, added auto-deployment and modal suppression for unresolved fighting events, rendering only the compact top HUD banner so the entire battle scene is visible and interactive.
+    6. Verified with all Vitest test suites (713 tests passing 100% green).
+
 - **[RESOLVED] Color Grading Engine Volcanic Biome String Match & Type Fallback (v8.13.0)**
   - **What was reported / Fixed**: In `src/canvas/colorGradingEngine.ts`, `getBiomeProfile` checked `biome.includes('volcano')`, which failed to match the authoritative `BiomeType` enum value `'volcanic'`, falling back erroneously to the default meadow green palette.
   - **Root Cause & Fix**:

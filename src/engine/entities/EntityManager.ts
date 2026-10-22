@@ -4,15 +4,11 @@
  */
 
 import {
-  AnimalEntity,
-  BaseEntity,
   EnemyEntity,
   EntityKind,
   EntityTickContext,
   EntityTickReport,
   GenericEntity,
-  InteractableEntity,
-  ItemEntity,
   LivingEntity,
   NpcEntity,
   PlayerEntity,

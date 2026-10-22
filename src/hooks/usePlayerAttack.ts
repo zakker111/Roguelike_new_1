@@ -7,7 +7,8 @@ import { useCallback } from 'react';
 import {
   Enemy,
   CraftedWeapon,
-  CatalystType
+  CatalystType,
+  OverworldChunk
 } from '../types';
 import { STARTING_WEAPON } from '../utils/spellsAndEquipment';
 import { isPlayerInvincible } from '../utils/invincibility';
@@ -17,6 +18,7 @@ import { checkBossPhaseEnrage } from '../utils/combatArchetypes';
 import { formatGameTime } from '../utils/overworld';
 import { getRandomRelicDraft } from '../utils/relics';
 import { getUpdatedTerritoriesOnKill } from '../utils/caravanAndTerritory';
+import { evaluateActiveOutpostCombat } from '../world/outposts';
 import {
   UsePlayerAttackParams,
   calculatePlayerCombatHit,
@@ -28,6 +30,8 @@ import {
 import { triggerSquadMoraleBreakOnLeaderDeath } from './ai/factionMorale';
 import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 import { gameEventBus } from '../events/core/EventBus';
+import { entityInterpolationManager } from '../canvas/entityInterpolationManager';
+import { spriteAnimationManager } from '../canvas/spriteAnimationManager';
 
 export type { UsePlayerAttackParams };
 
@@ -55,10 +59,12 @@ export function usePlayerAttack({
 
   const performPlayerAttack = useCallback(
     (enemy: Enemy, index: number, pathPoints: { x: number; y: number }[]): boolean => {
-      if (enemy.isFollower || (enemy.isCaptive && enemy.isFreed)) {
-        interactWithFollower(enemy);
-        return false;
-      }
+      try {
+        if (!enemy) return false;
+        if (enemy.isFollower || (enemy.isCaptive && enemy.isFreed)) {
+          interactWithFollower(enemy);
+          return false;
+        }
 
       const weapon = gameState.currentWeapon || STARTING_WEAPON;
       const stats = getEffectiveStats(gameState.playerStats);
@@ -97,6 +103,36 @@ export function usePlayerAttack({
         rawDamage: finalDmg,
         isCrit: rollCrit,
       });
+
+      // Trigger kinetic attack lunge and sprite attack animation
+      const atkDx = enemy.x - gameState.playerX;
+      const atkDy = enemy.y - gameState.playerY;
+      let atkFacing: 'north' | 'south' | 'east' | 'west' = 'south';
+      if (Math.abs(atkDx) >= Math.abs(atkDy)) {
+        atkFacing = atkDx > 0 ? 'east' : 'west';
+      } else {
+        atkFacing = atkDy > 0 ? 'south' : 'north';
+      }
+
+      entityInterpolationManager.triggerAttackLunge('player', enemy.x, enemy.y, 180);
+      spriteAnimationManager.setAnimationState('player', 'attack', atkFacing);
+
+      // Spawns ballistic projectile for ranged weapons
+      if ((weapon.range > 1 || pathPoints.length > 1) && Math.hypot(atkDx, atkDy) > 1.5) {
+        const projEv = new CustomEvent('spawn-projectile', {
+          detail: {
+            startX: gameState.playerX,
+            startY: gameState.playerY,
+            targetX: enemy.x,
+            targetY: enemy.y,
+            color: isMagic ? '#a855f7' : '#f59e0b',
+            projectileType: isMagic ? 'magic_bolt' : 'arrow',
+            impactText: `-${finalDmg}${rollCrit ? ' CRIT!' : ''}`,
+            impactType: rollCrit ? 'crit' : 'dmg',
+          }
+        });
+        window.dispatchEvent(projEv);
+      }
 
       if (isMagic) {
         playSound('spell');
@@ -216,7 +252,11 @@ export function usePlayerAttack({
           x: enemy.x,
           y: enemy.y,
           text: `-${finalDmg}${rollCrit ? ' CRIT!' : ''}`,
-          type: rollCrit ? 'crit' : 'dmg'
+          type: rollCrit ? 'crit' : 'dmg',
+          sourceX: gameState.playerX,
+          sourceY: gameState.playerY,
+          weaponType: weapon.type || weapon.baseType,
+          element: isMagic ? (activeSpell?.element || activeSpell?.id) : weapon.catalystUsed?.type,
         }
       });
       window.dispatchEvent(hitEvent);
@@ -425,6 +465,8 @@ export function usePlayerAttack({
         let nextRep = currentRep;
         let nextGuardsHostile = prev.areGuardsHostile !== undefined ? prev.areGuardsHostile : false;
         let nextChests = prev.chests;
+        let updatedGold = prev.playerStats.gold;
+        let nextOverworldChunks = prev.overworldChunks;
 
         if (enemy.isTownGuard) {
           let decrease = 25;
@@ -493,6 +535,138 @@ export function usePlayerAttack({
           }
         }
 
+        // Outpost Siege Assist & Combat Outcome Evaluation
+        if (prev.isOverworld) {
+          const currentChunkKey = `${prev.currentChunkX},${prev.currentChunkY}`;
+          const activeChunk = prev.overworldChunks[currentChunkKey];
+          if (activeChunk?.watchtower?.siegeState?.isUnderSiege) {
+            const wt = activeChunk.watchtower;
+            const sState = wt.siegeState!;
+            const isSiegeAttacker =
+              enemy.id?.startsWith('siege_attacker_') || enemy.id?.startsWith('siege_att_');
+            const isSiegeDefender =
+              enemy.id?.startsWith('siege_defender_') || enemy.id?.startsWith('siege_def_');
+
+            let updatedWt = { ...wt, siegeState: { ...sState } };
+            let siegeModified = false;
+
+            if (isSiegeAttacker && !sState.playerAssistedDefender) {
+              updatedWt.siegeState!.playerAssistedDefender = true;
+              siegeModified = true;
+              const defFaction = sState.defender;
+              if (defFaction && defFaction !== 'neutral') {
+                nextFactionReputation[defFaction] = Math.min(
+                  100,
+                  (nextFactionReputation[defFaction] || 0) + 15
+                );
+                gameEventBus.emit('combat:faction_assist', {
+                  assistedFaction: defFaction,
+                  opposedFaction: sState.attacker,
+                  chunkX: prev.currentChunkX,
+                  chunkY: prev.currentChunkY,
+                  reputationBonus: 15
+                });
+                updatedLogs.push({
+                  id: `assist_def_${Date.now()}`,
+                  text: `🛡️ [FACTION ASSIST]: Defending the garrison! +15 Standing with the ${
+                    defFaction === 'vanguard'
+                      ? 'Dawn Vanguard'
+                      : defFaction === 'syndicate'
+                      ? 'Moonshadow Syndicate'
+                      : 'Outpost Defenders'
+                  }!`,
+                  type: 'quest',
+                  timestamp: formatGameTime(prev.gameTime).timeStr
+                });
+              }
+            } else if (isSiegeDefender && !sState.playerAssistedAttacker) {
+              updatedWt.siegeState!.playerAssistedAttacker = true;
+              siegeModified = true;
+              const attFaction = sState.attacker;
+              if (attFaction) {
+                nextFactionReputation[attFaction] = Math.min(
+                  100,
+                  (nextFactionReputation[attFaction] || 0) + 15
+                );
+                gameEventBus.emit('combat:faction_assist', {
+                  assistedFaction: attFaction,
+                  opposedFaction: sState.defender,
+                  chunkX: prev.currentChunkX,
+                  chunkY: prev.currentChunkY,
+                  reputationBonus: 15
+                });
+                updatedLogs.push({
+                  id: `assist_att_${Date.now()}`,
+                  text: `⚔️ [FACTION ASSIST]: Joining the assault! +15 Standing with the ${
+                    attFaction === 'vanguard'
+                      ? 'Dawn Vanguard'
+                      : attFaction === 'syndicate'
+                      ? 'Moonshadow Syndicate'
+                      : 'Rust-Raider Bandits'
+                  }!`,
+                  type: 'quest',
+                  timestamp: formatGameTime(prev.gameTime).timeStr
+                });
+              }
+            }
+
+            if (updatedEnemy.hp <= 0 && (isSiegeAttacker || isSiegeDefender)) {
+              const chunkToEval: OverworldChunk = {
+                ...activeChunk,
+                watchtower: updatedWt,
+                enemies: nextEnemies
+              };
+              const evalResult = evaluateActiveOutpostCombat(
+                chunkToEval,
+                prev.faction || 'neutral'
+              );
+              if (evalResult) {
+                if (nextOverworldChunks === prev.overworldChunks) {
+                  nextOverworldChunks = { ...prev.overworldChunks };
+                }
+                nextOverworldChunks[currentChunkKey] = evalResult.updatedChunk;
+                if (evalResult.narrativeLog) {
+                  updatedLogs.push({
+                    id: `outpost_eval_${Date.now()}`,
+                    text: evalResult.narrativeLog.text,
+                    type: evalResult.narrativeLog.type,
+                    timestamp: formatGameTime(prev.gameTime).timeStr
+                  });
+                }
+                if (evalResult.bountyAwarded) {
+                  updatedGold += evalResult.bountyAwarded;
+                }
+                if (evalResult.reputationGain) {
+                  const fac = evalResult.reputationGain.faction;
+                  if (fac && (fac as string) !== 'neutral') {
+                    nextFactionReputation[fac] = Math.min(
+                      100,
+                      (nextFactionReputation[fac] || 0) + evalResult.reputationGain.delta
+                    );
+                  }
+                }
+                playSound('victory');
+              } else if (siegeModified) {
+                if (nextOverworldChunks === prev.overworldChunks) {
+                  nextOverworldChunks = { ...prev.overworldChunks };
+                }
+                nextOverworldChunks[currentChunkKey] = {
+                  ...activeChunk,
+                  watchtower: updatedWt
+                };
+              }
+            } else if (siegeModified) {
+              if (nextOverworldChunks === prev.overworldChunks) {
+                nextOverworldChunks = { ...prev.overworldChunks };
+              }
+              nextOverworldChunks[currentChunkKey] = {
+                ...activeChunk,
+                watchtower: updatedWt
+              };
+            }
+          }
+        }
+
         if (updatedEnemy.hp <= 0) {
           nextDefeatedCounts = incrementDefeatedEnemyCount(
             nextDefeatedCounts,
@@ -537,17 +711,18 @@ export function usePlayerAttack({
           }
 
           // Phase 5.3: Unlock Faction War Chests and Camp Caches upon Warlord / Boss Defeat
+          const updatedNameLower = (updatedEnemy.name || '').toLowerCase();
           if (
             updatedEnemy.isBoss ||
             updatedEnemy.factionRank === 'warlord' ||
-            updatedEnemy.name.toLowerCase().includes('warlord') ||
-            updatedEnemy.name.toLowerCase().includes('chieftain')
+            updatedNameLower.includes('warlord') ||
+            updatedNameLower.includes('chieftain')
           ) {
             let unlockedCount = 0;
             nextChests = (prev.chests || []).map((chest) => {
               if (chest.isLocked && !chest.isOpened) {
                 const dist = Math.hypot(chest.x - updatedEnemy.x, chest.y - updatedEnemy.y);
-                if (dist <= 15 || chest.id.includes(`_${prev.currentChunkX}_${prev.currentChunkY}`)) {
+                if (dist <= 15 || (chest.id && chest.id.includes(`_${prev.currentChunkX}_${prev.currentChunkY}`))) {
                   unlockedCount++;
                   return { ...chest, isLocked: false };
                 }
@@ -644,10 +819,12 @@ export function usePlayerAttack({
           areGuardsHostile: nextGuardsHostile,
           factionReputation: nextFactionReputation,
           factionTerritories: nextFactionTerritories,
+          overworldChunks: nextOverworldChunks,
           defeatedEnemiesCount: nextDefeatedCounts,
           logs: updatedLogs,
           playerStats: {
             ...prev.playerStats,
+            gold: updatedGold,
             xp: updatedXp,
             level,
             nextLevelXp: nextThreshold,
@@ -663,7 +840,21 @@ export function usePlayerAttack({
         };
       });
 
-      return true;
+        return true;
+      } catch (err: any) {
+        console.error("Combat Runtime Exception in performPlayerAttack:", err);
+        const errObj = err instanceof Error ? err : new Error(String(err));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('show-error-gump', {
+            detail: {
+              error: errObj,
+              context: `Combat Action: Player attacking [${enemy?.name || 'Unknown Enemy'}] (ID: ${enemy?.id || '?'})`
+            }
+          }));
+        }
+        addLogMessage(`⚠️ [COMBAT ERROR INTERCEPTED]: ${errObj.message}. Error Gump opened.`, 'danger');
+        return false;
+      }
     },
     [
       gameState,

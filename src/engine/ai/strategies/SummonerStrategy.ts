@@ -4,7 +4,7 @@
  */
 
 import { IAIStrategy, AIStrategyContext, AIActionDecision } from '../types';
-import { manhattanDistance, getStepTowards, getStepAway } from '../aiNavigation';
+import { manhattanDistance, getStepAway } from '../aiNavigation';
 
 /**
  * Summoner AI Strategy (Necromancer / Swarm Queen):

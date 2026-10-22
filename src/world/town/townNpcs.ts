@@ -246,6 +246,7 @@ export function spawnTownNpcs(
     workX: midX,
     workY: midY - 2,
     workZ: 0,
+    isImmobile: true,
     scheduleState: 'work',
     dialogue: [
       "A heavy wooden post-board with pinned letters and bounty notices."
@@ -279,90 +280,98 @@ export function spawnTownNpcs(
       : ["Need lockpicks and critical backstabs? I can tag along for 180 Gold."]
   });
 
-  // 9. Legendary Cats (Jekku, Pulla, Alli, Leevi)
-  const catRoll = prng(chunkX, chunkY, 7772);
+  // 9. Legendary Special Cats (Jekku, Pulla, Alli, Leevi)
   const activeSpawnedCats = spawnedCats || [];
-  
-  if (catRoll < 0.015 && !activeSpawnedCats.includes('Jekku')) {
-    npcs.push({
-      id: `npc_cat_jekku`,
-      name: 'Jekku (Legendary Cat)',
-      role: 'special_cat' as any,
-      char: '🐈',
-      color: '#fb923c',
-      x: midX - 2,
-      y: midY + 1,
-      homeX: midX - 2,
-      homeY: midY + 1,
-      workX: midX - 1,
-      workY: midY + 2,
-      scheduleState: 'leisure',
-      dialogue: [
-        "*Meow!* I am Jekku, the elusive orange trickster. I can guide your steps and keep you company!",
-        "*Mew!* Let me join your party! I won't eat much scrap wood, I promise!",
-        "*Purr...* (Nudges your ankles softly and chirps happily)"
-      ]
-    });
-  } else if (catRoll >= 0.015 && catRoll < 0.030 && !activeSpawnedCats.includes('Pulla')) {
-    npcs.push({
-      id: `npc_cat_pulla`,
-      name: 'Pulla (Legendary Cat)',
-      role: 'special_cat' as any,
-      char: '🐈',
-      color: '#eab308',
-      x: midX + 2,
-      y: midY + 1,
-      homeX: midX + 2,
-      homeY: midY + 1,
-      workX: midX + 1,
-      workY: midY + 2,
-      scheduleState: 'leisure',
-      dialogue: [
-        "*Prrrt!* I am Pulla, the chubby golden companion. Let's explore together!",
-        "*Meow...* Do you have any fresh grilled fish? Just kidding, I'll follow you anyway!",
-        "*Purr...* (Rolls over showing a fluffy, warm belly)"
-      ]
-    });
-  } else if (catRoll >= 0.030 && catRoll < 0.045 && !activeSpawnedCats.includes('Alli')) {
-    npcs.push({
-      id: `npc_cat_alli`,
-      name: 'Alli (Legendary Cat)',
-      role: 'special_cat' as any,
-      char: '🐈',
-      color: '#cbd5e1',
-      x: midX,
-      y: midY + 2,
-      homeX: midX,
-      homeY: midY + 2,
-      workX: midX,
-      workY: midY + 3,
-      scheduleState: 'leisure',
-      dialogue: [
-        "*Miau!* I am Alli, the mystical silver cat. The depths hold no fear for me.",
-        "*Meow!* I can follow you into the dark abyss. Shall we go?",
-        "*Purr...* (Blinks slowly with wise, glowing eyes)"
-      ]
-    });
-  } else if (catRoll >= 0.045 && catRoll < 0.060 && !activeSpawnedCats.includes('Leevi')) {
-    npcs.push({
-      id: `npc_cat_leevi`,
-      name: 'Leevi (Legendary Cat)',
-      role: 'special_cat' as any,
-      char: '🐈',
-      color: '#f43f5e',
-      x: midX,
-      y: midY - 2,
-      homeX: midX,
-      homeY: midY - 2,
-      workX: midX + 1,
-      workY: midY - 1,
-      scheduleState: 'leisure',
-      dialogue: [
-        "*Hiss!* I am Leevi, the eternally angry cat. Touch me and you lose a finger!",
-        "*Growl...* What are you staring at, adventurer? Fine, I'll follow you. But don't expect any cuddles!",
-        "*Mrowr!* (Glares at you with intense, fiery yellow eyes and swishes his tail aggressively)"
-      ]
-    });
+  const allCatNames = ['Jekku', 'Pulla', 'Alli', 'Leevi'] as const;
+  const unspawnedCats = allCatNames.filter((c) => !activeSpawnedCats.includes(c));
+  const catChanceRoll = prng(chunkX, chunkY, 7772);
+
+  // In towns, 65% chance to encounter one of the remaining special cats!
+  if (unspawnedCats.length > 0 && catChanceRoll < 0.65) {
+    const catIndex = Math.floor(prng(chunkX, chunkY, 8881) * unspawnedCats.length);
+    const chosenCat = unspawnedCats[catIndex];
+
+    if (chosenCat === 'Jekku') {
+      npcs.push({
+        id: `npc_cat_jekku`,
+        name: 'Jekku (Legendary Cat)',
+        role: 'special_cat' as any,
+        char: '🐈',
+        color: '#fb923c',
+        x: midX - 2,
+        y: midY + 1,
+        homeX: midX - 2,
+        homeY: midY + 1,
+        workX: midX - 1,
+        workY: midY + 2,
+        scheduleState: 'leisure',
+        dialogue: [
+          "*Meow!* I am Jekku, the elusive orange trickster. I can guide your steps and keep you company!",
+          "*Mew!* Let me join your party! I am a special companion and won't take up any companion slots!",
+          "*Purr...* (Nudges your ankles softly and chirps happily)"
+        ]
+      });
+    } else if (chosenCat === 'Pulla') {
+      npcs.push({
+        id: `npc_cat_pulla`,
+        name: 'Pulla (Legendary Cat)',
+        role: 'special_cat' as any,
+        char: '🐈',
+        color: '#eab308',
+        x: midX + 2,
+        y: midY + 1,
+        homeX: midX + 2,
+        homeY: midY + 1,
+        workX: midX + 1,
+        workY: midY + 2,
+        scheduleState: 'leisure',
+        dialogue: [
+          "*Prrrt!* I am Pulla, the chubby golden companion. Let's explore together!",
+          "*Meow...* I will always follow you into danger! (Special Companion: Does not take a party slot!)",
+          "*Purr...* (Rolls over showing a fluffy, warm belly)"
+        ]
+      });
+    } else if (chosenCat === 'Alli') {
+      npcs.push({
+        id: `npc_cat_alli`,
+        name: 'Alli (Legendary Cat)',
+        role: 'special_cat' as any,
+        char: '🐈',
+        color: '#cbd5e1',
+        x: midX,
+        y: midY + 2,
+        homeX: midX,
+        homeY: midY + 2,
+        workX: midX,
+        workY: midY + 3,
+        scheduleState: 'leisure',
+        dialogue: [
+          "*Miau!* I am Alli, the mystical silver cat. The depths hold no fear for me.",
+          "*Meow!* I will cast silver wards to protect you. (Special Companion: Does not take a party slot!)",
+          "*Purr...* (Blinks slowly with wise, glowing eyes)"
+        ]
+      });
+    } else if (chosenCat === 'Leevi') {
+      npcs.push({
+        id: `npc_cat_leevi`,
+        name: 'Leevi (Legendary Cat)',
+        role: 'special_cat' as any,
+        char: '🐈',
+        color: '#f43f5e',
+        x: midX,
+        y: midY - 2,
+        homeX: midX,
+        homeY: midY - 2,
+        workX: midX + 1,
+        workY: midY - 1,
+        scheduleState: 'leisure',
+        dialogue: [
+          "*Hiss!* I am Leevi, the battle-hardened warrior cat. Touch me and you lose a finger!",
+          "*Growl...* Fine, I'll fight alongside you. (Special Companion: Does not take a party slot!)",
+          "*Mrowr!* (Glares at you with intense, fiery yellow eyes and unsheathes razor-sharp claws)"
+        ]
+      });
+    }
   }
 
   // 10. Port Nautical Crew

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IAIStrategy, AIStrategyId } from './types';
+import { IAIStrategy } from './types';
 import {
   MeleeStrategy,
   RangedStrategy,

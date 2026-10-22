@@ -4,6 +4,7 @@ import { drawSpriteOrAscii } from './spriteRenderer';
 import { getDirectionalShadowParams, renderEntityDirectionalShadow } from './shadowRenderer';
 import { visualFxParticleSystem } from './visualFxParticleSystem';
 import { entityInterpolationManager } from './entityInterpolationManager';
+import { spriteAnimationManager } from './spriteAnimationManager';
 import { combatVfxEngine } from './combatVfxEngine';
 import { renderSubmergedObjectCaustics } from './waterCausticsRenderer';
 
@@ -164,17 +165,17 @@ export function renderEntityLayer({
   }
 
   // 5. Render Traps (if discovered)
-  gameState.traps.forEach((trap) => {
+  (gameState.traps || []).forEach((trap) => {
     const x = trap.x;
     const y = trap.y;
     if (!isTileInViewport(x, y)) return;
-    if (!gameState.discovered[y]?.[x]) return;
+    if (!gameState.discovered?.[y]?.[x]) return;
 
     if (trap.hidden && !trap.detected) return;
 
     const rx = x * tileSize - camX;
     const ry = y * tileSize - camY;
-    const isVisible = gameState.visible[y]?.[x] ?? false;
+    const isVisible = gameState.visible?.[y]?.[x] ?? false;
 
     let trapChar = '';
     let trapGlyphColor = '#334155';
@@ -199,15 +200,15 @@ export function renderEntityLayer({
   });
 
   // 6. Render Chests (if discovered)
-  gameState.chests.forEach((chest) => {
+  (gameState.chests || []).forEach((chest) => {
     const x = chest.x;
     const y = chest.y;
     if (!isTileInViewport(x, y)) return;
-    if (!gameState.discovered[y]?.[x]) return;
+    if (!gameState.discovered?.[y]?.[x]) return;
 
     const rx = x * tileSize - camX;
     const ry = y * tileSize - camY;
-    const isVisible = gameState.visible[y]?.[x] ?? false;
+    const isVisible = gameState.visible?.[y]?.[x] ?? false;
 
     const chestGlyph = chest.isOpened ? '⎓' : '🎁';
     const chestGlyphColor = isVisible ? '#f59e0b' : '#d97706';
@@ -355,11 +356,11 @@ export function renderEntityLayer({
   }
 
   // 6.5 Render Telegraphed Attack Hazard Overlay Tiles
-  gameState.enemies.forEach((enemy) => {
+  (gameState.enemies || []).forEach((enemy) => {
     if (enemy.telegraphedAttack) {
       const tx = enemy.telegraphedAttack.targetX;
       const ty = enemy.telegraphedAttack.targetY;
-      if (isTileInViewport(tx, ty) && gameState.visible[ty]?.[tx]) {
+      if (isTileInViewport(tx, ty) && gameState.visible?.[ty]?.[tx]) {
         const trx = tx * tileSize - camX;
         const tryY = ty * tileSize - camY;
 
@@ -382,11 +383,11 @@ export function renderEntityLayer({
   });
 
   // 7. Render Enemies
-  gameState.enemies.forEach((enemy) => {
+  (gameState.enemies || []).forEach((enemy) => {
     const x = enemy.x;
     const y = enemy.y;
     if (!isTileInViewport(x, y)) return;
-    if (!gameState.visible[y]?.[x]) return;
+    if (!gameState.visible?.[y]?.[x]) return;
 
     const enemyKey = `enemy_${enemy.id}`;
     const enemyInterp = entityInterpolationManager.getRenderPosition(enemyKey, x, y);
@@ -445,7 +446,11 @@ export function renderEntityLayer({
         : `bold 15px "JetBrains Mono", Menlo, monospace`;
 
       const enemyDir = enemyInterp.facing;
-      let enemyAnim: 'idle' | 'walk' | 'attack' | 'hurt' = enemyInterp.isMoving ? 'walk' : 'idle';
+      const enemyAnimState = spriteAnimationManager.updateAnimation(enemy.id, performance.now());
+      const isEnemyInOneShot = enemyAnimState.state === 'attack' || enemyAnimState.state === 'hurt' || enemyAnimState.state === 'cast';
+      let enemyAnim: 'idle' | 'walk' | 'attack' | 'hurt' = isEnemyInOneShot
+        ? (enemyAnimState.state as any)
+        : (enemyInterp.isMoving ? 'walk' : 'idle');
       if (enemy.isStaggered) enemyAnim = 'hurt';
 
       const isGuard = (enemy as any).isTownGuard || (enemy.name && enemy.name.toLowerCase().includes('guard')) || (enemy.name && enemy.name.toLowerCase().includes('sentry'));
@@ -568,7 +573,11 @@ export function renderEntityLayer({
     }
 
     const playerDir = playerInterp.facing;
-    const playerAnim = playerInterp.isMoving ? 'walk' : 'idle';
+    const playerAnimState = spriteAnimationManager.updateAnimation('player', performance.now());
+    const isPlayerInOneShot = playerAnimState.state === 'attack' || playerAnimState.state === 'hurt' || playerAnimState.state === 'cast';
+    const playerAnim = isPlayerInOneShot
+      ? playerAnimState.state
+      : (playerInterp.isMoving ? 'walk' : 'idle');
 
     drawSpriteOrAscii(ctx, prx, pry, playerChar, 'transparent', playerColor, {
       entityChar: playerChar,

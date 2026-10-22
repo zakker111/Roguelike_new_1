@@ -1,4 +1,4 @@
-import { GameState, getMoonPhase } from '../types';
+import { GameState } from '../types';
 import { visualFxParticleSystem } from './visualFxParticleSystem';
 import { playSound } from '../utils/audio';
 import { getSeasonalLeafPalette, isForestBiome, isDesertBiome, isObstacleTile } from '../utils/weatherEngine';

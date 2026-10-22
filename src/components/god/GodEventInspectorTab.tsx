@@ -24,7 +24,6 @@ import { damagePipeline } from '../../events/pipeline/pipelines/damagePipeline';
 import { movementPipeline } from '../../events/pipeline/pipelines/movementPipeline';
 import { lootPipeline } from '../../events/pipeline/pipelines/lootPipeline';
 import { spellPipeline } from '../../events/pipeline/pipelines/spellPipeline';
-import { hookRegistry } from '../../events/registry/HookRegistry';
 import { EventTelemetryRecord } from '../../events/types';
 
 export const GodEventInspectorTab: React.FC = () => {

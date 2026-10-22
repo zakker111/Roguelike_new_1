@@ -15,9 +15,11 @@ import { MobileHudBar } from '../panels/MobileHudBar';
 import { MobileCommandPad } from '../panels/MobileCommandPad';
 import { WeatherForecastBanner } from '../panels/WeatherForecastBanner';
 import { ViewportAlertBanners } from '../panels/ViewportAlertBanners';
+import { OutpostSiegeBanner } from '../outpost/OutpostSiegeBanner';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
 
 export interface GameMainViewportProps {
+  onOpenQuartermaster?: () => void;
   activeMobileView: boolean;
   activeTab: any;
   setActiveTab: (tab: any) => void;
@@ -95,6 +97,7 @@ export interface GameMainViewportProps {
 }
 
 export const GameMainViewport: React.FC<GameMainViewportProps> = ({
+  onOpenQuartermaster,
   activeMobileView,
   activeTab,
   setActiveTab,
@@ -253,6 +256,14 @@ export const GameMainViewport: React.FC<GameMainViewportProps> = ({
 
               {/* Atmospheric Weather forecasting banner */}
               <WeatherForecastBanner gameState={gameState} />
+
+              {/* Contested Outpost / Faction Quartermaster Banner */}
+              {gameState.isOverworld && gameState.overworldChunks[`${gameState.currentChunkX},${gameState.currentChunkY}`] && (
+                <OutpostSiegeBanner
+                  currentChunk={gameState.overworldChunks[`${gameState.currentChunkX},${gameState.currentChunkY}`]}
+                  onOpenQuartermaster={onOpenQuartermaster}
+                />
+              )}
 
               {!activeMobileView ? (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[640px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] min-h-[500px] overflow-hidden">

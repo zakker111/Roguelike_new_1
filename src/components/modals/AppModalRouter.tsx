@@ -34,9 +34,16 @@ import { WorldMapModal } from '../worldmap/WorldMapModal';
 import { PerformanceHud } from '../PerformanceHud';
 import CaravanActiveOverlay from './CaravanActiveOverlay';
 import AudioSettingsModal from '../AudioSettingsModal';
+import { OutpostQuartermasterModal } from '../outpost/OutpostQuartermasterModal';
+import type { OutpostQuartermasterState } from '../../types/worldEvents';
 
 export interface AppModalRouterProps {
   // UI Visibilities
+  isQuartermasterOpen?: boolean;
+  setIsQuartermasterOpen?: (val: boolean) => void;
+  activeQuartermaster?: OutpostQuartermasterState | null;
+  setActiveQuartermaster?: (val: OutpostQuartermasterState | null) => void;
+  playSound?: (sound: any) => void;
   isPerfHudOpen?: boolean;
   setIsPerfHudOpen?: (val: boolean) => void;
   isHelpOpen: boolean;
@@ -112,6 +119,7 @@ export interface AppModalRouterProps {
   handleScriptoriumSuccess?: (result: GlyphScribingResult) => void;
   handleScriptoriumFailure?: () => void;
   onTriggerScriptorium?: (scrollTemplateId?: string) => void;
+  setActiveTab?: (tab: any) => void;
 }
 
 /**
@@ -120,6 +128,10 @@ export interface AppModalRouterProps {
  */
 export const AppModalRouter: React.FC<AppModalRouterProps> = React.memo((props) => {
   const {
+    isQuartermasterOpen,
+    setIsQuartermasterOpen,
+    activeQuartermaster,
+    playSound,
     isPerfHudOpen,
     setIsPerfHudOpen,
     isHelpOpen,
@@ -190,13 +202,16 @@ export const AppModalRouter: React.FC<AppModalRouterProps> = React.memo((props) 
     handleCompleteCaravanTravel,
     handleScriptoriumSuccess,
     handleScriptoriumFailure,
+    setActiveTab,
   } = props;
 
   const handleDeployTacticalBattle = (encounter: any) => {
+    setActiveTab?.('dungeon');
     const skirmish = generateCaravanSkirmishMap(gameState, encounter);
     ChunkBackgroundCache.getInstance().invalidate();
     setGameState((prev) => ({
       ...prev,
+      activeTradeNpcId: null,
       map: skirmish.map,
       levelWidth: skirmish.map[0]?.length || 24,
       levelHeight: skirmish.map.length || 18,
@@ -299,6 +314,27 @@ export const AppModalRouter: React.FC<AppModalRouterProps> = React.memo((props) 
               setIsScriptoriumOpen(true);
             }
           }}
+          onTriggerDrunkGame={() => {
+            setActiveDrunkNpc({
+              id: 'npc_drunk_seppo_sandbox',
+              name: 'Drunk Seppo (Sandbox)',
+              role: 'drunk_villager',
+              char: 'S',
+              color: '#f59e0b',
+              x: gameState.playerX,
+              y: gameState.playerY,
+              homeX: gameState.playerX,
+              homeY: gameState.playerY,
+              workX: gameState.playerX,
+              workY: gameState.playerY,
+              scheduleState: 'leisure',
+              dialogue: [
+                'Hic! Welcome to the Sovereign Tavern Sandbox! Wanna bet on a coin flip?',
+                'Hic! Let me buy you a drink! Or you buy me one!',
+                'Two gold coins walk into an Abyss dungeon... hic!'
+              ]
+            });
+          }}
           isAutoplayActive={isAutoplayActive}
           setIsAutoplayActive={setIsAutoplayActive}
           isPerfHudOpen={isPerfHudOpen}
@@ -346,7 +382,7 @@ export const AppModalRouter: React.FC<AppModalRouterProps> = React.memo((props) 
       )}
 
       {/* 10. Lockpicking Mini-Game */}
-      {isLockpickingOpen && activeLockpickingChestIndex !== null && (
+      {isLockpickingOpen && (
         <LockpickingMiniGame
           onClose={() => {
             setIsLockpickingOpen(false);
@@ -355,42 +391,42 @@ export const AppModalRouter: React.FC<AppModalRouterProps> = React.memo((props) 
           }}
           onSuccess={(isPerfect) => {
             setIsLockpickingOpen(false);
-            if (activeLockpickingChestIndex !== null) {
-              if (activeLockpickingChestIndex === -1) {
-                addLogMessage(`🎁 Sovereign Chest Opened Successfully!${isPerfect ? ' (⭐ Perfect Lockpicking Bonus +40 XP Applied)' : ''}`, 'loot');
-              } else {
-                handleOpenChest(activeLockpickingChestIndex, isPerfect);
-              }
-              setActiveLockpickingChestIndex(null);
+            const chestIdx = activeLockpickingChestIndex ?? -1;
+            if (chestIdx === -1) {
+              addLogMessage(`🎁 Sovereign Chest Opened Successfully!${isPerfect ? ' (⭐ Perfect Lockpicking Bonus +40 XP Applied)' : ''}`, 'loot');
+            } else {
+              handleOpenChest(chestIdx, isPerfect);
             }
+            setActiveLockpickingChestIndex(null);
           }}
-          lockpickCount={activeLockpickingChestIndex === -1 ? 99 : (gameState.inventoryMaterials['mat_lockpick'] || 0)}
+          lockpickCount={(activeLockpickingChestIndex === -1 || activeLockpickingChestIndex === null) ? 99 : (gameState.inventoryMaterials['mat_lockpick'] || 0)}
           onConsumeLockpick={() => {
-            if (activeLockpickingChestIndex !== -1) {
+            if (activeLockpickingChestIndex !== -1 && activeLockpickingChestIndex !== null) {
               handleConsumeLockpick();
             }
           }}
-          skeletonKeyCount={activeLockpickingChestIndex === -1 ? 0 : (gameState.inventoryMaterials['mat_skeleton_key'] || 0)}
+          skeletonKeyCount={(activeLockpickingChestIndex === -1 || activeLockpickingChestIndex === null) ? 2 : (gameState.inventoryMaterials['mat_skeleton_key'] || 0)}
           onUseSkeletonKey={() => {
             setIsLockpickingOpen(false);
-            if (activeLockpickingChestIndex !== null) {
-              if (activeLockpickingChestIndex !== -1) {
-                setGameState((prev) => {
-                  const nextMats = { ...prev.inventoryMaterials };
-                  nextMats['mat_skeleton_key'] = Math.max(0, (nextMats['mat_skeleton_key'] || 0) - 1);
-                  return {
-                    ...prev,
-                    inventoryMaterials: nextMats,
-                  };
-                });
-                addLogMessage('💀 Grim Skeleton Key inserted! The heavy lock dissolves instantly with a ghastly click!', 'loot');
-                handleOpenChest(activeLockpickingChestIndex, false);
-              }
-              setActiveLockpickingChestIndex(null);
+            const chestIdx = activeLockpickingChestIndex ?? -1;
+            if (chestIdx !== -1) {
+              setGameState((prev) => {
+                const nextMats = { ...prev.inventoryMaterials };
+                nextMats['mat_skeleton_key'] = Math.max(0, (nextMats['mat_skeleton_key'] || 0) - 1);
+                return {
+                  ...prev,
+                  inventoryMaterials: nextMats,
+                };
+              });
+              addLogMessage('💀 Grim Skeleton Key inserted! The heavy lock dissolves instantly with a ghastly click!', 'loot');
+              handleOpenChest(chestIdx, false);
+            } else {
+              addLogMessage('💀 Master Skeleton Key unlocked the Sovereign Testing Vault instantly!', 'loot');
             }
+            setActiveLockpickingChestIndex(null);
           }}
           chestName={
-            activeLockpickingChestIndex === -1
+            activeLockpickingChestIndex === -1 || activeLockpickingChestIndex === null
               ? 'Sovereign Testing Vault'
               : gameState.chests[activeLockpickingChestIndex]?.id?.includes('camp_chest')
               ? 'Hostile Outlaw Camp Cache'
@@ -629,6 +665,19 @@ export const AppModalRouter: React.FC<AppModalRouterProps> = React.memo((props) 
         <AudioSettingsModal
           isOpen={isAudioSettingsOpen}
           onClose={() => setIsAudioSettingsOpen(false)}
+        />
+      )}
+
+      {/* 23. Contested Frontier Outpost Quartermaster Modal */}
+      {isQuartermasterOpen && activeQuartermaster && (
+        <OutpostQuartermasterModal
+          isOpen={isQuartermasterOpen}
+          onClose={() => setIsQuartermasterOpen?.(false)}
+          quartermaster={activeQuartermaster}
+          gameState={gameState}
+          setGameState={setGameState}
+          addLogMessage={addLogMessage}
+          playSound={playSound}
         />
       )}
     </>

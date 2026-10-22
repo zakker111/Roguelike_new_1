@@ -4,7 +4,7 @@
  */
 
 import { projectileEngine, ProjectileSpawnParams, ActiveProjectile } from './projectileEngine';
-import { meleeVfxEngine, MeleeSlashSpawnParams } from './meleeVfxEngine';
+import { meleeVfxEngine, MeleeSlashSpawnParams, MeleeSlashType } from './meleeVfxEngine';
 import {
   calculateDirectionalDrift,
   resolveFloaterArchetype,
@@ -55,6 +55,7 @@ export interface SpawnCombatEffectOptions {
   sourceY?: number;
   text?: string;
   type?: 'dmg' | 'crit' | 'heal' | 'mana' | 'status' | 'damage';
+  slashType?: MeleeSlashType;
   weaponType?: string;
   element?: string;
   onImpactShake?: (intensity: number) => void;
@@ -281,12 +282,17 @@ export class CombatVfxEngine {
       (options.sourceX !== options.x || options.sourceY !== options.y)
     ) {
       const dist = Math.hypot(options.x - options.sourceX, options.y - options.sourceY);
-      if (dist <= 1.8) {
-        let slashType: any = isCrit ? 'heavy_smash' : 'steel_arc';
-        if (options.element === 'Fire') slashType = 'fire_cleave';
-        else if (options.element === 'Frost') slashType = 'frost_cleave';
-        else if (options.element === 'Poison') slashType = 'poison_strike';
-        else if (options.element === 'Lightning') slashType = 'holy_smite';
+      if (dist <= 2.5) {
+        let slashType: MeleeSlashType = options.slashType || (isCrit ? 'heavy_smash' : 'steel_arc');
+        if (!options.slashType) {
+          const elem = (options.element || '').toLowerCase();
+          if (elem.includes('fire') || elem.includes('flame')) slashType = 'fire_cleave';
+          else if (elem.includes('frost') || elem.includes('ice')) slashType = 'frost_cleave';
+          else if (elem.includes('poison') || elem.includes('venom') || elem.includes('toxic')) slashType = 'poison_strike';
+          else if (elem.includes('lightning') || elem.includes('volt') || elem.includes('shock')) slashType = 'holy_smite';
+          else if (options.weaponType === 'Hammer' || options.weaponType === 'Mace') slashType = 'heavy_smash';
+          else if (options.weaponType === 'Dagger' || options.weaponType === 'Rapier' || options.weaponType === 'Spear') slashType = 'dagger_thrust';
+        }
 
         meleeVfxEngine.spawnSlash({
           sourceX: options.sourceX,
@@ -295,6 +301,7 @@ export class CombatVfxEngine {
           targetY: options.y,
           type: slashType,
           isCrit,
+          durationFrames: 14,
         });
 
         if (isCrit) {

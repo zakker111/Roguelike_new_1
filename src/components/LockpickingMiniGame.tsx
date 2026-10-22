@@ -49,7 +49,7 @@ export default function LockpickingMiniGame({
   return (
     <div
       id="lockpicking-minigame-overlay"
-      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
     >
       <div className="bg-slate-900 border border-slate-700/80 rounded-xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col relative">
         {/* Header bar */}
@@ -155,6 +155,10 @@ export default function LockpickingMiniGame({
                   e.preventDefault();
                   stopPressingTension();
                 }}
+                onTouchCancel={(e) => {
+                  e.preventDefault();
+                  stopPressingTension();
+                }}
                 disabled={status === 'SUCCESS' || status === 'NO_PICKS' || status === 'SNAPPED'}
                 className={`py-3.5 rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-1.5 border transition-all select-none duration-150 touch-none ${
                   status === 'READY' || status === 'SHAKING'
@@ -162,7 +166,7 @@ export default function LockpickingMiniGame({
                     : 'bg-slate-950 text-slate-600 border-slate-900 cursor-not-allowed'
                 }`}
               >
-                <span>🔑 APPLY TENSION (ROTATE LOCK)</span>
+                <span>🔑 HOLD TO APPLY TENSION (SPACE / TAP & HOLD)</span>
               </button>
 
               <button

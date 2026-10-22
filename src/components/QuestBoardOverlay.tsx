@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ClipboardList, Coins, AlertCircle, CheckCircle, Shield, Award, UserCheck, Flame } from 'lucide-react';
+import { X, ClipboardList, Coins, CheckCircle, Award, Flame } from 'lucide-react';
 import { GameState, Quest } from '../types';
 import { DEFAULT_QUESTS } from '../utils/questData';
 

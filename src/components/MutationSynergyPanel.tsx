@@ -1,6 +1,6 @@
 import React from 'react';
-import { Sparkles, Flame, Zap, Shield, AlertTriangle, Atom } from 'lucide-react';
-import { DUAL_ELEMENT_SYNERGIES, resolveMutationSynergyChain } from '../utils/mutationSynergy';
+import { Sparkles, Atom } from 'lucide-react';
+import { resolveMutationSynergyChain } from '../utils/mutationSynergy';
 
 interface MutationSynergyPanelProps {
   existingCatalysts?: string[];

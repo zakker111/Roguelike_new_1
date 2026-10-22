@@ -2,12 +2,51 @@ import { GameState, Follower, getMoonPhase } from '../types';
 import { getGMPointOfInterestNudge } from './gmNarrator';
 import { calculateWorldThreatTier, getThreatTierInfo } from './worldThreat';
 
+import { isSpecialCat } from './specialCats';
+
 /**
  * Generates dynamic, contextual tactical advice from an active companion/follower
  * based on the player's current health, stats, inventory, active weather, world threat, moon phase, and environment.
  */
 export function getCompanionAdvice(gameState: GameState, follower?: Follower | null): string {
   const name = follower?.name || 'Companion';
+
+  // Special Feline Barks
+  if (isSpecialCat(follower)) {
+    const raw = (follower?.name || '').replace(/^[🐈🐱🛡️⚔️🏹\s]+/, '').split(' (')[0].trim();
+    if (raw.includes('Jekku')) {
+      const jekkuLines = [
+        `🐈 Jekku: "*Mew!* Don't let those dungeon goblins pull my tail! I'll scamper around and dodge their attacks while you strike!"`,
+        `🐈 Jekku: "*Chirp!* (Swipes playfully at a butterfly) I'm having so much fun traveling together! Let's find more chests!"`,
+        `🐈 Jekku: "*Purr...* Remember, special cats like me don't take up any of your party slots! You can have other mercenaries join us too!"`
+      ];
+      return jekkuLines[Math.floor(Math.random() * jekkuLines.length)];
+    }
+    if (raw.includes('Pulla')) {
+      const pullaLines = [
+        `🐈 Pulla: "*Prrrt!* (Rubs head affectionately on your shin) I feel safe with you, chief! Remember to cook fresh food at campfires for big heals!"`,
+        `🐈 Pulla: "*Meow...* I have the thickest health of all cats, chief! I'll stand right beside you through any trial!"`,
+        `🐈 Pulla: "*Purr!* If we find Jekku, Alli, and Leevi, all 4 of us will grant you the permanent Cat Lover blessing!"`
+      ];
+      return pullaLines[Math.floor(Math.random() * pullaLines.length)];
+    }
+    if (raw.includes('Alli')) {
+      const alliLines = [
+        `🐈 Alli: "*Miau...* (Silver fur radiates a gentle moonlight shimmer) The dark caverns hold no secrets from me. My arcane bolts will strike from afar!"`,
+        `🐈 Alli: "*Meow!* Keep your magical scrolls handy. The cosmic tides favor those who wield elemental knowledge."`,
+        `🐈 Alli: "*Purr...* The 4 special cats honor the memory of beloved feline friends. We will never abandon your side."`
+      ];
+      return alliLines[Math.floor(Math.random() * alliLines.length)];
+    }
+    if (raw.includes('Leevi')) {
+      const leeviLines = [
+        `🐈 Leevi: "*Hiss!* Stop poking me! Point me towards the nearest enemy so I can shred them with my razor claws!"`,
+        `🐈 Leevi: "*Mrowr!* (Unsheathes razor-sharp claws menacingly) I hit harder than most mercenaries! Just keep up with me!"`,
+        `🐈 Leevi: "*Growl...* Fine, you're not so bad for a human. But touch my ears and you lose a hand!"`
+      ];
+      return leeviLines[Math.floor(Math.random() * leeviLines.length)];
+    }
+  }
 
   // 1. Critical Health Warning
   const hpPercent = gameState.playerStats.hp / gameState.playerStats.maxHp;

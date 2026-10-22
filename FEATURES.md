@@ -1418,6 +1418,23 @@ Zero-allocation dynamic color grading and volumetric lighting pipeline in `src/c
 - **Biome & Subterranean Tone Matrix**: Distinctive chromatic profiles for Forest, Desert, Tundra, Swamp, Volcanic, Ruined Cities, and tiered Dungeon Depths (crypt, ancient deeps, magma underworld).
 - **Volumetric Crepuscular Sunbeams (God Rays)**: Rotating diagonal light shafts with harmonic breathing and floating atmospheric dust motes.
 
+## 80. Reusable Roguelike Engine Architecture & Content Validation Sub-Engine (v8.14.0)
+
+Architected and executed strict architectural separation between engine mechanics and game content (`ENGINEPLAN.md` & `ENGINE_MANUAL.md`):
+- **Universal Entity Taxonomy & Registry (`src/engine/entities/`)**: 9 entity taxonomy variants (Player, Enemy, NPC, Animal, Summon, Trap, Projectile, Item, Interactable) with $O(1)$ spatial coordinate indexing via `EntityManager`.
+- **Reusable Ability Pipelines & Decoupled Status Effects (`src/engine/abilities/`, `src/engine/effects/`)**: Generic targeting contracts (radial, cone, directional, self) with `AbilityExecutor` and stacked turn-based DoT/HoT status effect managers.
+- **Pluggable AI Strategy Pattern (`src/engine/ai/`)**: Data-driven strategy implementations (`MeleeStrategy`, `RangedStrategy`, `KitingStrategy`, `CowardStrategy`, `AggressiveStrategy`, `DefensiveStrategy`, `SummonerStrategy`, `PatrolStrategy`, `BossStrategy`).
+- **Modular Dungeon Generation (`src/engine/dungeon/`)**: Swappable layout generators (`RoomAndCorridorGenerator`, `BSPDungeonGenerator`, `CellularAutomataCaveGenerator`, `ArenaDungeonGenerator`) with 10 room archetypes in `RoomRegistry`.
+- **Autonomous Content Validation Suite (`src/engine/validation/`)**: `ContentValidator` checking cross-references, catalog integrity, duplicate IDs, missing fields, and AI roles. CLI runner `scripts/validateContent.cjs`.
+
+## 81. Seamless Caravan Ambush Scene Auto-Deployment & UI State Synchronization (v8.15.0)
+
+Delivered immediate tactical battle deployment and UI scene isolation for caravan travel fighting events:
+- **Instant Tactical Skirmish Auto-Deployment (`src/hooks/useCaravanTravel.ts`)**: Auto-detects road fighting encounters (`bandit_ambush`, `beast_attack`, `boss_ambush`, `isTacticalCombat`, `isBossAmbush`), automatically deploys the 24×18 skirmish map, clears active trade sessions (`activeTradeNpcId: null`), sets `isTacticalCombat: true`, and switches `activeTab` to `'dungeon'`.
+- **Full-Screen Modal & Inventory Suppression (`src/components/modals/CaravanActiveOverlay.tsx`)**: Suppresses full-screen caravan card modals and inventory option buttons while in battle, keeping the canvas battle scene 100% visible and interactive.
+- **Non-Intrusive Tactical Combat HUD**: Renders a compact floating top banner with wagon hull health, alive hostile count, alive guard count, and fallback options.
+- **Lossless State Restoration**: Slaying all ambushers or retreating cleanly restores overworld map dimensions, corpses, loot piles, and rewards without memory or state leaks.
+
 
 
 

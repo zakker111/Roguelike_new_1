@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SpawnTable, SpawnTableEntry } from './types';
-import { EnemyRegistry } from './EnemyRegistry';
-import { Enemy } from '../../types/entities';
+import { SpawnTable } from './types';
 
 /**
  * Registry of reusable spawn tables for biomes, dungeon tiers, and encounters.

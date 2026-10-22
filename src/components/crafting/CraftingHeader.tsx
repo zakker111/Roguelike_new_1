@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Hammer, Flame, ChefHat, Sparkles, Wand2, Compass, Shield, Search } from 'lucide-react';
+import { Hammer, Search } from 'lucide-react';
 
 export type CraftingSubTab =
   | 'weapons'

@@ -87,7 +87,13 @@ export interface WatchtowerState {
     defender: 'syndicate' | 'vanguard' | 'neutral' | 'bandits';
     siegeTimerSeconds: number; // counts down to zero, then attacker wins if not cleared by player
     maxTimerSeconds: number;
+    bountyGold?: number;
+    turnsRemaining?: number;
+    maxTurns?: number;
+    playerAssistedDefender?: boolean;
+    playerAssistedAttacker?: boolean;
   };
+  quartermaster?: import('./worldEvents').OutpostQuartermasterState;
 }
 
 export interface DungeonProp {

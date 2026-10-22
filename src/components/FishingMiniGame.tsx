@@ -4,18 +4,19 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Play, Compass, ArrowRight, RotateCw, Trophy, Anchor } from 'lucide-react';
+import { X, Play, ArrowRight, RotateCw, Anchor } from 'lucide-react';
 import { playSound } from '../utils/audio';
 
 interface FishingMiniGameProps {
   onClose: () => void;
-  onCatch: (itemName: string, itemId: string) => void;
+  onCatch?: (itemName: string, itemId: string) => void;
+  onSuccess?: (itemName: string, itemId: string) => void;
   onFail?: () => void;
 }
 
 type FishingState = 'IDLE' | 'CASTING' | 'BITE' | 'REELING' | 'SUCCESS' | 'ESCAPE';
 
-export default function FishingMiniGame({ onClose, onCatch, onFail }: FishingMiniGameProps) {
+export default function FishingMiniGame({ onClose, onCatch, onSuccess, onFail }: FishingMiniGameProps) {
   const [gameState, setGameState] = useState<FishingState>('IDLE');
   const [biteCountdown, setBiteCountdown] = useState<number>(0);
   const [caughtFishName, setCaughtFishName] = useState<string>('Common Pond Gudgeon');
@@ -306,7 +307,10 @@ export default function FishingMiniGame({ onClose, onCatch, onFail }: FishingMin
     setCaughtFishIcon(chosen.icon || '🐟');
     setGameState('SUCCESS');
     playSound('victory');
-    onCatch(chosen.name, chosen.id);
+    const notifyCatch = onCatch || onSuccess;
+    if (notifyCatch) {
+      notifyCatch(chosen.name, chosen.id);
+    }
   };
 
   const triggerLoss = () => {
@@ -317,7 +321,7 @@ export default function FishingMiniGame({ onClose, onCatch, onFail }: FishingMin
   };
 
   return (
-    <div id="fishing-overlay" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+    <div id="fishing-overlay" className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
       <div 
         id="fishing-modal"
         className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 flex flex-col overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-200"

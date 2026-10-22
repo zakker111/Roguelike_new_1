@@ -10,10 +10,13 @@ export function findNearestSafeNpcTile(
   startY: number,
   map: TileType[][]
 ): { x: number; y: number } {
+  if (!map || map.length === 0 || !map[0] || map[0].length === 0) {
+    return { x: startX, y: startY };
+  }
   const height = map.length;
   const width = map[0].length;
 
-  if (startY >= 0 && startY < height && startX >= 0 && startX < width) {
+  if (startY >= 0 && startY < height && startX >= 0 && startX < width && map[startY]) {
     if (isTileSafeForNpc(map[startY][startX])) {
       return { x: startX, y: startY };
     }
@@ -26,7 +29,7 @@ export function findNearestSafeNpcTile(
         if (Math.abs(dx) === r || Math.abs(dy) === r) {
           const testX = startX + dx;
           const testY = startY + dy;
-          if (testY >= 0 && testY < height && testX >= 0 && testX < width) {
+          if (testY >= 0 && testY < height && testX >= 0 && testX < width && map[testY]) {
             if (isTileSafeForNpc(map[testY][testX])) {
               return { x: testX, y: testY };
             }

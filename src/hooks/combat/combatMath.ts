@@ -1,17 +1,14 @@
 import {
   GameState,
   Enemy,
-  CraftedWeapon,
   WeaponBaseType,
-  CatalystType,
-  EnemyState
+  CatalystType
 } from '../../types';
 import { SPELLS, STARTING_WEAPON, Spell } from '../../utils/spellsAndEquipment';
 import { getEffectiveStats } from '../../utils/scars';
 import { calculateNetDamage } from '../../data/balance';
 import {
-  calculateArchetypeDamageAdjustment,
-  checkBossPhaseEnrage
+  calculateArchetypeDamageAdjustment
 } from '../../utils/combatArchetypes';
 import {
   hasEquippedTrait,

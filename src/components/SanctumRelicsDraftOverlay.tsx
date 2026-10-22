@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Award, Shield, Swords, Flame, Heart, Cpu, X } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { SanctumRelic } from '../utils/relics';
 import { playSound } from '../utils/audio';
 

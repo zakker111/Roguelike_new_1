@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Enemy, NPC, EquipmentItem } from '../../types';
+import type { OutpostQuartermasterState } from '../../types/worldEvents';
 import { PoiType } from '../../components/PoiInteractionOverlay';
 import { SanctumRelic } from '../../utils/relics';
 import { performanceMonitor } from '../../utils/performanceMonitor';
@@ -34,8 +35,12 @@ export interface AppModalState {
   setIsWeatherControlOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isAutoplayActive: boolean;
   setIsAutoplayActive: React.Dispatch<React.SetStateAction<boolean>>;
+  isQuartermasterOpen: boolean;
+  setIsQuartermasterOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Targeted / entity interaction state
+  activeQuartermaster: OutpostQuartermasterState | null;
+  setActiveQuartermaster: React.Dispatch<React.SetStateAction<OutpostQuartermasterState | null>>;
   activeScriptoriumScrollTemplateId: string | null;
   setActiveScriptoriumScrollTemplateId: React.Dispatch<React.SetStateAction<string | null>>;
   activeLockpickingChestIndex: number | null;
@@ -82,8 +87,10 @@ export function useAppModalState(): AppModalState {
   const [isScriptoriumOpen, setIsScriptoriumOpen] = useState(false);
   const [isWeatherControlOpen, setIsWeatherControlOpen] = useState(false);
   const [isAutoplayActive, setIsAutoplayActive] = useState(false);
+  const [isQuartermasterOpen, setIsQuartermasterOpen] = useState(false);
 
   // Contextual modal payloads
+  const [activeQuartermaster, setActiveQuartermaster] = useState<OutpostQuartermasterState | null>(null);
   const [activeScriptoriumScrollTemplateId, setActiveScriptoriumScrollTemplateId] = useState<string | null>(null);
   const [activeLockpickingChestIndex, setActiveLockpickingChestIndex] = useState<number | null>(null);
   const [unlawfulGuardTarget, setUnlawfulGuardTarget] = useState<{ enemy: Enemy; index: number; pathPoints: any[] } | null>(null);
@@ -108,6 +115,8 @@ export function useAppModalState(): AppModalState {
     setIsLockpickingOpen(false);
     setIsScriptoriumOpen(false);
     setIsWeatherControlOpen(false);
+    setIsQuartermasterOpen(false);
+    setActiveQuartermaster(null);
     setActiveScriptoriumScrollTemplateId(null);
     setActiveLockpickingChestIndex(null);
     setUnlawfulGuardTarget(null);
@@ -159,6 +168,10 @@ export function useAppModalState(): AppModalState {
     setIsWeatherControlOpen,
     isAutoplayActive,
     setIsAutoplayActive,
+    isQuartermasterOpen,
+    setIsQuartermasterOpen,
+    activeQuartermaster,
+    setActiveQuartermaster,
     activeScriptoriumScrollTemplateId,
     setActiveScriptoriumScrollTemplateId,
     activeLockpickingChestIndex,

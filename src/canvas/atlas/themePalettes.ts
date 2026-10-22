@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MockupPaletteTheme, ThemePaletteColors } from './types';
+import { ThemePaletteColors } from './types';
 
 export const THEME_PALETTES: Record<string, ThemePaletteColors> = {
   classic: {

@@ -23,6 +23,7 @@ import {
   ensureChunkDecompressed
 } from '../../../utils/overworld';
 import { appendBoundedLogs } from '../../../utils/logBuffer';
+import { spawnOutpostSiegeSquads } from '../../../world/outposts';
 import { getValidWeatherForBiome } from '../../../utils/weatherEngine';
 import { spawnFollowersOnLevelLoadByReset } from '../../../utils/dungeon';
 import { computeFOV } from '../../../utils/ai';
@@ -165,7 +166,11 @@ export function handleChunkBorderCrossing(
 
     if (targetChunk.watchtower && targetChunk.watchtower.siegeState?.isUnderSiege) {
       const hasSiegeEnemies = targetChunk.enemies.some(
-        (e) => e.id.startsWith('siege_attacker_') || e.id.startsWith('wt_ally_attacker_')
+        (e) =>
+          e.id.startsWith('siege_attacker_') ||
+          e.id.startsWith('wt_ally_attacker_') ||
+          e.id.startsWith('siege_att_') ||
+          e.id.startsWith('siege_def_')
       );
       if (!hasSiegeEnemies) {
         const wtX = targetChunk.watchtower.x;
@@ -175,16 +180,17 @@ export function handleChunkBorderCrossing(
         const playerFaction = prev.faction || 'neutral';
         const reputation = prev.factionReputation || { syndicate: 0, vanguard: 0, bandits: 0 };
 
-        const siegeEnemies = getSiegeCombatants(
+        const { enemies: siegeEnemies } = spawnOutpostSiegeSquads({
           wtX,
           wtY,
-          nextCx,
-          nextCy,
-          attacker,
-          defender,
+          chunkX: nextCx,
+          chunkY: nextCy,
+          attackerFaction: attacker,
+          defenderFaction: defender,
           playerFaction,
-          reputation
-        );
+          playerReputation: reputation,
+          defenseTier: 1
+        });
 
         targetChunk.enemies = [...targetChunk.enemies, ...siegeEnemies];
       }

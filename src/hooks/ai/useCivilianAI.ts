@@ -96,6 +96,37 @@ export function resolveCivilianNpcTurns({
 
   return nextNpcs.map((npc) => {
     if (!npc) return npc;
+
+    // Fixed / Inanimate town fixtures (Quest Board, Notice Boards, signs, monoliths) never move, panic, sleep, or wander
+    const isImmobileFixture =
+      npc.isImmobile ||
+      npc.role === 'quest_board' ||
+      (npc.role as string) === 'guest_board' ||
+      npc.role === 'sign' ||
+      npc.role === 'inanimate' ||
+      npc.id?.startsWith('npc_questboard_') ||
+      npc.id?.includes('questboard') ||
+      npc.id?.includes('quest_board') ||
+      npc.id?.includes('guest_board') ||
+      npc.id?.includes('notice_board') ||
+      npc.name?.toLowerCase().includes('board');
+
+    if (isImmobileFixture) {
+      const fixedX = npc.homeX ?? npc.workX ?? npc.x;
+      const fixedY = npc.homeY ?? npc.workY ?? npc.y;
+      return {
+        ...npc,
+        x: fixedX,
+        y: fixedY,
+        isAsleep: false,
+        isSitting: false,
+        isDrinking: false,
+        char: npc.originalChar || (npc.role === 'quest_board' || (npc.role as string) === 'guest_board' || npc.id?.includes('quest') || npc.id?.includes('board') ? '▤' : npc.char),
+        scheduleState: 'work',
+        isImmobile: true
+      };
+    }
+
     const isCat = npc.id?.startsWith('npc_cat_') || npc.role === 'special_cat';
 
     // Stray Animals (cats, dogs, fauna)

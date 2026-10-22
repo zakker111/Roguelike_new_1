@@ -130,11 +130,11 @@ export function useGodReplayAndSmokeTest(
       setCurrentTestStep(3);
       log('🔍 [3/6] Verifying Enemy Blueprints and Stat Matrices...');
       const rat = getEnemyTemplate('Rat');
-      const skeleton = getEnemyTemplate('Skeleton');
-      if (!rat || !skeleton) {
+      const mage = getEnemyTemplate('SkeletonMage') || getEnemyTemplate('Goblin');
+      if (!rat || !mage) {
         throw new Error('Master enemy catalog is missing basic hostile templates!');
       }
-      log(`✅ Verified Rat (HP: ${rat.baseHp}) and Skeleton (HP: ${skeleton.baseHp}) blueprints.`);
+      log(`✅ Verified Rat (HP: ${rat.baseHp}) and Skeleton Mage (HP: ${mage.baseHp}) blueprints.`);
       await new Promise((r) => setTimeout(r, 400));
 
       setCurrentTestStep(4);

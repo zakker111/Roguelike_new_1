@@ -352,12 +352,14 @@ export function useKeyboardControls({
       case 'p':
       case '`':
       case '~':
+      case 'f2':
       case 'f12':
         e.preventDefault();
         setIsGodPanelOpen((p) => !p);
         return;
       case 'o':
       case 'y':
+      case 'f4':
         e.preventDefault();
         setIsGmPanelOpen((p) => !p);
         return;

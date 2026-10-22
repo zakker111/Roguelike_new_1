@@ -67,6 +67,8 @@ export function useLockpickingPhysics({
     setActivePicks(lockpickCount);
     if (lockpickCount <= 0) {
       updateStatus('NO_PICKS');
+    } else if (statusRef.current === 'NO_PICKS') {
+      updateStatus('READY');
     }
   }, [lockpickCount]);
 

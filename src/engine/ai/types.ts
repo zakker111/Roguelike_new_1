@@ -4,7 +4,6 @@
  */
 
 import { BaseEntity, LivingEntity } from '../entities/types';
-import { AbilityExecutionContext, AbilityExecutionResult } from '../abilities/types';
 
 /**
  * Strategy types supported out-of-the-box by the engine

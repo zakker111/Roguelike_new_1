@@ -4,6 +4,13 @@ import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../utils/gameUtils';
 import { computeFOV } from '../utils/ai';
 import { generateOverworldChunk, formatGameTime } from '../utils/overworld';
 import { combatVfxEngine } from '../canvas/combatVfxEngine';
+import {
+  SPECIAL_CAT_NAMES,
+  SPECIAL_CATS_DATA,
+  isSpecialCat,
+  getStandardFollowerCount,
+  createAllCatsFoundCelebrationLog
+} from '../utils/specialCats';
 
 export interface UseNpcInteractionParams {
   gameState: GameState;
@@ -144,7 +151,7 @@ export function useNpcInteraction({
     let text = '';
     
     // 1. QUEST BOARD
-    if (npc.role === ('quest_board' as any)) {
+    if (npc.role === ('quest_board' as any) || npc.id?.startsWith('npc_questboard_')) {
       setGameState(prev => ({ ...prev, activeQuestBoardOpen: true }));
       addLogMessage('📜 You examine the Oakhaven notice Quest Board.', 'system');
       return;
@@ -152,8 +159,9 @@ export function useNpcInteraction({
 
     // 2. COMPANION HIRE
     if (npc.role === ('companion_hire' as any)) {
-      if (gameState.followers.length >= 3) {
-        addLogMessage('🗣| Sade says: "Your party is full! You can only manage up to 3 companions."', 'system');
+      const stdFollowers = getStandardFollowerCount(gameState.followers);
+      if (stdFollowers >= 3) {
+        addLogMessage('🗣️ Sade says: "Your party is full! You can only manage up to 3 standard companions. (Special cats do not count toward this limit.)"', 'system');
         return;
       }
 
@@ -248,58 +256,31 @@ export function useNpcInteraction({
       return;
     }
 
-    // 2.5 SPECIAL CAT HIRE
+    // 2.5 SPECIAL CAT HIRE (Does NOT take a companion slot!)
     if (npc.role === 'special_cat') {
-      if (gameState.followers.length >= 3) {
-        addLogMessage(`🐈 ${npc.name} meows softly: "Your party is full! You can only manage up to 3 companions."`, 'system');
-        return;
-      }
-
       setGameState((prev) => {
-        const catName = npc.name.split(' (')[0];
-        let catPersonality = 'Elusive Legendary Town Cat';
-        let catTemperament = 'Loyal but Flee-prone';
-        let catHp = 15;
-        let catAtk = 2;
-        let catDef = 0;
-
-        if (catName === 'Alli') {
-          catPersonality = 'Royal Silver Cat';
-          catTemperament = 'Dignified & Regal';
-          catHp = 15;
-          catAtk = 2;
-          catDef = 1;
-        } else if (catName === 'Leevi') {
-          catPersonality = 'Eternally Angry Battle Cat';
-          catTemperament = 'Fierce, Aggressive & Grumpy';
-          catHp = 12;
-          catAtk = 5;
-          catDef = 0;
-        } else if (catName === 'Pulla') {
-          catPersonality = 'True Loyal Companion';
-          catTemperament = 'Warm, Trusting & Obedient';
-          catHp = 18;
-          catAtk = 2;
-          catDef = 1;
-        } else if (catName === 'Jekku') {
-          catPersonality = 'Playful Orange Trickster';
-          catTemperament = 'Mischievous & Energetic';
-          catHp = 15;
-          catAtk = 3;
-          catDef = 0;
-        }
+        const cleanName = npc.name.replace(/^[🐈🐱\s]+/, '').split(' (')[0].trim();
+        const catName = (SPECIAL_CAT_NAMES.find(c => cleanName.includes(c)) || cleanName) as any;
+        const catData = SPECIAL_CATS_DATA[catName as keyof typeof SPECIAL_CATS_DATA] || {
+          personality: 'Elusive Legendary Town Cat',
+          temperament: 'Loyal but Flee-prone',
+          hp: 15,
+          atk: 3,
+          def: 1,
+          specialPerk: 'Feline Agility'
+        };
 
         const nextFollower: Follower = {
-          id: `fol_${Date.now()}`,
+          id: `fol_cat_${catName.toLowerCase()}_${Date.now()}`,
           name: catName,
           archetypeId: 'cat',
           role: 'follower',
-          char: npc.char,
-          color: npc.color,
-          hp: catHp,
-          maxHp: catHp,
-          atk: catAtk,
-          def: catDef,
+          char: npc.char || '🐈',
+          color: npc.color || '#fb923c',
+          hp: catData.hp,
+          maxHp: catData.hp,
+          atk: catData.atk,
+          def: catData.def,
           level: 1,
           xp: 0,
           xpNext: 100,
@@ -307,8 +288,9 @@ export function useNpcInteraction({
           equipment: { weapon: null, armor: null },
           inventory: [],
           injuries: [],
-          personality: catPersonality,
-          temperament: catTemperament
+          personality: catData.personality,
+          temperament: catData.temperament,
+          isSpecialCat: true
         };
 
         const nextNpcs = prev.npcs.filter(n => n.id !== npc.id);
@@ -318,17 +300,17 @@ export function useNpcInteraction({
           x: npc.x,
           y: npc.y,
           type: 'Goblin' as any,
-          name: nextFollower.name,
+          name: `🐈 ${nextFollower.name}`,
           hp: nextFollower.hp,
           maxHp: nextFollower.maxHp,
           atk: nextFollower.atk,
           def: nextFollower.def,
-          range: 1,
+          range: catName === 'Alli' ? 3 : 1,
           speed: 1,
           color: nextFollower.color,
           char: nextFollower.char,
           state: EnemyState.Chasing,
-          isElite: false,
+          isElite: true,
           patrolPath: [],
           patrolIndex: 0,
           debuffs: [],
@@ -341,18 +323,49 @@ export function useNpcInteraction({
           catSpawns.push(catName);
         }
 
+        const prevFound = prev.foundCats || [];
+        const nextFoundCats = Array.from(new Set([...prevFound, catName]));
+        const hadAllBefore = SPECIAL_CAT_NAMES.every(c => prevFound.includes(c));
+        const hasAllNow = SPECIAL_CAT_NAMES.every(c => nextFoundCats.includes(c));
+
+        let nextPlayerStats = { ...prev.playerStats };
+        const newLogs: any[] = [
+          {
+            id: `hire_cat_${Date.now()}`,
+            text: `🐈 [SPECIAL COMPANION]: ${nextFollower.name} decides to accompany you! Special companions do not occupy standard companion slots! (${nextFoundCats.length}/4 Special Cats Found: ${nextFoundCats.join(', ')})`,
+            type: 'loot',
+            timestamp: 'RECRUIT'
+          }
+        ];
+
+        // Milestone: All 4 Special Cats Found!
+        if (hasAllNow && (!hadAllBefore || !nextPlayerStats.hasCatLover)) {
+          nextPlayerStats.hasCatLover = true;
+          nextPlayerStats.maxHp = (nextPlayerStats.maxHp || 100) + 15;
+          nextPlayerStats.hp = (nextPlayerStats.hp || 100) + 15;
+          nextPlayerStats.lck = (nextPlayerStats.lck || 10) + 10;
+          nextPlayerStats.def = (nextPlayerStats.def || 0) + 5;
+          newLogs.push(createAllCatsFoundCelebrationLog());
+
+          setTimeout(() => {
+            playSound('victory');
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('spawn-game-effect', {
+                detail: { x: npc.x, y: npc.y, text: `🌟 ALL 4 CATS REUNITED!`, type: 'heal' }
+              }));
+            }
+          }, 150);
+        }
+
         return {
           ...prev,
           followers: [...prev.followers, nextFollower],
           enemies: [...prev.enemies, newActor],
           npcs: nextNpcs,
           spawnedCats: catSpawns,
-          logs: [...prev.logs, {
-            id: `hire_cat_${Date.now()}`,
-            text: `🐈 LEGENDARY COMPANION JOINED: ${nextFollower.name} decides to accompany you on your adventure!`,
-            type: 'loot',
-            timestamp: 'RECRUIT'
-          }]
+          foundCats: nextFoundCats,
+          playerStats: nextPlayerStats,
+          logs: [...prev.logs, ...newLogs]
         };
       });
 

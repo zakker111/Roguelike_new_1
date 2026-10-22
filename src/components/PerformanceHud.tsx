@@ -14,12 +14,8 @@ import {
   X,
   RotateCcw,
   Move,
-  ChevronDown,
-  ChevronUp,
   Zap,
-  MapPin,
-  Clock,
-  Sparkles
+  MapPin
 } from 'lucide-react';
 import { GameState } from '../types';
 import { performanceMonitor, SystemResourceMetrics, PerformanceHudPosition } from '../utils/performanceMonitor';

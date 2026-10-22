@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { GameState, GameLogMessage, EquipmentItem, WeaponBaseType } from "../../types";
+import { GameLogMessage, EquipmentItem, WeaponBaseType } from "../../types";
 import { playSound } from "../../utils/audio";
 import { formatGameTime } from "../../utils/overworld";
 import { addEquipmentItemToInventory } from "../../utils/scrollUtils";

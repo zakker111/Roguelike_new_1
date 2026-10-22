@@ -151,8 +151,8 @@ export const BackpackSlotGrid: React.FC<BackpackSlotGridProps> = ({
         <InventoryFilterBar
           bagSubTab={bagSubTab}
           setBagSubTab={setBagSubTab}
-          totalFollowers={gameState.followers.length}
-          totalGear={gameState.equipmentInventory.length}
+          totalFollowers={gameState.followers?.length || 0}
+          totalGear={gameState.equipmentInventory?.length || 0}
           totalFood={totalFoodCount}
           totalMats={totalMatsCount}
           onSortInventory={handleSortInventory}
@@ -165,7 +165,9 @@ export const BackpackSlotGrid: React.FC<BackpackSlotGridProps> = ({
       <div className="flex-1 overflow-y-auto pr-1">
         {bagSubTab === 'allies' && (
           <AlliesRosterView
-            followers={gameState.followers}
+            followers={gameState.followers || []}
+            foundCats={gameState.foundCats || []}
+            hasCatLover={gameState.playerStats?.hasCatLover || false}
             onInspectFollower={handleInspectFollower}
             playSound={playSound}
           />

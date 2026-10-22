@@ -1,8 +1,9 @@
 import React from 'react';
 import { 
-  Sparkles, ShieldAlert, Sparkle, 
-  Activity, Zap, Compass, Shield, 
-  Eye, Trophy, EyeOff, Brain, Clock, HelpCircle, AlertTriangle
+  Sparkles, 
+  Activity, 
+  Brain, 
+  Clock 
 } from 'lucide-react';
 import { GameState } from '../types';
 import { getGMStorytellerState } from '../utils/gmStoryteller';

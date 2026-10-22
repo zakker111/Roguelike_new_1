@@ -4,7 +4,6 @@
  */
 
 import { GameState, TileType } from '../types';
-import { lightingEngine } from './lightingEngine';
 
 export interface BloomEmitter {
   x: number;

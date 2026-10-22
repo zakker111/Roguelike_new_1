@@ -24,6 +24,7 @@ interface UseGKeyInteractionProps {
   setIsSleepOpen: (open: boolean) => void;
   interactWithNpc: (npc: NPC) => void;
   handleInteractWithDungeonShrine: (prop: DungeonProp) => void;
+  openQuartermaster?: () => void;
 }
 
 export function useGKeyInteraction({
@@ -39,6 +40,7 @@ export function useGKeyInteraction({
   setIsSleepOpen,
   interactWithNpc,
   handleInteractWithDungeonShrine,
+  openQuartermaster,
 }: UseGKeyInteractionProps) {
 
   const handleGKeyInteract = () => {
@@ -70,7 +72,31 @@ export function useGKeyInteraction({
       { dx: 1, dy: -1 }, { dx: -1, dy: 1 }, { dx: 1, dy: 1 }
     ];
 
-    // 0. Check adjacent Points of Interest (POIs)
+    // 0. Check Outpost Watchtower & Quartermaster interaction
+    if (gameState.isOverworld) {
+      const chunkKey = `${gameState.currentChunkX},${gameState.currentChunkY}`;
+      const activeChunk = gameState.overworldChunks[chunkKey];
+      if (activeChunk?.watchtower) {
+        const wt = activeChunk.watchtower;
+        const isNearFlag = adjacentPoints.some((off) => gameState.map[py + off.dy]?.[px + off.dx] === TileType.WatchtowerFlag);
+        const isInsideOutpost = px >= wt.x && px < wt.x + wt.width && py >= wt.y && py < wt.y + wt.height;
+        if (isNearFlag || isInsideOutpost) {
+          if (wt.siegeState?.isUnderSiege) {
+            addLogMessage("⚔️ [OUTPOST UNDER SIEGE]: The battlements are contested! Defeat the attackers to liberate the outpost and access the Quartermaster!", "danger");
+            playSound('trap');
+            return;
+          }
+          if (openQuartermaster) {
+            openQuartermaster();
+            playSound('loot');
+            addLogMessage(`🏰 [OUTPOST GARRISON]: You consult with the Outpost Quartermaster.`, 'quest');
+            return;
+          }
+        }
+      }
+    }
+
+    // 0b. Check adjacent Points of Interest (POIs)
     if (gameState.isOverworld) {
       const chunkKey = `${gameState.currentChunkX},${gameState.currentChunkY}`;
       const activeChunk = gameState.overworldChunks[chunkKey];

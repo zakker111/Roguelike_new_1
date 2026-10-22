@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   X,
+  Minus,
   Zap,
   Palette,
   Home,
@@ -16,7 +17,11 @@ import {
   Grid,
   Dice5,
   Sparkles,
-  Volume2
+  Volume2,
+  Cpu,
+  Truck,
+  Users,
+  Flame
 } from 'lucide-react';
 import { GameState } from '../types';
 import { playSound } from '../utils/audio';
@@ -24,18 +29,17 @@ import { performanceMonitor } from '../utils/performanceMonitor';
 import { useGodPanelState, DESIGNER_LEGEND } from '../hooks/god/useGodPanelState';
 import townTemplates from '../data/townTemplates.json';
 
-import { GodStatEditor } from './god/GodStatEditor';
-import { GodWorldEditor } from './god/GodWorldEditor';
-import { GodItemSpawner } from './god/GodItemSpawner';
 import { GodEntitySpawner } from './god/GodEntitySpawner';
 import { GodCaravanManager } from './god/GodCaravanManager';
+import { GodCaravanExpeditionTab } from './god/GodCaravanExpeditionTab';
+import { GodFactionDirectorTab } from './god/GodFactionDirectorTab';
+import { GodElementalSandboxTab } from './god/GodElementalSandboxTab';
 import { GodWeatherScarEditor } from './god/GodWeatherScarEditor';
 import { GodTeleportWarpPanel } from './god/GodTeleportWarpPanel';
 import { GodStorytellerPanel } from './god/GodStorytellerPanel';
 import { GodHouseDesigner } from './god/GodHouseDesigner';
 import { GodNpcRoutePlanner } from './god/GodNpcRoutePlanner';
 import { GodStructureCarver } from './god/GodStructureCarver';
-import { GodEnemyBlueprintEditor } from './god/GodEnemyBlueprintEditor';
 import { GodCheatsTab } from './god/GodCheatsTab';
 import { GodSmoketestTab } from './god/GodSmoketestTab';
 import { GodBestiaryTab } from './god/GodBestiaryTab';
@@ -52,6 +56,7 @@ import { GodCatalogLiveTuner } from './god/GodCatalogLiveTuner';
 import { GodEventInspectorTab } from './god/GodEventInspectorTab';
 import { GodVisualsStudioTab } from './god/GodVisualsStudioTab';
 import { GodAudioSoundboardTab } from './god/GodAudioSoundboardTab';
+import { GodEngineSubsystemsTab } from './god/GodEngineSubsystemsTab';
 import { PALETTE_TILES } from './god/GodHouseDesigner';
 
 export { DESIGNER_LEGEND, PALETTE_TILES };
@@ -64,6 +69,7 @@ export interface GodPanelOverlayProps {
   onTriggerLockpicking?: () => void;
   onTriggerFishing?: () => void;
   onTriggerScriptorium?: (scrollTemplateId?: string) => void;
+  onTriggerDrunkGame?: () => void;
   isAutoplayActive?: boolean;
   setIsAutoplayActive?: (active: boolean) => void;
   isPerfHudOpen?: boolean;
@@ -80,6 +86,7 @@ function GodPanelOverlayComponent({
   onTriggerLockpicking,
   onTriggerFishing,
   onTriggerScriptorium,
+  onTriggerDrunkGame,
   isAutoplayActive = false,
   setIsAutoplayActive,
   isPerfHudOpen,
@@ -100,17 +107,15 @@ function GodPanelOverlayComponent({
     addLogMessage
   });
 
-  // Close God Panel on Escape key
+  // Close God Panel on Escape key (bubbling phase so active child modals like minigames handle first)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
+      if (e.key === 'Escape' && !e.defaultPrevented) {
         onClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
   const {
@@ -333,6 +338,38 @@ function GodPanelOverlayComponent({
     );
   }
 
+  // Generic Minimized Floating Badge for interactive sandbox & minigame testing
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-[300] bg-slate-900/95 border-2 border-amber-500 rounded-xl p-3 shadow-2xl backdrop-blur-md max-w-sm w-full animate-in fade-in slide-in-from-bottom-5 font-mono">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-amber-400 animate-pulse" />
+            <div className="text-left">
+              <span className="text-xs font-bold text-slate-100 block">DEV SUITE ACTIVE</span>
+              <span className="text-[10px] text-amber-400/90 font-mono">Minimized for Sandbox Testing</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsMinimized(false)}
+              className="py-1 px-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded transition-colors cursor-pointer"
+            >
+              Restore Console
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 cursor-pointer"
+              title="Close Dev Suite"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 pt-10 sm:pt-6 pb-4 sm:pb-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden">
       <div className="relative w-full max-w-5xl bg-slate-900 border border-red-500/50 rounded-xl shadow-2xl overflow-hidden flex flex-col h-full max-h-[86vh] sm:max-h-[88vh]">
@@ -378,6 +415,15 @@ function GodPanelOverlayComponent({
               <span className="text-[10px] px-1 py-0.2 rounded bg-slate-800 text-amber-300">F3</span>
             </button>
 
+            {/* Minimize to Floating Badge */}
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              title="Minimize Dev Suite to Floating Badge"
+            >
+              <Minus className="w-5 h-5" />
+            </button>
+
             <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
@@ -403,6 +449,7 @@ function GodPanelOverlayComponent({
         <div className="flex flex-nowrap border-b border-slate-800 bg-slate-950/60 text-xs overflow-x-auto shrink-0 scrollbar-thin">
           {[
             { id: 'sovereign', label: 'Cheats', icon: Zap, color: 'text-yellow-400' },
+            { id: 'engine_subsystems', label: 'Engine Core', icon: Cpu, color: 'text-cyan-400' },
             { id: 'visuals_studio', label: 'Visuals Studio', icon: Sparkles, color: 'text-rose-400' },
             { id: 'tileset_tester', label: 'Tileset Studio', icon: Palette, color: 'text-amber-400' },
             { id: 'minigames', label: 'Minigames', icon: Dice5, color: 'text-amber-400' },
@@ -422,7 +469,10 @@ function GodPanelOverlayComponent({
             { id: 'modding_api', label: 'Modding API', icon: Code, color: 'text-pink-400' },
             { id: 'catalog_tuner', label: 'Catalog Tuner', icon: Sliders, color: 'text-amber-400' },
             { id: 'event_bus', label: 'Event Bus', icon: Zap, color: 'text-cyan-400' },
-            { id: 'audio_soundboard', label: 'Audio Lab', icon: Volume2, color: 'text-sky-400' }
+            { id: 'audio_soundboard', label: 'Audio Lab', icon: Volume2, color: 'text-sky-400' },
+            { id: 'elemental', label: 'Elemental Lab', icon: Flame, color: 'text-orange-400' },
+            { id: 'factions', label: 'Faction Matrix', icon: Users, color: 'text-indigo-400' },
+            { id: 'caravans', label: 'Caravan Routes', icon: Truck, color: 'text-emerald-400' }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -448,6 +498,14 @@ function GodPanelOverlayComponent({
 
         {/* Scrollable Tab Views */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-900/50">
+          {/* Reusable Engine Subsystems & Live Validator Lab */}
+          {activeTab === 'engine_subsystems' && (
+            <GodEngineSubsystemsTab
+              triggerSuccessLog={triggerSuccessLog}
+              addLogMessage={addLogMessage}
+            />
+          )}
+
           {/* Visuals & Shaders Studio */}
           {activeTab === 'visuals_studio' && (
             <GodVisualsStudioTab
@@ -532,6 +590,8 @@ function GodPanelOverlayComponent({
               onTriggerLockpicking={onTriggerLockpicking}
               onTriggerFishing={onTriggerFishing}
               onTriggerScriptorium={onTriggerScriptorium}
+              onTriggerDrunkGame={onTriggerDrunkGame}
+              onMinimizeGodPanel={() => setIsMinimized(true)}
               addLogMessage={addLogMessage}
               triggerSuccessLog={triggerSuccessLog}
             />
@@ -786,6 +846,34 @@ function GodPanelOverlayComponent({
           {/* Audio Synthesizer Audition Soundboard Tab */}
           {activeTab === 'audio_soundboard' && (
             <GodAudioSoundboardTab triggerSuccessLog={triggerSuccessLog} />
+          )}
+
+          {/* Elemental CA & Propagation Sandbox */}
+          {activeTab === 'elemental' && (
+            <GodElementalSandboxTab
+              triggerSuccessLog={triggerSuccessLog}
+              addLogMessage={addLogMessage}
+            />
+          )}
+
+          {/* Faction Relations & Hostility Director */}
+          {activeTab === 'factions' && (
+            <GodFactionDirectorTab
+              gameState={gameState}
+              setGameState={setGameState}
+              triggerSuccessLog={triggerSuccessLog}
+              addLogMessage={addLogMessage}
+            />
+          )}
+
+          {/* Caravan Logistics & Trade Routes */}
+          {activeTab === 'caravans' && (
+            <GodCaravanExpeditionTab
+              gameState={gameState}
+              setGameState={setGameState}
+              triggerSuccessLog={triggerSuccessLog}
+              addLogMessage={addLogMessage}
+            />
           )}
         </div>
 

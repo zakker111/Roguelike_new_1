@@ -6,6 +6,63 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.15.3] — Sanctum Error Gump Crash Inspector & Monster Combat Hardening (October 21, 2026)
+*Engineered a comprehensive Sanctum Error Gump modal dialog and diagnostic reporter (`src/components/ErrorBoundary.tsx`). When any runtime exception or unhandled error occurs—whether during React render or in combat event handlers, turn processing, or async tasks—the Error Gump immediately intercepts it. Accurately parses and highlights the exact source file, line number, and column (`parseErrorLocation`), renders a scrollable stack trace with line numbers, and provides a one-click '📋 Copy Error Log' button that puts a clean markdown report on the clipboard for immediate pasting. Added a '🛡️ Resume Game' button allowing players to recover state and continue playing without reload. Hardened monster combat routines (`usePlayerAttack.ts`, `combatLoot.ts`, `useEnemyAI.ts`, `useFollowerAI.ts`) with try/catch boundaries, optional chaining, and fallback defaults against null/undefined enemy IDs or names. Expanded test suite to 98 test suites and 721 tests.*
+
+- **1. Sanctum Error Gump Modal & Diagnostic Parser (`src/components/ErrorBoundary.tsx`)**:
+  - Implemented `parseErrorLocation` to extract target source file, line number, column, and function name from stack traces.
+  - Implemented `formatErrorLog` creating ready-to-paste markdown reports with timestamp, exact location, error details, and stack.
+  - Added one-click clipboard copy with visual feedback, 'Resume Game' session recovery, 'Reload Window', and emergency 'Backup Save' buttons.
+  - Connected global interceptors for `window.onerror`, `unhandledrejection`, and custom `'show-error-gump'` events.
+- **2. Monster Combat Safeguards & Try/Catch Boundaries (`src/hooks/usePlayerAttack.ts`, `src/hooks/combat/combatLoot.ts`, `src/hooks/ai/useEnemyAI.ts`, `src/hooks/ai/useFollowerAI.ts`)**:
+  - Wrapped `performPlayerAttack` and `executeEnemiesTurn` in resilient try/catch blocks that contain exceptions and dispatch Error Gump diagnostics without crashing the game loop.
+  - Added optional chaining to `enemy.id?.startsWith`, `chest.id?.includes`, `target.id?.includes`, and fallback guards for `enemy.name` and empty `inventoryMaterials`.
+- **3. Automated Test Suite Expansion (`src/tests/errorGump.test.ts`)**:
+  - Added test suite validating stack trace parsing, line number extraction, and formatted markdown report generation (98 test suites, 721 passing tests).
+
+## [v8.15.2] — Player Attack Visual Animations, Melee Slashes & Board Immobility Hardening (October 20, 2026)
+*Engineered high-fidelity player attack animations across both procedural ASCII and Tileset modes. Restored the full kinetic combat animation pipeline: player characters now execute an elastic directional attack lunge towards target monsters (`EntityInterpolationManager.triggerAttackLunge`), transition to a 4-way directional attack sprite frame (`SpriteAnimationManager.setAnimationState`), and spawn directional crescent blade melee slashes with white-hot cutting edges, elemental tinting (Fire Cleave, Frost Cleave, Poison Strike, Holy Smite, Heavy Smash, Dagger Thrust), and blood impact splatters (`combatVfxEngine.dispatchEffect`). For ranged weapons, dispatched ballistic bezier projectiles (`spawn-projectile`). Hardened civilian AI immobility to guarantee notice boards, quest boards, and guest boards never displace.*
+
+- **1. Kinetic Player Attack Lunge & Directional Facing (`src/hooks/usePlayerAttack.ts`, `src/canvas/entityInterpolationManager.ts`)**:
+  - Implemented 180ms elastic attack lunge moving the player character towards target coordinates before snapping back.
+  - Dynamically calculates 4-way cardinal facing (north, south, east, west) to direct attacks.
+- **2. Sprite Sheet & One-Shot Attack Animation Reset (`src/canvas/spriteAnimationManager.ts`)**:
+  - Updated `setAnimationState` to immediately reset animation frame indices for one-shot actions (`attack`, `hurt`, `cast`), ensuring repeated rapid attacks properly restart the swing cycle.
+- **3. Melee Slash VFX Arcs & Elemental Weapon Trajectory (`src/canvas/combatVfxEngine.ts`, `src/components/GameCanvas.tsx`)**:
+  - Wired `sourceX`, `sourceY`, `weaponType`, and `element` from player attacks into the unified combat VFX dispatcher.
+  - Set `durationFrames: 14` for melee weapon slashes to produce clean, legible crescent blade sweeps and blood spatters.
+- **4. Quest & Guest Board Immobility Hardening (`src/hooks/ai/useCivilianAI.ts`)**:
+  - Added robust role and ID checks covering `quest_board`, `guest_board`, notice boards, and board name variants to permanently anchor them in place.
+- **5. Automated Test Suite Expansion (`src/tests/combatFloaterDrift.test.ts`, `src/tests/npcSchedulesAndShelter.test.ts`)**:
+  - Added unit test cases verifying player attack lunge, attack sprite state transitions, directional melee slash spawns, and guest board immobility (97 test suites, 717 passing tests).
+
+## [v8.15.1] — Town Quest Notice Board Fixed Immobility & Static Fixture Anchoring (October 19, 2026)
+*Resolved an issue where the Town Quest Notice Board in settlements moved autonomously, panicked and fled from hostile monsters with a screaming face glyph (`😱`), and departed its post to sleep in beds during the night or severe weather. Added an explicit immobility contract to the `NPC` interface (`isImmobile: true`) and updated the civilian schedule resolution engine (`src/hooks/ai/useCivilianAI.ts`) to keep stationary town fixtures (quest boards, notice boards, signs, monoliths) permanently anchored to their original coordinates (`homeX`/`workX`). Preserved original `▤` glyph, suppressed sleeping/drinking/panicking behaviors, and added automated regression tests.*
+
+- **1. NPC Immobility Contract (`src/types/entities.ts`, `src/world/town/townNpcs.ts`)**:
+  - Added `isImmobile?: boolean` to the authoritative `NPC` type interface.
+  - Initialized the Oakhaven notice Quest Board with `isImmobile: true`.
+- **2. Civilian AI Movement Guard (`src/hooks/ai/useCivilianAI.ts`)**:
+  - Implemented early return guard freezing immobile fixtures and quest boards in place.
+  - Automatically resets coordinates to `homeX`/`workX`, restores original character `▤`, and prevents nocturnal bed-seeking or monster fleeing.
+- **3. Dialogue & Interaction Sync (`src/hooks/useNpcInteraction.ts`)**:
+  - Ensured quest board interaction checks both role and ID prefix (`npc_questboard_`).
+- **4. Automated Regression Tests (`src/tests/npcSchedulesAndShelter.test.ts`)**:
+  - Added test validating quest board immobility during nighttime, severe weather blizzards, and adjacent monster attacks.
+
+## [v8.15.0] — Seamless Caravan Ambush Scene Auto-Deployment & UI State Synchronization (October 18, 2026)
+*Engineered immediate tactical battle auto-deployment for wilderness caravan travel ambushes. When road fighting events trigger (Bandit Outlaws, Dire Wolves, or Boss Ambushers), the 24×18 tactical skirmish map is generated instantly with the player, carriage, escort sentries, and attackers on the road. Automatically hides full-screen caravan card modals and trade inventory panels, locking the viewport to the 'dungeon' scene tab with a non-intrusive combat HUD banner (hostiles alive, guards alive, wagon hull integrity). Slaying all attackers or falling back safely restores overworld state, dimensions, and rewards. Expanded automated testing suite to 97 test suites and 713 passing unit tests (100% green).*
+
+- **1. Automatic Combat Ambush Skirmish Auto-Deployment (`src/hooks/useCaravanTravel.ts`)**:
+  - Implemented auto-detection of fighting encounters (`bandit_ambush`, `beast_attack`, `boss_ambush`, `isTacticalCombat`, `isBossAmbush`).
+  - Seamlessly calls `generateCaravanSkirmishMap`, clears active trade sessions (`activeTradeNpcId: null`), sets `isTacticalCombat: true`, and switches `activeTab` to `'dungeon'`.
+- **2. Full-Screen Modal Suppression in Combat (`src/components/modals/CaravanActiveOverlay.tsx`)**:
+  - Suppressed full-screen modal and inventory option buttons during combat, rendering only the lightweight tactical HUD header so the game canvas scene remains 100% visible and interactive.
+- **3. Active Tab & Viewport Synchronization (`src/App.tsx`, `AppModalRouter.tsx`)**:
+  - Bound `setActiveTab` to caravan travel orchestrator, ensuring that entering combat immediately focuses the main viewport canvas.
+- **4. Test Suite & Validation**:
+  - Added tactical combat deployment test cases in `src/tests/caravanEncounters.test.ts`. 97 test suites, 713 unit tests passing 100% green.
+
 ## [v8.14.0] — Reusable Roguelike Engine Architecture & Content Validation Sub-Engine (October 10, 2026)
 *Architected and executed the complete 10-step Reusable Roguelike Engine Roadmap (`ENGINEPLAN.md` & `ENGINE_MANUAL.md`). Achieved strict architectural separation between engine mechanics (HOW the game works) and game content (WHAT exists in the game). Extracted generic entity taxonomy (9 variants), modular ability pipelines, decoupled status effect management, strategy-pattern AI, 4 procedural dungeon generation algorithms, generic mathematical combat, inventory container management, 2D spatial geometry with Bresenham LOS & radial FOV, and an energy-based turn scheduler. Established a unified ContentRegistry coordinator and an automated ContentValidator auditing catalogs and cross-references. Proven via hot-swappable Cyberpunk/Sci-Fi Roguelike demonstration. Expanded the test suite to 95 test files and 685 unit tests (100% green).*
 

@@ -6,7 +6,7 @@
 import React from 'react';
 import { CookingRecipe, COOKING_RECIPES } from '../../data/recipes';
 import { getMaterialById, getCatalystById } from '../../data/items';
-import { Flame, Check, Utensils } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { RecipeCard, IngredientRequirement, RecipeStatPreview } from './RecipeCard';
 
 export interface CookingTabProps {

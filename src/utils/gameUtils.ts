@@ -10,8 +10,12 @@ export function findNearestSafePlayerTile(
   map: TileType[][],
   carveNaturalObstacles: boolean = true
 ): { x: number; y: number } {
+  if (!map || map.length === 0 || !map[0] || map[0].length === 0) {
+    return { x: startX, y: startY };
+  }
+
   const isSafe = (x: number, y: number): boolean => {
-    if (y < 0 || y >= map.length || x < 0 || x >= map[y].length) return false;
+    if (y < 0 || y >= map.length || !map[y] || x < 0 || x >= map[y].length) return false;
     const tile = map[y][x];
     return (
       tile !== TileType.Wall &&
@@ -44,7 +48,7 @@ export function findNearestSafePlayerTile(
 
   // If the target entry point is blocked by natural vegetation/woods/bushes,
   // carve out a safe path rather than warping the player away across the map
-  if (carveNaturalObstacles && startY >= 0 && startY < map.length && startX >= 0 && startX < map[startY].length) {
+  if (carveNaturalObstacles && startY >= 0 && startY < map.length && map[startY] && startX >= 0 && startX < map[startY].length) {
     const obstacle = map[startY][startX];
     const carvable = (
       obstacle === TileType.Tree ||

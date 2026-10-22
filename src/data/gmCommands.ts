@@ -6,6 +6,7 @@ import { computeFOV } from '../utils/ai';
 import { findStairsOrWalkablePosition } from '../utils/gameUtils';
 import { getValidWeatherForBiome } from '../utils/weatherEngine';
 import { modifyChaosScore, triggerManualChaosSurge } from '../utils/gmStoryteller';
+import { getStandardFollowerCount } from '../utils/specialCats';
 
 export interface GmCommand {
   id: string;
@@ -387,8 +388,8 @@ export const GM_COMMANDS: GmCommand[] = [
     iconName: 'Users',
     costBoredom: -30,
     execute: (gameState, setGameState, addLog) => {
-      if (gameState.followers.length >= 3) {
-        return { success: false, message: 'Maximum 3 active allies are already reached!' };
+      if (getStandardFollowerCount(gameState.followers) >= 3) {
+        return { success: false, message: 'Maximum 3 standard active allies already reached! (Special feline companions do not count against this limit)' };
       }
 
       const spot = findWalkableSpotNearPlayer(gameState);

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   GameMod, 
   loadAllMods, 
-  saveAllMods, 
   toggleModState, 
   deleteMod, 
   exportModToJSON, 
@@ -15,15 +14,9 @@ import {
   Trash2, 
   Check, 
   Copy, 
-  Upload, 
-  Download, 
   Power, 
-  Sparkles, 
-  Box, 
   ShieldAlert, 
-  BookOpen, 
-  Grid, 
-  RefreshCw 
+  Grid 
 } from 'lucide-react';
 
 interface GodModdingTabProps {
@@ -65,7 +58,6 @@ export const GodModdingTab: React.FC<GodModdingTabProps> = ({
   };
 
   const handleDeleteMod = (modId: string) => {
-    if (!confirm('Are you sure you want to delete this custom mod?')) return;
     const updated = deleteMod(modId);
     setModsList(updated);
     if (updated.length > 0) {
@@ -76,7 +68,7 @@ export const GodModdingTab: React.FC<GodModdingTabProps> = ({
       setModJsonText('');
     }
     playSound('loot');
-    triggerSuccessLog('🗑️ DELETED: Custom mod removed from Mod Manager!');
+    triggerSuccessLog(`🗑️ DELETED: Custom mod "${modId}" removed!`);
   };
 
   const handleSaveJsonEditor = () => {

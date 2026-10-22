@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, HelpCircle, ArrowRight, BookOpen, Key, Shield, Hammer, Flame, Shuffle, Sparkles, Globe, Compass, Skull, Scroll, Cloud } from 'lucide-react';
+import { X, HelpCircle, BookOpen, Key, Shield, Hammer, Flame, Shuffle, Sparkles, Globe, Compass, Scroll, Cloud } from 'lucide-react';
 
 interface HelpOverlayProps {
   onClose: () => void;

@@ -7,8 +7,6 @@ import {
   Check,
   Radio,
   Sliders,
-  Maximize2,
-  Volume2,
   Compass,
 } from 'lucide-react';
 import {

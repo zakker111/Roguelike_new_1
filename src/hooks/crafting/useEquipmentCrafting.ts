@@ -1,8 +1,7 @@
 import React, { useCallback } from "react";
-import { GameState, GameLogMessage, WeaponBaseType, EquipmentItem, CraftedWeapon, isItemRepairable } from "../../types";
+import { GameLogMessage, WeaponBaseType, EquipmentItem, isItemRepairable } from "../../types";
 import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS, WEAPON_TEMPLATES } from "../../utils/itemsData";
 import { playSound } from "../../utils/audio";
-import { addEquipmentItemToInventory } from "../../utils/scrollUtils";
 import { resolveMutationSynergyChain } from "../../utils/mutationSynergy";
 import { CraftingSubEngineProps } from "./types";
 

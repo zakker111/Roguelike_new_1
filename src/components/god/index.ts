@@ -25,3 +25,7 @@ export * from './GodCatalogLiveTuner';
 export * from './GodEventInspectorTab';
 export * from './GodVisualsStudioTab';
 export * from './GodAudioSoundboardTab';
+export * from './GodEngineSubsystemsTab';
+export * from './GodCaravanExpeditionTab';
+export * from './GodFactionDirectorTab';
+export * from './GodElementalSandboxTab';

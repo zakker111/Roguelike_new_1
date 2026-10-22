@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { GameState, EquipmentItem } from '../types';
 import { getItemWeight, getMaterialUnitWeight } from '../utils/itemWeight';
+import { getStandardFollowerCount, getSpecialCatFollowerCount, isSpecialCat } from '../utils/specialCats';
 import { DiscardGumpModal, DiscardGumpData } from './DiscardGumpModal';
 
 interface DungeonGlancePanelProps {
@@ -111,7 +112,10 @@ function DungeonGlancePanelComponent({
         <div className="text-right">
           <span className="text-[10px] font-mono text-slate-500 block">PARTY CAPACITY</span>
           <span className="text-xs font-mono font-bold text-emerald-400">
-            {gameState.followers.length} / 3 Followers
+            {getStandardFollowerCount(gameState.followers)} / 3 Standard
+            {getSpecialCatFollowerCount(gameState.followers) > 0 && (
+              <span className="ml-1.5 text-amber-300 font-bold">(+{getSpecialCatFollowerCount(gameState.followers)} 🐈 Special)</span>
+            )}
           </span>
         </div>
       </div>
@@ -129,16 +133,18 @@ function DungeonGlancePanelComponent({
                 <span>👥 Party Members & Allies</span>
               </h4>
               <span className="text-[10px] text-slate-500 font-mono">
-                Active Count: {gameState.followers.length}
+                {(gameState.followers || []).length} Active ({getStandardFollowerCount(gameState.followers)}/3 Standard, {getSpecialCatFollowerCount(gameState.followers)} Special Cats)
               </span>
             </div>
 
-            {gameState.followers.length > 0 ? (
+            {(gameState.followers || []).length > 0 ? (
               <div className="flex flex-col gap-2">
-                {gameState.followers.map((f) => (
-                  <div key={f.id} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex flex-col gap-2.5">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2.5">
+                {(gameState.followers || []).map((f) => {
+                  if (!f) return null;
+                  return (
+                    <div key={f.id} className="bg-slate-900 border border-slate-800 p-3 rounded-lg flex flex-col gap-2.5">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2.5">
                         <div 
                           className="w-8 h-8 rounded flex items-center justify-center text-sm font-bold border border-slate-700 text-white font-mono shadow-inner shrink-0"
                           style={{ backgroundColor: `${f.color}20`, borderColor: f.color }}
@@ -146,7 +152,14 @@ function DungeonGlancePanelComponent({
                           {f.char}
                         </div>
                         <div>
-                          <span className="font-bold text-slate-100 text-xs block">{f.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-100 text-xs block">{f.name}</span>
+                            {isSpecialCat(f) && (
+                              <span className="text-[8px] px-1 py-0.2 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded font-mono font-semibold">
+                                Special (Free Slot)
+                              </span>
+                            )}
+                          </div>
                           <div className="flex gap-2 text-[10px] text-slate-400 font-mono">
                             <span>LVL {f.level}</span>
                             <span>•</span>
@@ -170,7 +183,8 @@ function DungeonGlancePanelComponent({
                       </button>
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
             ) : (
               <div className="text-[11px] text-slate-500 italic py-8 text-center border border-dashed border-slate-850 bg-slate-900/10 rounded-lg flex flex-col items-center justify-center gap-1">

@@ -76,7 +76,8 @@ export class SpriteAnimationManager {
 
   public setAnimationState(entityId: string, newState: AnimationState, direction?: Direction) {
     const animState = this.getOrCreateState(entityId);
-    if (animState.state !== newState || (direction && animState.direction !== direction)) {
+    const isOneShot = newState === 'attack' || newState === 'hurt' || newState === 'cast';
+    if (isOneShot || animState.state !== newState || (direction && animState.direction !== direction)) {
       animState.state = newState;
       if (direction) animState.direction = direction;
       animState.frameIndex = 0;

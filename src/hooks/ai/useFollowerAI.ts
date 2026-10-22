@@ -39,13 +39,17 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
   // Determine follower attack range based on equipped equipment / tags
   let followerRange = e.range || 1;
   let rangedType: 'melee' | 'bow' | 'magic' | 'spear' = 'melee';
-  const folNameLower = e.name.toLowerCase();
+  const folNameLower = (e.name || '').toLowerCase();
 
   const isArcher = folNameLower.includes('archer') || folNameLower.includes('ranger') || folNameLower.includes('hunter') || folNameLower.includes('marksman') || folNameLower.includes('bow');
   const isMage = folNameLower.includes('mage') || folNameLower.includes('wizard') || folNameLower.includes('sorcerer') || folNameLower.includes('warlock') || folNameLower.includes('druid') || folNameLower.includes('cleric');
   const isSpearman = folNameLower.includes('spear') || folNameLower.includes('pikeman') || folNameLower.includes('halberd') || folNameLower.includes('lancer');
   const isCat = folNameLower.includes('cat') || e.char === '🐈' || folNameLower.includes('jekku') || folNameLower.includes('pulla') || folNameLower.includes('alli') || folNameLower.includes('leevi');
   const isThiefOrRogue = folNameLower.includes('thief') || folNameLower.includes('rogue') || folNameLower.includes('scout') || folNameLower.includes('assassin');
+
+  // Check commanded companion mode (follow vs wait/hold ground)
+  const linkedFollower = prev.followers?.find((f) => f && (f.id === e.followerId || (Boolean(e.id) && Boolean(f.id) && e.id.includes(f.id))));
+  const isWaitMode = linkedFollower?.mode === 'wait';
 
   // Follower health & personality fleeing evaluation
   const hpRatio = e.maxHp > 0 ? e.hp / e.maxHp : 1.0;
@@ -57,7 +61,10 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
     e.state = EnemyState.Chasing;
   }
 
-  if (isArcher) {
+  if (folNameLower.includes('alli')) {
+    followerRange = Math.max(followerRange, 3);
+    rangedType = 'magic';
+  } else if (isArcher) {
     followerRange = Math.max(followerRange, 5);
     rangedType = 'bow';
   } else if (isMage) {
@@ -127,20 +134,37 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
               impactType: isFolCrit ? 'crit' : 'dmg',
             });
           } else if (rangedType === 'magic') {
-            staticLogs.push(`✨ [COMPANION SPELL]: ${e.name} launches an elemental bolt at ${target.name} for ${followerDmg} damage!`);
+            const isAlli = folNameLower.includes('alli');
+            staticLogs.push(
+              isAlli
+                ? `✨ [MYSTICAL CAT]: ${e.name} casts a silver moonlight bolt at ${target.name} for ${followerDmg} damage!`
+                : `✨ [COMPANION SPELL]: ${e.name} launches an elemental bolt at ${target.name} for ${followerDmg} damage!`
+            );
             playSound('spell', { x: target.x, y: target.y, playerX: px, playerY: py });
             safeDispatchProjectile({
               startX: e.x,
               startY: e.y,
               targetX: target.x,
               targetY: target.y,
-              color: '#38bdf8',
-              projectileType: 'magic_staff',
+              color: isAlli ? '#e2e8f0' : '#38bdf8',
+              projectileType: isAlli ? 'spell_orb' : 'magic_staff',
               impactText: `-${followerDmg}`,
               impactType: isFolCrit ? 'crit' : 'dmg',
             });
           } else if (rangedType === 'spear') {
             staticLogs.push(`🔱 [COMPANION REACH]: ${e.name} thrusts their spear at ${target.name} for ${followerDmg} damage!`);
+            playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
+            safeDispatchEffect({ x: target.x, y: target.y, sourceX: e.x, sourceY: e.y, text: `-${followerDmg}`, type: isFolCrit ? 'crit' : 'dmg' });
+          } else if (isCat) {
+            const isLeevi = folNameLower.includes('leevi');
+            const isJekku = folNameLower.includes('jekku');
+            staticLogs.push(
+              isLeevi
+                ? `🐾 [BATTLE CAT]: ${e.name} unleashes razor-sharp claws on ${target.name} for ${followerDmg} damage!`
+                : isJekku
+                ? `🐾 [TRICKSTER CAT]: ${e.name} playfully pounces and scratches ${target.name} for ${followerDmg} damage!`
+                : `🐾 [FELINE ATTACK]: ${e.name} swipes fiercely at ${target.name} for ${followerDmg} damage!`
+            );
             playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
             safeDispatchEffect({ x: target.x, y: target.y, sourceX: e.x, sourceY: e.y, text: `-${followerDmg}`, type: isFolCrit ? 'crit' : 'dmg' });
           } else {
@@ -201,6 +225,10 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
         targetX = nearestTarget.x;
         targetY = nearestTarget.y;
       }
+    } else if (isWaitMode) {
+      // Companion is commanded to Hold Ground / Wait: stay at post
+      targetX = e.x;
+      targetY = e.y;
     } else {
       // Stay near the player
       const offsets = [
@@ -229,7 +257,29 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
       targetY = bestTile.y;
     }
 
-    if (distToPlayer > 1 || (nearestTarget && minTargetDist > followerRange)) {
+    if (!isWaitMode && distToPlayer >= 12) {
+      // Leash / Catch-up: companion fell too far behind (>11 tiles), sprint directly to adjacent safe tile
+      const offsets = [
+        { dx: 0, dy: 1 }, { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: -1 },
+        { dx: 1, dy: 1 }, { dx: -1, dy: -1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 1 }
+      ];
+      for (const off of offsets) {
+        const cx = px + off.dx;
+        const cy = py + off.dy;
+        if (cx >= 0 && cx < mapW && cy >= 0 && cy < mapH) {
+          const tile = prev.map[cy]?.[cx];
+          const isWalkable = isTileWalkableForEntity(tile, { canOpenDoors: true });
+          const isOccupied = updatedEnemiesList.some(other => other.x === cx && other.y === cy) ||
+                             nextEnemies.some((other, idx) => idx > i && other.x === cx && other.y === cy);
+          if (isWalkable && !isOccupied) {
+            e.x = cx;
+            e.y = cy;
+            safeDispatchEffect({ x: cx, y: cy, text: `💨 Sprints to keep up!`, type: 'heal' });
+            break;
+          }
+        }
+      }
+    } else if (!isWaitMode && (distToPlayer > 1 || (nearestTarget && minTargetDist > followerRange))) {
       const nextStep = getNextStepTowards(e.x, e.y, targetX, targetY, prev.map, true, updatedEnemiesList);
       if (nextStep && (nextStep.x !== px || nextStep.y !== py)) {
         const isTileBlockedByEnemy = updatedEnemiesList.some(other => other.x === nextStep.x && other.y === nextStep.y) ||
@@ -238,6 +288,27 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
         if (!isTileBlockedByEnemy && isTileWalkable) {
           e.x = nextStep.x;
           e.y = nextStep.y;
+        }
+      } else if (!nextStep && distToPlayer > 2) {
+        // Fallback greedy step towards target when BFS fails on long distances
+        const dirX = Math.sign(targetX - e.x);
+        const dirY = Math.sign(targetY - e.y);
+        const candidates = [
+          { x: e.x + dirX, y: e.y },
+          { x: e.x, y: e.y + dirY },
+          { x: e.x + dirX, y: e.y + dirY }
+        ];
+        for (const cand of candidates) {
+          if (cand.x >= 0 && cand.x < mapW && cand.y >= 0 && cand.y < mapH && (cand.x !== px || cand.y !== py)) {
+            const isWalkable = isTileWalkableForEntity(prev.map[cand.y]?.[cand.x], { canOpenDoors: true });
+            const isOccupied = updatedEnemiesList.some(o => o.x === cand.x && o.y === cand.y) ||
+                               nextEnemies.some((o, idx) => idx > i && o.x === cand.x && o.y === cand.y);
+            if (isWalkable && !isOccupied) {
+              e.x = cand.x;
+              e.y = cand.y;
+              break;
+            }
+          }
         }
       }
     }

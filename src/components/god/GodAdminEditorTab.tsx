@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, Plus, Trash2, Check, Sparkles, Download, Upload, Cpu, AlertTriangle } from 'lucide-react';
+import { Sliders, Plus, Trash2, Check, Sparkles, Download, Upload, Cpu, AlertTriangle, Copy, Bookmark, RotateCcw, FileText } from 'lucide-react';
 import { GameState, CatalystType } from '../../types';
 import { SCAR_DATABASE } from '../../utils/scars';
 import { SPELL_SCROLLS, SpellScrollTemplate, getSpellScrollAsEquipmentItem } from '../../utils/spellScrolls';
@@ -21,6 +21,8 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
   const [spellScrollListVersion, setSpellScrollListVersion] = useState<number>(0);
   const [jsonSaveText, setJsonSaveText] = useState('');
   const [jsonErrorMsg, setJsonErrorMsg] = useState<string | null>(null);
+
+  const [inMemoryCheckpoint, setInMemoryCheckpoint] = useState<{ state: GameState; timestamp: string } | null>(null);
 
   const handleExportSave = () => {
     try {
@@ -45,6 +47,85 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
     } catch (err: any) {
       setJsonErrorMsg(`Import failed: ${err.message}`);
     }
+  };
+
+  const handleCopyClipboard = async () => {
+    try {
+      const dump = JSON.stringify(gameState, null, 2);
+      await navigator.clipboard.writeText(dump);
+      setJsonErrorMsg(null);
+      triggerSuccessLog("📋 GameState copied directly to clipboard!");
+    } catch {
+      handleExportSave();
+      triggerSuccessLog("📋 GameState dumped to text buffer (select all to copy)!");
+    }
+  };
+
+  const handlePasteClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || !parsed.playerStats) {
+        throw new Error("Invalid GameState structure! Missing playerStats object.");
+      }
+      setGameState(parsed);
+      setJsonSaveText(text);
+      setJsonErrorMsg(null);
+      triggerSuccessLog("📋 Applied GameState directly from clipboard!");
+    } catch (err: any) {
+      setJsonErrorMsg(`Paste failed: ${err.message}`);
+    }
+  };
+
+  const handleQuickSaveCheckpoint = () => {
+    const clone = JSON.parse(JSON.stringify(gameState));
+    const now = new Date().toLocaleTimeString();
+    setInMemoryCheckpoint({ state: clone, timestamp: now });
+    triggerSuccessLog(`💾 Checkpoint saved in memory at ${now} (Depth ${gameState.dungeonLevel ?? 1}, Time ${Math.floor((gameState.gameTime ?? 480) / 60)}:${((gameState.gameTime ?? 480) % 60).toString().padStart(2, '0')})`);
+  };
+
+  const handleQuickRestoreCheckpoint = () => {
+    if (!inMemoryCheckpoint) return;
+    setGameState(JSON.parse(JSON.stringify(inMemoryCheckpoint.state)));
+    triggerSuccessLog(`↺ Checkpoint restored from ${inMemoryCheckpoint.timestamp}!`);
+  };
+
+  const handleDownloadFile = () => {
+    try {
+      const dump = JSON.stringify(gameState, null, 2);
+      const blob = new Blob([dump], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dungeon-crafting-save-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      triggerSuccessLog("📥 GameState JSON downloaded!");
+    } catch (err: any) {
+      setJsonErrorMsg(`Download failed: ${err.message}`);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object' || !parsed.playerStats) {
+          throw new Error("Invalid GameState structure! Missing playerStats object.");
+        }
+        setGameState(parsed);
+        setJsonSaveText(text);
+        setJsonErrorMsg(null);
+        triggerSuccessLog("📂 File loaded and state injected into memory!");
+      } catch (err: any) {
+        setJsonErrorMsg(`File load failed: ${err.message}`);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const toggleAutonomousGM = () => {
@@ -533,24 +614,97 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
           </button>
         </div>
 
-        {/* Raw State JSON Buffer */}
-        <div className="space-y-2">
+        {/* In-Memory Quick Checkpoints */}
+        <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-300">Raw GameState Snapshot Buffer</label>
+            <div>
+              <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+                <span>In-Memory Quick Checkpoint</span>
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {inMemoryCheckpoint
+                  ? `Saved at ${inMemoryCheckpoint.timestamp} (Depth ${inMemoryCheckpoint.state.dungeonLevel ?? 1}, Time ${Math.floor((inMemoryCheckpoint.state.gameTime ?? 480) / 60)}:${((inMemoryCheckpoint.state.gameTime ?? 480) % 60).toString().padStart(2, '0')})`
+                  : 'No checkpoint saved in current session'}
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={handleExportSave}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                onClick={handleQuickSaveCheckpoint}
+                className="px-2.5 py-1 bg-amber-950/70 hover:bg-amber-900 border border-amber-600/50 text-amber-300 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="Save current game state to fast memory slot"
               >
-                <Download className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Export State</span>
+                <Bookmark className="w-3.5 h-3.5" />
+                <span>Save Checkpoint</span>
+              </button>
+              <button
+                onClick={handleQuickRestoreCheckpoint}
+                disabled={!inMemoryCheckpoint}
+                className="px-2.5 py-1 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="Restore from memory checkpoint"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Restore Checkpoint</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Raw State JSON Buffer & 1-Click Clipboard Actions */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-rose-400" />
+              <span>Raw GameState Snapshot & Clipboard Tools</span>
+            </label>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={handleCopyClipboard}
+                className="px-2.5 py-1 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-600/50 text-indigo-300 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="1-Click Copy full state JSON to system clipboard"
+              >
+                <Copy className="w-3 h-3 text-indigo-400" />
+                <span>Copy to Clipboard</span>
+              </button>
+              <button
+                onClick={handlePasteClipboard}
+                className="px-2.5 py-1 bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-600/50 text-fuchsia-300 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="1-Click Paste & Apply state from system clipboard"
+              >
+                <Upload className="w-3 h-3 text-fuchsia-400" />
+                <span>Paste & Apply</span>
+              </button>
+              <button
+                onClick={handleDownloadFile}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Download JSON save file to disk"
+              >
+                <Download className="w-3 h-3 text-cyan-400" />
+                <span>Download File</span>
+              </button>
+              <label className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors">
+                <Upload className="w-3 h-3 text-amber-400" />
+                <span>Upload File</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+              <button
+                onClick={handleExportSave}
+                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Dump state into text area below"
+              >
+                <span>Dump to Textarea</span>
               </button>
               <button
                 onClick={handleImportSave}
-                className="px-2.5 py-1 bg-rose-900 hover:bg-rose-800 text-rose-200 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-2 py-1 bg-rose-900 hover:bg-rose-800 text-rose-200 rounded text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Inject state from text area below"
               >
-                <Upload className="w-3.5 h-3.5 text-amber-400" />
-                <span>Inject State</span>
+                <span>Inject from Textarea</span>
               </button>
             </div>
           </div>
@@ -558,8 +712,8 @@ export const GodAdminEditorTab: React.FC<GodAdminEditorTabProps> = ({
           <textarea
             value={jsonSaveText}
             onChange={(e) => setJsonSaveText(e.target.value)}
-            placeholder="Click 'Export State' to generate full JSON dump or paste state to inject..."
-            rows={8}
+            placeholder="Click 'Copy to Clipboard', 'Download File', or 'Dump to Textarea' to generate full JSON dump, or paste state to inject..."
+            rows={7}
             className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 font-mono text-xs text-rose-300 focus:outline-none focus:border-rose-500/50 resize-y"
           />
         </div>

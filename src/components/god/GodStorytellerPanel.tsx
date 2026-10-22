@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Brain, AlertTriangle, Shield, Heart, Zap, RefreshCw, Eye } from 'lucide-react';
+import { Brain, Eye } from 'lucide-react';
 import { GameState } from '../../types';
 import { getGMStorytellerState, setGMStorytellerState, GMPersonality, GM_ENCOUNTERS_DATABASE } from '../../utils/gmStoryteller';
 

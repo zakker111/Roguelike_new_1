@@ -11,17 +11,13 @@ import {
   Sunset,
   Sunrise,
   Sliders,
-  Eye,
   RotateCcw,
-  Zap,
-  Check,
   Compass,
-  Palette,
-  CloudRain
+  Palette
 } from 'lucide-react';
 import { GameState } from '../../types';
 import { visualsConfig, VisualPreset } from '../../canvas/visualsConfig';
-import { TimeOfDayPhase, VibrancyMode } from '../../canvas/colorGradingEngine';
+import { VibrancyMode } from '../../canvas/colorGradingEngine';
 
 export interface GodVisualsStudioTabProps {
   gameState: GameState;

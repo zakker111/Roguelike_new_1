@@ -6,7 +6,6 @@
 import { describe, it, expect } from 'vitest';
 import { EnemyRegistry } from '../../engine/entities/EnemyRegistry';
 import { SpawnTableRegistry } from '../../engine/entities/SpawnTable';
-import { EnemyType } from '../../types';
 
 describe('Roguelike Engine - Pillar 1: Enemy System & Registry', () => {
   it('initializes default enemies into EnemyRegistry from catalog', () => {

@@ -3,6 +3,11 @@ import { GameState, OverworldChunk, Enemy } from '../types';
 import { playSound } from '../utils/audio';
 import { getSiegeCombatants } from '../utils/siegeUtils';
 import { gameEventBus } from '../events/core/EventBus';
+import {
+  spawnOutpostSiegeSquads,
+  createOutpostQuartermaster,
+  getOutpostName
+} from '../world/outposts';
 
 export const DEFAULT_IDLE_TIMEOUT_MS = 30000; // 30 seconds of inactivity = idle
 
@@ -111,13 +116,28 @@ export const useGameLoop = ({
               const filteredAttackers = possibleAttackers.filter(a => a !== wt.controller);
               const attacker = filteredAttackers[Math.floor(Math.random() * filteredAttackers.length)];
 
+              const outpostName = getOutpostName(selectedChunk.chunkX, selectedChunk.chunkY, wt.controller as any);
               wt.siegeState = {
                 isUnderSiege: true,
                 attacker,
                 defender: wt.controller || 'neutral',
                 siegeTimerSeconds: 120,
-                maxTimerSeconds: 120
+                maxTimerSeconds: 120,
+                bountyGold: 250,
+                playerAssistedDefender: false,
+                playerAssistedAttacker: false
               };
+
+              gameEventBus.emit('world:outpost_siege', {
+                outpostId: wt.id,
+                outpostName,
+                chunkX: selectedChunk.chunkX,
+                chunkY: selectedChunk.chunkY,
+                attacker,
+                defender: wt.controller || 'neutral',
+                turnsRemaining: 120,
+                bountyGold: 250
+              });
 
               const chunks = getUpdatedChunks();
               chunks[`${selectedChunk.chunkX},${selectedChunk.chunkY}`] = {
@@ -131,7 +151,7 @@ export const useGameLoop = ({
               }
               nextLogs.push({
                 id: `siege_alert_${Date.now()}`,
-                text: `📡 [WATCHTOWER SECTOR ALERT]: The Watchtower at Sector [${selectedChunk.chunkX}, ${selectedChunk.chunkY}] is being besieged by ${attacker === 'syndicate' ? 'Moonshadow Syndicate' : (attacker === 'vanguard' ? 'Dawn Vanguard' : 'Rust-Raider Bandits')} forces! Intervene within 120 seconds to defend!`,
+                text: `📡 [OUTPOST SIEGE]: ${outpostName} is under assault by ${attacker === 'syndicate' ? 'Moonshadow Syndicate' : (attacker === 'vanguard' ? 'Dawn Vanguard' : 'Rust-Raider Bandits')} forces! Bounty: 250 Gold!`,
                 type: 'danger',
                 timestamp: 'SIEGE'
               });
@@ -139,22 +159,17 @@ export const useGameLoop = ({
               playSound('trap');
 
               if (selectedChunk.chunkX === prev.currentChunkX && selectedChunk.chunkY === prev.currentChunkY) {
-                const wtX = wt.x;
-                const wtY = wt.y;
-                const defender = wt.siegeState.defender;
-                const playerFaction = prev.faction || 'neutral';
-                const reputation = prev.factionReputation || { syndicate: 0, vanguard: 0, bandits: 0 };
-                
-                const siegeEnemies = getSiegeCombatants(
-                  wtX,
-                  wtY,
-                  prev.currentChunkX,
-                  prev.currentChunkY,
-                  attacker,
-                  defender,
-                  playerFaction,
-                  reputation
-                );
+                const { enemies: siegeEnemies } = spawnOutpostSiegeSquads({
+                  wtX: wt.x,
+                  wtY: wt.y,
+                  chunkX: selectedChunk.chunkX,
+                  chunkY: selectedChunk.chunkY,
+                  attackerFaction: attacker,
+                  defenderFaction: (wt.controller as any) || 'neutral',
+                  playerFaction: prev.faction || 'neutral',
+                  playerReputation: prev.factionReputation || { syndicate: 0, vanguard: 0, bandits: 0 },
+                  defenseTier: 1
+                });
 
                 const enemies = getUpdatedEnemies();
                 updatedEnemies = [...enemies, ...siegeEnemies];
@@ -171,11 +186,26 @@ export const useGameLoop = ({
               sState.siegeTimerSeconds -= 1;
 
               if (sState.siegeTimerSeconds <= 0) {
+                const victor = sState.attacker;
+                const outpostName = getOutpostName(chunk.chunkX, chunk.chunkY, victor);
+                const qm = createOutpostQuartermaster(chunk.chunkX, chunk.chunkY, victor, 1, 150);
                 wt.isClaimed = true;
-                wt.controller = sState.attacker;
+                wt.controller = victor;
                 wt.claimPercent = 100;
                 wt.garrisonDefeated = false;
                 wt.siegeState = undefined;
+                wt.quartermaster = qm;
+
+                gameEventBus.emit('world:outpost_liberated', {
+                  outpostId: wt.id,
+                  outpostName,
+                  chunkX: chunk.chunkX,
+                  chunkY: chunk.chunkY,
+                  victor,
+                  playerAssisted: false,
+                  bountyAwarded: 0,
+                  reputationGain: 0
+                });
 
                 const chunks = getUpdatedChunks();
                 chunks[key] = {
@@ -189,7 +219,7 @@ export const useGameLoop = ({
                 }
                 nextLogs.push({
                   id: `siege_loss_${Date.now()}`,
-                  text: `💔 [WATCHTOWER OVERTHROWN]: The watchtower at Sector [${chunk.chunkX}, ${chunk.chunkY}] has fallen! It is now controlled by the ${sState.attacker === 'syndicate' ? 'Moonshadow Syndicate' : (sState.attacker === 'vanguard' ? 'Dawn Vanguard' : 'Rust-Raider Bandits')}.`,
+                  text: `💔 [OUTPOST FALLEN]: ${outpostName} has fallen! It is now controlled by the ${sState.attacker === 'syndicate' ? 'Moonshadow Syndicate' : (sState.attacker === 'vanguard' ? 'Dawn Vanguard' : 'Rust-Raider Bandits')}.`,
                   type: 'danger',
                   timestamp: 'SYSTEM'
                 });
@@ -198,7 +228,7 @@ export const useGameLoop = ({
 
                 if (chunk.chunkX === prev.currentChunkX && chunk.chunkY === prev.currentChunkY) {
                   const enemies = getUpdatedEnemies();
-                  updatedEnemies = enemies.filter(e => !e.id.startsWith('siege_attacker_') && !e.id.startsWith('siege_defender_'));
+                  updatedEnemies = enemies.filter(e => !e.id.startsWith('siege_attacker_') && !e.id.startsWith('siege_defender_') && !e.id.startsWith('siege_att_') && !e.id.startsWith('siege_def_'));
                   enemiesChanged = true;
                 }
               } else {

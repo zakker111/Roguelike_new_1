@@ -3,7 +3,7 @@ import { SpriteSheetConfig, SpriteSheetTileMapping, isTilesetModeActive } from '
 import { tilesetAtlasManager } from './TilesetAtlasManager';
 import { assetPreloader } from './AssetPreloader';
 import { mockupAtlasGenerator } from './MockupAtlasGenerator';
-import { MONSTER_SPRITE_MAPPINGS, entityPaperdollEngine } from './entityPaperdollEngine';
+import { entityPaperdollEngine } from './entityPaperdollEngine';
 import { Direction, AnimationState, spriteAnimationManager } from './spriteAnimationManager';
 
 const emojiCache = new Map<string, boolean>();
@@ -205,7 +205,10 @@ export function drawSpriteOrAscii(
 
         if (options.entityId) {
           const animInfo = spriteAnimationManager.getOrCreateState(options.entityId);
-          if (options.animState) animInfo.state = options.animState;
+          const isOneShot = animInfo.state === 'attack' || animInfo.state === 'hurt' || animInfo.state === 'cast';
+          if (options.animState && (!isOneShot || options.animState === 'attack' || options.animState === 'hurt' || options.animState === 'cast')) {
+            animInfo.state = options.animState;
+          }
           if (options.direction) animInfo.direction = options.direction;
         }
 

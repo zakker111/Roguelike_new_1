@@ -779,6 +779,8 @@ export function spawnFollowersOnLevelLoadByReset(
       folRange = 2;
     } else if (['Mage', 'Archer', 'Ranger', 'Hunter', 'Crossbowman', 'Sorcerer'].includes(fol.role) || fol.archetypeId === 'thief') {
       folRange = (fol.role === 'Mage' || fol.role === 'Sorcerer') ? 3 : (['Archer', 'Ranger', 'Hunter', 'Crossbowman'].includes(fol.role) ? 4 : 2);
+    } else if (isCat && (fol.name?.includes('Alli') || fol.id?.includes('alli'))) {
+      folRange = 3;
     }
 
     nextEnemies.push({

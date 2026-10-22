@@ -2,24 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { GameState, TileType } from '../../types';
 import { 
   CustomDungeonBlueprintMod, 
-  GameMod, 
   saveSingleMod, 
   loadAllMods 
 } from '../../utils/moddingEngine';
 import { 
   Play, 
   Save, 
-  Download, 
   Upload, 
-  Trash2, 
   RefreshCw, 
   Sparkles, 
   Grid, 
   Layers, 
   Copy, 
   Check, 
-  Info,
-  Sliders
+  Info
 } from 'lucide-react';
 
 interface GodDungeonEditorProps {

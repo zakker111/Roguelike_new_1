@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, BookOpen, Lock, Landmark, Compass, Award } from 'lucide-react';
-import { WORLD_HISTORY_CHAPTERS, LoreChapter } from '../data/worldHistory';
+import { WORLD_HISTORY_CHAPTERS } from '../data/worldHistory';
 
 interface HistoryBookOverlayProps {
   unlockedChapters: string[];

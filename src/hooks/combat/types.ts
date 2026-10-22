@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction } from 'react';
-import { GameState, Enemy, CraftedWeapon } from '../../types';
+import { GameState, Enemy } from '../../types';
 import { SanctumRelic } from '../../utils/relics';
 
 export interface UsePlayerAttackParams {

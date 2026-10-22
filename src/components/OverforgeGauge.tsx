@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Flame, ShieldAlert, Sparkles, Zap, ShieldCheck } from 'lucide-react';
+import { Flame } from 'lucide-react';
 
 export interface OverforgeGaugeProps {
   overforgeHeat?: number;

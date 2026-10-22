@@ -1,5 +1,3 @@
-import { TileType } from '../types';
-
 export interface WaterShimmerConfig {
   enabled: boolean;
   intensityMultiplier: number;

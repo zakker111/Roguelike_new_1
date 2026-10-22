@@ -64,6 +64,7 @@ export interface UseGodPanelStateProps {
 
 export type GodActiveTab =
   | 'sovereign'
+  | 'engine_subsystems'
   | 'visuals_studio'
   | 'tileset_tester'
   | 'minigames'
@@ -83,4 +84,7 @@ export type GodActiveTab =
   | 'modding_api'
   | 'catalog_tuner'
   | 'event_bus'
-  | 'audio_soundboard';
+  | 'audio_soundboard'
+  | 'caravans'
+  | 'factions'
+  | 'elemental';

@@ -4,7 +4,7 @@
  */
 
 import { AIStrategyRegistry } from './AIStrategyRegistry';
-import { AIActionDecision, AIStrategyContext, IAIStrategy } from './types';
+import { AIActionDecision, AIStrategyContext } from './types';
 import { LivingEntity, BaseEntity } from '../entities/types';
 import { AbilityExecutor } from '../abilities/AbilityExecutor';
 import { AbilityExecutionContext } from '../abilities/types';

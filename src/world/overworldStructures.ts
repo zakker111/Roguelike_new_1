@@ -61,6 +61,16 @@ export function getBuildingCoordinates(
 const TOWN_PREFIXES = ["Stone", "Oak", "River", "Deep", "High", "Silver", "Iron", "Gold", "Green", "Winter", "Shadow", "Cloud"];
 const TOWN_SUFFIXES = ["haven", "wood", "run", "fall", "crest", "ford", "keep", "ridge", "glen", "vale", "dale", "barrow", "town"];
 
+export const MAJOR_OVERWORLD_HUBS: { [key: string]: { name: string; isCastle?: boolean } } = {
+  '0,0': { name: 'Oakhaven Village' },
+  '3,-2': { name: 'Vanguard Harbor Port' },
+  '-3,3': { name: 'Ironforge Stronghold', isCastle: true },
+  '4,4': { name: 'Sunfire Oasis Outpost' },
+  '-4,-4': { name: 'Frostpeak Sledge Haven' },
+  '-2,2': { name: 'Shadowfen Barge Dock' },
+  '5,-3': { name: 'Stormwatch Citadel', isCastle: true }
+};
+
 export function hasTownAtChunk(
   chunkX: number,
   chunkY: number,
@@ -68,6 +78,7 @@ export function hasTownAtChunk(
 ): boolean {
   if (chunkX === 0 && chunkY === 0) return true;
   if (chunkX === 3 && chunkY === -2) return true; // Vanguard Harbor Port is the sail destination
+  if (MAJOR_OVERWORLD_HUBS[`${chunkX},${chunkY}`]) return true;
 
   const val = prngFn(chunkX, chunkY, 8271);
   return val < 0.12; // 12% probability of a town
@@ -80,6 +91,8 @@ export function isCastleTownAtChunk(
 ): boolean {
   if (chunkX === 0 && chunkY === 0) return false;
   if (chunkX === 3 && chunkY === -2) return false;
+  const hub = MAJOR_OVERWORLD_HUBS[`${chunkX},${chunkY}`];
+  if (hub?.isCastle) return true;
   if (!hasTownAtChunk(chunkX, chunkY, prngFn)) return false;
 
   // Castles are rarer than villages. Only 25% of random wild towns trigger Castle fortifications
@@ -96,6 +109,8 @@ export function getSettlementTier(
 ): SettlementTier {
   if (cx === 0 && cy === 0) return 'village';
   if (cx === 3 && cy === -2) return 'town'; // Vanguard Harbor Port
+  const hub = MAJOR_OVERWORLD_HUBS[`${cx},${cy}`];
+  if (hub?.isCastle) return 'citadel';
 
   if (prngFn && isCastleTownAtChunk(cx, cy, prngFn)) {
     return 'citadel';
@@ -115,6 +130,8 @@ export function getDeterministicTownName(
 ): string {
   if (cx === 0 && cy === 0) return "Oakhaven Village";
   if (cx === 3 && cy === -2) return "Vanguard Harbor Port";
+  const hub = MAJOR_OVERWORLD_HUBS[`${cx},${cy}`];
+  if (hub) return hub.name;
 
   const isCastle = prngFn ? isCastleTownAtChunk(cx, cy, prngFn) : false;
 

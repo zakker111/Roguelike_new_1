@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { GameState, GameLogMessage } from '../types';
+import { hasFoundAllSpecialCats, createAllCatsFoundCelebrationLog } from '../utils/specialCats';
 
 export interface UseWorldEventHandlersParams {
   gameState: GameState;
@@ -24,33 +25,29 @@ export function useWorldEventHandlers({
     lastCapturedFingerprintRef.current = "";
   };
 
-  // Check for Cat Lover Trait
+  // Check for Cat Lover Trait when all 4 special cats have been found
   useEffect(() => {
-    if (!gameState.spawnedCats) return;
-    const cats = ['Jekku', 'Pulla', 'Alli', 'Leevi'];
-    const hasAll = cats.every(c => gameState.spawnedCats?.includes(c));
-    if (hasAll && !gameState.playerStats.hasCatLover) {
+    if (hasFoundAllSpecialCats(gameState) && !gameState.playerStats.hasCatLover) {
       setGameState(prev => {
         if (prev.playerStats.hasCatLover) return prev;
         return {
           ...prev,
           playerStats: {
             ...prev.playerStats,
-            hasCatLover: true
+            hasCatLover: true,
+            maxHp: (prev.playerStats.maxHp || 100) + 15,
+            hp: (prev.playerStats.hp || 100) + 15,
+            lck: (prev.playerStats.lck || 10) + 10,
+            def: (prev.playerStats.def || 0) + 5
           },
           logs: [
             ...prev.logs,
-            {
-              id: `cat_lover_${Date.now()}`,
-              text: "🐈 [DEVELOPER MEMORIAL]: In memory of my cats, you have met them all! You have received the special trait 'Cat Lover' that grants +10 to Luck!",
-              type: 'loot' as any,
-              timestamp: 'TRAIT'
-            }
+            createAllCatsFoundCelebrationLog()
           ]
         };
       });
     }
-  }, [gameState.spawnedCats, gameState.playerStats.hasCatLover, setGameState]);
+  }, [gameState.followers, gameState.foundCats, gameState.spawnedCats, gameState.playerStats.hasCatLover, setGameState]);
 
   // Sync all session logs for replay / download (bounded to last 500 entries)
   useEffect(() => {

@@ -7,7 +7,6 @@ import { EffectRegistry } from './EffectRegistry';
 import {
   ActiveEffect,
   ApplyEffectOptions,
-  EffectDefinition,
   EffectStatModifiers,
   EffectTarget,
   EffectTickResult,

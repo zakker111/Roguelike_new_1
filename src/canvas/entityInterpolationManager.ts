@@ -21,11 +21,19 @@ interface EntityMotionState {
   facing: 'north' | 'south' | 'east' | 'west';
 }
 
+interface AttackLungeState {
+  targetX: number;
+  targetY: number;
+  startTime: number;
+  durationMs: number;
+}
+
 const STORAGE_KEY = 'roguelike_smooth_movement';
 
 export class EntityInterpolationManager {
   private static instance: EntityInterpolationManager;
   private motionStates = new Map<string, EntityMotionState>();
+  private attackLunges = new Map<string, AttackLungeState>();
   private defaultDurationMs = 125; // 125ms smooth gliding ease
   private smoothMovement = true;
 
@@ -144,6 +152,47 @@ export class EntityInterpolationManager {
   }
 
   /**
+   * Triggers a kinetic attack lunge towards target coordinates and snaps back with elastic easing
+   */
+  public triggerAttackLunge(
+    id: string,
+    targetX: number,
+    targetY: number,
+    durationMs: number = 150
+  ): void {
+    const now = performance.now();
+    this.attackLunges.set(id, {
+      targetX,
+      targetY,
+      startTime: now,
+      durationMs,
+    });
+
+    const existing = this.motionStates.get(id);
+    const sourceX = existing ? existing.targetX : targetX;
+    const sourceY = existing ? existing.targetY : targetY;
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    let facing: 'north' | 'south' | 'east' | 'west' = existing ? existing.facing : 'south';
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      if (dx > 0) facing = 'east';
+      else if (dx < 0) facing = 'west';
+    } else {
+      if (dy > 0) facing = 'south';
+      else if (dy < 0) facing = 'north';
+    }
+    if (existing) {
+      existing.facing = facing;
+    }
+  }
+
+  public isAttackLunging(id: string): boolean {
+    const lunge = this.attackLunges.get(id);
+    if (!lunge) return false;
+    return (performance.now() - lunge.startTime) < lunge.durationMs;
+  }
+
+  /**
    * Computes the current interpolated visual position
    */
   public getRenderPosition(
@@ -151,18 +200,45 @@ export class EntityInterpolationManager {
     logicalX: number,
     logicalY: number
   ): InterpolatedPosition {
+    const now = performance.now();
+
+    // Calculate attack lunge offset if active
+    let lungeOffsetX = 0;
+    let lungeOffsetY = 0;
+    let isLunging = false;
+    let lungeFacing: 'north' | 'south' | 'east' | 'west' | null = null;
+    const lunge = this.attackLunges.get(id);
+    if (lunge) {
+      const elapsedLunge = now - lunge.startTime;
+      if (elapsedLunge < lunge.durationMs) {
+        const t = Math.max(0, Math.min(1, elapsedLunge / lunge.durationMs));
+        const lungeMagnitude = Math.sin(t * Math.PI) * 0.38;
+        lungeOffsetX = (lunge.targetX - logicalX) * lungeMagnitude;
+        lungeOffsetY = (lunge.targetY - logicalY) * lungeMagnitude;
+        isLunging = true;
+        const ldx = lunge.targetX - logicalX;
+        const ldy = lunge.targetY - logicalY;
+        if (Math.abs(ldx) >= Math.abs(ldy)) {
+          lungeFacing = ldx > 0 ? 'east' : 'west';
+        } else {
+          lungeFacing = ldy > 0 ? 'south' : 'north';
+        }
+      } else {
+        this.attackLunges.delete(id);
+      }
+    }
+
     if (!this.smoothMovement) {
       return {
-        renderX: logicalX,
-        renderY: logicalY,
-        isMoving: false,
-        facing: 'south',
+        renderX: logicalX + lungeOffsetX,
+        renderY: logicalY + lungeOffsetY,
+        isMoving: isLunging,
+        facing: lungeFacing || 'south',
         progress: 1.0,
       };
     }
 
     let state = this.motionStates.get(id);
-    const now = performance.now();
 
     if (!state) {
       this.updateEntityPosition(id, logicalX, logicalY, true);
@@ -176,10 +252,10 @@ export class EntityInterpolationManager {
 
     if (state.durationMs <= 0) {
       return {
-        renderX: state.targetX,
-        renderY: state.targetY,
-        isMoving: false,
-        facing: state.facing,
+        renderX: state.targetX + lungeOffsetX,
+        renderY: state.targetY + lungeOffsetY,
+        isMoving: isLunging,
+        facing: lungeFacing || state.facing,
         progress: 1.0,
       };
     }
@@ -190,15 +266,15 @@ export class EntityInterpolationManager {
     // Ease-out quadratic: 1 - (1 - t)^2
     const easedT = 1 - (1 - rawT) * (1 - rawT);
 
-    const renderX = state.startX + (state.targetX - state.startX) * easedT;
-    const renderY = state.startY + (state.targetY - state.startY) * easedT;
-    const isMoving = rawT < 1.0;
+    const renderX = state.startX + (state.targetX - state.startX) * easedT + lungeOffsetX;
+    const renderY = state.startY + (state.targetY - state.startY) * easedT + lungeOffsetY;
+    const isMoving = rawT < 1.0 || isLunging;
 
     return {
       renderX,
       renderY,
       isMoving,
-      facing: state.facing,
+      facing: lungeFacing || state.facing,
       progress: easedT,
     };
   }
@@ -210,6 +286,7 @@ export class EntityInterpolationManager {
     for (const id of this.motionStates.keys()) {
       if (id !== 'player' && !activeIds.has(id)) {
         this.motionStates.delete(id);
+        this.attackLunges.delete(id);
       }
     }
   }
@@ -219,6 +296,7 @@ export class EntityInterpolationManager {
    */
   public reset(): void {
     this.motionStates.clear();
+    this.attackLunges.clear();
   }
 }
 

@@ -27,7 +27,7 @@ This document serves as the authoritative structural map and development ruleset
 - `metadata.json`: Platform metadata (app name, description, capabilities).
 - `ENGINE_MANUAL.md`: Master architectural manual and content authoring handbook for the reusable roguelike engine.
 - `LICENSE`: Open-source MIT License.
-- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 685 unit tests across 95 test suites, builds, and deploys to GitHub Pages).
+- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 721 unit tests across 98 test suites, builds, and deploys to GitHub Pages).
 - `public/`:
   - `404.html`: SPA fallback redirect for GitHub Pages.
   - `.nojekyll`: Disables Jekyll asset processing on GitHub Pages.
@@ -206,7 +206,7 @@ This document serves as the authoritative structural map and development ruleset
   - `useEnemyAI.ts`: Turn-based AI resolution coordinator.
   - `index.ts`: Modular AI engine barrel export.
 - `src/hooks/useCraftingEngine.ts`: Central crafting dispatcher (`useEquipmentCrafting`, `useSurvivalCrafting`, `useUtilityCrafting`).
-- `src/hooks/useCaravanTravel.ts` / `src/hooks/useTradeEconomy.ts`: Merchant caravan routes, fast travel, and regional trade tariffs.
+- `src/hooks/useCaravanTravel.ts` / `src/hooks/useTradeEconomy.ts`: Merchant caravan routes, fast travel, regional trade tariffs, and immediate tactical ambush battle auto-deployment.
 - `src/hooks/poi/`: Modular POI & Landmark Interaction Sub-Engine (`useWildernessSleep`, `useTravelerInteractions`, `useShrineAndPoiChoices`, `useWaystoneAndGuardian`, `types.ts`, `index.ts`).
 - `src/hooks/usePoiAndWilderness.ts`: Facade re-exporting and coordinating the modular POI sub-engine.
 - `src/hooks/useOverworldEvents.ts`: Shrines, bushes, ruins, dungeons, and world events.
@@ -252,6 +252,7 @@ This document serves as the authoritative structural map and development ruleset
   - `townChunkGenerator.ts`: Master `generateTownChunk` orchestrator.
   - `index.ts`: Town sub-engine barrel export.
 - `src/world/ruinedCity/`: Contested Ruined City Sub-Engine (`ruinedCityBuildings`, `ruinedCityTurf`, `ruinedCityGenerator`).
+- `src/world/outposts/`: Modular Outpost Territory & Faction Warfare Sub-Engine (`outpostQuartermaster.ts`, `outpostSiegeSpawner.ts`, `territoryEngine.ts`, `index.ts`).
 - `src/world/overworldPoiGenerator.ts` / `src/world/poiGenerators.ts`: Spawns shrines, ruins, harvestables, and camps.
 - `src/world/organic/`: Modular Organic World Generation Sub-Engine:
   - `biomeNoiseEngine.ts`: Continuous Simplex-like noise generator with elevation, moisture, and temperature gradients.
@@ -389,17 +390,18 @@ This document serves as the authoritative structural map and development ruleset
   - `TradeModal.tsx`: Slim master coordinator component.
   - `src/components/modals/trade/`: Modular Trade Sub-Engine (`TradeHeaderBar`, `CaravanRoutesWidget`, `BlacksmithRepairStation`, `ApothecaryStation`, `TavernServiceStation`, `TradeBuyStockGrid`, `TradeSellStashGrid`, `types.ts`, `index.ts`).
   - `DialogueModal.tsx`: NPC conversation trees and tavern gossip.
-  - `CaravanActiveOverlay.tsx`: Caravan journey progress and wagon combat.
+  - `CaravanActiveOverlay.tsx`: Caravan journey progress and milestone tracker, with automatic tactical HUD header mode and fighting event modal suppression.
   - `DiscardItemModal.tsx`: Item discard and ground drop gump.
 - `src/components/minigames/`: Modular interactive tactical mini-game sub-engines:
   - `src/components/minigames/scriptorium/`: Arcane Scriptorium sub-engine (`useScriptoriumLogic`, `RuneCanvasRenderer`, `ScriptoriumScoreCard`, `types.ts`, `index.ts`).
   - `src/components/minigames/lockpicking/`: Lock tumbler sub-engine (`useLockpickingPhysics`, `TumblerCanvasRenderer`, `types.ts`, `index.ts`).
+- `src/components/outpost/`: Modular Outpost Territory UI (`OutpostQuartermasterModal.tsx`, `OutpostSiegeBanner.tsx`, `index.ts`).
 - `src/components/PerformanceHud.tsx`: Real-Time Performance & Resource HUD with live FPS graph, memory meters, voice monitor, entity distribution gauges, viewport resolution, and position cycling.
 
 ---
 
 ### 10. `/src/tests/` — Automated Test Suite
-- 66 comprehensive Vitest test suites (412 unit, simulation, and integration tests passing 100% green) covering elemental propagation and environmental chain reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), morale and surrender sub-engine (`moraleAndSurrenderE2.test.ts`), living ecosystem simulation (`livingEcosystemSim.test.ts`), performance telemetry & HUD (`performanceHudAndMonitoring.test.ts`), live data catalog tuning (`catalogLiveTuner.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, modular inventory sub-components (`inventoryComponents.test.ts`), and modular trade sub-engine components (`tradeModularComponents.test.ts`).
+- 98 comprehensive Vitest test suites (721 unit, simulation, and integration tests passing 100% green) covering Sanctum Error Gump stack parser and diagnostics (`errorGump.test.ts`), elemental propagation and environmental chain reactions (`elementalPropagation.test.ts`), button interactions across all phases (`automatedButtonSuite.test.ts`, `godMinigamesTab.test.ts`, `automatedCraftingButtonSuite.test.ts`, `automatedInventoryButtonSuite.test.ts`, `automatedGuildButtonSuite.test.ts`, `automatedWorldMapButtonSuite.test.ts`, `automatedGodAndStudioButtonSuite.test.ts`), morale and surrender sub-engine (`moraleAndSurrenderE2.test.ts`), living ecosystem simulation (`livingEcosystemSim.test.ts`), performance telemetry & HUD (`performanceHudAndMonitoring.test.ts`), live data catalog tuning (`catalogLiveTuner.test.ts`), tileset source selection (`tilesetSourceSelection.test.ts`), unique dungeon biomes and chest generation (`biomesAndUniqueDungeons.test.ts`), caravan tactical skirmishes (`caravanEncounters.test.ts`), async chunk batching (`asyncChunkBatcher.test.ts`), save/load serialization and legacy state migration (`automatedSaveLoadAndMigrationSuite.test.ts`), cartography PNG exporter (`worldMapPngExporter.test.ts`), combat, AI pathfinding and behavioral roles, procedural world generation, data catalogs, weather, Storyteller GM engine, companion advice, economy, crafting, app hooks, game state initialization, WebAudio synthesizer sub-engine, modular inventory sub-components (`inventoryComponents.test.ts`), and modular trade sub-engine components (`tradeModularComponents.test.ts`).
 
 ---
 

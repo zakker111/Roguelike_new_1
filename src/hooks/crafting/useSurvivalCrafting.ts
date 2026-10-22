@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { TileType, GameState, GameLogMessage } from "../../types";
+import { TileType, GameLogMessage } from "../../types";
 import { playSound } from "../../utils/audio";
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from "../../utils/gameUtils";
 import { formatGameTime } from "../../utils/overworld";

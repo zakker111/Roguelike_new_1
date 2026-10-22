@@ -12,18 +12,19 @@ export const syncCaravanState = (prev: any, nextTimeVal: number, nextNpcs: NPC[]
     // Oakhaven owns caravan on Day 1 & 2 (cycle 0,1). Other towns own it on Day 3 & 4 (cycle 2,3).
     // Also respect explicitly parked caravan chunk.
     const hasTownInCurrentChunk = hasTownAtChunk(prev.currentChunkX, prev.currentChunkY);
-    const isCaravanParkedHere = hasTownInCurrentChunk && (
-      (prev.caravanParkedChunk && prev.caravanParkedChunk.x === prev.currentChunkX && prev.caravanParkedChunk.y === prev.currentChunkY) ||
-      ((prev.currentChunkX === 0 && prev.currentChunkY === 0) ? (cycle === 0 || cycle === 1) : (cycle === 2 || cycle === 3))
-    );
+    const isExplicitlyParked = prev.caravanParkedChunk && prev.caravanParkedChunk.x === prev.currentChunkX && prev.caravanParkedChunk.y === prev.currentChunkY;
+    const isCaravanParkedHere = Boolean(isExplicitlyParked) || (hasTownInCurrentChunk && (
+      (prev.currentChunkX === 0 && prev.currentChunkY === 0) ? (cycle === 0 || cycle === 1) : (cycle === 2 || cycle === 3)
+    ));
 
     if (isCaravanParkedHere) {
       const midX = Math.floor((prev.levelWidth || 64) / 2);
       const midY = Math.floor((prev.levelHeight || 40) / 2);
 
-      const safeCaravanPos = prev.map ? findNearestSafeNpcTile(midX - 2, midY + 2, prev.map) : { x: midX - 2, y: midY + 2 };
-      const safeGuard1Pos = prev.map ? findNearestSafeNpcTile(midX - 3, midY + 2, prev.map) : { x: midX - 3, y: midY + 2 };
-      const safeGuard2Pos = prev.map ? findNearestSafeNpcTile(midX - 1, midY + 2, prev.map) : { x: midX - 1, y: midY + 2 };
+      const hasValidMap = prev.map && prev.map.length > 0 && prev.map[0] && prev.map[0].length > 0;
+      const safeCaravanPos = hasValidMap ? findNearestSafeNpcTile(midX - 2, midY + 2, prev.map) : { x: midX - 2, y: midY + 2 };
+      const safeGuard1Pos = hasValidMap ? findNearestSafeNpcTile(midX - 3, midY + 2, prev.map) : { x: midX - 3, y: midY + 2 };
+      const safeGuard2Pos = hasValidMap ? findNearestSafeNpcTile(midX - 1, midY + 2, prev.map) : { x: midX - 1, y: midY + 2 };
 
       // Inject Lead Caravaneer
       const existingCaravanIdx = finalNpcs.findIndex(n => n.id === 'npc_caravan_merchant');

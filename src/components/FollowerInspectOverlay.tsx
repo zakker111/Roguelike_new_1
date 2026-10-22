@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Shield, Swords, UserCheck, RefreshCw, Zap, MessageSquare } from 'lucide-react';
+import { X, Shield, Swords, UserCheck, RefreshCw, MessageSquare } from 'lucide-react';
 import { GameState, Follower, EquipmentItem, GameLogMessage } from '../types';
 import { getCompanionAdvice } from '../utils/companionAdvice';
+import { isSpecialCat, SPECIAL_CATS_DATA, SPECIAL_CAT_NAMES, SpecialCatName } from '../utils/specialCats';
 
 interface FollowerInspectOverlayProps {
   gameState: GameState;
@@ -210,6 +211,11 @@ export default function FollowerInspectOverlay({ gameState, setGameState, follow
           <div className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-amber-500" />
             <span className="text-sm font-bold uppercase tracking-wider text-slate-200">Follower Inspector: {f.name}</span>
+            {isSpecialCat(f) && (
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold font-mono bg-amber-500/20 text-amber-300 border border-amber-500/50">
+                🐈 Special Companion (Free Slot)
+              </span>
+            )}
           </div>
           <button 
             id="close-follower-btn"
@@ -225,6 +231,31 @@ export default function FollowerInspectOverlay({ gameState, setGameState, follow
           
           {/* Col 1: Attributes & commands */}
           <div className="space-y-4">
+            {isSpecialCat(f) && (() => {
+              const cleanName = (f?.name || '').replace(/^[🐈🐱🛡️⚔️🏹\s]+/, '').split(' (')[0].trim();
+              const matchedCat = SPECIAL_CAT_NAMES.find((c) => cleanName.includes(c) || (f?.name || '').includes(c));
+              const catData = matchedCat ? SPECIAL_CATS_DATA[matchedCat] : null;
+              if (!catData) return null;
+              return (
+                <div className="bg-amber-950/30 border border-amber-600/40 rounded-lg p-3 text-xs space-y-1.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                      <span>{catData.char}</span>
+                      <span>{catData.title}</span>
+                    </span>
+                    <span className="text-[9px] font-mono text-amber-400/80 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/40">
+                      NO PARTY SLOT COST
+                    </span>
+                  </div>
+                  <p className="text-slate-300 italic text-[11px] leading-relaxed">
+                    "{catData.quote}"
+                  </p>
+                  <div className="text-[10px] text-amber-400 font-semibold pt-1 border-t border-amber-900/50">
+                    🐾 Perk: {catData.specialPerk}
+                  </div>
+                </div>
+              );
+            })()}
             
             {/* Stat Box */}
             <div className="bg-slate-950/40 border border-slate-850 p-4 rounded-lg space-y-3">

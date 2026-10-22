@@ -4,20 +4,14 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { TileType, Enemy, Trap, Chest, GameState, PlayerStats, GameLogMessage, WeaponBaseType, EnemyState, EnemyType, EquipmentItem, LootPile, NPC, OverworldChunk, Follower, DungeonProp, DungeonLevelState, GlyphScribingResult } from './types';
-import { generateLevel, spawnFollowersOnLevelLoadByReset, generateDungeonProps } from './utils/dungeon';
-import { computeFOV } from './utils/ai';
-import { BASIC_MATERIALS, ELEMENTAL_CATALYSTS } from './utils/itemsData';
+import { GameState, GameLogMessage, EquipmentItem, GlyphScribingResult } from './types';
+import { spawnFollowersOnLevelLoadByReset, generateDungeonProps } from './utils/dungeon';
 import { playSound, getAudioSettings, toggleAudioMute } from './utils/audio';
-import { generateOverworldChunk, formatGameTime, setWorldSeed, getDeterministicTownName, hasTownAtChunk, prng, getCurrentWorldSeed, getOrganicBiome } from './utils/overworld';
-import { getCurrentWeight, getMaxWeight, checkWeightCapacity, getItemWeight, getMaterialUnitWeight } from './utils/itemWeight';
-import { evaluateScarAcquisition, getEffectiveStats } from './utils/scars';
-import { getBiomePriceMultiplier } from './utils/tradeEconomy';
-import GameCanvas from './components/GameCanvas';
+import { formatGameTime } from './utils/overworld';
+import { getEffectiveStats } from './utils/scars';
 import gameConfig from './data/gameConfig.json';
 
 import { useAmbientAudio } from './hooks/useAmbientAudio';
-import { isPlayerIndoors } from './utils/buildingAudio';
 import { AppModalRouter } from './components/modals/AppModalRouter';
 import { initCustomRegistries } from './utils/customRegistryInit';
 import { regenerateCurrentLocation } from './utils/locationRegenerator';
@@ -38,34 +32,20 @@ import { useTradeEconomy } from './hooks/useTradeEconomy';
 import { useQuestsAndGuild } from './hooks/useQuestsAndGuild';
 import { useCaravanTravel } from './hooks/useCaravanTravel';
 import { useTownServices } from './hooks/useTownServices';
-import { getSiegeCombatants } from './utils/siegeUtils';
-import { handleDecorInteraction } from './utils/decorEngine';
 import { StartScreen } from './components/screens/StartScreen';
 import { GameOverScreen } from './components/screens/GameOverScreen';
 import { VictoryScreen } from './components/screens/VictoryScreen';
 import { GameMainViewport } from './components/views/GameMainViewport';
 import { SPELL_SCROLLS } from './utils/spellScrolls';
 import { AppHeaderBar } from './components/AppHeaderBar';
-import { PoiType } from './components/PoiInteractionOverlay';
 import MainAppLayout from './components/MainAppLayout';
-import { WEATHER_EFFECTS, getValidWeatherForBiome } from './utils/weatherEngine';
-import { STARTING_WEAPON, STARTING_ARMOR } from './utils/spellsAndEquipment';
-import { consumeItemFromInventory } from './utils/scrollUtils';
-import { SanctumRelic } from './utils/relics';
-import { performanceMonitor } from './utils/performanceMonitor';
 import { initStorytellerEventListeners } from './utils/storyteller';
-import { DEFAULT_QUESTS } from './utils/questData';
-import { getMerchantConfig } from './utils/shopData';
 import { appendBoundedLogs } from './utils/logBuffer';
 import {
   LEVEL_WIDTH,
   LEVEL_HEIGHT,
-  findNearestSafePlayerTile,
   hasEquippedTrait,
-  isLunarBlessingActive,
-  getEffectiveAttribute,
-  getCharismaDiscountMultiplier,
-  generateRandomLootGear
+  isLunarBlessingActive
 } from './utils/gameUtils';
 import {
   useShopAndTradeHandlers,
@@ -78,6 +58,7 @@ import {
 } from './hooks/app';
 import { createNewGameRun } from './utils/gameStateFactory';
 import { exportAndDownloadGameLogs } from './utils/logExporter';
+import { createOutpostQuartermaster } from './world/outposts';
 
 // Initialize global registries for custom modifiable components
 initCustomRegistries();
@@ -166,6 +147,8 @@ export default function App() {
     activeRelicDraft, setActiveRelicDraft,
     activeRecallScroll, setActiveRecallScroll,
     activeTargetedScroll, setActiveTargetedScroll,
+    isQuartermasterOpen, setIsQuartermasterOpen,
+    activeQuartermaster, setActiveQuartermaster,
   } = modalState;
   const [isMuted, setIsMuted] = useState(() => getAudioSettings().isAudioMuted);
 
@@ -187,6 +170,12 @@ export default function App() {
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
+
+  useEffect(() => {
+    if (gameState.caravanTravel?.isTacticalCombat && activeTab !== 'dungeon') {
+      setActiveTab('dungeon');
+    }
+  }, [gameState.caravanTravel?.isTacticalCombat, activeTab]);
 
   // Hook for world background events, cat traits, and playthrough session snapshots
   const { allSessionLogsRef, allSessionStateSnapshotsRef, resetSession } = useWorldEventHandlers({
@@ -521,6 +510,42 @@ export default function App() {
     modalState,
   });
 
+  const handleOpenQuartermaster = React.useCallback(() => {
+    if (!gameState.isOverworld) return;
+    const chunkKey = `${gameState.currentChunkX},${gameState.currentChunkY}`;
+    const chunk = gameState.overworldChunks[chunkKey];
+    if (chunk?.watchtower) {
+      let qm = chunk.watchtower.quartermaster;
+      if (!qm) {
+        const victor = (chunk.watchtower.controller as any) || 'vanguard';
+        qm = createOutpostQuartermaster(chunk.chunkX, chunk.chunkY, victor, 1, 200);
+        setGameState((prev) => {
+          const nextChunks = { ...prev.overworldChunks };
+          if (nextChunks[chunkKey]?.watchtower) {
+            nextChunks[chunkKey] = {
+              ...nextChunks[chunkKey],
+              watchtower: {
+                ...nextChunks[chunkKey].watchtower!,
+                quartermaster: qm
+              }
+            };
+          }
+          return { ...prev, overworldChunks: nextChunks };
+        });
+      }
+      setActiveQuartermaster(qm);
+      setIsQuartermasterOpen(true);
+      playSound('loot');
+    }
+  }, [
+    gameState.isOverworld,
+    gameState.currentChunkX,
+    gameState.currentChunkY,
+    gameState.overworldChunks,
+    setActiveQuartermaster,
+    setIsQuartermasterOpen
+  ]);
+
   const { handleGKeyInteract } = useGKeyInteraction({
     gameState,
     setGameState,
@@ -534,6 +559,7 @@ export default function App() {
     setIsSleepOpen,
     interactWithNpc,
     handleInteractWithDungeonShrine,
+    openQuartermaster: handleOpenQuartermaster,
   });
 
   // Global Hotkeys & Keyboard Controller Hook
@@ -669,6 +695,7 @@ export default function App() {
     setGameState,
     addLogMessage,
     playSound: (s) => playSound(s as any),
+    setActiveTab,
   });
 
   const {
@@ -748,7 +775,7 @@ export default function App() {
   armorSlotsKeysStr.forEach(slot => {
     const item = gameState[slot];
     if (item && item.durability !== undefined && item.durability <= 0) {
-      brokenArmorDefReduction += item.defense;
+      brokenArmorDefReduction += (item.defense || 0);
     }
   });
   let activeEffectsDefBonus = 0;
@@ -792,6 +819,7 @@ export default function App() {
       overlays={(
         <AppModalRouter
           {...modalState}
+          playSound={playSound}
           gameState={gameState}
           setGameState={setGameState}
           addLogMessage={addLogMessage}
@@ -819,6 +847,7 @@ export default function App() {
           handleScriptoriumFailure={handleScriptoriumFailure}
           onTriggerScriptorium={handleTriggerScriptorium}
           onOpenNpcTrade={handleOpenNpcTrade}
+          setActiveTab={setActiveTab}
         />
       )}
     >
@@ -838,6 +867,7 @@ export default function App() {
         />
       ) : (
         <GameMainViewport
+          onOpenQuartermaster={handleOpenQuartermaster}
           activeMobileView={activeMobileView}
           activeTab={activeTab}
           setActiveTab={setActiveTab}

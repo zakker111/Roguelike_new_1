@@ -19,6 +19,7 @@ import gameConfig from '../../../data/gameConfig.json';
 import { UsePlayerTurnMovementProps } from './types';
 import { gameEventBus } from '../../../events/core/EventBus';
 import { applyStatusToList } from '../../../effects/statusEngine';
+import { createOutpostQuartermaster } from '../../../world/outposts';
 
 export function resolveStepEffects(
   targetX: number,
@@ -509,9 +510,17 @@ export function resolveStepEffects(
 
             if (nextPercent >= 100) {
               const playerFaction = prev.faction || 'neutral';
+              const victorFaction = playerFaction === 'neutral' ? 'vanguard' : (playerFaction as any);
               updatedWt.isClaimed = true;
               updatedWt.controller = playerFaction;
               updatedWt.garrisonDefeated = true;
+              updatedWt.quartermaster = createOutpostQuartermaster(
+                prev.currentChunkX,
+                prev.currentChunkY,
+                victorFaction,
+                1,
+                150
+              );
 
               setTimeout(() => playSound('levelUp'), 150);
               nextLogs.push({

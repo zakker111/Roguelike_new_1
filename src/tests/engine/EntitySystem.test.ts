@@ -7,15 +7,11 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   EntityRegistry,
   EntityManager,
-  BaseEntity,
-  PlayerEntity,
   EnemyEntity,
-  NpcEntity,
   AnimalEntity,
   SummonEntity,
   TrapEntity,
   ProjectileEntity,
-  ItemEntity,
   InteractableEntity
 } from '../../engine/entities';
 import { EffectManager } from '../../engine/effects';

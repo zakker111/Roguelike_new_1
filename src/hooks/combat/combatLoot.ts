@@ -26,13 +26,14 @@ export function generateCombatLoot(
   gameConfig: { worldRates?: { equipmentDropRateBonusPerLuck?: number } }
 ): CombatLootResult {
   const isAnimal = updatedEnemy.isAnimal;
+  const enemyNameLower = (updatedEnemy.name || '').toLowerCase();
   const isLootGoblin =
     updatedEnemy.type === EnemyType.LootGoblin ||
-    updatedEnemy.name.toLowerCase().includes('loot goblin');
+    enemyNameLower.includes('loot goblin');
   const splatterColor =
     updatedEnemy.char === 'r'
       ? '#22c55e'
-      : updatedEnemy.char === 'S' || updatedEnemy.name.toLowerCase().includes('skeleton')
+      : updatedEnemy.char === 'S' || enemyNameLower.includes('skeleton')
       ? '#38bdf8'
       : '#dc2626';
   const finalSplatterColor = isLootGoblin ? '#f59e0b' : splatterColor;
@@ -87,21 +88,24 @@ export function generateCombatLoot(
     }
   ];
 
-  const materialRewards = Object.keys(prev.inventoryMaterials).filter(
+  const materialRewards = Object.keys(prev.inventoryMaterials || {}).filter(
     (k) => k !== 'mat_wood' && k !== 'mat_raw_meat' && k !== 'mat_cooked_meat'
   );
-  const rolledGiftMat = materialRewards[Math.floor(Math.random() * materialRewards.length)];
+  const rolledGiftMat = materialRewards.length > 0
+    ? materialRewards[Math.floor(Math.random() * materialRewards.length)]
+    : 'mat_iron';
 
   const droppedEquip: EquipmentItem[] = [];
   const effectiveLck = getEffectiveAttribute(prev, 'lck');
   const luckBonus =
-    Math.max(0, effectiveLck - 10) * (gameConfig.worldRates?.equipmentDropRateBonusPerLuck ?? 0.03);
+    Math.max(0, effectiveLck - 10) * (gameConfig?.worldRates?.equipmentDropRateBonusPerLuck ?? 0.03);
   const finalDropChance = Math.min(0.85, 0.22 + luckBonus);
   if (!isAnimal && (isBoss || isDragon || Math.random() < finalDropChance)) {
-    droppedEquip.push(generateRandomLootGear(isBoss, isDragon, updatedEnemy.name));
+    const gear = generateRandomLootGear(isBoss, isDragon, updatedEnemy.name || 'Monster');
+    if (gear) droppedEquip.push(gear);
   }
 
-  let bossMats = [rolledGiftMat];
+  let bossMats = [rolledGiftMat || 'mat_iron'];
   let bossCats =
     !isAnimal && Math.random() > 0.65
       ? [['cat_fire', 'cat_frost', 'cat_poison', 'cat_lightning', 'cat_shadow'][Math.floor(Math.random() * 5)]]
@@ -176,14 +180,14 @@ export function generateCombatLoot(
   const dragonCatalysts = ['cat_fire', 'cat_frost', 'cat_poison', 'cat_lightning', 'cat_shadow'];
   const randomDragonCatalyst = dragonCatalysts[Math.floor(Math.random() * dragonCatalysts.length)];
 
-  let finalMats = isAnimal
+  let finalMats = (isAnimal
     ? animalMats
     : isLootGoblin
     ? goblinMats
     : isDragon
     ? ['mat_dragonscale', 'mat_obsidian']
-    : bossMats;
-  let finalCats = isLootGoblin ? goblinCats : isDragon ? [randomDragonCatalyst] : bossCats;
+    : bossMats).filter(Boolean);
+  let finalCats = (isLootGoblin ? goblinCats : isDragon ? [randomDragonCatalyst] : bossCats).filter(Boolean);
 
   if (updatedEnemy.type === EnemyType.Hiisi) {
     finalMats = ['mat_wood', 'mat_iron'];
@@ -203,9 +207,9 @@ export function generateCombatLoot(
 
   if (
     updatedEnemy.id?.startsWith('wt_commander_') ||
-    updatedEnemy.name?.toLowerCase().includes('watchtower commander') ||
-    updatedEnemy.name?.toLowerCase().includes('watchtower overlord') ||
-    updatedEnemy.name?.toLowerCase().includes('outpost commander')
+    enemyNameLower.includes('watchtower commander') ||
+    enemyNameLower.includes('watchtower overlord') ||
+    enemyNameLower.includes('outpost commander')
   ) {
     finalMats = [...finalMats, 'mat_watchtower_key'];
     extraLogs.push({
@@ -219,9 +223,9 @@ export function generateCombatLoot(
   // Faction Turf War & Elite Spoils
   if (
     updatedEnemy.factionRank === 'warlord' ||
-    updatedEnemy.name?.toLowerCase().includes('warlord') ||
-    updatedEnemy.name?.toLowerCase().includes('chieftain') ||
-    updatedEnemy.name?.toLowerCase().includes('goreaxe')
+    enemyNameLower.includes('warlord') ||
+    enemyNameLower.includes('chieftain') ||
+    enemyNameLower.includes('goreaxe')
   ) {
     finalMats = [...finalMats, 'mat_refined_iron', 'mat_tempered_scrap'];
     const factionGear = getRandomFactionSpoils(updatedEnemy.faction);
@@ -235,8 +239,8 @@ export function generateCombatLoot(
       timestamp: formatGameTime(prev.gameTime).timeStr
     });
   } else if (
-    updatedEnemy.name?.toLowerCase().includes('shadow dagger') ||
-    updatedEnemy.name?.toLowerCase().includes('bandit leader')
+    enemyNameLower.includes('shadow dagger') ||
+    enemyNameLower.includes('bandit leader')
   ) {
     finalMats = [...finalMats, 'mat_smuggler_key', 'mat_tempered_scrap'];
     extraLogs.push({

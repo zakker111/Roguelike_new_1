@@ -10,6 +10,9 @@ import {
   getArchetypeVisuals,
 } from '../utils/combatFloaterDrift';
 import { combatVfxEngine } from '../canvas/combatVfxEngine';
+import { entityInterpolationManager } from '../canvas/entityInterpolationManager';
+import { spriteAnimationManager } from '../canvas/spriteAnimationManager';
+import { meleeVfxEngine } from '../canvas/meleeVfxEngine';
 
 describe('Combat Floating Text Directional Outward Drift & Archetypes Suite', () => {
   beforeEach(() => {
@@ -201,6 +204,38 @@ describe('Combat Floating Text Directional Outward Drift & Archetypes Suite', ()
       // Scale should have decayed smoothly
       expect(updatedFloaters[0].scale).toBeLessThan(1.45);
       expect(updatedFloaters[0].life).toBeLessThan(1.0);
+    });
+
+    it('spawns a directional melee slash and decal when dispatchEffect is called with source and target', () => {
+      meleeVfxEngine.clear();
+      expect(meleeVfxEngine.getActiveSlashCount()).toBe(0);
+
+      combatVfxEngine.dispatchEffect({
+        x: 15,
+        y: 12,
+        sourceX: 14,
+        sourceY: 12,
+        text: '-28 CRIT!',
+        type: 'crit',
+        weaponType: 'Broadsword',
+      });
+
+      expect(meleeVfxEngine.getActiveSlashCount()).toBe(1);
+      expect(meleeVfxEngine.getActiveDecalCount()).toBe(1); // Crit spawns blood splatter
+    });
+
+    it('triggers kinetic attack lunge and sets attack animation state for player', () => {
+      entityInterpolationManager.triggerAttackLunge('player', 15, 12, 180);
+      expect(entityInterpolationManager.isAttackLunging('player')).toBe(true);
+
+      const renderPos = entityInterpolationManager.getRenderPosition('player', 14, 12);
+      expect(renderPos.isMoving).toBe(true);
+      expect(renderPos.facing).toBe('east');
+
+      spriteAnimationManager.setAnimationState('player', 'attack', 'east');
+      const animState = spriteAnimationManager.getOrCreateState('player');
+      expect(animState.state).toBe('attack');
+      expect(animState.direction).toBe('east');
     });
   });
 });

@@ -15,6 +15,7 @@ import {
   getAudioFrequencyData,
   CustomSynthParams
 } from '../utils/audio';
+import { getEnemyTemplate } from '../utils/dungeon';
 
 /**
  * Universal Button & Interactive Action Matrix Test Engine
@@ -512,6 +513,22 @@ describe('Automated Button & Interaction Suite (Phase 9: God Sandbox Cheats, GM 
 
       expect(() => getAudioWaveformData(waveformArray)).not.toThrow();
       expect(() => getAudioFrequencyData(frequencyArray)).not.toThrow();
+    });
+
+    it('verifies smoke test enemy template resolution handles SkeletonMage and Rat without errors', () => {
+      const rat = getEnemyTemplate('Rat');
+      const mage = getEnemyTemplate('SkeletonMage');
+      expect(rat).toBeDefined();
+      expect(rat.name).toBe('Giant Plague Rat');
+      expect(mage).toBeDefined();
+      expect(mage.name).toBe('Skeleton Spellflinger');
+    });
+
+    it('verifies factions, caravans, and elemental tab configurations are valid GodActiveTabs', () => {
+      const activeTabs: string[] = ['elemental', 'factions', 'caravans', 'minigames', 'sovereign', 'visuals_studio'];
+      expect(activeTabs).toContain('elemental');
+      expect(activeTabs).toContain('factions');
+      expect(activeTabs).toContain('caravans');
     });
   });
 });

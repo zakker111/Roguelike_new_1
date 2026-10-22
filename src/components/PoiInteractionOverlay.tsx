@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, BookOpen, Flame, Shield, HelpCircle, Heart, Trophy, Zap, AlertTriangle, Coins, Compass, Navigation, Swords } from 'lucide-react';
-import { PlayerStats, CatalystType, TileType } from '../types';
+import { X, Sparkles, BookOpen, Flame, Shield, HelpCircle, Zap, Compass, Navigation } from 'lucide-react';
+import { PlayerStats } from '../types';
 import { playSound } from '../utils/audio';
 
 export interface PoiType {

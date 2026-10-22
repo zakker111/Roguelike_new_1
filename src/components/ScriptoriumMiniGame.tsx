@@ -11,7 +11,6 @@ import {
   RuneCanvasRenderer,
   ScriptoriumScoreCard,
 } from './minigames/scriptorium';
-import { GLYPH_MATRICES } from '../data/glyphs';
 
 export { type ScriptoriumMiniGameProps };
 
@@ -61,7 +60,7 @@ export const ScriptoriumMiniGame: React.FC<ScriptoriumMiniGameProps> = ({
   return (
     <div
       id="scriptorium-minigame-overlay"
-      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 select-none"
+      className="fixed inset-0 z-[200] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 select-none"
     >
       <div
         className={`relative w-full max-w-2xl bg-slate-900 border ${elementTheme.border} rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-transform duration-100 ${

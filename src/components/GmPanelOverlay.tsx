@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Cpu, Star, Sun, CloudRain, CloudFog, Snowflake, Heart, 
   Coins, Sparkles, ShieldAlert, Users, Swords, Skull, Flame, 
-  Gem, Bomb, CheckCircle2, AlertCircle, Sparkle, RefreshCw, Sliders, MessageSquare, Terminal,
-  Zap, Clock, Shield, Brain, Activity
+  Gem, Bomb, CheckCircle2, AlertCircle, RefreshCw, Sliders, Terminal,
+  Zap, Clock, Activity
 } from 'lucide-react';
 import { GameState, GameLogMessage } from '../types';
 import { GM_COMMANDS, GmCommand } from '../data/gmCommands';

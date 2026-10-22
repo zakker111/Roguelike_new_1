@@ -10,3 +10,14 @@ export * from './game';
 export * from './elemental';
 export * from './minigames/glyphGame';
 export * from '../factions/types';
+export * from './worldEvents';
+export type {
+  OutpostStatus,
+  OutpostQuartermasterItem,
+  OutpostQuartermasterState,
+  OutpostTerritoryState,
+  OutpostSiegeState,
+  OutpostSiegeEventPayload,
+  OutpostLiberatedEventPayload,
+  FactionAssistEventPayload
+} from './worldEvents';

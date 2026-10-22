@@ -2,9 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, Skull, Shield, Sword, Heart, Activity, 
   Coins, Sparkles, Lock, Search, 
-  ChevronRight, Compass, Info, Zap, Crown, Flame, Droplets, Wind
+  ChevronRight, Compass, Info, Zap
 } from 'lucide-react';
-import { BESTIARY_ENTRIES, BestiaryEntry, LootItem } from '../utils/bestiary';
+import { BESTIARY_ENTRIES } from '../utils/bestiary';
 
 interface BestiaryOverlayProps {
   defeatedEnemiesCount?: { [key: string]: number };

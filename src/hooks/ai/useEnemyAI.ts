@@ -20,8 +20,9 @@ export function useEnemyAI({
   // Pathfinding and AI solver for dungeon monsters, followers, guards, and Overworld villagers
   const executeEnemiesTurn = useCallback((px: number, py: number) => {
     setGameState((prev) => {
-      // 1. Resolve Player Status Effects, Environment, Weather, Seasons, and Roaming Monster Spawns
-      const envRes = resolvePlayerStatusAndEnvironment(prev, px, py, hasEquippedTrait);
+      try {
+        // 1. Resolve Player Status Effects, Environment, Weather, Seasons, and Roaming Monster Spawns
+        const envRes = resolvePlayerStatusAndEnvironment(prev, px, py, hasEquippedTrait);
       let {
         playerHp,
         playerMp,
@@ -125,7 +126,7 @@ export function useEnemyAI({
           }
         }
         if (target.isFollower) {
-          const fol = nextFollowers.find(f => f.id === target.followerId || target.id.includes(f.id));
+          const fol = nextFollowers.find(f => f.id === target.followerId || (Boolean(target.id) && Boolean(f.id) && target.id.includes(f.id)));
           if (fol) {
             fol.hp = target.hp;
           }
@@ -133,12 +134,13 @@ export function useEnemyAI({
 
         if (target.hp <= 0) {
           // Autonomous Skirmish & Combat Death: Leave corpse, blood splatter, and battlefield debris!
+          const targetNameLower = (target.name || '').toLowerCase();
           const corpseColor = target.char === 'r' ? '#22c55e' :
-                              target.char === 'S' || target.name.toLowerCase().includes('skeleton') ? '#38bdf8' :
+                              target.char === 'S' || targetNameLower.includes('skeleton') ? '#38bdf8' :
                               target.isTownGuard ? '#3b82f6' :
                               '#94a3b8';
           const splatterColor = target.char === 'r' ? '#22c55e' :
-                                target.char === 'S' || target.name.toLowerCase().includes('skeleton') ? '#38bdf8' :
+                                target.char === 'S' || targetNameLower.includes('skeleton') ? '#38bdf8' :
                                 '#dc2626';
 
           nextCorpses.push({
@@ -386,6 +388,19 @@ export function useEnemyAI({
           activeEffects: updatedEffects,
         },
       };
+    } catch (err: any) {
+      console.error("Enemy AI Runtime Error in executeEnemiesTurn:", err);
+      const errObj = err instanceof Error ? err : new Error(String(err));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('show-error-gump', {
+          detail: {
+            error: errObj,
+            context: `Enemy AI Turn Resolution at (${px}, ${py}) with ${prev.enemies.length} active entities`
+          }
+        }));
+      }
+      return prev;
+    }
     });
   }, [setGameState, hasEquippedTrait]);
 

@@ -366,3 +366,4 @@ export class GameEventBusEngine {
 }
 
 export const gameEventBus = new GameEventBusEngine();
+export const eventBus = gameEventBus;

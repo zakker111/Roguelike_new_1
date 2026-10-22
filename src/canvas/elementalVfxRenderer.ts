@@ -4,7 +4,6 @@
  */
 
 import { GameState } from '../types';
-import { ElementalTile } from '../types/elemental';
 
 export interface RenderElementalParams {
   ctx: CanvasRenderingContext2D;

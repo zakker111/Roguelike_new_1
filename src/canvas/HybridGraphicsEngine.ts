@@ -4,7 +4,6 @@ import {
   TileRenderDetails,
   EntityRenderDetails,
   TilesetSourceType,
-  TILESET_SOURCES,
   getStoredGraphicsMode,
   setStoredGraphicsMode,
   setActiveVisualMode,

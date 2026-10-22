@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Moon, Clock, Heart, Sparkles, Shield, AlertTriangle, Flame, Tent, UserCheck } from 'lucide-react';
+import { X, Moon, Clock, Heart, Sparkles, Shield, AlertTriangle, Flame, UserCheck } from 'lucide-react';
 import { PlayerStats, GameState } from '../types';
 import { formatGameTime } from '../utils/overworld';
 import { playSound } from '../utils/audio';

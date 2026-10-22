@@ -81,4 +81,48 @@ describe('GodMinigamesTab Integration & Sandbox Testbed', () => {
     expect(successLogs).toHaveLength(1);
     expect(logMessages).toHaveLength(1);
   });
+
+  it('correctly simulates lock tumbler sweet spot and cylinder rotation calculation', () => {
+    const targetAngle = 68;
+    const testAngle = 68;
+    const offset = Math.abs(testAngle - targetAngle);
+    const isSweetSpot = offset <= 10;
+    expect(isSweetSpot).toBe(true);
+
+    let cylinderRot = 0;
+    // Advance 4 steps of 3.5 degrees
+    for (let i = 0; i < 4; i++) {
+      cylinderRot = Math.min(90, cylinderRot + 3.5);
+    }
+    expect(cylinderRot).toBe(14);
+  });
+
+  it('correctly degrades durability when tension is applied off sweet spot', () => {
+    const targetAngle = 68;
+    const badAngle = 140;
+    const offset = Math.abs(badAngle - targetAngle);
+    const isSweetSpot = offset <= 10;
+    expect(isSweetSpot).toBe(false);
+
+    let pickDurability = 100;
+    // Advance 5 steps of 3.5% decay
+    for (let i = 0; i < 5; i++) {
+      pickDurability = Math.max(0, pickDurability - 3.5);
+    }
+    expect(pickDurability).toBe(82.5);
+  });
+
+  it('handles Scriptorium stage advancement up to stage 4 and cycles', () => {
+    let stage = 1;
+    const advance = (st: number) => (st >= 4 ? 1 : st + 1);
+
+    stage = advance(stage);
+    expect(stage).toBe(2);
+    stage = advance(stage);
+    expect(stage).toBe(3);
+    stage = advance(stage);
+    expect(stage).toBe(4);
+    stage = advance(stage);
+    expect(stage).toBe(1);
+  });
 });

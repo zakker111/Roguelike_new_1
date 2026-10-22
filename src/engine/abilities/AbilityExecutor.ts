@@ -4,7 +4,7 @@
  */
 
 import { AbilityRegistry } from './AbilityRegistry';
-import { AbilityDefinition, AbilityExecutionContext, AbilityExecutionResult, EntityAbilityState } from './types';
+import { AbilityExecutionContext, AbilityExecutionResult, EntityAbilityState } from './types';
 
 export class AbilityExecutor {
   /**

@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { generateRandomCaravanEncounter } from '../utils/caravanEncounters';
 import { generateCaravanSkirmishMap } from '../world/caravanSkirmishGen';
 import { GameState, CaravanEncounter, CaravanTravelState, SavedOverworldSkirmishState, EnemyType, TileType } from '../types';
+import { hasTownAtChunk, getDeterministicTownName, MAJOR_OVERWORLD_HUBS } from '../world/overworldStructures';
+import { findNearestSafeNpcTile } from '../utils/overworld/overworldCore';
+import { findNearestSafePlayerTile } from '../utils/gameUtils';
+import { syncCaravanState } from '../utils/caravanAndTerritory';
 import caravanEventsData from '../data/caravanEvents.json';
 import caravanBossesData from '../data/caravanBosses.json';
 
@@ -380,5 +384,70 @@ describe('Caravan Encounters & Tactical Escort System', () => {
     expect(saved.corpses.length).toBe(1);
     expect(saved.bloodSplatters.length).toBe(1);
     expect(saved.lootPiles.length).toBe(1);
+  });
+
+  it('major caravan destinations are recognized as settlements and generate towns upon landing', () => {
+    const dummyPrng = () => 0.5;
+
+    expect(MAJOR_OVERWORLD_HUBS['-3,3'].name).toBe('Ironforge Stronghold');
+    expect(hasTownAtChunk(-3, 3, dummyPrng)).toBe(true);
+    expect(getDeterministicTownName(-3, 3, 1234, dummyPrng)).toBe('Ironforge Stronghold');
+
+    expect(MAJOR_OVERWORLD_HUBS['4,4'].name).toBe('Sunfire Oasis Outpost');
+    expect(hasTownAtChunk(4, 4, dummyPrng)).toBe(true);
+
+    expect(MAJOR_OVERWORLD_HUBS['-4,-4'].name).toBe('Frostpeak Sledge Haven');
+    expect(hasTownAtChunk(-4, -4, dummyPrng)).toBe(true);
+  });
+
+  it('findNearestSafeNpcTile safely handles empty or uninitialized maps without crashing', () => {
+    expect(findNearestSafeNpcTile(5, 5, [])).toEqual({ x: 5, y: 5 });
+    expect(findNearestSafeNpcTile(5, 5, null as any)).toEqual({ x: 5, y: 5 });
+    expect(findNearestSafeNpcTile(5, 5, undefined as any)).toEqual({ x: 5, y: 5 });
+  });
+
+  it('findNearestSafePlayerTile safely handles empty or uninitialized maps without crashing', () => {
+    expect(findNearestSafePlayerTile(10, 10, [])).toEqual({ x: 10, y: 10 });
+    expect(findNearestSafePlayerTile(10, 10, null as any)).toEqual({ x: 10, y: 10 });
+    expect(findNearestSafePlayerTile(10, 10, undefined as any)).toEqual({ x: 10, y: 10 });
+  });
+
+  it('syncCaravanState parks Baron Tobias and sentries at explicitly parked chunk', () => {
+    const state: any = {
+      isOverworld: true,
+      currentChunkX: -3,
+      currentChunkY: 3,
+      levelWidth: 64,
+      levelHeight: 40,
+      caravanParkedChunk: { x: -3, y: 3 },
+      caravanTravel: null,
+      map: Array.from({ length: 40 }, () => new Array(64).fill(TileType.Grass))
+    };
+
+    const res = syncCaravanState(state, 1000, [], []);
+    expect(res.npcs.some((n: any) => n.id === 'npc_caravan_merchant')).toBe(true);
+    expect(res.enemies.some((e: any) => e.id === 'caravan_guard_1')).toBe(true);
+    expect(res.enemies.some((e: any) => e.id === 'caravan_guard_2')).toBe(true);
+  });
+
+  it('automatically deploys tactical skirmish map on fighting event so only the scene is shown', () => {
+    const ambushEncounter = {
+      id: 'enc_bandit_test',
+      type: 'bandit_ambush',
+      title: '🗡️ RUTHLESS BANDIT TOLL ROAD',
+      desc: 'Bandits block the roadway!',
+      resolved: false,
+      wagonDamagePenalty: 20,
+      options: []
+    };
+
+    const skirmish = generateCaravanSkirmishMap(mockBaseGameState, ambushEncounter as any);
+    expect(skirmish.map.length).toBe(18);
+    expect(skirmish.map[0].length).toBe(24);
+    expect(skirmish.wagonX).toBe(12);
+    expect(skirmish.wagonY).toBe(9);
+    expect(skirmish.enemies.length).toBeGreaterThan(0);
+    expect(skirmish.enemies.some(e => !e.isFollower && !e.isTownGuard)).toBe(true);
+    expect(skirmish.enemies.some(e => e.isFollower)).toBe(true);
   });
 });

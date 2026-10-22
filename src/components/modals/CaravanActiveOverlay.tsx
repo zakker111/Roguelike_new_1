@@ -22,6 +22,29 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
 }) => {
   if (!gameState.caravanTravel?.active) return null;
 
+  const isFightingEncounter = Boolean(
+    gameState.caravanTravel?.currentEncounter &&
+    !gameState.caravanTravel.currentEncounter.resolved &&
+    (
+      gameState.caravanTravel.currentEncounter.type === 'bandit_ambush' ||
+      gameState.caravanTravel.currentEncounter.type === 'beast_attack' ||
+      gameState.caravanTravel.currentEncounter.type === 'boss_ambush' ||
+      gameState.caravanTravel.currentEncounter.isTacticalCombat ||
+      gameState.caravanTravel.currentEncounter.isBossAmbush
+    )
+  );
+
+  React.useEffect(() => {
+    if (isFightingEncounter && !gameState.caravanTravel?.isTacticalCombat && handleDeployTacticalBattle && gameState.caravanTravel?.currentEncounter) {
+      handleDeployTacticalBattle(gameState.caravanTravel.currentEncounter);
+    }
+  }, [isFightingEncounter, gameState.caravanTravel?.isTacticalCombat, handleDeployTacticalBattle, gameState.caravanTravel?.currentEncounter]);
+
+  // When a fighting event starts, do not show the modal or caravan inventory; show only the tactical battle scene
+  if (isFightingEncounter && !gameState.caravanTravel.isTacticalCombat) {
+    return null;
+  }
+
   // In tactical combat skirmish mode: show non-blocking interactive tactical HUD banner
   if (gameState.caravanTravel.isTacticalCombat) {
     const hostileAttackers = gameState.enemies.filter(e => !e.isFollower && !e.isTownGuard && e.hp > 0);
@@ -182,9 +205,9 @@ export const CaravanActiveOverlay: React.FC<CaravanActiveOverlayProps> = ({
                   <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-800" />
                   <div 
                     className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-blue-500 transition-all duration-500" 
-                    style={{ width: `${(gameState.caravanTravel.currentStep / gameState.caravanTravel.totalSteps) * 100}%` }}
+                    style={{ width: `${Math.min(100, Math.max(0, ((gameState.caravanTravel.currentStep || 0) / Math.max(1, gameState.caravanTravel.totalSteps || 1)) * 100))}%` }}
                   />
-                  {Array.from({ length: gameState.caravanTravel.totalSteps + 1 }).map((_, i) => {
+                  {Array.from({ length: Math.max(1, Math.min(25, (gameState.caravanTravel.totalSteps || 1) + 1)) }).map((_, i) => {
                     const isCleared = i <= gameState.caravanTravel.currentStep;
                     const isCurrent = i === gameState.caravanTravel.currentStep;
                     return (

@@ -6,6 +6,7 @@
 import { TileType, Follower, EnemyState } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
 import { isPlayerInvincible } from '../../utils/invincibility';
+import { getStandardFollowerCount } from '../../utils/specialCats';
 import {
   UsePlayerTurnMovementProps,
   checkOverburdenedMovement,
@@ -277,7 +278,7 @@ export function usePlayerTurnMovement(props: UsePlayerTurnMovementProps) {
 
       if (activeEnemy.isCaptive && !activeEnemy.isFreed) {
         const rawName = activeEnemy.name.replace('🔒 ', '');
-        const hasRoom = gameState.followers.length < 3;
+        const hasRoom = getStandardFollowerCount(gameState.followers) < 3;
 
         setGameState((prev) => {
           let archetypeId: 'guard' | 'thief' | 'cat' | 'merchant_guard' = 'thief';
@@ -315,7 +316,7 @@ export function usePlayerTurnMovement(props: UsePlayerTurnMovementProps) {
           const followerId = `fol_freed_${Date.now()}`;
           const nextEnemies = [...prev.enemies];
 
-          if (prev.followers.length < 3) {
+          if (getStandardFollowerCount(prev.followers) < 3) {
             const nextFollower: Follower = {
               id: followerId,
               name: rawName,

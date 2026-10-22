@@ -11,8 +11,7 @@ import {
   DungeonCorridorDefinition,
   DungeonPoint,
   DungeonFeaturePlacement,
-  DungeonSpawnPoint,
-  DungeonRoomType
+  DungeonSpawnPoint
 } from '../types';
 import {
   Random,

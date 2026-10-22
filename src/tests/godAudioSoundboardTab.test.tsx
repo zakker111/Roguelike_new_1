@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { GodAudioSoundboardTab } from '../components/god/GodAudioSoundboardTab';
-import { SOUND_CATALOG } from '../data/soundCatalog';
 
 // Mock WebAudio and audio utils
 vi.mock('../utils/audio', () => {

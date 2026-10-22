@@ -1,23 +1,28 @@
 import React from 'react';
 import { GameState, CaravanTravelState, CaravanEncounter } from '../types';
 import { generateRandomCaravanEncounter } from '../utils/caravanEncounters';
-import { generateOverworldChunk, formatGameTime, manageActiveChunkWindow, ensureChunkDecompressed, findNearestSafeNpcTile } from '../utils/overworld';
+import { generateOverworldChunk, formatGameTime, manageActiveChunkWindow, ensureChunkDecompressed, findNearestSafeNpcTile, hasTownAtChunk } from '../utils/overworld';
 import { appendBoundedLogs } from '../utils/logBuffer';
 import { computeFOV } from '../utils/ai';
 import { spawnFollowersOnLevelLoadByReset } from '../utils/dungeon';
 import { LEVEL_WIDTH, LEVEL_HEIGHT, findNearestSafePlayerTile, isLunarBlessingActive, getEffectiveAttribute } from '../utils/gameUtils';
-import { combatVfxEngine } from '../canvas/combatVfxEngine';
+import { getValidWeatherForBiome } from '../utils/weatherEngine';
+import { syncCaravanState } from '../utils/caravanAndTerritory';
+import { generateCaravanSkirmishMap } from '../world/caravanSkirmishGen';
 import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
+import { combatVfxEngine } from '../canvas/combatVfxEngine';
 
 interface UseCaravanTravelOptions {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   addLogMessage: (msg: string, type?: string) => void;
   playSound: (sound: string) => void;
+  setActiveTab?: (tab: 'dungeon' | 'forge' | 'chaos' | 'inventory' | 'market' | 'guild' | 'bestiary' | 'chronicles') => void;
 }
 
-export function useCaravanTravel({ setGameState, addLogMessage, playSound }: UseCaravanTravelOptions) {
+export function useCaravanTravel({ setGameState, addLogMessage, playSound, setActiveTab }: UseCaravanTravelOptions) {
   const handleStartCaravanTravel = (destX: number, destY: number, destName: string) => {
     playSound('levelUp');
+    setActiveTab?.('dungeon');
     setGameState((prev) => {
       const distance = Math.max(Math.abs(destX - prev.currentChunkX), Math.abs(destY - prev.currentChunkY));
       const totalSteps = Math.max(1, distance * 2);
@@ -80,6 +85,69 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
       if (nextStep < travel.totalSteps && Math.random() < 0.85) {
         encounter = generateRandomCaravanEncounter(prev.biome || 'forest', prev);
         history.push(`🚨 EVENT TRIPPED: ${encounter.title}! Journey halted.`);
+      }
+
+      const isFightingEvent = Boolean(
+        encounter && (
+          encounter.type === 'bandit_ambush' ||
+          encounter.type === 'beast_attack' ||
+          encounter.type === 'boss_ambush' ||
+          encounter.isTacticalCombat ||
+          encounter.isBossAmbush
+        )
+      );
+
+      if (isFightingEvent && encounter) {
+        const skirmish = generateCaravanSkirmishMap(prev, encounter);
+        ChunkBackgroundCache.getInstance().invalidate();
+        setActiveTab?.('dungeon');
+        addLogMessage(`⚔️ [TACTICAL AMBUSH]: ${encounter.title}! Convoy halted — defend the carriage!`, 'danger');
+
+        return {
+          ...prev,
+          activeTradeNpcId: null,
+          map: skirmish.map,
+          levelWidth: skirmish.map[0]?.length || 24,
+          levelHeight: skirmish.map.length || 18,
+          discovered: skirmish.discovered,
+          visible: skirmish.visible,
+          enemies: skirmish.enemies,
+          dungeonProps: skirmish.props,
+          corpses: [],
+          bloodSplatters: [],
+          lootPiles: [],
+          playerX: skirmish.playerX,
+          playerY: skirmish.playerY,
+          caravanTravel: {
+            ...travel,
+            currentStep: nextStep,
+            stepsHistory: history,
+            wagonX: skirmish.wagonX,
+            wagonY: skirmish.wagonY,
+            isTacticalCombat: true,
+            savedOverworldState: {
+              map: prev.map,
+              levelWidth: prev.levelWidth,
+              levelHeight: prev.levelHeight,
+              discovered: prev.discovered,
+              visible: prev.visible,
+              enemies: prev.enemies,
+              dungeonProps: prev.dungeonProps || [],
+              corpses: prev.corpses || [],
+              bloodSplatters: prev.bloodSplatters || [],
+              lootPiles: prev.lootPiles || [],
+              playerX: prev.playerX,
+              playerY: prev.playerY,
+              currentChunkX: prev.currentChunkX,
+              currentChunkY: prev.currentChunkY,
+            },
+            currentEncounter: {
+              ...encounter,
+              isTacticalCombat: true,
+              resolved: false,
+            },
+          },
+        };
       }
 
       const updatedTravel: CaravanTravelState = {
@@ -436,6 +504,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
 
   const handleCompleteCaravanTravel = () => {
     playSound('levelUp');
+    setActiveTab?.('dungeon');
     setGameState((prev) => {
       const travel = prev.caravanTravel;
       if (!travel) return prev;
@@ -480,17 +549,17 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
       const newPx = Math.floor(LEVEL_WIDTH / 2);
       const newPy = Math.floor(LEVEL_HEIGHT / 2) + 2;
 
-      if (!targetChunk) {
+      if (!targetChunk || !targetChunk.map || targetChunk.map.length === 0) {
         targetChunk = generateOverworldChunk(destX, destY, LEVEL_WIDTH, LEVEL_HEIGHT, nextSpawnedCats, prev.spawnedSeppo, prev.playerStats, prev.currentWeapon);
-        targetChunk.npcs.forEach(n => {
-          if (n.id?.startsWith('npc_cat_')) {
+        (targetChunk.npcs || []).forEach(n => {
+          if (n && n.id?.startsWith('npc_cat_')) {
             const catName = n.name.split(' (')[0];
             if (!nextSpawnedCats.includes(catName)) {
               nextSpawnedCats.push(catName);
             }
           }
         });
-        hasSeppoOnLoad = targetChunk.npcs.some(n => n.id === 'npc_seppo');
+        hasSeppoOnLoad = (targetChunk.npcs || []).some(n => n && n.id === 'npc_seppo');
       }
 
       const safePlayerPos = findNearestSafePlayerTile(newPx, newPy, targetChunk.map);
@@ -498,7 +567,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
       const finalPy = safePlayerPos.y;
 
       const fov = computeFOV(finalPx, finalPy, targetChunk.map, 6);
-      const discovered = targetChunk.map.map((row, y) =>
+      const discovered = (targetChunk.map || []).map((row, y) =>
         row.map((cell, x) => ((targetChunk.discovered && targetChunk.discovered[y] && targetChunk.discovered[y][x]) || (fov && fov[y] && fov[y][x]) || false))
       );
 
@@ -519,9 +588,57 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
 
       ChunkBackgroundCache.getInstance().invalidate();
 
+      const initialNpcs = (targetChunk.npcs || []).filter(Boolean).map(npc => {
+        const safePos = findNearestSafeNpcTile(npc.x, npc.y, targetChunk.map);
+        const safeHome = npc.homeX !== undefined && npc.homeY !== undefined
+          ? findNearestSafeNpcTile(npc.homeX, npc.homeY, targetChunk.map)
+          : safePos;
+        const safeWork = npc.workX !== undefined && npc.workY !== undefined
+          ? findNearestSafeNpcTile(npc.workX, npc.workY, targetChunk.map)
+          : safePos;
+        return {
+          ...npc,
+          x: safePos.x,
+          y: safePos.y,
+          homeX: safeHome.x,
+          homeY: safeHome.y,
+          workX: safeWork.x,
+          workY: safeWork.y
+        };
+      });
+
+      const initialEnemies = spawnFollowersOnLevelLoadByReset(
+        targetChunk.enemies || [],
+        prev.followers || [],
+        finalPx,
+        finalPy,
+        targetChunk.map
+      );
+
+      const syncedCaravan = syncCaravanState(
+        {
+          ...prev,
+          isOverworld: true,
+          currentChunkX: destX,
+          currentChunkY: destY,
+          caravanParkedChunk: { x: destX, y: destY },
+          caravanTravel: null,
+          map: targetChunk.map,
+          levelWidth: targetChunk.map[0]?.length || LEVEL_WIDTH,
+          levelHeight: targetChunk.map.length || LEVEL_HEIGHT,
+        },
+        prev.gameTime,
+        initialNpcs,
+        initialEnemies
+      );
+
       return {
         ...prev,
         isOverworld: true,
+        overworldZ: 0,
+        dungeonLevel: 0,
+        isTown: hasTownAtChunk(destX, destY),
+        weather: getValidWeatherForBiome(targetChunk.biome, targetChunk.weather),
         levelWidth: targetChunk.map[0]?.length || LEVEL_WIDTH,
         levelHeight: targetChunk.map.length || LEVEL_HEIGHT,
         biome: targetChunk.biome || prev.biome,
@@ -536,36 +653,22 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound }: Use
         map: targetChunk.map,
         discovered: discovered,
         visible: fov,
-        enemies: spawnFollowersOnLevelLoadByReset(targetChunk.enemies, prev.followers, finalPx, finalPy, targetChunk.map),
-        traps: targetChunk.traps,
-        chests: targetChunk.chests,
-        npcs: (targetChunk.npcs || []).map(npc => {
-          const safePos = findNearestSafeNpcTile(npc.x, npc.y, targetChunk.map);
-          const safeHome = npc.homeX !== undefined && npc.homeY !== undefined
-            ? findNearestSafeNpcTile(npc.homeX, npc.homeY, targetChunk.map)
-            : safePos;
-          const safeWork = npc.workX !== undefined && npc.workY !== undefined
-            ? findNearestSafeNpcTile(npc.workX, npc.workY, targetChunk.map)
-            : safePos;
-          return {
-            ...npc,
-            x: safePos.x,
-            y: safePos.y,
-            homeX: safeHome.x,
-            homeY: safeHome.y,
-            workX: safeWork.x,
-            workY: safeWork.y
-          };
-        }),
+        enemies: syncedCaravan.enemies,
+        traps: targetChunk.traps || [],
+        chests: targetChunk.chests || [],
+        npcs: syncedCaravan.npcs,
         lootPiles: targetChunk.lootPiles || [],
         corpses: targetChunk.corpses || [],
         bloodSplatters: targetChunk.bloodSplatters || [],
         dungeonProps: targetChunk.props || [],
         inventoryMaterials: nextMats,
+        visitedTiles: nextVisited,
+        activeEscapeAlarm: null,
         logs: newMsgs,
         playerStats: {
           ...prev.playerStats,
-          gold: nextGold
+          gold: nextGold,
+          depth: 0
         },
         caravanTravel: null
       };

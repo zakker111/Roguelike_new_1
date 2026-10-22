@@ -212,6 +212,9 @@ export interface GameEventPayloadMap {
   'time:changed': TimeChangedPayload;
   'chaos:surged': ChaosSurgedPayload;
   'faction:reputation_changed': FactionReputationChangedPayload;
+  'world:outpost_siege': import('../types/worldEvents').OutpostSiegeEventPayload;
+  'world:outpost_liberated': import('../types/worldEvents').OutpostLiberatedEventPayload;
+  'combat:faction_assist': import('../types/worldEvents').FactionAssistEventPayload;
 
   // Turn Lifecycle
   'turn:started': TurnStartedPayload;
