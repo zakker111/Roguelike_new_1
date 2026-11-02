@@ -1,5 +1,5 @@
 import React from 'react';
-import { GameState, Follower, Enemy, EnemyState } from '../types';
+import { GameState, Follower, Enemy, EnemyState, GameLogMessage } from '../types';
 import { getStandardFollowerCount } from '../utils/specialCats';
 
 interface UseTownServicesOptions {
@@ -221,7 +221,7 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
     });
   };
 
-  const handleHireMercenary = (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard') => {
+  const handleHireMercenary = (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard' | 'arto') => {
     setGameState((gameState) => {
       if (getStandardFollowerCount(gameState.followers) >= 3) {
         addLogMessage('🗣️ Bartender: "Your party is full! You can only manage up to 3 standard companions. (Special cats do not count toward this limit.)"', 'system');
@@ -275,6 +275,16 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
         color = '#c084fc'; // medium purple
         level = 3;
         desc = "A heavily armed merchant guard. Specialized in safehouse protection and outpost defense.";
+      } else if (type === 'arto') {
+        cost = 350;
+        name = "Arto the Iron Breaker (Strength Berserker)";
+        hp = 95;
+        atk = 16;
+        def = 6;
+        char = '🪓';
+        color = '#ea580c'; // fiery berserker orange
+        level = 5;
+        desc = "A legendary berserker of colossal strength and unbreakable loyalty. In memory of my father.";
       }
 
       if (gameState.playerStats.gold < cost) {
@@ -286,7 +296,7 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
       const nextFollower: Follower = {
         id: `fol_${Date.now()}`,
         name: name,
-        archetypeId: type === 'champion' ? 'guard' : type === 'merchant_guard' ? 'merchant_guard' : 'thief',
+        archetypeId: type === 'arto' ? 'berserker' : type === 'champion' ? 'guard' : type === 'merchant_guard' ? 'merchant_guard' : 'thief',
         role: 'follower',
         char: char,
         color: color,
@@ -296,13 +306,40 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
         def: def,
         level: level,
         xp: 0,
-        xpNext: 150,
+        xpNext: 350,
         mode: 'follow',
-        equipment: { weapon: null, armor: null },
+        equipment: {
+          weapon: type === 'arto' ? {
+            id: `w_arto_axe_${Date.now()}`,
+            name: 'Heavy Iron Battleaxe',
+            type: 'weapon',
+            subType: 'two_handed_axe' as any,
+            damage: 8,
+            defense: 0,
+            critChance: 0.15,
+            range: 1,
+            color: '#ea580c',
+            value: 140,
+            description: 'A colossal two-handed battleaxe wielded with unstoppable strength.'
+          } : null,
+          armor: type === 'arto' ? {
+            id: `a_arto_plate_${Date.now()}`,
+            name: 'Reinforced Iron Cuirass',
+            type: 'armor',
+            subType: 'heavy_armor' as any,
+            damage: 0,
+            defense: 4,
+            critChance: 0,
+            range: 0,
+            color: '#94a3b8',
+            value: 95,
+            description: 'Heavy plate armor worn by the legendary berserker.'
+          } : null
+        },
         inventory: [],
         injuries: [],
         personality: desc,
-        temperament: 'Loyal'
+        temperament: type === 'arto' ? 'Fearless & Boisterous' : 'Loyal'
       };
 
       const newActor: Enemy = {
@@ -320,7 +357,7 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
         color: nextFollower.color,
         char: nextFollower.char,
         state: EnemyState.Chasing,
-        isElite: type === 'champion',
+        isElite: type === 'champion' || type === 'arto',
         patrolPath: [],
         patrolIndex: 0,
         debuffs: [],
@@ -334,6 +371,27 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
       });
       window.dispatchEvent(talkEvent);
 
+      const nextLogs: GameLogMessage[] = [
+        ...gameState.logs,
+        {
+          id: `hire_merc_${Date.now()}`,
+          text: type === 'arto'
+            ? `🪓 [SPECIAL COMPANION RECRUITED]: Arto pledges his colossal strength and battleaxe to your party! (-${cost} Gold)`
+            : `👥 MERCENARY HIRED: ${nextFollower.name} (Lvl ${level}) pledges their sword to you! (-${cost} Gold)`,
+          type: 'loot',
+          timestamp: 'RECRUIT'
+        }
+      ];
+
+      if (type === 'arto') {
+        nextLogs.push({
+          id: `memorial_arto_${Date.now()}`,
+          text: `🕊️ [MEMORIAL TRIBUTE]: In memory of my father — a pillar of unwavering strength, love, and protection. Arto fights at your side.`,
+          type: 'event',
+          timestamp: 'MEMORIAL'
+        });
+      }
+
       return {
         ...gameState,
         playerStats: {
@@ -342,15 +400,9 @@ export function useTownServices({ setGameState, addLogMessage, playSound }: UseT
         },
         followers: [...gameState.followers, nextFollower],
         enemies: [...gameState.enemies, newActor],
-        logs: [
-          ...gameState.logs,
-          {
-            id: `hire_merc_${Date.now()}`,
-            text: `👥 MERCENARY HIRED: ${nextFollower.name} (Lvl ${level}) pledges their sword to you! (-${cost} Gold)`,
-            type: 'loot',
-            timestamp: 'RECRUIT'
-          }
-        ]
+        spawnedArto: type === 'arto' ? true : gameState.spawnedArto,
+        foundArto: type === 'arto' ? true : gameState.foundArto,
+        logs: nextLogs
       };
     });
   };

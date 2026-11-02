@@ -29,8 +29,11 @@ export function executeSupportTactics(ctx: AITacticContext): AITacticResult | nu
   }
 
   const isSupportUnit =
+    e.aiRole === 'support' ||
     e.aiRole === 'support_healer' ||
     e.aiRole === 'support_buffer' ||
+    e.abilities?.includes('heal_ally') ||
+    e.abilities?.includes('bloodlust') ||
     e.type === EnemyType.Necromancer ||
     e.type === EnemyType.Tidecaller ||
     /shaman|cleric|priest|druid|healer|apothecary|witch/i.test(e.name);

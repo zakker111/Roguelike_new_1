@@ -198,7 +198,10 @@
     "range": 1,
     "speed": 1.0,
     "char": "👹",
-    "color": "#16a34a"
+    "color": "#16a34a",
+    "aiRole": "flanking",
+    "dropMaterials": ["mat_wood", "mat_iron"],
+    "dropCatalysts": ["cat_poison"]
   },
   "Nakki": {
     "name": "Näkki Water Kelpie",
@@ -208,7 +211,11 @@
     "range": 2,
     "speed": 0.9,
     "char": "🧜",
-    "color": "#06b6d4"
+    "color": "#06b6d4",
+    "aiRole": "flanking",
+    "tags": ["water_walk", "amphibious"],
+    "dropMaterials": ["mat_iron", "mat_feybone"],
+    "dropCatalysts": ["cat_frost"]
   },
   "Otso": {
     "name": "Otso the Honey-Paw",
@@ -218,7 +225,11 @@
     "range": 1,
     "speed": 1.1,
     "char": "🐻",
-    "color": "#b45309"
+    "color": "#b45309",
+    "aiRole": "boss",
+    "abilities": ["ground_slam", "heavy_cleave"],
+    "dropMaterials": ["mat_prime_meat", "mat_thick_hide", "mat_obsidian"],
+    "dropCatalysts": ["cat_fire", "cat_lightning"]
   },
   "Louhi": {
     "name": "Louhi, Mistress of Pohjola",
@@ -228,7 +239,11 @@
     "range": 4,
     "speed": 0.8,
     "char": "🦅",
-    "color": "#c084fc"
+    "color": "#c084fc",
+    "aiRole": "boss",
+    "abilities": ["ground_slam", "blizzard"],
+    "dropMaterials": ["mat_obsidian", "mat_mithril", "mat_feybone"],
+    "dropCatalysts": ["cat_frost", "cat_shadow"]
   },
   "IkuTurso": {
     "name": "Iku-Turso Eternal Leviathan",
@@ -238,7 +253,10 @@
     "range": 2,
     "speed": 1.0,
     "char": "🦑",
-    "color": "#0ea5e9"
+    "color": "#0ea5e9",
+    "aiRole": "boss",
+    "tags": ["water_walk", "amphibious"],
+    "abilities": ["ground_slam"]
   },
   "Kalma": {
     "name": "Kalma Grave Goddess",

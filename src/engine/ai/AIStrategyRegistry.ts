@@ -58,6 +58,9 @@ export class AIStrategyRegistry {
 
     if (melee) {
       this.strategies.set('ambusher', melee);
+      this.strategies.set('flanking', melee);
+      this.strategies.set('flanker', melee);
+      this.strategies.set('telegraph', melee);
     }
     if (kiting) {
       this.strategies.set('skirmisher_kiting', kiting);

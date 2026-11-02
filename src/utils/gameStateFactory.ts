@@ -221,6 +221,8 @@ export function createNewGameRun(seed?: number): GameState {
     followers: [],
     spawnedCats: initialCats,
     spawnedSeppo: false,
+    spawnedArto: false,
+    foundArto: false,
     activeQuestBoardOpen: false,
     activeFollowerIdForInspect: null,
     isBraced: false,

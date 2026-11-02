@@ -130,6 +130,7 @@ export function handleChunkBorderCrossing(
       if (asyncChunkBatcher.hasCachedChunk(nextCx, nextCy)) {
         targetChunk = ensureChunkDecompressed(asyncChunkBatcher.getCachedChunkSync(nextCx, nextCy)!);
       } else {
+        const isArtoInParty = prev.followers.some(f => (f.name || '').toLowerCase().includes('arto') || f.id.includes('arto'));
         targetChunk = generateOverworldChunk(
           nextCx,
           nextCy,
@@ -138,7 +139,8 @@ export function handleChunkBorderCrossing(
           nextSpawnedCats,
           prev.spawnedSeppo,
           prev.playerStats,
-          prev.currentWeapon
+          prev.currentWeapon,
+          prev.spawnedArto || isArtoInParty
         );
         asyncChunkBatcher.storeChunkInCache(targetChunk);
       }
@@ -155,6 +157,16 @@ export function handleChunkBorderCrossing(
         }
       });
       hasSeppoOnLoad = targetChunk.npcs.some((n) => n.id === 'npc_seppo');
+    }
+
+    const hasArtoOnLoad = targetChunk.npcs.some((n) => n.id === 'npc_arto_unique' || (n.name && n.name.toLowerCase().includes('arto')));
+    if (hasArtoOnLoad && !prev.foundArto) {
+      newMsgs.push({
+        id: `discover_arto_${Date.now()}`,
+        text: `🕊️ [RARE ENCOUNTER]: You discover Arto the Iron Breaker resting by his colossal battleaxe! A special, one-of-a-kind ally of immense strength. (In memory of my father)`,
+        type: 'event',
+        timestamp: 'MEMORIAL'
+      });
     }
 
     asyncChunkBatcher.pregenerateSurroundingChunks(nextCx, nextCy, 1, {
@@ -377,6 +389,8 @@ export function handleChunkBorderCrossing(
       overworldChunks: managedChunks,
       spawnedCats: nextSpawnedCats,
       spawnedSeppo: prev.spawnedSeppo || hasSeppoOnLoad,
+      spawnedArto: prev.spawnedArto || hasArtoOnLoad,
+      foundArto: prev.foundArto || hasArtoOnLoad,
       map: targetChunk.map,
       discovered: discovered,
       visible: fov,

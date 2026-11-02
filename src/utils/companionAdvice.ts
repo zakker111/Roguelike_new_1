@@ -48,15 +48,35 @@ export function getCompanionAdvice(gameState: GameState, follower?: Follower | n
     }
   }
 
+  // Follower personality check
+  const folNameLower = (follower?.name || '').toLowerCase();
+  const isArto = folNameLower.includes('arto') || follower?.archetypeId === 'berserker';
+
   // 1. Critical Health Warning
   const hpPercent = gameState.playerStats.hp / gameState.playerStats.maxHp;
   if (hpPercent <= 0.3) {
+    if (isArto) {
+      return `🪓 ${name}: "Gwahaha! Just a flesh wound, but drink a potion or roast a steak before you drop, comrade! We still have skulls to crack!"`;
+    }
     const healthBarks = [
       `🛡️ ${name}: "Master, your health is critically low (${gameState.playerStats.hp}/${gameState.playerStats.maxHp} HP)! Eat cooked food, quaff a healing potion, or build a campfire to rest before taking another step!"`,
       `🛡️ ${name}: "You're bleeding heavily! We cannot survive another hit—heal yourself immediately or let's fall back!"`,
       `🛡️ ${name}: "Hold on, chief! Drink a potion or consume some provisions before we get ambushed!"`
     ];
     return healthBarks[Math.floor(Math.random() * healthBarks.length)];
+  }
+
+  // Dedicated Arto Strength Berserker Barks
+  if (isArto) {
+    const artoBarks = [
+      `🪓 ${name}: "HA! Point me at the biggest monster in this dungeon! My battleaxe will split their skulls clean in half!"`,
+      `🪓 ${name}: "Nothing a colossal blow can't solve! Two hands on the axe, zero hesitation!"`,
+      `🪓 ${name}: "Eat hearty and lift heavy, comrade! A seasoned warrior needs campfire steaks and high Strength to cleave dungeon hordes!"`,
+      `🪓 ${name}: "Give me the heaviest two-handed weapon in your pack and watch me cleave three foes in a single swing!"`,
+      `🪓 ${name}: "Stand firm, comrade. My father taught me that true strength is standing between darkness and the ones you love. (In memory of my father)"`,
+      `🪓 ${name}: "When in doubt, smash right through! Colossal brute strength beats cowardly trickery every single day!"`,
+    ];
+    return artoBarks[(gameState.playerStats.turnsPlayed || 0) % artoBarks.length];
   }
 
   // 2. High World Threat Tier Warning

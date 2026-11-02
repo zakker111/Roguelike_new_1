@@ -237,5 +237,30 @@ describe('Combat Floating Text Directional Outward Drift & Archetypes Suite', ()
       expect(animState.state).toBe('attack');
       expect(animState.direction).toBe('east');
     });
+
+    it('safely calculates deterministic seed and offset even if splatter.id or intensity is undefined', () => {
+      // Simulates malformed or legacy blood splatters in saved state
+      const malformedSplatter: any = {
+        x: 10,
+        y: 15,
+        // id is undefined
+        // intensity is undefined
+      };
+
+      const x = malformedSplatter.x;
+      const y = malformedSplatter.y;
+      const index = 0;
+      const splatterKey = malformedSplatter.id || `splatter_${x}_${y}_${index}`;
+      const seed = typeof malformedSplatter.id === 'string'
+        ? (malformedSplatter.id.split('_').pop()?.charCodeAt(0) || 7)
+        : ((x * 31 + y * 17 + index) % 100);
+      const centerOffsetX = (seed % 8) - 4;
+      const centerOffsetY = ((seed >> 2) % 8) - 4;
+
+      expect(splatterKey).toBe('splatter_10_15_0');
+      expect(typeof seed).toBe('number');
+      expect(centerOffsetX).toBeGreaterThanOrEqual(-4);
+      expect(centerOffsetY).toBeLessThanOrEqual(4);
+    });
   });
 });

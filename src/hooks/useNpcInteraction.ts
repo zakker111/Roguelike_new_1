@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
-import { GameState, NPC, Follower, Enemy, EnemyState } from '../types';
+import { GameState, NPC, Follower, Enemy, EnemyState, GameLogMessage } from '../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../utils/gameUtils';
 import { computeFOV } from '../utils/ai';
 import { generateOverworldChunk, formatGameTime } from '../utils/overworld';
@@ -81,6 +81,15 @@ export function useNpcInteraction({
       ];
       quote = catQuotes[Math.floor(Math.random() * catQuotes.length)];
       effectText = '🐾 Purr!';
+    } else if (archetype === 'berserker' || lowercaseName.includes('arto')) {
+      const artoQuotes = [
+        `"Gwahaha! With two hands on the battleaxe and a stout heart, no monster can stand against us!"`,
+        `"I feel invincible today, comrade! Let's cleave a path through whatever dares cross our path!"`,
+        `"Stand firm, my friend. A father's strength never wavers, and neither will my axe! (In memory of my father)"`,
+        `"Point the way! We fight with titanic strength and relentless resolve!"`
+      ];
+      quote = artoQuotes[Math.floor(Math.random() * artoQuotes.length)];
+      effectText = '🪓 Titanic!';
     } else if (archetype === 'guard' || archetype === 'merchant_guard' || lowercaseName.includes('guard') || lowercaseName.includes('shield')) {
       const guardQuotes = [
         `"Watching your back, commander! Let no raider ambush us."`,
@@ -165,40 +174,78 @@ export function useNpcInteraction({
         return;
       }
 
-      const cost = 180;
+      const isArto = npc.name.toLowerCase().includes('arto') || npc.char === '🪓' || npc.id === 'npc_arto_unique';
+      const isGuard = !isArto && npc.char === '🛡';
+      const rep = gameState.townReputation !== undefined ? gameState.townReputation : 100;
+      const isEliteGuard = isGuard && rep >= 81;
+      const cost = isArto ? 350 : (isEliteGuard ? 220 : 180);
+
       if (gameState.playerStats.gold < cost) {
-        addLogMessage(`🗣| ${npc.name} says: "I require ${cost} Gold to pledge my steel. You look a bit short on pouch."`, 'system');
+        if (isArto) {
+          addLogMessage(`🗣️ Arto says: "Gwahaha! I require 350 Gold for travel supplies and rations before I pledge my steel, comrade. (In memory of my father)"`, 'system');
+        } else {
+          addLogMessage(`🗣️ ${npc.name} says: "I require ${cost} Gold to pledge my steel. You look a bit short on pouch."`, 'system');
+        }
         return;
       }
 
       // Process hire
       setGameState((prev) => {
-        const isGuard = npc.char === '🛡';
-        const rep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const isEliteGuard = isGuard && rep >= 81;
-
         const nextFollower: Follower = {
           id: `fol_${Date.now()}`,
-          name: isEliteGuard ? `${npc.name.split(' (')[0]} (Elite Shield Guard)` : npc.name.split(' (')[0],
-          archetypeId: isGuard ? 'guard' : 'thief',
+          name: isArto
+            ? 'Arto the Iron Breaker (Strength Berserker)'
+            : isEliteGuard 
+            ? `${npc.name.split(' (')[0]} (Elite Shield Guard)` 
+            : npc.name.split(' (')[0],
+          archetypeId: isArto ? 'berserker' : (isGuard ? 'guard' : 'thief'),
           role: 'follower',
           char: npc.char,
-          color: isEliteGuard ? '#f59e0b' : npc.color,
-          hp: isEliteGuard ? 65 : (isGuard ? 40 : 30),
-          maxHp: isEliteGuard ? 65 : (isGuard ? 40 : 30),
-          atk: isEliteGuard ? 10 : (isGuard ? 6 : 5),
-          def: isEliteGuard ? 6 : (isGuard ? 3 : 1),
-          level: isEliteGuard ? 4 : 1,
+          color: isArto ? '#ea580c' : (isEliteGuard ? '#f59e0b' : npc.color),
+          hp: isArto ? 95 : (isEliteGuard ? 65 : (isGuard ? 40 : 30)),
+          maxHp: isArto ? 95 : (isEliteGuard ? 65 : (isGuard ? 40 : 30)),
+          atk: isArto ? 16 : (isEliteGuard ? 10 : (isGuard ? 6 : 5)),
+          def: isArto ? 6 : (isEliteGuard ? 6 : (isGuard ? 3 : 1)),
+          level: isArto ? 5 : (isEliteGuard ? 4 : 1),
           xp: 0,
-          xpNext: 100,
+          xpNext: 350,
           mode: 'follow',
-          equipment: { weapon: null, armor: null },
+          equipment: {
+            weapon: isArto ? {
+              id: `w_arto_axe_${Date.now()}`,
+              name: 'Heavy Iron Battleaxe',
+              type: 'weapon',
+              subType: 'two_handed_axe' as any,
+              damage: 8,
+              defense: 0,
+              critChance: 0.15,
+              range: 1,
+              color: '#ea580c',
+              value: 140,
+              description: 'A colossal two-handed battleaxe wielded with unstoppable strength.'
+            } : null,
+            armor: isArto ? {
+              id: `a_arto_plate_${Date.now()}`,
+              name: 'Reinforced Iron Cuirass',
+              type: 'armor',
+              subType: 'heavy_armor' as any,
+              damage: 0,
+              defense: 4,
+              critChance: 0,
+              range: 0,
+              color: '#94a3b8',
+              value: 95,
+              description: 'Heavy plate armor worn by the legendary berserker.'
+            } : null
+          },
           inventory: [],
           injuries: [],
-          personality: isEliteGuard 
+          personality: isArto
+            ? 'A legendary berserker of colossal strength, fearless courage, and unbreakable loyalty. In memory of my father.'
+            : isEliteGuard 
             ? 'Elite heavy-plate peacekeeper sworn to defend the Sunder Champion.' 
             : (isGuard ? 'Shield-bearer defender' : 'Agile critical lockpicker'),
-          temperament: 'Loyal'
+          temperament: isArto ? 'Fearless & Boisterous' : 'Loyal'
         };
 
         // Remove from town npcs lists
@@ -219,7 +266,7 @@ export function useNpcInteraction({
           color: nextFollower.color,
           char: nextFollower.char,
           state: EnemyState.Chasing,
-          isElite: isEliteGuard,
+          isElite: isEliteGuard || isArto,
           patrolPath: [],
           patrolIndex: 0,
           debuffs: [],
@@ -227,9 +274,30 @@ export function useNpcInteraction({
           followerId: nextFollower.id
         };
 
-        const logsText = isEliteGuard 
+        const logsText = isArto
+          ? `🪓 [SPECIAL COMPANION RECRUITED]: Arto pledges his colossal strength and battleaxe to your party! (-${cost} Gold)`
+          : isEliteGuard 
           ? `👥 COMPANION JOINED: ${nextFollower.name} pledged heavy plate steel to the Champion! (-${cost} Gold)`
           : `👥 COMPANION JOINED: ${nextFollower.name} joins your party! (-${cost} Gold)`;
+
+        const nextLogs: GameLogMessage[] = [
+          ...prev.logs,
+          {
+            id: `hire_${Date.now()}`,
+            text: logsText,
+            type: 'loot',
+            timestamp: 'RECRUIT'
+          }
+        ];
+
+        if (isArto) {
+          nextLogs.push({
+            id: `memorial_arto_${Date.now()}`,
+            text: `🕊️ [MEMORIAL TRIBUTE]: In memory of my father — a pillar of unwavering strength, love, and protection. Arto fights at your side.`,
+            type: 'event',
+            timestamp: 'MEMORIAL'
+          });
+        }
 
         return {
           ...prev,
@@ -240,12 +308,9 @@ export function useNpcInteraction({
           followers: [...prev.followers, nextFollower],
           enemies: [...prev.enemies, newActor],
           npcs: nextNpcs,
-          logs: [...prev.logs, {
-            id: `hire_${Date.now()}`,
-            text: logsText,
-            type: 'loot',
-            timestamp: 'RECRUIT'
-          }]
+          spawnedArto: isArto ? true : prev.spawnedArto,
+          foundArto: isArto ? true : prev.foundArto,
+          logs: nextLogs
         };
       });
 

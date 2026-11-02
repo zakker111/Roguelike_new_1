@@ -80,9 +80,19 @@ if (weapons) {
   console.log(`✅ Weapons: ${weaponTypes.size} validated.`);
 }
 
-// 4. Enemy drop references check
+// 4. Enemy AI roles and drop references check
+const validAiRoles = new Set([
+  'melee', 'ranged', 'flanking', 'skirmisher_kiting', 'support_healer',
+  'support_buffer', 'tank', 'ambusher', 'passive', 'coward_flee',
+  'boss', 'telegraph', 'support', 'kiting', 'coward', 'aggressive',
+  'defensive', 'summoner', 'patrol'
+]);
+
 if (enemies) {
   for (const [id, def] of Object.entries(enemies)) {
+    if (def.aiRole && !validAiRoles.has(def.aiRole)) {
+      errors.push(`[ENEMIES] Enemy "${id}" has unknown aiRole "${def.aiRole}"`);
+    }
     if (def.dropMaterials) {
       for (const mat of def.dropMaterials) {
         if (!itemIds.has(mat)) {

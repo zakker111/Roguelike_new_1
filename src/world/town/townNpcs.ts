@@ -17,7 +17,8 @@ export function spawnTownNpcs(
   housesList: any[],
   secondFloorBuildings: Set<string>,
   isPortTown: boolean,
-  spawnedCats?: string[]
+  spawnedCats?: string[],
+  spawnedArto?: boolean
 ): void {
   const getNpcHomeCoords = (house: any, defaultOffsetX = 3, defaultOffsetY = 1) => {
     if (secondFloorBuildings.has(house.id)) {
@@ -253,18 +254,25 @@ export function spawnTownNpcs(
     ]
   });
 
-  // 8. Recruitable Companion
+  // 8. Recruitable Companion (Arne the Shield Guard, Sade the Agile Thief)
   const companionHouse = housesList.find((h: any) => h.id === 'villager2') || housesList[4];
-  const isGuard = (Math.abs(chunkX + chunkY) % 2 === 0);
+  const isGuard = Math.abs(chunkX * 3 + chunkY * 7) % 2 === 0;
   const compHome = getNpcHomeCoords(companionHouse, 3, 1);
+
+  const compName = isGuard ? 'Arne (Shield Guard)' : 'Sade (Agile Thief)';
+  const compChar = isGuard ? '🛡' : '🗡';
+  const compColor = isGuard ? '#60a5fa' : '#34d399';
+  const compDialogue = isGuard
+    ? ["I can watch your back and block blows. Hire me for 180 Gold!"]
+    : ["Need lockpicks and critical backstabs? I can tag along for 180 Gold."];
 
   npcs.push({
     id: `npc_companion_${chunkX}_${chunkY}`,
-    name: isGuard ? 'Arne (Shield Guard)' : 'Sade (Agile Thief)',
+    name: compName,
     role: 'companion_hire' as any,
-    char: isGuard ? '🛡' : '🗡',
-    originalChar: isGuard ? '🛡' : '🗡',
-    color: isGuard ? '#60a5fa' : '#34d399',
+    char: compChar,
+    originalChar: compChar,
+    color: compColor,
     x: companionHouse.x + 3,
     y: companionHouse.y + 3,
     z: 0,
@@ -275,10 +283,41 @@ export function spawnTownNpcs(
     workY: midY + 4,
     workZ: 0,
     scheduleState: 'leisure',
-    dialogue: isGuard
-      ? ["I can watch your back and block blows. Hire me for 180 Gold!"]
-      : ["Need lockpicks and critical backstabs? I can tag along for 180 Gold."]
+    dialogue: compDialogue
   });
+
+  // 8b. Rare One-of-a-Kind Encounter: Arto the Iron Breaker (Strength Berserker)
+  // Very rarely spawns in remote towns (5% chance, non-starter town, only once per session)
+  const isStarterTown = chunkX === 0 && chunkY === 0;
+  if (!spawnedArto && !isStarterTown) {
+    const artoTownRoll = prng(chunkX, chunkY, 94107);
+    if (artoTownRoll < 0.05) {
+      npcs.push({
+        id: 'npc_arto_unique',
+        name: 'Arto the Iron Breaker (Strength Berserker)',
+        role: 'companion_hire' as any,
+        char: '🪓',
+        originalChar: '🪓',
+        color: '#ea580c',
+        x: companionHouse.x + 4,
+        y: companionHouse.y + 2,
+        z: 0,
+        homeX: companionHouse.x + 4,
+        homeY: companionHouse.y + 2,
+        homeZ: 0,
+        workX: midX + 3,
+        workY: midY + 3,
+        workZ: 0,
+        scheduleState: 'leisure',
+        dialogue: [
+          "I am Arto! A fortress of muscle and an unbreakable spirit. For 350 Gold, my heavy battleaxe will cleave through any danger that threatens you, comrade!",
+          "A real warrior protects those they care about, no matter how fierce the tempest. Stand firm behind my axe!",
+          "🕊️ [In Memory of My Father]: A tribute to an irreplaceable father — a pillar of unwavering strength, love, and protection.",
+          "Flex your courage, friend! Life's greatest battles are won with two hands on the haft and a steadfast heart."
+        ]
+      });
+    }
+  }
 
   // 9. Legendary Special Cats (Jekku, Pulla, Alli, Leevi)
   const activeSpawnedCats = spawnedCats || [];

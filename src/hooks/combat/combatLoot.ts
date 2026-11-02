@@ -189,17 +189,27 @@ export function generateCombatLoot(
     : bossMats).filter(Boolean);
   let finalCats = (isLootGoblin ? goblinCats : isDragon ? [randomDragonCatalyst] : bossCats).filter(Boolean);
 
-  if (updatedEnemy.type === EnemyType.Hiisi) {
+  if (updatedEnemy.dropMaterials && updatedEnemy.dropMaterials.length > 0) {
+    finalMats = [...updatedEnemy.dropMaterials];
+  } else if (updatedEnemy.type === EnemyType.Hiisi) {
     finalMats = ['mat_wood', 'mat_iron'];
-    finalCats = ['cat_poison'];
   } else if (updatedEnemy.type === EnemyType.Nakki) {
     finalMats = ['mat_iron', 'mat_feybone'];
-    finalCats = ['cat_frost'];
   } else if (updatedEnemy.type === EnemyType.Otso) {
     finalMats = ['mat_prime_meat', 'mat_thick_hide', 'mat_obsidian'];
-    finalCats = ['cat_fire', 'cat_lightning'];
   } else if (updatedEnemy.type === EnemyType.Louhi) {
     finalMats = ['mat_obsidian', 'mat_mithril', 'mat_feybone'];
+  }
+
+  if (updatedEnemy.dropCatalysts && updatedEnemy.dropCatalysts.length > 0) {
+    finalCats = [...updatedEnemy.dropCatalysts];
+  } else if (updatedEnemy.type === EnemyType.Hiisi) {
+    finalCats = ['cat_poison'];
+  } else if (updatedEnemy.type === EnemyType.Nakki) {
+    finalCats = ['cat_frost'];
+  } else if (updatedEnemy.type === EnemyType.Otso) {
+    finalCats = ['cat_fire', 'cat_lightning'];
+  } else if (updatedEnemy.type === EnemyType.Louhi) {
     finalCats = ['cat_frost', 'cat_shadow'];
   }
 

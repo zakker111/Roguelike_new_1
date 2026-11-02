@@ -200,7 +200,10 @@ export interface Enemy {
   maxStaggerMeter?: number;   // Max Stagger threshold before stance breaks
   isStaggered?: boolean;      // True if guard/posture is currently shattered (vulnerable)
   staggerTurns?: number;      // Remaining turns of stagger stun
-  aiRole?: 'melee' | 'ranged' | 'flanking' | 'skirmisher_kiting' | 'support_healer' | 'support_buffer' | 'tank' | 'ambusher' | 'passive' | 'coward_flee' | 'boss'; // Advanced behavioral AI archetype
+  aiRole?: 'melee' | 'ranged' | 'flanking' | 'skirmisher_kiting' | 'support_healer' | 'support_buffer' | 'tank' | 'ambusher' | 'passive' | 'coward_flee' | 'boss' | 'telegraph' | 'support' | string; // Advanced behavioral AI archetype
+  abilities?: string[];
+  tags?: string[];
+  isWaterWalkable?: boolean;
   supportSpellCooldown?: number; // Cooldown turns before support healing/buffing spells can be re-cast
   isPanicked?: boolean;          // Flag when leader falls and squad breaks formation
   panicTurns?: number;           // Remaining turns of panicked retreat
@@ -246,7 +249,7 @@ export interface NPC {
 export interface Follower {
   id: string;
   name: string;
-  archetypeId: 'guard' | 'thief' | 'cat' | 'merchant_guard';
+  archetypeId: 'guard' | 'thief' | 'cat' | 'merchant_guard' | 'berserker' | string;
   role: string;
   char: string;
   color: string;

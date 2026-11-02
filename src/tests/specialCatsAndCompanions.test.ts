@@ -14,10 +14,11 @@ import {
   hasFoundAllSpecialCats,
   createAllCatsFoundCelebrationLog
 } from '../utils/specialCats';
-import { Follower, EnemyState, TileType } from '../types';
+import { Follower, EnemyState, TileType, LEVEL_WIDTH, LEVEL_HEIGHT } from '../types';
 import { getCompanionAdvice } from '../utils/companionAdvice';
 import { processFollowerTurn } from '../hooks/ai/useFollowerAI';
 import { spawnFollowersOnLevelLoadByReset } from '../world/dungeon/dungeonEntities';
+import { generateOverworldChunk } from '../utils/overworld';
 
 describe('Special Cats & Companion Sub-Engine Tests', () => {
   it('defines all 4 legendary cats with full profiles and distinct stats', () => {
@@ -369,5 +370,204 @@ describe('Special Cats & Companion Sub-Engine Tests', () => {
     const jekkuActor = spawned.find((s) => s.name.includes('Jekku'));
     expect(jekkuActor).toBeDefined();
     expect(jekkuActor?.range).toBe(1);
+  });
+
+  it('correctly configures Arto as a Strength Berserker with high stats and battleaxe', () => {
+    const arto: Follower = {
+      id: 'fol_arto_test',
+      name: 'Arto the Iron Breaker',
+      archetypeId: 'berserker',
+      role: 'follower',
+      char: '🪓',
+      color: '#ea580c',
+      hp: 95,
+      maxHp: 95,
+      atk: 16,
+      def: 6,
+      level: 5,
+      xp: 0,
+      xpNext: 350,
+      mode: 'follow',
+      equipment: {
+        weapon: {
+          id: 'w_test_axe',
+          name: 'Heavy Iron Battleaxe',
+          type: 'weapon',
+          subType: 'two_handed_axe',
+          damage: 8,
+          defense: 0,
+          critChance: 0.15,
+          range: 1,
+          color: '#ea580c',
+          value: 120,
+          description: 'A colossal two-handed battleaxe.'
+        },
+        armor: {
+          id: 'a_test_plate',
+          name: 'Reinforced Iron Cuirass',
+          type: 'armor',
+          subType: 'heavy_armor',
+          damage: 0,
+          defense: 4,
+          critChance: 0,
+          range: 0,
+          color: '#94a3b8',
+          value: 90,
+          description: 'Heavy plate armor.'
+        }
+      },
+      inventory: [],
+      injuries: [],
+      personality: 'Fearless',
+      temperament: 'Boisterous'
+    };
+
+    expect(arto.archetypeId).toBe('berserker');
+    expect(arto.hp).toBe(95);
+    expect(arto.atk).toBe(16);
+    expect(arto.def).toBe(6);
+    expect(arto.char).toBe('🪓');
+    expect(arto.personality).toBe('Fearless');
+
+    // Test Arto dynamic advice
+    const mockState: any = {
+      playerStats: { hp: 100, maxHp: 100, turnsPlayed: 4 },
+      chaosScore: 0,
+      weather: 'clear',
+      isOverworld: true,
+      currentChunkX: 0,
+      currentChunkY: 0
+    };
+
+    const advice = getCompanionAdvice(mockState, arto);
+    expect(advice).toContain('Arto');
+    const lowerAdvice = advice.toLowerCase();
+    expect(lowerAdvice.includes('battleaxe') || lowerAdvice.includes('skulls') || lowerAdvice.includes('strength') || lowerAdvice.includes('brute') || lowerAdvice.includes('colossal')).toBe(true);
+
+    // Test Arto critical health bark
+    const lowHpState: any = {
+      ...mockState,
+      playerStats: { hp: 20, maxHp: 100, turnsPlayed: 4 }
+    };
+    const lowHpAdvice = getCompanionAdvice(lowHpState, arto);
+    expect(lowHpAdvice).toContain('flesh wound');
+  });
+
+  it('processes Arto berserker combat turn with titanic cleave attack', () => {
+    const dummyMap = Array(15).fill(null).map(() => Array(15).fill(TileType.Grass));
+    const logs: string[] = [];
+
+    const artoActor: any = {
+      id: 'fol_arto_combat',
+      name: 'Arto the Iron Breaker',
+      char: '🪓',
+      color: '#ea580c',
+      x: 5,
+      y: 5,
+      hp: 95,
+      maxHp: 95,
+      atk: 16,
+      def: 6,
+      range: 1,
+      isFollower: true,
+      followerId: 'fol_arto',
+      state: EnemyState.Chasing
+    };
+
+    const enemy: any = {
+      id: 'target_troll',
+      name: 'Cave Troll',
+      char: 'T',
+      color: '#84cc16',
+      x: 5,
+      y: 6, // adjacent tile (range 1)
+      hp: 50,
+      maxHp: 50,
+      atk: 10,
+      def: 2,
+      isFollower: false
+    };
+
+    let appliedDamage = 0;
+    const applyDmg = (_tgt: any, dmg: number) => {
+      appliedDamage += dmg;
+      return false;
+    };
+
+    processFollowerTurn({
+      e: artoActor,
+      i: 0,
+      px: 5,
+      py: 4,
+      prev: {
+        map: dummyMap,
+        visible: Array(15).fill(null).map(() => Array(15).fill(true)),
+        followers: [{ id: 'fol_arto', name: 'Arto the Iron Breaker', mode: 'follow' } as any]
+      } as any,
+      nextGuardsHostile: false,
+      nextEnemies: [artoActor, enemy],
+      updatedEnemiesList: [artoActor, enemy],
+      updatedStats: { turnsPlayed: 1, relics: [] } as any,
+      staticLogs: logs,
+      playSound: () => {},
+      applyDamageToEnemy: applyDmg,
+      nextDefeatedCounts: {}
+    });
+
+    // Base damage is (16 - 2) = 14, boosted by +25% = Math.round(14 * 1.25) = 18 (or 27 if critical)
+    expect(appliedDamage).toBeGreaterThanOrEqual(17);
+    expect(logs.some((l) => l.includes('CLEAVE') && l.includes('Arto'))).toBe(true);
+  });
+
+  it('includes developer memorial tribute in memory of my father in Arto advice', () => {
+    const arto: Follower = {
+      id: 'fol_arto_memorial',
+      name: 'Arto the Iron Breaker',
+      archetypeId: 'berserker',
+      role: 'follower',
+      char: '🪓',
+      color: '#ea580c',
+      hp: 95,
+      maxHp: 95,
+      atk: 16,
+      def: 6,
+      level: 5,
+      xp: 0,
+      xpNext: 350,
+      mode: 'follow',
+      equipment: { weapon: null, armor: null },
+      inventory: [],
+      injuries: [],
+      personality: 'In memory of my father',
+      temperament: 'Fearless'
+    };
+
+    const mockState: any = {
+      playerStats: { hp: 100, maxHp: 100, turnsPlayed: 4 }, // Index 4 in artoBarks
+      chaosScore: 0,
+      weather: 'clear',
+      isOverworld: true,
+      currentChunkX: 0,
+      currentChunkY: 0
+    };
+
+    const advice = getCompanionAdvice(mockState, arto);
+    expect(advice.toLowerCase()).toContain('in memory of my father');
+  });
+
+  it('ensures Arto does not spawn in starter town chunk (0,0) and respects spawnedArto flag', () => {
+    // Generate starter town chunk (0,0)
+    const starterChunk = generateOverworldChunk(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT, [], false, undefined, null, false);
+    const hasArtoInStarter = starterChunk.npcs.some((n) => n.id === 'npc_arto_unique' || (n.name && n.name.includes('Arto')));
+    expect(hasArtoInStarter).toBe(false);
+
+    // When spawnedArto is true, a chunk will never spawn Arto again
+    for (let cx = -2; cx <= 2; cx++) {
+      for (let cy = -2; cy <= 2; cy++) {
+        const chunk = generateOverworldChunk(cx, cy, LEVEL_WIDTH, LEVEL_HEIGHT, [], false, undefined, null, true);
+        const hasArto = chunk.npcs.some((n) => n.id === 'npc_arto_unique' || (n.name && n.name.includes('Arto')));
+        expect(hasArto).toBe(false);
+      }
+    }
   });
 });

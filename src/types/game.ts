@@ -205,6 +205,8 @@ export interface GameState {
   spawnedCats?: string[]; // Keeps track of unique legendary town cats that have spawned (e.g. 'Jekku', 'Pulla', 'Alli')
   foundCats?: string[]; // Keeps track of special cats found/befriended by the player
   spawnedSeppo?: boolean; // Track if the drunk wandering merchant Seppo has spawned
+  spawnedArto?: boolean; // Track if Arto the legendary berserker has spawned in this session (unique once per session)
+  foundArto?: boolean; // Track if Arto has been discovered/found by the player
   // Wandering Factions & Lively Overworld Expansion
   clearedCamps?: string[]; // Keys of cleared camps, e.g. "camp_0,1"
   hasActiveCaravanLicense?: boolean; // Granted by defending caravan Tobias, gives discounts/sales boosts

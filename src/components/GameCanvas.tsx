@@ -819,22 +819,25 @@ function GameCanvasComponent({ gameState, onTileClick, shakeTrigger, graphicsMod
         }}
       >
         {/* Render CSS-animated Blood Splatters */}
-        {gameState.bloodSplatters && gameState.bloodSplatters.slice(-40).map((splatter) => {
+        {gameState.bloodSplatters && gameState.bloodSplatters.slice(-40).map((splatter, index) => {
           const x = splatter.x;
           const y = splatter.y;
           if (!gameState.discovered[y]?.[x]) return null;
 
-          const intensity = splatter.intensity;
+          const intensity = typeof splatter.intensity === 'number' ? splatter.intensity : 2;
           const color = splatter.color || '#dc2626';
 
-          // Compute deterministic offset from unique ID so they stay stationary
-          const seed = splatter.id.split('_').pop()?.charCodeAt(0) || 7;
+          // Compute deterministic offset from unique ID or coordinates so they stay stationary
+          const splatterKey = splatter.id || `splatter_${x}_${y}_${index}`;
+          const seed = typeof splatter.id === 'string'
+            ? (splatter.id.split('_').pop()?.charCodeAt(0) || 7)
+            : ((x * 31 + y * 17 + index) % 100);
           const centerOffsetX = (seed % 8) - 4;
           const centerOffsetY = ((seed >> 2) % 8) - 4;
 
           return (
             <div
-              key={splatter.id}
+              key={splatterKey}
               className="absolute pointer-events-none animate-blood-drip flex items-center justify-center"
               style={{
                 left: `calc(${x} * 28px - var(--cam-x))`,

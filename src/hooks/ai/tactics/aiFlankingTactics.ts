@@ -70,8 +70,15 @@ export function executeFlankingMovement(params: FlankingMovementParams): boolean
     for (const pos of flankAngles) {
       if (pos.x >= 0 && pos.x < LEVEL_WIDTH && pos.y >= 0 && pos.y < LEVEL_HEIGHT) {
         const tile = prev.map[pos.y]?.[pos.x];
+        const canWalkWater = Boolean(
+          e.tags?.includes('water_walk') ||
+          e.tags?.includes('amphibious') ||
+          (e as any).isWaterWalkable ||
+          e.type === EnemyType.Nakki ||
+          e.type === EnemyType.IkuTurso
+        );
         const isWalkable = isTileWalkableForEntity(tile, {
-          isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+          isWaterWalkable: canWalkWater,
           canOpenDoors: false
         });
         if (isWalkable) {
@@ -92,7 +99,13 @@ export function executeFlankingMovement(params: FlankingMovementParams): boolean
     }
   }
 
-  const isWaterWalkable = e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso;
+  const isWaterWalkable = Boolean(
+    e.tags?.includes('water_walk') ||
+    e.tags?.includes('amphibious') ||
+    (e as any).isWaterWalkable ||
+    e.type === EnemyType.Nakki ||
+    e.type === EnemyType.IkuTurso
+  );
   const nextStep = getNextStepTowards(
     e.x,
     e.y,

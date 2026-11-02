@@ -134,9 +134,10 @@ export default function FollowerInspectOverlay({ gameState, setGameState, follow
             updatedInv.push(prevEquip);
           }
 
-          // Recalculate stats: baseline 5 + gear
-          const baseAtk = fol.archetypeId === 'thief' ? 4 : 6;
-          const baseDef = fol.archetypeId === 'thief' ? 1 : 3;
+          // Recalculate stats: baseline + gear
+          const isBerserker = fol.archetypeId === 'berserker' || (fol.name || '').toLowerCase().includes('arto');
+          const baseAtk = isBerserker ? 10 : (fol.archetypeId === 'thief' ? 4 : 6);
+          const baseDef = isBerserker ? 4 : (fol.archetypeId === 'thief' ? 1 : 3);
 
           const finalAtk = baseAtk + (nextWeapon ? nextWeapon.damage : 0);
           const finalDef = baseDef + (nextArmor ? nextArmor.defense : 0);
@@ -173,8 +174,9 @@ export default function FollowerInspectOverlay({ gameState, setGameState, follow
           const nextWeapon = slot === 'weapon' ? null : fol.equipment.weapon;
           const nextArmor = slot === 'armor' ? null : fol.equipment.armor;
 
-          const baseAtk = fol.archetypeId === 'thief' ? 4 : 6;
-          const baseDef = fol.archetypeId === 'thief' ? 1 : 3;
+          const isBerserker = fol.archetypeId === 'berserker' || (fol.name || '').toLowerCase().includes('arto');
+          const baseAtk = isBerserker ? 10 : (fol.archetypeId === 'thief' ? 4 : 6);
+          const baseDef = isBerserker ? 4 : (fol.archetypeId === 'thief' ? 1 : 3);
 
           const finalAtk = baseAtk + (nextWeapon ? nextWeapon.damage : 0);
           const finalDef = baseDef + (nextArmor ? nextArmor.defense : 0);
@@ -256,6 +258,34 @@ export default function FollowerInspectOverlay({ gameState, setGameState, follow
                 </div>
               );
             })()}
+
+            {(f.archetypeId === 'berserker' || (f.name || '').toLowerCase().includes('arto')) && (
+              <div className="bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-orange-950/40 border border-amber-600/50 rounded-lg p-3 text-xs space-y-2 shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                    <span>🪓</span>
+                    <span>Arto the Iron Breaker • Colossal Berserker</span>
+                  </span>
+                  <span className="text-[9px] font-mono text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-700/60 font-bold">
+                    SPECIAL ALLY
+                  </span>
+                </div>
+                <div className="bg-slate-950/60 rounded p-2 border border-amber-800/40 text-[11px] text-amber-100/95 italic leading-relaxed flex items-start gap-2">
+                  <span className="text-base shrink-0">🕊️</span>
+                  <div>
+                    <strong className="text-amber-300 not-italic block font-sans text-[10px] uppercase tracking-wide">Developer Memorial</strong>
+                    "In memory of my father — a pillar of unwavering strength, love, and protection."
+                  </div>
+                </div>
+                <p className="text-slate-300 italic text-[11px] leading-relaxed">
+                  "Point me at the biggest monster you see, comrade! My battleaxe will split them clean in half!"
+                </p>
+                <div className="text-[10px] text-orange-300 font-semibold pt-1 border-t border-orange-900/50 flex items-center justify-between">
+                  <span>🪓 Perk: Titanic Cleave (+25% Melee Dmg)</span>
+                  <span className="text-slate-400 font-mono text-[9px]">Fears Nothing (&lt;15% HP)</span>
+                </div>
+              </div>
+            )}
             
             {/* Stat Box */}
             <div className="bg-slate-950/40 border border-slate-850 p-4 rounded-lg space-y-3">

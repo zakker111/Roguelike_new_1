@@ -8,6 +8,7 @@ export interface OverworldGenContext {
   height: number;
   spawnedCats?: string[];
   spawnedSeppo?: boolean;
+  spawnedArto?: boolean;
   playerStats?: { level: number; str: number; dex: number; int: number; cha: number; lck: number };
   currentWeapon?: { damage: number; name?: string } | null;
   biome: BiomeType;

@@ -877,4 +877,50 @@ export function generateWildernessChunk(ctx: OverworldGenContext): void {
         }
       }
     }
+
+    // 7. Spawn rare one-of-a-kind Strength Berserker Arto in the wilderness (only once per session)
+    let artoX = -1;
+    let artoY = -1;
+    if (!hasTown && !ctx.spawnedArto && distFromOrigin > 1.8) {
+      const artoRoll = prng(chunkX, chunkY, 82941);
+      if (artoRoll < 0.035) { // 3.5% rare chance in distant wilderness chunks
+        for (let attempts = 0; attempts < 100; attempts++) {
+          const rx = 8 + Math.floor(prng(chunkX * 19, chunkY * 23, attempts + 5) * (width - 16));
+          const ry = 6 + Math.floor(prng(chunkX * 29, chunkY * 17, attempts + 7) * (height - 12));
+          if (map[ry]?.[rx] === TileType.Grass && !npcs.some((n) => n.x === rx && n.y === ry)) {
+            artoX = rx;
+            artoY = ry;
+            break;
+          }
+        }
+
+        if (artoX !== -1) {
+          // Place rustic campfire beside Arto
+          if (map[artoY]?.[artoX + 1] === TileType.Grass) {
+            map[artoY][artoX + 1] = TileType.Campfire;
+          }
+          npcs.push({
+            id: 'npc_arto_unique',
+            name: 'Arto the Iron Breaker (Strength Berserker)',
+            role: 'companion_hire' as any,
+            char: '🪓',
+            originalChar: '🪓',
+            color: '#ea580c',
+            x: artoX,
+            y: artoY,
+            homeX: artoX,
+            homeY: artoY,
+            workX: artoX,
+            workY: artoY,
+            scheduleState: 'leisure',
+            dialogue: [
+              "I am Arto! A fortress of muscle and an unbreakable spirit. For 350 Gold, my heavy battleaxe will cleave through any danger that threatens you, comrade!",
+              "A real warrior protects those they care about, no matter how fierce the tempest. Stand firm behind my axe!",
+              "🕊️ [In Memory of My Father]: A tribute to an irreplaceable father — a pillar of unwavering strength, love, and protection.",
+              "Flex your courage, friend! Life's greatest battles are won with two hands on the haft and a steadfast heart."
+            ]
+          });
+        }
+      }
+    }
   }

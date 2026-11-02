@@ -69,6 +69,28 @@ class SpawnTableRegistryClass {
         { enemyId: 'DreadKnight', weight: 10, minDepth: 5 }
       ]
     });
+
+    // Standard Dungeon Scaling Table (Depths 1-10)
+    this.register({
+      id: 'dungeon_standard',
+      name: 'Standard Dungeon Scaling Table',
+      entries: [
+        { enemyId: 'Rat', weight: 20, maxDepth: 2 },
+        { enemyId: 'Goblin', weight: 25 },
+        { enemyId: 'Slime', weight: 15, maxDepth: 3 },
+        { enemyId: 'SkeletonMage', weight: 15 },
+        { enemyId: 'OrcBrute', weight: 12 },
+        { enemyId: 'Trapmaster', weight: 10, minDepth: 2 },
+        { enemyId: 'Spider', weight: 12, minDepth: 2 },
+        { enemyId: 'Hiisi', weight: 10, minDepth: 2 },
+        { enemyId: 'Nakki', weight: 10, minDepth: 2 },
+        { enemyId: 'Ghost', weight: 8, minDepth: 3 },
+        { enemyId: 'Vampire', weight: 10, minDepth: 3 },
+        { enemyId: 'Necromancer', weight: 8, minDepth: 3 },
+        { enemyId: 'DreadKnight', weight: 10, minDepth: 4 },
+        { enemyId: 'Dragon', weight: 4, minDepth: 5 }
+      ]
+    });
   }
 
   public register(table: SpawnTable): void {

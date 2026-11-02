@@ -195,6 +195,18 @@ export const AlliesRosterView: React.FC<AlliesRosterViewProps> = ({
                     <span className="font-bold text-amber-400">🐾 {catInfo.specialPerk}</span>
                   </div>
                 )}
+                {(f.archetypeId === 'berserker' || (f.name || '').toLowerCase().includes('arto')) && (
+                  <div className="mt-2 p-1.5 rounded bg-gradient-to-r from-orange-950/40 to-amber-950/30 border border-amber-600/40 text-[9.5px] text-amber-200/90 leading-tight space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-orange-400">🪓 Strength Berserker: +25% Melee Dmg & Titanic Cleave</span>
+                      <span className="text-[8px] font-mono text-amber-300 bg-amber-950/80 px-1 py-0.2 rounded border border-amber-800/40 font-bold">SPECIAL</span>
+                    </div>
+                    <div className="text-[9px] text-amber-300/80 italic flex items-center gap-1 border-t border-amber-900/40 pt-1">
+                      <span>🕊️</span>
+                      <span>In memory of my father</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Quick Combat Stats */}
                 <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-900 text-[10px] font-mono">

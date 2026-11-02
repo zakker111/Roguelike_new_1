@@ -35,8 +35,9 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - Real-time animated particles floating when characters suffer injuries or heal.
    - Dynamic blood color matching (outlaws bleed crimson red, giant swamp bugs leave toxic green, and skeleton mages splash celestial cyan).
    - Turn-based blood decay organically cleaning the dungeons tile-by-tile.
-4. **Allied Companions**:
+4. **Allied Companions & Special Rare Followers**:
    - Recruit mercenaries from dynamic tavern bars; upon hire they spawn as physical allies in the world, follow you across chunks, and dynamically attack nearby monsters.
+   - **Arto the Iron Breaker (Special Developer Memorial Companion)**: An exceptionally rare, one-of-a-kind Strength Berserker who spawns at most once per gameplay session in distant settlements (5%) or remote wilderness campfires (3.5%). Costs 350 Gold to recruit, arrives armed with a two-handed Heavy Battleaxe and Reinforced Plate Armor (160 HP, 22 STR), and bears a heartfelt developer memorial tribute (*"In memory of my father — a pillar of unwavering strength, love, and protection"*).
    - **Intelligent Faction Awareness**: Companions and followers (including special cats) never attack friendly town guards, peacekeepers, or allied caravan defenders unprovoked. They will immediately join the fight if the player initiates hostilities.
    - Core behavioral stances (target aggressive vs hold/wait) can be toggled on demand.
    - Real character permadeath and physical companion remains are preserved natively on the battlefield.
@@ -503,7 +504,7 @@ npm run validate:content
 # Run codebase import integrity check + JSON lint + content validation + TypeScript linter + Vitest suite
 npm run verify
 ```
-This audits all source files and 31 JSON data catalogs for broken relative imports and referential integrity (`validateContent.cjs`), validates TypeScript types (`tsc --noEmit`), and executes all 95 Vitest test suites (**685/685 tests passing 100% green**), including the newly verified Reusable Roguelike Engine (`ENGINE_MANUAL.md`), Generic Combat & Inventory Systems, Modular Dungeon Generators, Unified Event Bus, Action Mutator Hook Pipelines, Reactive Storyteller, and Cinematic Color Grading suites.
+This audits all source files and 31 JSON data catalogs for broken relative imports and referential integrity (`validateContent.cjs`), validates TypeScript types (`tsc --noEmit`), and executes all 98 Vitest test suites (**726/726 tests passing 100% green**), including the newly verified Reusable Roguelike Engine (`ENGINE_MANUAL.md`), Generic Combat & Inventory Systems, Modular Dungeon Generators, Unified Event Bus, Action Mutator Hook Pipelines, Reactive Storyteller, and Cinematic Color Grading suites.
 
 ---
 
@@ -559,7 +560,7 @@ Abyss Rogue is configured for out-of-the-box deployment to **GitHub Pages** usin
    ```bash
    git init
    git add .
-   git commit -m "feat: Abyss Rogue v8.14.0 release - Reusable Roguelike Engine"
+   git commit -m "feat: Abyss Rogue v8.16.0 release - Special Rare Companion Arto & Developer Memorial Tribute"
    git branch -M main
    git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY_NAME>.git
    git push -u origin main

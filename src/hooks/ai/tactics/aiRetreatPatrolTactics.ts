@@ -108,7 +108,13 @@ export function executeRetreatTactics(params: RetreatMovementParams): void {
     retreatTargetY = Math.max(0, Math.min(LEVEL_HEIGHT - 1, e.y + dirY * 5));
   }
 
-  const isWaterWalkable = e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso;
+  const isWaterWalkable = Boolean(
+    e.tags?.includes('water_walk') ||
+    e.tags?.includes('amphibious') ||
+    (e as any).isWaterWalkable ||
+    e.type === EnemyType.Nakki ||
+    e.type === EnemyType.IkuTurso
+  );
   let nextStep: { x: number; y: number } | null = null;
   const isTargetWalkable = isTileWalkableForEntity(prev.map[retreatTargetY]?.[retreatTargetX], {
     isWaterWalkable,
@@ -159,7 +165,13 @@ export function executePatrolTactics(params: PatrolMovementParams): void {
 
   let currentPatrolIdx = e.patrolIndex || 0;
   let targetTile = e.patrolPath[currentPatrolIdx];
-  const isWaterWalkable = e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso;
+  const isWaterWalkable = Boolean(
+    e.tags?.includes('water_walk') ||
+    e.tags?.includes('amphibious') ||
+    (e as any).isWaterWalkable ||
+    e.type === EnemyType.Nakki ||
+    e.type === EnemyType.IkuTurso
+  );
 
   // If waypoint is reached or waypoint tile itself is impassable, cycle to next waypoint
   const isTargetBlocked =

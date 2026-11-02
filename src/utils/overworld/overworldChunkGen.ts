@@ -25,7 +25,8 @@ export function generateOverworldChunk(
   spawnedCats?: string[],
   spawnedSeppo?: boolean,
   playerStats?: { level: number; str: number; dex: number; int: number; cha: number; lck: number },
-  currentWeapon?: { damage: number; name?: string } | null
+  currentWeapon?: { damage: number; name?: string } | null,
+  spawnedArto?: boolean
 ): OverworldChunk {
   // Determine Biome using our organic, Whittaker-like temperature/moisture transition system
   const biome = getOrganicBiome(chunkX, chunkY);
@@ -74,6 +75,7 @@ export function generateOverworldChunk(
     height,
     spawnedCats,
     spawnedSeppo,
+    spawnedArto,
     playerStats,
     currentWeapon,
     biome,

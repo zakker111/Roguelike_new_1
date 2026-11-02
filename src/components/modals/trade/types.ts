@@ -11,7 +11,7 @@ export interface TradeModalProps {
   handleUpgradeApothecary: () => void;
   handleBuyRumor: () => void;
   handleTavernRest: () => void;
-  handleHireMercenary: (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard') => void;
+  handleHireMercenary: (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard' | 'arto') => void;
   handleBuyEnchantedGear: (type: 'horse' | 'camel' | 'worg' | 'crocodile', price: number, name: string) => void;
   handleBuyEquipment: (item: EquipmentItem) => void;
   handleBuyResource: (type: 'material' | 'potion' | 'catalyst', id: string, price: number) => void;

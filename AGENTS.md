@@ -27,7 +27,7 @@ This document serves as the authoritative structural map and development ruleset
 - `metadata.json`: Platform metadata (app name, description, capabilities).
 - `ENGINE_MANUAL.md`: Master architectural manual and content authoring handbook for the reusable roguelike engine.
 - `LICENSE`: Open-source MIT License.
-- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 721 unit tests across 98 test suites, builds, and deploys to GitHub Pages).
+- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 726 unit tests across 98 test suites, builds, and deploys to GitHub Pages).
 - `public/`:
   - `404.html`: SPA fallback redirect for GitHub Pages.
   - `.nojekyll`: Disables Jekyll asset processing on GitHub Pages.
@@ -247,7 +247,7 @@ This document serves as the authoritative structural map and development ruleset
   - `types.ts`: Town building coordinates and generation interfaces.
   - `townPerimeter.ts`: Castle Town fortress walls, gatehouses, courtyard paving, and harbor port.
   - `townGuards.ts`: Castle sentries, day/night shift schedules, and barracks routines.
-  - `townNpcs.ts`: Blacksmiths, Merchants, Apothecaries, Taverns, Quest Boards, and Companions.
+  - `townNpcs.ts`: Blacksmiths, Merchants, Apothecaries, Taverns, Quest Boards, and Companions (including Arto the Iron Breaker: unique 350g Strength Berserker with developer memorial tribute, strictly restricted to a single rare spawn per gameplay session in distant towns or remote campfires).
   - `townOutskirts.ts`: Border pest spawns with safe grass placement.
   - `townChunkGenerator.ts`: Master `generateTownChunk` orchestrator.
   - `index.ts`: Town sub-engine barrel export.
@@ -294,7 +294,7 @@ This document serves as the authoritative structural map and development ruleset
 - `src/utils/combatArchetypes.ts` / `src/utils/combatFloaterDrift.ts`: Combat scaling and floating text physics.
 - `src/utils/mutationSynergy.ts` / `src/utils/relics.ts` / `src/utils/scars.ts`: Mutation combinations, relic drafts, and scars.
 - `src/utils/tradeEconomy.ts` / `src/utils/shopData.ts`: Price fluctuation algorithm and merchant inventories.
-- `src/utils/npcDialogue.ts` / `src/utils/companionAdvice.ts`: NPC dialogue trees and companion advisory quips.
+- `src/utils/npcDialogue.ts` / `src/utils/companionAdvice.ts`: NPC dialogue trees and companion advisory quips (supporting special cats and Arto the Berserker).
 - `src/utils/decorEngine.ts` / `src/utils/structurePlacer.ts`: Housing tile placement and decor furniture system.
 - `src/utils/moddingEngine.ts`: Runtime custom item, spell, and enemy modding engine.
 - `src/utils/harvestEngine.ts`: Declarative resource harvesting engine coupled to `tileRegistry.ts` (`harvestYield`, `harvestTool`, `harvestReplacementTile`) enforcing tool requirements and durability checks.

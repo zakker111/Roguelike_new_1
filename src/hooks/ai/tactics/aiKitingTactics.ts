@@ -83,7 +83,13 @@ export function executeKitingMovement(params: KitingMovementParams): boolean {
       if (step.x >= 0 && step.x < LEVEL_WIDTH && step.y >= 0 && step.y < LEVEL_HEIGHT) {
         const tile = prev.map[step.y]?.[step.x];
         const isWalkable = isTileWalkableForEntity(tile, {
-          isWaterWalkable: e.type === EnemyType.Nakki || e.type === EnemyType.IkuTurso,
+          isWaterWalkable: Boolean(
+            e.tags?.includes('water_walk') ||
+            e.tags?.includes('amphibious') ||
+            (e as any).isWaterWalkable ||
+            e.type === EnemyType.Nakki ||
+            e.type === EnemyType.IkuTurso
+          ),
           canOpenDoors: false
         });
         const isBlocked =

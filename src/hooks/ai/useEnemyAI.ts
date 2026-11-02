@@ -152,8 +152,10 @@ export function useEnemyAI({
             name: `${target.name} (Fallen Combatant)`
           });
           nextSplatters.push({
+            id: `splatter_skirmish_${target.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
             x: target.x,
             y: target.y,
+            intensity: 3,
             color: splatterColor
           });
 

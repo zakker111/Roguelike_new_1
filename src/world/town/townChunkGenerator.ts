@@ -27,6 +27,7 @@ export function generateTownChunk(ctx: OverworldGenContext): void {
     width,
     height,
     spawnedCats,
+    spawnedArto,
     map,
     npcs,
     enemies,
@@ -148,7 +149,7 @@ export function generateTownChunk(ctx: OverworldGenContext): void {
   spawnTownGuards(enemies, chunkX, chunkY, width, height, midX, midY, !!isCastleTown, barracksHouse);
 
   // 10. Town NPCs
-  spawnTownNpcs(npcs, chunkX, chunkY, width, height, midX, midY, housesList, secondFloorBuildings, !!isPortTown, spawnedCats);
+  spawnTownNpcs(npcs, chunkX, chunkY, width, height, midX, midY, housesList, secondFloorBuildings, !!isPortTown, spawnedCats, spawnedArto);
 
   // 10b. Comprehensive NPC tile safety sanitization (strictly prevent spawning inside windows, walls, or solid obstacles)
   for (let i = 0; i < npcs.length; i++) {

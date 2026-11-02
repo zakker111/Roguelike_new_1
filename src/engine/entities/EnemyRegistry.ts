@@ -190,7 +190,10 @@ class EnemyRegistryClass {
       dropMaterials: def.dropMaterials,
       dropCatalysts: def.dropCatalysts,
       archetype: def.archetype,
-      chaosTier: options.chaosTier ?? 0
+      chaosTier: options.chaosTier ?? 0,
+      abilities: def.abilities || [],
+      tags: def.tags || [],
+      isWaterWalkable: def.tags?.includes('water_walk') || def.tags?.includes('amphibious') || false
     };
 
     return enemy;

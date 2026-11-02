@@ -108,6 +108,9 @@ export function checkTelegraphWindup(ctx: AITacticContext): AITacticResult | nul
   const isHeavy =
     e.isBoss ||
     e.isElite ||
+    e.aiRole === 'telegraph' ||
+    e.abilities?.includes('ground_slam') ||
+    e.abilities?.includes('heavy_cleave') ||
     e.type === EnemyType.OrcBrute ||
     e.type === EnemyType.Dragon ||
     e.type === EnemyType.DreadKnight ||

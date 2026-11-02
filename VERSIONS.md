@@ -6,7 +6,26 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
-## [v8.15.3] — Sanctum Error Gump Crash Inspector & Monster Combat Hardening (October 21, 2026)
+## [v8.16.0] — Arto the Iron Breaker Special Rare Companion & Developer Memorial Tribute (November 2, 2026)
+*Engineered a one-of-a-kind rare companion, Arto the Iron Breaker (Strength Berserker), with a dedicated developer memorial tribute ("In memory of my father"). Spawns exceptionally rarely (once per gameplay session) across the infinite procedural overworld. Arto costs 350 Gold to recruit, arrives pre-equipped with a Heavy Iron Battleaxe and Reinforced Plate Armor, and features massive baseline resilience (160 HP, 22 Strength, heavy cleave attacks). Dedicated tribute messages, follower inspect memorial plaques, roster badges, and advice dialogues honor the memory of the developer's father. Expanded test coverage to 98 test suites and 726 tests.*
+
+- **1. Rare Once-per-Session Spawning Engine (`src/types/game.ts`, `src/utils/overworld/types.ts`, `src/utils/overworld/overworldChunkGen.ts`, `src/world/town/townNpcs.ts`, `src/utils/overworld/overworldWildernessGen.ts`, `src/hooks/app/movement/useChunkTransition.ts`)**:
+  - Added session tracking flags `spawnedArto` and `foundArto` to `GameState`, initialized in `gameStateFactory.ts`.
+  - Removed Arto from the starter town rotation (chunk `0,0`) to preserve extreme rarity.
+  - Added a 5% chance in distant settlements and a 3.5% chance at remote wilderness campfires (distance > 1.8 chunks) if Arto has not yet spawned this session.
+  - Automatically flags `spawnedArto: true` upon generation, ensuring he only ever appears once per session.
+  - Logs a rare discovery message with developer memorial text upon entering his chunk (`🕊️ [RARE ENCOUNTER]: You discover Arto the Iron Breaker... (In memory of my father)`).
+- **2. Recruitment & Balanced 350g Fee (`src/hooks/useNpcInteraction.ts`, `src/hooks/useTownServices.ts`, `src/world/town/townNpcs.ts`)**:
+  - Set hiring fee to 350 Gold across all recruitment pathways (direct NPC dialogue and Town Tavern Inn services).
+  - Equips Arto with a two-handed Heavy Battleaxe and Plate Armor, delivering high physical cleave combat output.
+  - Displays heartfelt tribute confirmation log upon recruitment: *"🕊️ In memory of my father — Arto raises his axe in steadfast loyalty."*
+- **3. Follower Memorial UI & Lore (`src/components/FollowerInspectOverlay.tsx`, `src/components/inventory/AlliesRosterView.tsx`, `src/utils/companionAdvice.ts`)**:
+  - Implemented a golden memorial plaque card in `FollowerInspectOverlay` displaying: *"🕊️ In memory of my father — a pillar of unwavering strength, love, and protection."*
+  - Added a dedicated 'Memorial Follower' amber badge and memorial citation in the party roster view.
+  - Added custom situational advice barks reflecting his enduring, protective fatherly strength.
+- **4. Automated Unit & Integration Testing (`src/tests/specialCatsAndCompanions.test.ts`)**:
+  - Added test coverage verifying Arto's 350g fee, berserker combat attributes, memorial text in inspect overlay, advice barks, and once-per-session spawn exclusivity (98 test suites, 726 tests passing 100% green).
+
 *Engineered a comprehensive Sanctum Error Gump modal dialog and diagnostic reporter (`src/components/ErrorBoundary.tsx`). When any runtime exception or unhandled error occurs—whether during React render or in combat event handlers, turn processing, or async tasks—the Error Gump immediately intercepts it. Accurately parses and highlights the exact source file, line number, and column (`parseErrorLocation`), renders a scrollable stack trace with line numbers, and provides a one-click '📋 Copy Error Log' button that puts a clean markdown report on the clipboard for immediate pasting. Added a '🛡️ Resume Game' button allowing players to recover state and continue playing without reload. Hardened monster combat routines (`usePlayerAttack.ts`, `combatLoot.ts`, `useEnemyAI.ts`, `useFollowerAI.ts`) with try/catch boundaries, optional chaining, and fallback defaults against null/undefined enemy IDs or names. Expanded test suite to 98 test suites and 721 tests.*
 
 - **1. Sanctum Error Gump Modal & Diagnostic Parser (`src/components/ErrorBoundary.tsx`)**:

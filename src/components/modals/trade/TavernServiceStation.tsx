@@ -3,7 +3,7 @@ import React from 'react';
 export interface TavernServiceStationProps {
   onBuyRumor: () => void;
   onTavernRest: () => void;
-  onHireMercenary: (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard') => void;
+  onHireMercenary: (type: 'novice' | 'veteran' | 'champion' | 'merchant_guard' | 'arto') => void;
 }
 
 export const TavernServiceStation: React.FC<TavernServiceStationProps> = ({
@@ -36,7 +36,25 @@ export const TavernServiceStation: React.FC<TavernServiceStationProps> = ({
 
       <div className="text-left text-[11px]">
         <h4 className="text-xs font-bold uppercase text-amber-500 font-sans tracking-wide mb-2">👥 Wandering Mercenaries For Hire</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          {/* Arto the Strength Berserker */}
+          <div className="bg-slate-950/80 border border-orange-500/40 p-2.5 rounded-lg flex flex-col justify-between gap-2 shadow-sm">
+            <div>
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-orange-400">🪓 Arto (Berserker)</span>
+                <span className="text-[9px] font-mono text-slate-400">Lvl 5</span>
+              </div>
+              <p className="text-[9px] text-slate-400 mt-0.5 leading-normal">Strength build. Colossal melee cleaves with 95 HP, +16 ATK, 6 DEF.</p>
+            </div>
+            <button
+              onClick={() => onHireMercenary('arto')}
+              className="w-full py-1 bg-orange-950/80 hover:bg-orange-700 text-orange-100 font-bold text-[9px] rounded transition-all flex justify-center items-center gap-1 cursor-pointer border border-orange-600/50"
+            >
+              <span>Hire Arto</span>
+              <span className="text-amber-400 font-mono">(320g)</span>
+            </button>
+          </div>
+
           {/* Novice Mercenary */}
           <div className="bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg flex flex-col justify-between gap-2">
             <div>

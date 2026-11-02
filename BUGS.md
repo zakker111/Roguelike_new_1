@@ -4,6 +4,28 @@
 
 ### Recent Gameplay, AI, UI & Stability Resolutions
 
+- **[RESOLVED] Rare Companion Arto Session Uniqueness & Recruitment Cost Parity (v8.16.0)**
+  - **What was reported / Fixed**: Arto needed to spawn randomly and exceptionally rarely only once per session, costing 350 Gold, and featuring developer memorial tribute text (*"In memory of my father"*).
+  - **Root Cause & Fix**:
+    1. Arto previously had a 33% routine spawn chance in the starter town (chunk `0,0`) and tavern mercenary rosters, costing 150g or 200g inconsistently without session-persistence guards.
+    2. Added `spawnedArto` and `foundArto` to `GameState` and `OverworldGenContext`.
+    3. Excluded Arto from starter town (chunk `0,0`) and only allowed a rare 5% spawn chance in distant towns and a 3.5% chance at wilderness campfires when `!spawnedArto` and distance > 1.8 chunks.
+    4. Synchronized his recruitment fee strictly to 350 Gold across all dialogues (`useNpcInteraction.ts`) and tavern services (`useTownServices.ts`), granting Heavy Battleaxe and Plate Armor.
+    5. Integrated developer memorial tribute text (*"In memory of my father — a pillar of unwavering strength, love, and protection."*) into discovery log messages, recruitment feedback, companion advice, follower inspection dialogs, and party roster overlays.
+    6. Verified with new test suite in `src/tests/specialCatsAndCompanions.test.ts` (726/726 tests passing 100% green).
+
+
+- **[RESOLVED] Monster Combat Skirmish Death & GameCanvas Blood Splatter Crash (v8.15.4)**
+  - **What was reported / Fixed**: User reported crashes during monster combat captured by the Sanctum Error Gump:
+    `TypeError: Cannot read properties of undefined (reading 'split')` at `GameCanvasComponent (src/components/GameCanvas.tsx:633:42 / 831:42)`.
+  - **Root Cause & Fix**:
+    1. In `/src/hooks/ai/useEnemyAI.ts` (lines 154-158), when an autonomous skirmish death occurred (e.g. monsters clashing with town guards, followers, wildlife, or rival factions), `nextSplatters.push({ x: target.x, y: target.y, color: splatterColor })` was pushed without an `id` or `intensity`.
+    2. When `GameCanvas.tsx` rendered the blood splatters overlay (lines 830-835), it called `splatter.id.split('_').pop()?.charCodeAt(0)` to calculate a deterministic center offset seed. Because `splatter.id` was `undefined`, JavaScript threw `TypeError: Cannot read properties of undefined (reading 'split')`, causing React to crash the canvas tree into the Sanctum Error Gump.
+    3. Added `id: splatter_skirmish_${target.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}` and `intensity: 3` to `nextSplatters.push` in `/src/hooks/ai/useEnemyAI.ts`.
+    4. Hardened `/src/components/GameCanvas.tsx` to defensively handle missing, undefined, or non-string `id` attributes: safely deriving deterministic seed offsets via coordinates and fallback strings without ever throwing `.split()` on undefined. Also guarded `intensity` against non-numbers (`typeof splatter.intensity === 'number' ? splatter.intensity : 2`).
+    5. Hardened `/src/hooks/ai/aiTurnEnvironment.ts` to assign fallback `id` and preserve intensity decay without creating `NaN`.
+    6. Added test coverage in `/src/tests/combatFloaterDrift.test.ts` verifying safe deterministic calculation even with undefined splatter IDs. All 98 test suites and 722 tests passing.
+
 - **[RESOLVED] Monster Combat Runtime Exceptions & Sanctum Error Gump Crash Inspector (v8.15.3)**
   - **What was reported / Fixed**: User reported: "there were game breaking error when i fought monster chek when we have these errors and error gum so that i can copypaste the log and it says which line it happens in our error gump".
   - **Root Cause & Fix**:

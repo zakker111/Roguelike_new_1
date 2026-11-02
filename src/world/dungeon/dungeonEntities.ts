@@ -8,6 +8,7 @@ import enemyTemplates from '../../data/enemies.json';
 import { applyCombatArchetypeAndChaosScaling } from '../../utils/combatArchetypes';
 import { getActiveCustomMonsters } from '../../utils/moddingEngine';
 import { EnemyRegistry } from '../../engine/entities/EnemyRegistry';
+import { SpawnTableRegistry } from '../../engine/entities/SpawnTable';
 import { BossTemplate, Room } from './types';
 
 export function getEnemyTemplate(type: EnemyType | string) {
@@ -59,7 +60,12 @@ export function getEnemyTemplate(type: EnemyType | string) {
       range: registryDef.range,
       speed: registryDef.speed,
       char: registryDef.char,
-      color: registryDef.color
+      color: registryDef.color,
+      dropMaterials: registryDef.dropMaterials,
+      dropCatalysts: registryDef.dropCatalysts,
+      abilities: registryDef.abilities,
+      tags: registryDef.tags,
+      aiRole: registryDef.aiRole
     };
   }
 
@@ -78,7 +84,12 @@ export function getEnemyTemplate(type: EnemyType | string) {
       range: template.range,
       speed: template.speed !== undefined ? template.speed : 1.0,
       char: template.char,
-      color: template.color
+      color: template.color,
+      dropMaterials: template.dropMaterials,
+      dropCatalysts: template.dropCatalysts,
+      abilities: template.abilities,
+      tags: template.tags,
+      aiRole: template.aiRole
     };
   }
 
@@ -433,7 +444,12 @@ export function spawnDungeonBoss(
       eliteEffect: 'Titan',
       patrolPath: [{ x: bx, y: by }],
       patrolIndex: 0,
-      debuffs: []
+      debuffs: [],
+      dropMaterials: template.dropMaterials,
+      dropCatalysts: template.dropCatalysts,
+      aiRole: 'boss',
+      abilities: template.abilities || ['ground_slam', 'heavy_cleave'],
+      tags: template.tags ? [...template.tags, 'boss'] : ['boss']
     };
 
     return applyCombatArchetypeAndChaosScaling(
@@ -473,60 +489,9 @@ export function spawnDungeonStandardEnemies(
       const duplicated = enemies.some(e => e.x === ex && e.y === ey);
 
       if (!onStairs && !onChest && !duplicated) {
-        const pool = [
-          { type: EnemyType.Rat, weight: 20 },
-          { type: EnemyType.Goblin, weight: 25 },
-          { type: EnemyType.SkeletonMage, weight: 15 },
-          { type: EnemyType.OrcBrute, weight: 12 },
-          { type: EnemyType.Trapmaster, weight: 10 },
-          { type: EnemyType.Slime, weight: 12 },
-          { type: EnemyType.Spider, weight: 12 },
-          { type: EnemyType.Ghost, weight: 8 },
-          { type: EnemyType.Vampire, weight: 6 },
-          { type: EnemyType.Necromancer, weight: 6 },
-          { type: EnemyType.DreadKnight, weight: 5 },
-          { type: EnemyType.Dragon, weight: 0 },
-          { type: EnemyType.Hiisi, weight: 10 },
-          { type: EnemyType.Nakki, weight: 10 },
-        ];
-
-        if (depth > 2) {
-          const ratItem = pool.find(p => p.type === EnemyType.Rat);
-          if (ratItem) ratItem.weight = Math.max(3, ratItem.weight - 12);
-
-          const gobItem = pool.find(p => p.type === EnemyType.Goblin);
-          if (gobItem) gobItem.weight = Math.max(8, gobItem.weight - 12);
-
-          const vampireItem = pool.find(p => p.type === EnemyType.Vampire);
-          if (vampireItem) vampireItem.weight += 10;
-
-          const dreadItem = pool.find(p => p.type === EnemyType.DreadKnight);
-          if (dreadItem) dreadItem.weight += 10;
-
-          const necroItem = pool.find(p => p.type === EnemyType.Necromancer);
-          if (necroItem) necroItem.weight += 8;
-
-          const ghostItem = pool.find(p => p.type === EnemyType.Ghost);
-          if (ghostItem) ghostItem.weight += 6;
-        }
-
-        if (depth >= 5) {
-          const dragonItem = pool.find(p => p.type === EnemyType.Dragon);
-          if (dragonItem) {
-            dragonItem.weight = depth >= 8 ? 5 : 3;
-          }
-        }
-
-        const totalWeight = pool.reduce((sum, item) => sum + item.weight, 0);
-        let roll = Math.random() * totalWeight;
-        let type = EnemyType.Rat;
-        for (const item of pool) {
-          roll -= item.weight;
-          if (roll <= 0) {
-            type = item.type;
-            break;
-          }
-        }
+        // Data-driven enemy generation via SpawnTableRegistry
+        const rolledType = (SpawnTableRegistry.rollEnemy('dungeon_standard', depth) || EnemyType.Rat) as EnemyType;
+        const type = rolledType;
 
         const template = getEnemyTemplate(type);
         let name = template.name;

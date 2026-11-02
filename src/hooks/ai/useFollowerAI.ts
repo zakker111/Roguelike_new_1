@@ -41,6 +41,7 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
   let rangedType: 'melee' | 'bow' | 'magic' | 'spear' = 'melee';
   const folNameLower = (e.name || '').toLowerCase();
 
+  const isArto = folNameLower.includes('arto') || folNameLower.includes('berserker');
   const isArcher = folNameLower.includes('archer') || folNameLower.includes('ranger') || folNameLower.includes('hunter') || folNameLower.includes('marksman') || folNameLower.includes('bow');
   const isMage = folNameLower.includes('mage') || folNameLower.includes('wizard') || folNameLower.includes('sorcerer') || folNameLower.includes('warlock') || folNameLower.includes('druid') || folNameLower.includes('cleric');
   const isSpearman = folNameLower.includes('spear') || folNameLower.includes('pikeman') || folNameLower.includes('halberd') || folNameLower.includes('lancer');
@@ -53,7 +54,7 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
 
   // Follower health & personality fleeing evaluation
   const hpRatio = e.maxHp > 0 ? e.hp / e.maxHp : 1.0;
-  const isFleeing = (isCat && hpRatio < 0.5) || (isThiefOrRogue && hpRatio < 0.4) || (hpRatio < 0.25);
+  const isFleeing = (isCat && hpRatio < 0.5) || (isThiefOrRogue && hpRatio < 0.4) || (isArto ? hpRatio < 0.15 : hpRatio < 0.25);
 
   if (isFleeing) {
     e.state = EnemyState.Retreating;
@@ -108,6 +109,11 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
         // Relic Synergy: Crown of Command boosts companion damage by +35%
         if (updatedStats.relics?.includes('crown_of_command')) {
           followerDmg = Math.round(followerDmg * 1.35);
+        }
+
+        // Strength Berserker: Arto delivers heavy crushing strikes (+25% damage)
+        if (isArto) {
+          followerDmg = Math.round(followerDmg * 1.25);
         }
 
         // Apply critical strike chance to companions based on player Luck
@@ -167,6 +173,14 @@ export function processFollowerTurn(params: FollowerAIParams): FollowerActionRes
             );
             playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });
             safeDispatchEffect({ x: target.x, y: target.y, sourceX: e.x, sourceY: e.y, text: `-${followerDmg}`, type: isFolCrit ? 'crit' : 'dmg' });
+          } else if (isArto) {
+            staticLogs.push(
+              isFolCrit
+                ? `💥🪓 [TITANIC CLEAVE]: ${e.name} brutally cleaves ${target.name} with overwhelming brute force for ${followerDmg} critical damage!`
+                : `🪓 [BERSERKER CLEAVE]: ${e.name} strikes ${target.name} with a colossal battleaxe swing for ${followerDmg} damage!`
+            );
+            playSound('heavy_hit', { x: target.x, y: target.y, playerX: px, playerY: py });
+            safeDispatchEffect({ x: target.x, y: target.y, sourceX: e.x, sourceY: e.y, text: `💥 -${followerDmg}`, type: isFolCrit ? 'crit' : 'dmg' });
           } else {
             staticLogs.push(`🛡️ [COMPANION]: ${e.name} strikes ${target.name} for ${followerDmg} damage!`);
             playSound('slash', { x: target.x, y: target.y, playerX: px, playerY: py });

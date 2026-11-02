@@ -8,6 +8,7 @@ import {
 } from '../../types';
 import { LEVEL_WIDTH, LEVEL_HEIGHT } from '../../utils/gameUtils';
 import { getEnemyTemplate } from '../../utils/dungeon';
+import { SpawnTableRegistry } from '../../engine/entities/SpawnTable';
 import { tickActiveGMStoryteller } from '../../utils/gmStoryteller';
 import { getGMPointOfInterestNudge } from '../../utils/gmNarrator';
 import { getCompanionAdvice } from '../../utils/companionAdvice';
@@ -142,11 +143,13 @@ export function resolvePlayerStatusAndEnvironment(
     })
     .filter((c) => c.decayTurns > 0);
   const nextSplatters = (prev.bloodSplatters || [])
-    .map((spl) => {
+    .map((spl, idx) => {
+      const curIntensity = typeof spl.intensity === 'number' ? spl.intensity : 2;
+      const id = spl.id || `splatter_${spl.x}_${spl.y}_${idx}`;
       if (Math.random() < 0.04) {
-        return { ...spl, intensity: spl.intensity - 1 };
+        return { ...spl, id, intensity: curIntensity - 1 };
       }
-      return spl;
+      return { ...spl, id, intensity: curIntensity };
     })
     .filter((spl) => spl.intensity > 0);
 
@@ -364,32 +367,14 @@ export function resolvePlayerStatusAndEnvironment(
     }
 
     if (spawnedCoordinate) {
+      const curDepth = prev.playerStats.depth || 1;
       const roll = Math.random();
       let spawnedType = EnemyType.Rat;
       if (roll < 0.08) {
         spawnedType = EnemyType.LootGoblin;
       } else {
-        const innerRoll = Math.random();
-        if (prev.playerStats.depth && prev.playerStats.depth >= 6 || updatedStats.turnsPlayed > 400) {
-          if (innerRoll > 0.90) spawnedType = EnemyType.Louhi;
-          else if (innerRoll > 0.80) spawnedType = EnemyType.IkuTurso;
-          else if (innerRoll > 0.70) spawnedType = EnemyType.Otso;
-          else if (innerRoll > 0.50) spawnedType = EnemyType.Dragon;
-          else if (innerRoll > 0.35) spawnedType = EnemyType.Kalma;
-          else spawnedType = EnemyType.DreadKnight;
-        } else if (prev.playerStats.depth && prev.playerStats.depth > 3) {
-          if (innerRoll > 0.85) spawnedType = EnemyType.Hiisi;
-          else if (innerRoll > 0.70) spawnedType = EnemyType.Nakki;
-          else if (innerRoll > 0.50) spawnedType = EnemyType.OrcBrute;
-          else if (innerRoll > 0.30) spawnedType = EnemyType.SkeletonMage;
-          else spawnedType = EnemyType.Goblin;
-        } else {
-          if (innerRoll > 0.85) spawnedType = EnemyType.Nakki;
-          else if (innerRoll > 0.70) spawnedType = EnemyType.Hiisi;
-          else if (innerRoll > 0.50) spawnedType = EnemyType.SkeletonMage;
-          else if (innerRoll > 0.30) spawnedType = EnemyType.Goblin;
-          else spawnedType = EnemyType.Rat;
-        }
+        const rolled = SpawnTableRegistry.rollEnemy('dungeon_standard', curDepth);
+        spawnedType = (rolled as EnemyType) || EnemyType.Rat;
       }
 
       const enemyTemplate = getEnemyTemplate(spawnedType);
