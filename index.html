@@ -61,6 +61,31 @@
       }
     }
     </script>
+
+    <!--
+      Google Analytics 4 (gtag.js) — OPTIONAL, OFF BY DEFAULT.
+      To enable: create a GA4 property at https://analytics.google.com, copy its
+      Measurement ID (looks like "G-XXXXXXXXXX"), then either:
+        A) set VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX in your .env file (recommended), or
+        B) hard-code the ID below and uncomment the two script tags.
+      The placeholder "G-REPLACE-ME" is intentionally skipped at runtime so no
+      bogus requests are made during local development.
+    -->
+    <script type="module">
+      const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-REPLACE-ME';
+      if (GA_ID && GA_ID !== 'G-REPLACE-ME') {
+        // Standard async gtag.js bootstrap
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function gtag() { window.dataLayer.push(arguments); };
+        window.gtag('js', new Date());
+        window.gtag('config', GA_ID, { send_page_view: true });
+
+        const s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
+        document.head.appendChild(s);
+      }
+    </script>
   </head>
   <body class="bg-[#090d16] text-slate-100 antialiased min-h-screen overflow-x-hidden overflow-y-auto select-none">
     <div id="root"></div>
