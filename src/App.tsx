@@ -58,6 +58,7 @@ import {
 } from './hooks/app';
 import { createNewGameRun } from './utils/gameStateFactory';
 import { exportAndDownloadGameLogs } from './utils/logExporter';
+import { recordVisit } from './utils/analytics';
 import { createOutpostQuartermaster } from './world/outposts';
 
 // Initialize global registries for custom modifiable components
@@ -75,6 +76,11 @@ export default function App() {
       setIsGmPanelOpen(true);
     }
   }, [activeTab]);
+
+  // Play-tracking cookie: count this page visit + capture referrer/UTM attribution.
+  useEffect(() => {
+    recordVisit();
+  }, []);
   const [bagSubTab, setBagSubTab] = useState<'allies' | 'gear' | 'food' | 'resources'>('allies');
   const [dungeonBagTab, setDungeonBagTab] = useState<'allies' | 'gear' | 'food' | 'mats'>('allies');
   const [shakeTrigger, setShakeTrigger] = useState(0);
