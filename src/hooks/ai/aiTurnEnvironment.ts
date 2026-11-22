@@ -15,6 +15,7 @@ import { getCompanionAdvice } from '../../utils/companionAdvice';
 import { BIOME_VALID_WEATHERS, getValidWeatherForBiome } from '../../utils/weatherEngine';
 import { isPlayerInvincible } from '../../utils/invincibility';
 import { advanceElementalPropagation } from '../../utils/elemental';
+import { SeasonEngine } from '../../engine/environment/SeasonEngine';
 import { TurnEnvironmentResult, FoodBuff } from './types';
 
 function safeDispatchEffect(detail: any) {
@@ -254,39 +255,22 @@ export function resolvePlayerStatusAndEnvironment(
     }
   }
 
-  const getSeasonFromTurns = (turns: number): 'spring' | 'summer' | 'autumn' | 'winter' => {
-    const cycle = Math.floor(turns / 250) % 4;
-    if (cycle === 0) return 'spring';
-    if (cycle === 1) return 'summer';
-    if (cycle === 2) return 'autumn';
-    return 'winter';
-  };
+  const seasonEngine = SeasonEngine.getInstance();
+  const nextSeason = seasonEngine.getSeasonForTurns(updatedStats.turnsPlayed);
+  const transition = seasonEngine.checkTransition(prev.playerStats.turnsPlayed, updatedStats.turnsPlayed);
 
-  const currentSeason = getSeasonFromTurns(prev.playerStats.turnsPlayed);
-  const nextSeason = getSeasonFromTurns(updatedStats.turnsPlayed);
-
-  if (nextSeason !== currentSeason) {
-    let msg = '';
-    if (nextSeason === 'spring') {
-      msg = '🌸 [SEASON TRANSITION]: The cycle of life turns. Fresh blossoms bloom under gentle skies! Lowland fields are rich with double-yield Wild Berries.';
-    } else if (nextSeason === 'summer') {
-      msg = '☀️ [SEASON TRANSITION]: The midyear sun peaks! Severe drought heatwaves slow traveling speeds and slowly sap 1 Focus (MP) every 15 turns.';
-    } else if (nextSeason === 'autumn') {
-      msg = '🍂 [SEASON TRANSITION]: Leaves turn amber. Thick shrouds of mist cover the land, reducing vision by 50% but boosting stealth critical strikes by +40%.';
-    } else if (nextSeason === 'winter') {
-      msg = '❄️ [SEASON TRANSITION]: Solstice freeze! Glacial winter blizzards sweep the land. Overworld lakes and puddles freeze into solid walkable ice platforms, but your carrying weight penalties are 1.5x more severe and berry gathering is frozen barren!';
-    }
-    staticLogs.push(msg);
-
-    safeDispatchEffect({ x: px, y: py, text: `${nextSeason.toUpperCase()} TIME!`, type: 'heal' });
+  if (transition) {
+    staticLogs.push(transition.transitionMessage);
+    safeDispatchEffect({ x: px, y: py, text: transition.vfxBadge, type: 'heal' });
   }
 
-  if (prev.isOverworld && nextSeason === 'summer') {
-    if (updatedStats.turnsPlayed % 15 === 0) {
-      playerMp = Math.max(0, playerMp - 1);
-      staticLogs.push(`☀️ [SUMMER HEAT]: The blazing sun saps your concentration! You lose 1 Focus (MP) to dehydration.`);
-      safeDispatchEffect({ x: px, y: py, text: `-1 MP (Heat) ☀️`, type: 'dmg' });
+  const dehydration = seasonEngine.checkDehydrationTick(nextSeason, updatedStats.turnsPlayed, prev.isOverworld);
+  if (dehydration.shouldDrain) {
+    playerMp = Math.max(0, playerMp - 1);
+    if (dehydration.message) {
+      staticLogs.push(dehydration.message);
     }
+    safeDispatchEffect({ x: px, y: py, text: `-1 MP (Heat) ☀️`, type: 'dmg' });
   }
 
   const hoursPrev = Math.floor(prev.gameTime / 60);
@@ -447,6 +431,7 @@ export function resolvePlayerStatusAndEnvironment(
     nextFoodBuff,
     activeScars,
     nextWeather,
+    nextSeason,
     nextTimeVal,
     nextRep,
     nextGuardsHostile,

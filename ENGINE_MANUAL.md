@@ -39,7 +39,7 @@ The exact same engine can run **Fantasy Roguelikes**, **Sci-Fi Crawlers**, **Cyb
 
 ---
 
-## ⚡ 2. The 10 Engine Subsystems
+## ⚡ 2. The 12 Engine Subsystems
 
 ### Subsystem 1: Clean Enemy Pipeline
 ```text
@@ -104,8 +104,21 @@ EnemyDefinition ──▶ EnemyRegistry ──▶ SpawnTable ──▶ Runtime E
 - **Turn Engine** (`src/engine/rules/TurnEngine.ts`): Speed-based action energy accumulation scheduling turns dynamically (faster actors act more frequently).
 
 ### Subsystem 10: Master Coordinator & Validation Engine
-- **Coordinator** (`src/engine/registry/ContentRegistry.ts`): Singleton giving unified access to all 8+ sub-registries (`enemies`, `items`, `weapons`, `abilities`, `effects`, `rooms`, `generators`, `aiStrategies`, `entities`, `spawnTables`).
+- **Coordinator** (`src/engine/registry/ContentRegistry.ts`): Singleton giving unified access to all sub-registries (`enemies`, `items`, `weapons`, `abilities`, `effects`, `rooms`, `generators`, `aiStrategies`, `entities`, `spawnTables`, `seasons`, `quests`).
 - **Validator** (`src/engine/validation/ContentValidator.ts`): Autonomous audit engine catching duplicate IDs, missing fields, invalid AI roles, unknown abilities, broken effect references, and malformed spawn tables.
+
+### Subsystem 11: Adaptive 4-Season Environmental Engine
+- **Engine** (`src/engine/environment/SeasonEngine.ts`): Pure mathematical season progression engine tracking 250-turn seasons, solar years, early/mid/late phases, and seamless boundary transition events.
+- **Mechanical Modifiers**:
+  - **Spring (🌸)**: Double wild harvest yields (2.0x), lush foraging, peaceful climate.
+  - **Summer (☀️)**: Solar heatwaves sap Focus (MP) every 15 turns in overworld, 50% accelerated fire spread, lightning catalyst empowerment (+25%).
+  - **Autumn (🍂)**: Dense amber mists reduce FOV by -1 tile, but grant +40% stealth and backstab critical strike damage, 1.5x foraging.
+  - **Winter (❄️)**: Open overworld waters freeze into solid walkable `TileType.Ice` platforms, berry gathering is frozen barren, overburden movement fatigue surges (+65% stumbling chance).
+
+### Subsystem 12: Dynamic Radiant Quest & Contract Engine
+- **Engine** (`src/engine/quests/QuestEngine.ts`): Master radiant contract coordinator managing `replenishTownBoard`, `updateProgress`, `canTurnIn`, and `claimRewards`.
+- **Procedural Generator** (`src/engine/quests/QuestGenerator.ts`): Generates infinitely renewable town board contracts across 5 distinct archetypes (`bounty`, `beast_hunt`, `supply_requisition`, `relic_delve`, `faction_skirmish`) scaled dynamically by player level (`novice` to `legendary`), chunk geography, and faction standing.
+- **Compatibility Adapters** (`src/engine/quests/types.ts`): Seamless `contractToLegacyQuest` and `legacyQuestToContract` bridges preserving full UI and authored quest (`quests.json`) compatibility.
 
 ---
 
@@ -245,6 +258,8 @@ npm run build
 ├── map/                     # GridMap, Bresenham LOS, radial FOV, A* Pathfinder
 ├── registry/                # Master ContentRegistry coordinator
 ├── rules/                   # Action energy turn scheduling engine
+├── environment/             # 4-Season progression, modifiers, phase transitions
+├── quests/                  # Procedural radiant quest & contract sub-engine
 ├── validation/              # Automated content validation engine
 └── index.ts                 # Unified engine barrel export
 

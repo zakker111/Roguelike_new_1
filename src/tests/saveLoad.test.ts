@@ -117,5 +117,35 @@ describe('12.4 Save File Serialization & Backward Compatibility Suite', () => {
     expect(() => validateSaveData({ playerX: 10, playerY: 10 })).toThrow('[useSaveLoad] Save data missing playerStats object.');
     expect(validateSaveData({ playerX: 10, playerY: 10, playerStats: { hp: 30 } })).toBe(true);
   });
+
+  it('preserves numeric gameTime, lowercase season, and session uniqueness flags', () => {
+    const payload = {
+      version: CURRENT_SAVE_VERSION,
+      timestamp: Date.now(),
+      playerX: 20,
+      playerY: 18,
+      currentChunkX: 2,
+      currentChunkY: -1,
+      playerStats: { hp: 70, maxHp: 80, level: 3, xp: 40, nextLevelXp: 150 },
+      gameTime: 960,
+      season: 'Winter',
+      weather: 'Snowy',
+      spawnedArto: true,
+      foundArto: true,
+      spawnedSeppo: true,
+      spawnedCats: ['Jekku'],
+      defeatedEnemiesCount: { Rat: 5, Wolf: 2 },
+    };
+
+    const migrated = migrateSaveData(payload);
+    expect(migrated.gameTime).toBe(960);
+    expect(migrated.season).toBe('winter');
+    expect(migrated.weather).toBe('snowy');
+    expect(migrated.spawnedArto).toBe(true);
+    expect(migrated.foundArto).toBe(true);
+    expect(migrated.spawnedSeppo).toBe(true);
+    expect(migrated.spawnedCats).toEqual(['Jekku']);
+    expect(migrated.defeatedEnemiesCount).toEqual({ Rat: 5, Wolf: 2 });
+  });
 });
 

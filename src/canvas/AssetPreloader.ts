@@ -7,11 +7,11 @@ import {
 } from './types';
 
 export const PNG_MOCKUP_URLS: Record<string, string> = {
-  main_tileset: '/tilesets/main_tileset.png',
-  entity_tileset: '/tilesets/entity_tileset.png',
-  animations_tileset: '/tilesets/animations_tileset.png',
-  boss_tileset: '/tilesets/boss_tileset.png',
-  items_tileset: '/tilesets/items_tileset.png',
+  main_tileset: './tilesets/main_tileset.png',
+  entity_tileset: './tilesets/entity_tileset.png',
+  animations_tileset: './tilesets/animations_tileset.png',
+  boss_tileset: './tilesets/boss_tileset.png',
+  items_tileset: './tilesets/items_tileset.png',
 };
 
 export class AssetPreloader {

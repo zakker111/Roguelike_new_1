@@ -1,5 +1,7 @@
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import { GameState } from '../types';
+import { SeasonEngine } from '../engine/environment/SeasonEngine';
+import { SeasonType } from '../engine/environment/types';
 
 export interface UseOverworldEventsParams {
   setGameState: Dispatch<SetStateAction<GameState>>;
@@ -9,9 +11,9 @@ export interface UseOverworldEventsParams {
 export function useOverworldEvents({ setGameState, addLog }: UseOverworldEventsParams) {
   const tickTimeOfDay = useCallback(() => {
     setGameState((prev) => {
-      const nextMinutes = prev.timeMinutes + 10;
-      let nextHours = prev.timeHours;
-      let nextDays = prev.daysPassed;
+      const nextMinutes = (prev.timeMinutes ?? 0) + 10;
+      let nextHours = prev.timeHours ?? 8;
+      let nextDays = prev.daysPassed ?? 0;
       let nextMinutesWrapped = nextMinutes;
 
       if (nextMinutesWrapped >= 60) {
@@ -25,10 +27,9 @@ export function useOverworldEvents({ setGameState, addLog }: UseOverworldEventsP
         addLog(`🌅 A new day dawns upon the realm. Days passed: ${nextDays}.`);
       }
 
-      // Check season rotation every 7 days
-      const seasons: ('spring' | 'summer' | 'autumn' | 'winter')[] = ['spring', 'summer', 'autumn', 'winter'];
-      const currentSeasonIndex = Math.floor((nextDays / 7) % 4);
-      const nextSeason = seasons[currentSeasonIndex];
+      const seasonEngine = SeasonEngine.getInstance();
+      const turns = prev.playerStats?.turnsPlayed || (nextDays * 144);
+      const nextSeason = seasonEngine.getSeasonForTurns(turns);
 
       return {
         ...prev,
@@ -56,8 +57,28 @@ export function useOverworldEvents({ setGameState, addLog }: UseOverworldEventsP
     }));
   }, [setGameState]);
 
+  const triggerSeasonChange = useCallback((newSeason: SeasonType) => {
+    const seasonEngine = SeasonEngine.getInstance();
+    const def = seasonEngine.getSeasonDefinition(newSeason);
+    setGameState((prev) => ({
+      ...prev,
+      season: newSeason,
+      logs: [
+        {
+          id: `season_${Date.now()}`,
+          text: def.transitionLog,
+          type: 'info',
+          timestamp: 'WORLD'
+        },
+        ...prev.logs.slice(0, 99)
+      ],
+    }));
+  }, [setGameState]);
+
   return {
     tickTimeOfDay,
     triggerWeatherChange,
+    triggerSeasonChange,
   };
 }
+

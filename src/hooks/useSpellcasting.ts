@@ -10,6 +10,9 @@ import { hasLineOfSight } from '../utils/ai';
 import { calculateArchetypeDamageAdjustment, checkBossPhaseEnrage } from '../utils/combatArchetypes';
 import { igniteTile, freezeWaterAt, electrifyConnectedWater, spawnPoisonGasAt } from '../utils/elemental';
 import { gameEventBus } from '../events/core/EventBus';
+import { incrementDefeatedEnemyCount } from '../utils/bestiary';
+import { QuestEngine } from '../engine/quests';
+import { applyPlayerXpAndLevelUps } from '../utils/levelUp';
 
 export interface UseSpellcastingProps {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;

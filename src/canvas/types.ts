@@ -48,7 +48,7 @@ export interface SpriteSheetConfig {
 
 export const DEFAULT_TILESET_CONFIG: SpriteSheetConfig = {
   enabled: false,
-  imageSrc: '/assets/tileset.png',
+  imageSrc: './tilesets/main_tileset.png',
   spriteSize: 32,
   tileMappings: {},
   biomeMappings: {},

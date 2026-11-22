@@ -6,6 +6,39 @@ This document serves as the chronological history and version log of newly compl
 
 ### Game Roadmap & Upcoming Releases
 
+## [v8.18.0] — Dynamic Radiant Quest & Contract Engine (`QuestEngine`) (November 12, 2026)
+*Engineered a modular, infinitely replayable Dynamic Radiant Quest & Contract Sub-Engine (`src/engine/quests/`). Replaced static hardcoded notice boards with a data-driven procedural contract generator scaling across 5 quest archetypes (`bounty`, `beast_hunt`, `supply_requisition`, `relic_delve`, `faction_skirmish`) and 5 difficulty tiers (`novice` to `legendary`). Integrated seamlessly into town quest board replenishment (`QuestBoardOverlay.tsx`, `useQuestAndGuildHandlers.ts`), combat kill resolution (`usePlayerAttack.ts`), dungeon floor delves (`usePlayerMovement.ts`), and `ContentRegistry.getInstance().quests`. Verified with 16 dedicated unit tests (`QuestEngine.test.ts`), bringing total test coverage to 99 test suites and 742 passing unit tests.*
+
+- **1. Subsystem 12: Dynamic Radiant Quest & Contract Engine (`src/engine/quests/`)**:
+  - Designed strongly typed `RadiantQuestContract`, `QuestObjective`, and `QuestReward` contracts alongside bidirectional `contractToLegacyQuest` / `legacyQuestToContract` adapters for 100% backwards compatibility with existing UI panels and `quests.json`.
+  - Implemented `QuestRegistry` bootstrapping authored town quests and supporting runtime contract registration.
+  - Built `QuestGenerator` producing scaled Bounties, Beast Hunts, Supply Requisitions, Relic Delves, and Faction Skirmishes tailored to player level and chunk geography.
+  - Implemented `QuestEngine` handling `replenishTownBoard`, `updateProgress`, `canTurnIn`, and `claimRewards`.
+- **2. Real-Time Quest Board & Gameplay Integration**:
+  - Updated `useQuestAndGuildHandlers.ts` to validate turn-ins, dispense gold/XP/reputation payouts, deduct required reagents, and automatically replenish the town board with fresh contracts.
+  - Enhanced `QuestBoardOverlay.tsx` with category icons, difficulty badges, radiant indicators, XP previews, and an on-demand **"Post Notices"** refresh control.
+  - Wired real-time objective tracking into `usePlayerAttack.ts` (`kill_enemy`, `defeat_boss`) and `usePlayerMovement.ts` (`reach_depth`).
+- **3. Automated Unit Testing (`src/tests/engine/QuestEngine.test.ts`)**:
+  - Added 16 unit tests verifying singleton registries, all 5 procedural archetypes, level/difficulty scaling, board replenishment, objective completion tracking, turn-in validation, and legacy compatibility conversions.
+
+## [v8.17.0] — Adaptive 4-Season Environmental Engine & SeasonEngine Subsystem (November 10, 2026)
+*Engineered a decoupled, modular Adaptive 4-Season Environmental Sub-Engine (`src/engine/environment/SeasonEngine.ts`, `src/engine/environment/types.ts`). Implemented pure mathematical turn-to-season mapping across 250-turn seasons (1000 turns per in-game solar year), season phase tracking (early, mid, late), boundary transition events, and declarative mechanical modifiers. Spring grants 2.0x wild foraging yields; Summer induces solar heat dehydration MP loss and +50% fire propagation spread; Autumn spreads thick low-light amber mists (-1 FOV) boosting stealth/backstab critical hits by +40%; Winter freezes overworld lakes and rivers into solid walkable `TileType.Ice` platforms while freezing sweet berry bushes barren and boosting overburden stamina strain. Added ambient seasonal particle rendering in canvas (cherry blossoms, golden heat motes, tumbling autumn leaves, frost crystals), interactive Season controls in God Mode (`GodWorldEditor.tsx`), and a dedicated 9-test unit test suite (`SeasonEngine.test.ts`), bringing the verified test suite to 99 test files and 735 passing unit tests.*
+
+- **1. Subsystem 11: Modular SeasonEngine Architecture (`src/engine/environment/`)**:
+  - Implemented `SeasonEngine` singleton with `getSeasonForTurns`, `getYearForTurns`, `getSeasonState`, `checkTransition`, and `getModifiers`.
+  - Defined `SeasonModifiers` contracts covering harvest yield multipliers, frozen vegetation, overburden strain chances, ice freezing, stealth crits, FOV dampening, and heat drain intervals.
+  - Exported through `src/engine/index.ts` and exposed as a first-class accessor on `ContentRegistry.getInstance().seasons`.
+- **2. Mechanical Seasonal Impacts & Game Integration (`src/hooks/ai/aiTurnEnvironment.ts`, `src/hooks/app/useGKeyInteraction.ts`, `src/hooks/combat/combatMath.ts`)**:
+  - Synchronized `aiTurnEnvironment.ts` with `SeasonEngine.getInstance()` for atomic season boundary detection and heat dehydration MP drains.
+  - Updated `useEnemyAI.ts` to persist `season: nextSeason` across turn ticks.
+  - Integrated seasonal foraging in `useGKeyInteraction.ts`: 2.0x yields during Spring bloom, 1.5x in Autumn, and winter frost alerts on frosted bushes.
+  - Linked Autumn stealth +40% critical strikes and Summer catalyst supercharging in `combatMath.ts`.
+- **3. Canvas Ambient Particles & God Mode Controls (`src/canvas/biomeAtmosphereRenderer.ts`, `src/components/god/GodWorldEditor.tsx`)**:
+  - Rendered delicate drifting pink petals in Spring, golden rising heat motes in Summer, and tumbling amber/crimson leaves in Autumn.
+  - Added an interactive 'Adaptive 4-Season Cycle Controller' in the Sovereign God Mode World Editor for instant testing and realtime season realignment.
+- **4. Automated Unit Testing & CI Verification (`src/tests/engine/SeasonEngine.test.ts`)**:
+  - Added comprehensive test suite validating turn-to-season mapping, year progression, transition events, dehydration intervals, and harvest multipliers (99 test suites, 735 passing tests, 100% green).
+
 ## [v8.16.0] — Arto the Iron Breaker Special Rare Companion & Developer Memorial Tribute (November 2, 2026)
 *Engineered a one-of-a-kind rare companion, Arto the Iron Breaker (Strength Berserker), with a dedicated developer memorial tribute ("In memory of my father"). Spawns exceptionally rarely (once per gameplay session) across the infinite procedural overworld. Arto costs 350 Gold to recruit, arrives pre-equipped with a Heavy Iron Battleaxe and Reinforced Plate Armor, and features massive baseline resilience (160 HP, 22 Strength, heavy cleave attacks). Dedicated tribute messages, follower inspect memorial plaques, roster badges, and advice dialogues honor the memory of the developer's father. Expanded test coverage to 98 test suites and 726 tests.*
 

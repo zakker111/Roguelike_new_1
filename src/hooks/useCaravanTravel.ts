@@ -11,6 +11,7 @@ import { syncCaravanState } from '../utils/caravanAndTerritory';
 import { generateCaravanSkirmishMap } from '../world/caravanSkirmishGen';
 import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 import { combatVfxEngine } from '../canvas/combatVfxEngine';
+import { applyPlayerXpAndLevelUps } from '../utils/levelUp';
 
 interface UseCaravanTravelOptions {
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
@@ -446,23 +447,19 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound, setAc
         nextExhaustion = 0;
       }
 
-      let nextXp = playerStats.xp + xpGained;
-      let nextLevel = playerStats.level;
-      let nextMaxHp = playerStats.maxHp;
-      let nextMaxMp = playerStats.maxMp;
-      let nextUnspentPoints = playerStats.unspentPoints;
-      let nextXpNext = playerStats.xpNext;
+      const { nextStats: leveledStats, levelsGained } = applyPlayerXpAndLevelUps(
+        {
+          ...prev.playerStats,
+          gold: nextGold,
+          hp: nextHp,
+          mp: nextMp,
+          exhaustion: nextExhaustion,
+        },
+        xpGained
+      );
 
-      if (nextXp >= nextXpNext) {
-        nextLevel += 1;
-        nextXp -= nextXpNext;
-        nextXpNext = Math.round(nextXpNext * 1.5);
-        nextMaxHp += 15;
-        nextMaxMp += 8;
-        nextHp = nextMaxHp;
-        nextMp = nextMaxMp;
-        nextUnspentPoints += 3;
-        resultLog += ` 🎉 LEVEL UP! You have achieved Level ${nextLevel}! Attributes boosted.`;
+      if (levelsGained > 0) {
+        resultLog += ` 🎉 LEVEL UP! You have achieved Level ${leveledStats.level}! Attributes boosted.`;
         playSound('levelUp');
       }
 
@@ -483,19 +480,7 @@ export function useCaravanTravel({ setGameState, addLogMessage, playSound, setAc
 
       return {
         ...prev,
-        playerStats: {
-          ...prev.playerStats,
-          gold: nextGold,
-          hp: nextHp,
-          mp: nextMp,
-          exhaustion: nextExhaustion,
-          xp: nextXp,
-          level: nextLevel,
-          maxHp: nextMaxHp,
-          maxMp: nextMaxMp,
-          xpNext: nextXpNext,
-          unspentPoints: nextUnspentPoints
-        },
+        playerStats: leveledStats,
         inventoryMaterials: nextMats,
         caravanTravel: updatedTravel
       };

@@ -5,6 +5,7 @@ import { computeFOV } from '../utils/ai';
 import { generateOverworldChunk } from '../utils/overworld';
 import { generateLevel } from '../utils/dungeon';
 import { combatVfxEngine } from '../canvas/combatVfxEngine';
+import { QuestEngine } from '../engine/quests';
 
 export interface UsePlayerMovementParams {
   gameStateRef: MutableRefObject<GameState>;
@@ -193,6 +194,15 @@ export function usePlayerMovement({
           row.map((cell, x) => (existing.discovered?.[y]?.[x] || fov?.[y]?.[x] || false))
         );
 
+        const questProgress = QuestEngine.getInstance().updateProgress(prev.quests, {
+          type: 'reach_depth',
+          targetId: 'depth',
+          depth: nextDepth,
+        });
+        if (questProgress.logMessages.length > 0) {
+          questProgress.logMessages.forEach((msg) => setTimeout(() => addLogMessage(msg, 'loot'), 50));
+        }
+
         return {
           ...prev,
           playerX: stairsDownX,
@@ -208,6 +218,7 @@ export function usePlayerMovement({
           bloodSplatters: existing.bloodSplatters || [],
           dungeonProps: existing.props || [],
           dungeonLevels: updatedDungeonLevels,
+          quests: questProgress.updatedQuests,
           playerStats: {
             ...prev.playerStats,
             depth: nextDepth,
@@ -230,6 +241,15 @@ export function usePlayerMovement({
         const discovered = prevLvl.map.map((row, y) => row.map((_, x) => fov[y][x]));
         const props = generateDungeonProps(prevLvl.map, nextDepth);
 
+        const questProgress = QuestEngine.getInstance().updateProgress(prev.quests, {
+          type: 'reach_depth',
+          targetId: 'depth',
+          depth: nextDepth,
+        });
+        if (questProgress.logMessages.length > 0) {
+          questProgress.logMessages.forEach((msg) => setTimeout(() => addLogMessage(msg, 'loot'), 50));
+        }
+
         return {
           ...prev,
           playerX: prevLvl.playerX,
@@ -245,6 +265,7 @@ export function usePlayerMovement({
           bloodSplatters: [],
           dungeonProps: props,
           dungeonLevels: updatedDungeonLevels,
+          quests: questProgress.updatedQuests,
           playerStats: {
             ...prev.playerStats,
             depth: nextDepth,
@@ -298,6 +319,15 @@ export function usePlayerMovement({
       const nextKey = `${chunkX},${chunkY}_depth-${nextDepth}`;
       const existing = nextDungeonLevels[nextKey];
 
+      const questProgress = QuestEngine.getInstance().updateProgress(prev.quests, {
+        type: 'reach_depth',
+        targetId: 'depth',
+        depth: nextDepth,
+      });
+      if (questProgress.logMessages.length > 0) {
+        questProgress.logMessages.forEach((msg) => setTimeout(() => addLogMessage(msg, 'loot'), 50));
+      }
+
       if (existing) {
         const { x: stairsUpX, y: stairsUpY } = findStairsOrWalkablePosition(existing.map, TileType.StairsUp, `Dungeon Depth ${nextDepth}`);
 
@@ -330,6 +360,7 @@ export function usePlayerMovement({
           bloodSplatters: existing.bloodSplatters || [],
           dungeonProps: existing.props || [],
           dungeonLevels: nextDungeonLevels,
+          quests: questProgress.updatedQuests,
           playerStats: {
             ...prev.playerStats,
             depth: nextDepth,
@@ -374,6 +405,7 @@ export function usePlayerMovement({
           bloodSplatters: [],
           dungeonProps: props,
           dungeonLevels: nextDungeonLevels,
+          quests: questProgress.updatedQuests,
           playerStats: {
             ...prev.playerStats,
             depth: nextDepth,
@@ -420,6 +452,15 @@ export function usePlayerMovement({
       const dungeonLevelsSafe = prev.dungeonLevels || {};
       const existing = dungeonLevelsSafe[dungeonKey];
 
+      const questProgress = QuestEngine.getInstance().updateProgress(prev.quests, {
+        type: 'reach_depth',
+        targetId: 'depth',
+        depth: 1,
+      });
+      if (questProgress.logMessages.length > 0) {
+        questProgress.logMessages.forEach((msg) => setTimeout(() => addLogMessage(msg, 'loot'), 50));
+      }
+
       if (existing) {
         const { x: stairsUpX, y: stairsUpY } = findStairsOrWalkablePosition(existing.map, TileType.StairsUp, `Dungeon Depth 1`);
 
@@ -461,6 +502,7 @@ export function usePlayerMovement({
           corpses: existing.corpses || [],
           bloodSplatters: existing.bloodSplatters || [],
           dungeonProps: existing.props || [],
+          quests: questProgress.updatedQuests,
           playerStats: {
             ...prev.playerStats,
             depth: 1
@@ -524,6 +566,7 @@ export function usePlayerMovement({
           bloodSplatters: [],
           dungeonProps: props,
           dungeonLevels: nextDungeonLevels,
+          quests: questProgress.updatedQuests,
           playerStats: {
             ...prev.playerStats,
             depth: 1

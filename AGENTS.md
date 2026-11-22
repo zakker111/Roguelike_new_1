@@ -27,7 +27,7 @@ This document serves as the authoritative structural map and development ruleset
 - `metadata.json`: Platform metadata (app name, description, capabilities).
 - `ENGINE_MANUAL.md`: Master architectural manual and content authoring handbook for the reusable roguelike engine.
 - `LICENSE`: Open-source MIT License.
-- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 726 unit tests across 98 test suites, builds, and deploys to GitHub Pages).
+- `.github/workflows/deploy.yml`: Automated CI/CD GitHub Actions workflow (validates JSON, audits imports, executes 744 unit tests across 99 test suites, builds, and deploys to GitHub Pages).
 - `public/`:
   - `404.html`: SPA fallback redirect for GitHub Pages.
   - `.nojekyll`: Disables Jekyll asset processing on GitHub Pages.
@@ -115,6 +115,8 @@ This document serves as the authoritative structural map and development ruleset
 - `src/engine/inventory/`: Generic container management engine (`InventoryEngine`, `InventorySlot`, item stacking, weight capacity limits, container-to-container transfers).
 - `src/engine/map/`: Generic 2D spatial grid & geometry engine (`GridMap`, `Pathfinder`, Bresenham line-of-sight raycaster, field-of-view radial calculator, A* navigation).
 - `src/engine/rules/`: Generic turn-based energy scheduling engine (`TurnEngine`, `TurnParticipant`, speed-based action point accumulation and turn queue).
+- `src/engine/environment/`: Modular Adaptive 4-Season Environmental Sub-Engine (`SeasonEngine`, `SeasonState`, `SeasonTransitionEvent`, `SeasonModifiers`, mathematical turn-to-season progression, Spring 2.0x harvest abundance, Summer heat dehydration and flammability, Autumn mist stealth crits, Winter walkable ice platforms).
+- `src/engine/quests/`: Modular Dynamic Radiant Quest & Contract Sub-Engine (`QuestEngine`, `QuestGenerator`, `QuestRegistry`, `RadiantQuestContract`, 5 procedural contract archetypes scaling by player level/geography, town board replenishment, objective tracking, and legacy compatibility adapters).
 - `src/engine/validation/`: Autonomous Content Validation Engine (`ContentValidator`, checks duplicate IDs, missing fields, invalid AI roles, invalid abilities, broken references, invalid spawn tables, room dimensions).
 - `src/engine/index.ts`: Unified engine barrel export.
 
@@ -299,6 +301,7 @@ This document serves as the authoritative structural map and development ruleset
 - `src/utils/moddingEngine.ts`: Runtime custom item, spell, and enemy modding engine.
 - `src/utils/harvestEngine.ts`: Declarative resource harvesting engine coupled to `tileRegistry.ts` (`harvestYield`, `harvestTool`, `harvestReplacementTile`) enforcing tool requirements and durability checks.
 - `src/utils/gameStateFactory.ts`: Initial game state and faction territory bootstrap factory.
+- `src/utils/levelUp.ts`: Canonical player XP accumulation and multi-level-up stat scaling engine shared across combat, quests, spells, and caravan events.
 - `src/utils/spatial/`: Bit-packed `(y << 16) | (x & 0xFFFF)` 2D spatial hash grid supporting $O(1)$ lookups.
 - `src/utils/overworld/chunkMemoryManager.ts`: Active chunk windowing manager with lossless RLE compression (25-chunk cap).
 - `src/utils/logBuffer.ts`: Centralized FIFO game log bounding utility maintaining a strict cap of 200 messages.

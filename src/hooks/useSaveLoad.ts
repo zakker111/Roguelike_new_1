@@ -1,5 +1,10 @@
 import { useEffect, useCallback, Dispatch, SetStateAction, MutableRefObject } from 'react';
 import { GameState, EquipmentItem, CraftedWeapon } from '../types';
+import { generateOverworldChunk, ensureChunkDecompressed } from '../utils/overworld';
+import { generateLevel, spawnFollowersOnLevelLoadByReset } from '../utils/dungeon';
+import { computeFOV } from '../utils/ai';
+import { LEVEL_WIDTH, LEVEL_HEIGHT, findNearestSafePlayerTile } from '../utils/gameUtils';
+import { getValidWeatherForBiome } from '../utils/weatherEngine';
 
 export const CURRENT_SAVE_VERSION = 'v7.7.4';
 export const DEFAULT_SAVE_KEY = 'shadow_over_oakhaven_save_v1';
@@ -40,11 +45,18 @@ export interface SaveFilePayload {
   dungeonDepth?: number;
   relics?: any[];
   unlockedRecipes?: string[];
-  gameTime?: string;
+  gameTime?: number | string;
   season?: string;
   weather?: string;
   customMapPins?: any[];
   attunedWaystones?: string[];
+  spawnedArto?: boolean;
+  foundArto?: boolean;
+  spawnedSeppo?: boolean;
+  spawnedCats?: string[];
+  foundCats?: string[];
+  defeatedEnemiesCount?: Record<string, number>;
+  clearedCamps?: string[];
 }
 
 /**
@@ -228,11 +240,22 @@ export function migrateSaveData(raw: unknown): SaveFilePayload {
     dungeonDepth: depth,
     relics: Array.isArray(obj.relics) ? obj.relics : [],
     unlockedRecipes: Array.isArray(obj.unlockedRecipes) ? obj.unlockedRecipes : [],
-    gameTime: typeof obj.gameTime === 'string' ? obj.gameTime : '12:00',
-    season: typeof obj.season === 'string' ? obj.season : 'Summer',
-    weather: typeof obj.weather === 'string' ? obj.weather : 'Clear',
+    gameTime: typeof obj.gameTime === 'number' && !isNaN(obj.gameTime)
+      ? Math.max(0, Math.floor(obj.gameTime)) % 1440
+      : typeof obj.gameTime === 'string'
+        ? obj.gameTime
+        : 480,
+    season: typeof obj.season === 'string' ? obj.season.toLowerCase() : 'spring',
+    weather: typeof obj.weather === 'string' ? obj.weather.toLowerCase() : 'clear',
     customMapPins,
     attunedWaystones,
+    spawnedArto: typeof obj.spawnedArto === 'boolean' ? obj.spawnedArto : undefined,
+    foundArto: typeof obj.foundArto === 'boolean' ? obj.foundArto : undefined,
+    spawnedSeppo: typeof obj.spawnedSeppo === 'boolean' ? obj.spawnedSeppo : undefined,
+    spawnedCats: Array.isArray(obj.spawnedCats) ? obj.spawnedCats : undefined,
+    foundCats: Array.isArray(obj.foundCats) ? obj.foundCats : undefined,
+    defeatedEnemiesCount: obj.defeatedEnemiesCount && typeof obj.defeatedEnemiesCount === 'object' ? obj.defeatedEnemiesCount : undefined,
+    clearedCamps: Array.isArray(obj.clearedCamps) ? obj.clearedCamps : undefined,
   };
 }
 
@@ -294,11 +317,18 @@ export function useSaveLoad({
         dungeonDepth: gs.playerStats?.depth ?? 0,
         relics: (gs as any).relics || gs.sanctumRelics || [],
         unlockedRecipes: (gs as any).unlockedRecipes || [],
-        gameTime: typeof gs.gameTime === 'string' ? gs.gameTime : String(gs.gameTime ?? '12:00'),
+        gameTime: typeof gs.gameTime === 'number' && !isNaN(gs.gameTime) ? gs.gameTime : 480,
         season: gs.season,
         weather: gs.weather,
         customMapPins: gs.customMapPins || [],
         attunedWaystones: gs.attunedWaystones || ['waystone_0_0'],
+        spawnedArto: gs.spawnedArto,
+        foundArto: gs.foundArto,
+        spawnedSeppo: gs.spawnedSeppo,
+        spawnedCats: gs.spawnedCats || [],
+        foundCats: gs.foundCats || [],
+        defeatedEnemiesCount: gs.defeatedEnemiesCount || {},
+        clearedCamps: gs.clearedCamps || [],
       };
 
       const serialized = JSON.stringify(payload);
@@ -314,7 +344,7 @@ export function useSaveLoad({
   }, [gameStateRef, addLogMessage]);
 
   /**
-   * Load GameState from localStorage with automatic migration
+   * Load GameState from localStorage with automatic migration and world/chunk resync
    */
   const loadGame = useCallback((slotKey: string = DEFAULT_SAVE_KEY) => {
     try {
@@ -327,41 +357,192 @@ export function useSaveLoad({
 
       const mats = migrated.inventoryMaterials || {};
 
-      setGameState((prev) => ({
-        ...prev,
-        playerX: migrated.playerX,
-        playerY: migrated.playerY,
-        playerZ: migrated.playerZ ?? 0,
-        isOverworld: migrated.isOverworld ?? true,
-        overworldZ: migrated.overworldZ ?? 0,
-        currentChunkX: migrated.currentChunkX,
-        currentChunkY: migrated.currentChunkY,
-        playerStats: {
+      // Parse numeric or legacy HH:MM gameTime cleanly
+      let resolvedGameTime = 480;
+      if (typeof migrated.gameTime === 'number' && !isNaN(migrated.gameTime)) {
+        resolvedGameTime = migrated.gameTime % 1440;
+      } else if (typeof migrated.gameTime === 'string') {
+        const hmMatch = migrated.gameTime.match(/^(\d{1,2}):(\d{2})$/);
+        if (hmMatch) {
+          resolvedGameTime = (parseInt(hmMatch[1], 10) * 60 + parseInt(hmMatch[2], 10)) % 1440;
+        } else {
+          const parsedNum = Number(migrated.gameTime);
+          if (!isNaN(parsedNum)) {
+            resolvedGameTime = Math.max(0, Math.floor(parsedNum)) % 1440;
+          }
+        }
+      }
+
+      const VALID_SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+      const rawSeason = (migrated.season || 'spring').toLowerCase();
+      const resolvedSeason = (VALID_SEASONS.includes(rawSeason) ? rawSeason : 'spring') as any;
+
+      setGameState((prev) => {
+        const mergedStats = {
           ...prev.playerStats,
           ...migrated.playerStats,
-        },
-        equipmentInventory: migrated.equipmentInventory,
-        inventoryMaterials: mats,
-        inventoryCatalysts: migrated.inventoryCatalysts,
-        currentWeapon: (migrated.equippedWeapon as CraftedWeapon) || prev.currentWeapon,
-        equippedArmor: migrated.equippedArmor,
-        equippedHelmet: migrated.equippedHelmet,
-        equippedGloves: migrated.equippedGloves,
-        equippedBoots: migrated.equippedBoots,
-        equippedShield: migrated.equippedShield,
-        equippedAmulet: migrated.equippedAmulet,
-        followers: migrated.followers || [],
-        quests: migrated.quests || [],
-        chaosScore: migrated.chaosScore ?? 0,
-        townReputation: migrated.townReputation ?? 50,
-        relics: migrated.relics || [],
-        unlockedRecipes: migrated.unlockedRecipes || [],
-        gameTime: typeof migrated.gameTime === 'number' ? migrated.gameTime : 720,
-        season: (migrated.season ? migrated.season.toLowerCase() : 'summer') as any,
-        weather: (migrated.weather ? migrated.weather.toLowerCase() : 'clear') as any,
-        customMapPins: migrated.customMapPins || [],
-        attunedWaystones: migrated.attunedWaystones || ['waystone_0_0'],
-      }));
+        };
+        const mergedWeapon = (migrated.equippedWeapon as CraftedWeapon) || prev.currentWeapon;
+        const mergedFollowers = migrated.followers || [];
+        const isArtoInParty = mergedFollowers.some(
+          (f: any) => (f.name || '').toLowerCase().includes('arto') || String(f.id || '').includes('arto')
+        );
+        const restoredSpawnedArto = migrated.spawnedArto ?? (prev.spawnedArto || isArtoInParty);
+        const restoredFoundArto = migrated.foundArto ?? (prev.foundArto || isArtoInParty);
+        const restoredSpawnedSeppo = migrated.spawnedSeppo ?? prev.spawnedSeppo ?? false;
+        const restoredSpawnedCats = migrated.spawnedCats ?? prev.spawnedCats ?? [];
+        const restoredFoundCats = migrated.foundCats ?? prev.foundCats ?? [];
+        const restoredDefeatedCounts = migrated.defeatedEnemiesCount ?? prev.defeatedEnemiesCount ?? {};
+        const restoredClearedCamps = migrated.clearedCamps ?? prev.clearedCamps ?? [];
+
+        const targetIsOverworld = migrated.isOverworld ?? true;
+        const targetCx = migrated.currentChunkX;
+        const targetCy = migrated.currentChunkY;
+        const targetDepth = migrated.playerStats.depth ?? migrated.dungeonDepth ?? 0;
+
+        let nextMap = prev.map;
+        let nextEnemies = prev.enemies;
+        let nextNpcs = prev.npcs;
+        let nextTraps = prev.traps;
+        let nextChests = prev.chests;
+        let nextProps = prev.dungeonProps;
+        let nextBiome = prev.biome;
+        let nextDiscovered = prev.discovered;
+        let nextVisible = prev.visible;
+        let nextChunks = { ...prev.overworldChunks };
+        let nextPlayerX = migrated.playerX;
+        let nextPlayerY = migrated.playerY;
+
+        const locationChanged =
+          targetIsOverworld !== prev.isOverworld ||
+          targetCx !== prev.currentChunkX ||
+          targetCy !== prev.currentChunkY ||
+          (!targetIsOverworld && targetDepth !== prev.playerStats.depth);
+
+        if (locationChanged || mergedFollowers.length > 0) {
+          if (targetIsOverworld) {
+            const chunkKey = `${targetCx},${targetCy}`;
+            let targetChunk = nextChunks[chunkKey] ? ensureChunkDecompressed(nextChunks[chunkKey]) : null;
+            if (!targetChunk) {
+              targetChunk = generateOverworldChunk(
+                targetCx,
+                targetCy,
+                LEVEL_WIDTH,
+                LEVEL_HEIGHT,
+                restoredSpawnedCats,
+                restoredSpawnedSeppo,
+                mergedStats as any,
+                mergedWeapon,
+                restoredSpawnedArto
+              );
+              nextChunks[chunkKey] = targetChunk;
+            }
+            const safePos = findNearestSafePlayerTile(nextPlayerX, nextPlayerY, targetChunk.map, true);
+            nextPlayerX = safePos.x;
+            nextPlayerY = safePos.y;
+            nextMap = targetChunk.map;
+            nextTraps = targetChunk.traps;
+            nextChests = targetChunk.chests;
+            nextNpcs = targetChunk.npcs;
+            nextProps = targetChunk.props || [];
+            nextBiome = targetChunk.biome;
+            nextEnemies = spawnFollowersOnLevelLoadByReset(
+              targetChunk.enemies,
+              mergedFollowers as any,
+              nextPlayerX,
+              nextPlayerY,
+              targetChunk.map
+            );
+            nextVisible = computeFOV(nextPlayerX, nextPlayerY, targetChunk.map, 6);
+            nextDiscovered = targetChunk.map.map((row, y) =>
+              row.map((_, x) => (targetChunk!.discovered?.[y]?.[x] || nextVisible[y]?.[x] || false))
+            );
+          } else {
+            const dungeonLvl = generateLevel(
+              LEVEL_WIDTH,
+              LEVEL_HEIGHT,
+              Math.max(1, targetDepth),
+              mergedStats.turnsPlayed || 0,
+              mergedStats.realTimeSeconds || 0,
+              mergedStats as any,
+              mergedWeapon,
+              restoredDefeatedCounts,
+              restoredClearedCamps.length
+            );
+            const safePos = findNearestSafePlayerTile(nextPlayerX, nextPlayerY, dungeonLvl.map, true);
+            nextPlayerX = safePos.x;
+            nextPlayerY = safePos.y;
+            nextMap = dungeonLvl.map;
+            nextTraps = dungeonLvl.traps;
+            nextChests = dungeonLvl.chests;
+            nextNpcs = [];
+            nextEnemies = spawnFollowersOnLevelLoadByReset(
+              dungeonLvl.enemies,
+              mergedFollowers as any,
+              nextPlayerX,
+              nextPlayerY,
+              dungeonLvl.map
+            );
+            nextVisible = computeFOV(nextPlayerX, nextPlayerY, dungeonLvl.map, 6);
+            nextDiscovered = dungeonLvl.map.map((row, y) => row.map((_, x) => nextVisible[y]?.[x] || false));
+          }
+        }
+
+        const resolvedWeather = getValidWeatherForBiome(
+          nextBiome,
+          (migrated.weather ? migrated.weather.toLowerCase() : prev.weather) as any
+        );
+
+        return {
+          ...prev,
+          playerX: nextPlayerX,
+          playerY: nextPlayerY,
+          playerZ: migrated.playerZ ?? 0,
+          isOverworld: targetIsOverworld,
+          overworldZ: migrated.overworldZ ?? 0,
+          currentChunkX: targetCx,
+          currentChunkY: targetCy,
+          overworldChunks: nextChunks,
+          map: nextMap,
+          enemies: nextEnemies,
+          npcs: nextNpcs,
+          traps: nextTraps,
+          chests: nextChests,
+          dungeonProps: nextProps,
+          biome: nextBiome,
+          discovered: nextDiscovered,
+          visible: nextVisible,
+          playerStats: mergedStats,
+          equipmentInventory: migrated.equipmentInventory,
+          inventoryMaterials: mats,
+          inventoryCatalysts: migrated.inventoryCatalysts,
+          currentWeapon: mergedWeapon,
+          equippedArmor: migrated.equippedArmor,
+          equippedHelmet: migrated.equippedHelmet,
+          equippedGloves: migrated.equippedGloves,
+          equippedBoots: migrated.equippedBoots,
+          equippedShield: migrated.equippedShield,
+          equippedAmulet: migrated.equippedAmulet,
+          followers: mergedFollowers,
+          quests: migrated.quests || [],
+          chaosScore: migrated.chaosScore ?? 0,
+          townReputation: migrated.townReputation ?? 50,
+          relics: migrated.relics || [],
+          unlockedRecipes: migrated.unlockedRecipes || [],
+          gameTime: resolvedGameTime,
+          season: resolvedSeason,
+          weather: resolvedWeather,
+          customMapPins: migrated.customMapPins || [],
+          attunedWaystones: migrated.attunedWaystones || ['waystone_0_0'],
+          spawnedArto: restoredSpawnedArto,
+          foundArto: restoredFoundArto,
+          spawnedSeppo: restoredSpawnedSeppo,
+          spawnedCats: restoredSpawnedCats,
+          foundCats: restoredFoundCats,
+          defeatedEnemiesCount: restoredDefeatedCounts,
+          clearedCamps: restoredClearedCamps,
+        };
+      });
 
       if (addLogMessage) {
         addLogMessage('📂 Game progress successfully loaded.', 'system');

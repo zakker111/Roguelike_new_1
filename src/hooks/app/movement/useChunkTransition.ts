@@ -368,6 +368,69 @@ export function handleChunkBorderCrossing(
       });
     }
 
+    // Spawn active Radiant Bounty Boss when entering its target chunk
+    const activeBountiesHere = (prev.quests || []).filter(
+      (q) =>
+        q.status === 'active' &&
+        q.category === 'bounty' &&
+        q.targetChunkX === nextCx &&
+        q.targetChunkY === nextCy
+    );
+    activeBountiesHere.forEach((bounty) => {
+      const bossName = bounty.targetItem || bounty.title.replace(/^🗡️ Wanted Bounty:\s*/i, '').trim() || 'Notorious Warlord';
+      const alreadySpawned = targetChunk.enemies.some(
+        (e) =>
+          e.id.includes(`bounty_${bounty.id}`) ||
+          (e.isBoss && e.name.toLowerCase().includes(bossName.toLowerCase()))
+      );
+      if (!alreadySpawned) {
+        const pLevel = prev.playerStats?.level || 1;
+        const centerPos = findNearestSafePlayerTile(
+          Math.floor(LEVEL_WIDTH / 2),
+          Math.floor(LEVEL_HEIGHT / 2),
+          targetChunk.map,
+          true
+        );
+        const scaledHp = Math.round(65 + pLevel * 22);
+        const scaledAtk = Math.round(7 + pLevel * 2);
+        const scaledDef = Math.round(2 + Math.floor(pLevel / 2));
+
+        targetChunk.enemies = [
+          ...targetChunk.enemies,
+          {
+            id: `bounty_${bounty.id}_${nextCx}_${nextCy}`,
+            x: centerPos.x,
+            y: centerPos.y,
+            type: EnemyType.Bandit,
+            name: `👑 ${bossName}`,
+            hp: scaledHp,
+            maxHp: scaledHp,
+            atk: scaledAtk,
+            def: scaledDef,
+            range: 1,
+            speed: 1.0,
+            color: '#f43f5e',
+            char: '👑',
+            state: EnemyState.Chasing,
+            isElite: true,
+            isBoss: true,
+            faction: 'outlaw',
+            factionRank: 'warlord',
+            patrolPath: [{ x: centerPos.x, y: centerPos.y }],
+            patrolIndex: 0,
+            debuffs: [],
+          },
+        ];
+
+        newMsgs.push({
+          id: `bounty_sighting_${bounty.id}_${Date.now()}`,
+          text: `🎯 [BOUNTY SIGHTED]: Your contract quarry, ${bossName}, holds a camp in this territory! Slay them to fulfill your bounty!`,
+          type: 'danger',
+          timestamp: 'BOUNTY',
+        });
+      }
+    });
+
     const truncatedLogs = appendBoundedLogs(prev.logs, newMsgs, 200);
     const managedChunks = manageActiveChunkWindow(
       {
@@ -429,7 +492,7 @@ export function handleChunkBorderCrossing(
             }
           ]
         : prev.equipmentInventory,
-      logs: [...truncatedLogs, ...newMsgs],
+      logs: truncatedLogs,
       visitedTiles: nextVisited,
       biome: targetChunk.biome,
       weather: getValidWeatherForBiome(targetChunk.biome, targetChunk.weather),

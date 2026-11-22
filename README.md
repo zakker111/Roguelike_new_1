@@ -26,7 +26,8 @@ Abyss Rogue provides a classical grid-based turn-based adventure built with supr
    - **Interactive Level Decor Props**: Discover interactive decor objects (Sarcophagi, Weapon Racks, Lore Bookshelves, Alchemy Tables, Feather Beds, Roaring Hearths, Town Wells, Notice Boards, Cinder Casks, Sundials). Stepping adjacent automatically displays an interactive HUD alert banner with click/key interactions.
    - **Runtime Modding API & Custom Dungeon Editor**: Register custom monsters, weapons, armor, spells, and dungeon level blueprints at runtime. Includes a visual grid painter with customizable canvas sizes, tile palettes, decor props, enemy placements, and instant Test-Play mode!
    - **Wandering Wilderness Merchants**: Encounter rare roving traders like **Drunk Merchant Seppo (S)** who spawns procedurally on grass tiles in wilderness chunks (4% chance). Sells premium items (Finnish Sisu Hammer 🪵, Ever-Burning Flask 🛡️, Seppo's Secret Hooch 🍶) and features rich, comedic log commentary.
-   - **Adaptive Seasonal Cycles (Planned Roadmap)**: Dynamic Spring, Summer, Autumn, and Winter cycles with high-fidelity mechanical and visual impacts (e.g., Spring harvest abundance, Summer dehydrating heat, Autumnal stealth fog, and Winter lake freezes).
+   - **Adaptive Seasonal Cycles (`SeasonEngine`)**: Dynamic Spring, Summer, Autumn, and Winter cycles with high-fidelity mechanical and visual impacts (Spring 2.0x harvest abundance, Summer dehydrating heat, Autumnal stealth fog, and Winter lake ice freezes).
+   - **Dynamic Radiant Quest & Contract Engine (`QuestEngine`)**: Infinitely replayable town notice boards generating level-scaled Bounties, Beast Hunts, Supply Requisitions, Relic Delves, and Faction Skirmishes with live combat/delve progress tracking.
 2. **Persistent Multi-Floor Dungeons**:
    - Climb up and down staircases between Abyss floor depths 1 to 10. Reaching Floor 6 breaches the volcanic Underworld Depths, complete with bubbling lava hazard pools and the guaranteed Surtur the Magma Arch-demon Overlord boss encounter at Floor 10.
    - Layout state is completely frozen and saved when leaving standard floors, preventing enemy duplication or lost effort.
@@ -504,13 +505,13 @@ npm run validate:content
 # Run codebase import integrity check + JSON lint + content validation + TypeScript linter + Vitest suite
 npm run verify
 ```
-This audits all source files and 31 JSON data catalogs for broken relative imports and referential integrity (`validateContent.cjs`), validates TypeScript types (`tsc --noEmit`), and executes all 98 Vitest test suites (**726/726 tests passing 100% green**), including the newly verified Reusable Roguelike Engine (`ENGINE_MANUAL.md`), Generic Combat & Inventory Systems, Modular Dungeon Generators, Unified Event Bus, Action Mutator Hook Pipelines, Reactive Storyteller, and Cinematic Color Grading suites.
+This audits all source files and 31 JSON data catalogs for broken relative imports and referential integrity (`validateContent.cjs`), validates TypeScript types (`tsc --noEmit`), and executes all 99 Vitest test suites (**744/744 tests passing 100% green**), including the newly verified Reusable Roguelike Engine (`ENGINE_MANUAL.md`), Dynamic Radiant Quest & Contract Engine (`QuestEngine`), Adaptive 4-Season Environmental Engine (`SeasonEngine`), Generic Combat & Inventory Systems, Modular Dungeon Generators, Unified Event Bus, Action Mutator Hook Pipelines, Reactive Storyteller, and Cinematic Color Grading suites.
 
 ---
 
 ### 🛠️ Reusable Roguelike Engine (`ENGINE_MANUAL.md`)
 Abyss Rogue is powered by a fully modular, reusable roguelike engine where engine mechanics (**HOW the game works**) are cleanly decoupled from game content (**WHAT exists in the game**):
-- **10 Core Engine Subsystems**: Generic Entities, Abilities, Effects, Strategy-Pattern AI, Procedural Dungeon Generators, Combat Math, Inventory Containers, 2D Spatial Geometry (LOS & FOV), Energy Turn Scheduler, and Master Content Coordinator.
+- **12 Core Engine Subsystems**: Generic Entities, Abilities, Effects, Strategy-Pattern AI, Procedural Dungeon Generators, Combat Math, Inventory Containers, 2D Spatial Geometry (LOS & FOV), Energy Turn Scheduler, Master Content Coordinator, Adaptive 4-Season Environmental Engine, and Dynamic Radiant Quest & Contract Engine.
 - **Data-Driven & Easily Extensible**: Adding new monsters, weapons, spells, or rooms requires only adding entries to JSON catalogs without touching core engine pipelines.
 - **Cross-Genre Proven**: Hot-swappable between Fantasy and Sci-Fi genres (`src/game/demo/sciFiGameDemo.ts`).
 - **Complete Documentation**: Read the full architectural handbook and content authoring guide in **[`ENGINE_MANUAL.md`](./ENGINE_MANUAL.md)**.
@@ -560,7 +561,7 @@ Abyss Rogue is configured for out-of-the-box deployment to **GitHub Pages** usin
    ```bash
    git init
    git add .
-   git commit -m "feat: Abyss Rogue v8.16.0 release - Special Rare Companion Arto & Developer Memorial Tribute"
+   git commit -m "feat: Abyss Rogue v8.18.0 release - Dynamic Radiant Quest & Contract Engine"
    git branch -M main
    git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY_NAME>.git
    git push -u origin main

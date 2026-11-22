@@ -32,6 +32,7 @@ import { ChunkBackgroundCache } from '../canvas/chunkBackgroundCache';
 import { gameEventBus } from '../events/core/EventBus';
 import { entityInterpolationManager } from '../canvas/entityInterpolationManager';
 import { spriteAnimationManager } from '../canvas/spriteAnimationManager';
+import { QuestEngine } from '../engine/quests';
 
 export type { UsePlayerAttackParams };
 
@@ -270,6 +271,7 @@ export function usePlayerAttack({
         let nextCorpses = prev.corpses ? [...prev.corpses] : [];
         let nextSplatters = prev.bloodSplatters ? [...prev.bloodSplatters] : [];
         let nextDefeatedCounts = prev.defeatedEnemiesCount;
+        let nextQuests = prev.quests;
         const updatedLogs = [...prev.logs];
 
         const targetEnemyIndex = nextEnemies.findIndex((e) => e.id === enemy.id);
@@ -325,6 +327,27 @@ export function usePlayerAttack({
               const chainIdx = nextEnemies.findIndex((e) => e.id === chainEnemy.id);
               if (chainIdx !== -1) {
                 nextEnemies.splice(chainIdx, 1);
+                nextDefeatedCounts = incrementDefeatedEnemyCount(
+                  nextDefeatedCounts,
+                  chainEnemy.name,
+                  chainEnemy.type as string,
+                  !!chainEnemy.isBoss
+                );
+                const chainQuestProgress = QuestEngine.getInstance().updateProgress(nextQuests, {
+                  type: chainEnemy.isBoss ? 'defeat_boss' : 'kill_enemy',
+                  targetId: chainEnemy.name || (chainEnemy.type as string),
+                });
+                if (chainQuestProgress.updatedQuests !== nextQuests) {
+                  nextQuests = chainQuestProgress.updatedQuests;
+                }
+                chainQuestProgress.logMessages.forEach((msg) => {
+                  updatedLogs.push({
+                    id: `quest_chain_${Date.now()}_${Math.random()}`,
+                    text: msg,
+                    type: 'loot',
+                    timestamp: formatGameTime(prev.gameTime).timeStr,
+                  });
+                });
                 const chainGold = Math.floor(Math.random() * 6) + 2;
                 nextLootPiles.push({
                   id: `loot_${Date.now()}_${Math.random()}`,
@@ -675,6 +698,23 @@ export function usePlayerAttack({
             !!updatedEnemy.isBoss
           );
 
+          // Update quest objective progression (both partial progress and completion)
+          const questProgress = QuestEngine.getInstance().updateProgress(nextQuests, {
+            type: updatedEnemy.isBoss ? 'defeat_boss' : 'kill_enemy',
+            targetId: updatedEnemy.name || (updatedEnemy.type as string),
+          });
+          if (questProgress.updatedQuests !== nextQuests || questProgress.logMessages.length > 0) {
+            nextQuests = questProgress.updatedQuests;
+            questProgress.logMessages.forEach((msg) => {
+              updatedLogs.push({
+                id: `quest_prog_${Date.now()}_${Math.random()}`,
+                text: msg,
+                type: 'loot',
+                timestamp: formatGameTime(prev.gameTime).timeStr,
+              });
+            });
+          }
+
           // Phase E2: Squad & Pack morale break on leader death
           const squadMorale = triggerSquadMoraleBreakOnLeaderDeath(
             updatedEnemy,
@@ -821,6 +861,7 @@ export function usePlayerAttack({
           factionTerritories: nextFactionTerritories,
           overworldChunks: nextOverworldChunks,
           defeatedEnemiesCount: nextDefeatedCounts,
+          quests: nextQuests,
           logs: updatedLogs,
           playerStats: {
             ...prev.playerStats,

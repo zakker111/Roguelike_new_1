@@ -130,6 +130,49 @@ export function renderBiomeMicroAtmosphere(
         ctx.fill();
       }
     }
+  } else if (isOverworld && season === 'spring' && (biome === 'forest' || biome === 'town' || biome === 'mountain')) {
+    // Spring: Drifting cherry blossom petals with gentle rotational wobble
+    for (let i = 0; i < 20; i++) {
+      const speedX = 14 + (i % 4) * 5;
+      const speedY = 18 + (i % 5) * 4;
+      const rx = ((i * 53 + now * speedX) % (dimensions.width + 40)) - 20;
+      const ry = ((i * 71 + now * speedY + Math.sin(now * 2.0 + i) * 14) % (dimensions.height + 40)) - 20;
+      const alpha = 0.55 + Math.sin(now * 1.5 + i) * 0.25;
+
+      ctx.fillStyle = (i % 2 === 0) ? `rgba(251, 207, 232, ${alpha.toFixed(2)})` : `rgba(244, 114, 182, ${alpha.toFixed(2)})`;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, (i % 3 === 0) ? 2.5 : 1.8, (i % 3 === 0) ? 1.5 : 1.1, now * 1.5 + i, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (isOverworld && season === 'autumn' && (biome === 'forest' || biome === 'town' || biome === 'mountain')) {
+    // Autumn: Tumbling amber, rust, and crimson leaves fluttering in the wind
+    const leafColors = ['245, 158, 11', '217, 119, 6', '185, 28, 28'];
+    for (let i = 0; i < 22; i++) {
+      const speedX = 18 + (i % 5) * 6;
+      const speedY = 24 + (i % 6) * 5;
+      const rx = ((i * 47 + now * speedX + Math.sin(now * 2.4 + i) * 16) % (dimensions.width + 40)) - 20;
+      const ry = ((i * 61 + now * speedY) % (dimensions.height + 40)) - 20;
+      const alpha = 0.65 + Math.sin(now * 1.8 + i) * 0.20;
+      const color = leafColors[i % leafColors.length];
+
+      ctx.fillStyle = `rgba(${color}, ${alpha.toFixed(2)})`;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, (i % 2 === 0) ? 3.0 : 2.2, (i % 2 === 0) ? 1.6 : 1.2, now * 2.2 + i, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (isOverworld && season === 'summer' && (biome === 'desert' || biome === 'forest' || biome === 'town')) {
+    // Summer: Rising golden heat motes and luminous dust shimmer
+    for (let i = 0; i < 16; i++) {
+      const speedY = 12 + (i % 4) * 4;
+      const rx = ((i * 59 + Math.sin(now * 1.6 + i) * 18) % (dimensions.width - 20)) + 10;
+      const ry = dimensions.height - ((i * 43 + now * speedY) % (dimensions.height + 20));
+      const alpha = 0.35 + Math.sin(now * 2.2 + i) * 0.20;
+
+      ctx.fillStyle = `rgba(251, 191, 36, ${alpha.toFixed(2)})`;
+      ctx.beginPath();
+      ctx.arc(rx, ry, (i % 2 === 0) ? 1.8 : 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else if (!isOverworld && depth >= 6) {
     // Deep Underworld: Floating volcanic cinder sparks & embers
     for (let i = 0; i < 16; i++) {

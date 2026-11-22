@@ -4,9 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { GameState, TileType, TrapType } from '../../types';
-import { Hammer, Flame, ShieldAlert, CloudRain } from 'lucide-react';
+import { Hammer, Flame, ShieldAlert, CloudRain, SunMedium } from 'lucide-react';
 import { getValidWeatherForBiome } from '../../utils/weatherEngine';
+import { SeasonEngine } from '../../engine/environment/SeasonEngine';
+import { SeasonType } from '../../engine/environment/types';
+import { GameState, TileType, TrapType } from '../../types';
 
 export interface GodWorldEditorProps {
   gameState: GameState;
@@ -260,6 +262,60 @@ export const GodWorldEditor: React.FC<GodWorldEditorProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Adaptive 4-Season Cycle Controller */}
+      <div className="pt-3 border-t border-slate-800/80 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[10px] uppercase">
+            <SunMedium className="w-3.5 h-3.5" />
+            <span>Adaptive 4-Season Cycle Controller</span>
+          </div>
+          <span className="text-[9px] font-mono text-amber-300/80 capitalize">
+            Current: {gameState.season || 'spring'}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+          {([
+            { id: 'spring', label: '🌸 Spring', sub: 'Double Flora Harvest' },
+            { id: 'summer', label: '☀️ Summer', sub: 'Solar Heatwaves & Flammability' },
+            { id: 'autumn', label: '🍂 Autumn', sub: '+40% Stealth Crits & Mist' },
+            { id: 'winter', label: '❄️ Winter', sub: 'Walkable Ice & Frozen Bushes' },
+          ] as const).map((s) => {
+            const isCurrent = (gameState.season || 'spring') === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => {
+                  const seasonEngine = SeasonEngine.getInstance();
+                  const def = seasonEngine.getSeasonDefinition(s.id as SeasonType);
+                  setGameState((prev) => ({
+                    ...prev,
+                    season: s.id as SeasonType,
+                    logs: [
+                      {
+                        id: `god_season_${Date.now()}`,
+                        text: `🕊️ [GOD MODE]: Overworld season realigned to ${def.icon} ${def.name.toUpperCase()}! ${def.quote}`,
+                        type: 'system',
+                        timestamp: 'GOD',
+                      },
+                      ...prev.logs.slice(0, 99),
+                    ],
+                  }));
+                }}
+                className={`py-2 px-2.5 rounded text-left transition-all border cursor-pointer ${
+                  isCurrent
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-400/80 shadow-md ring-1 ring-amber-400/50'
+                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
+                }`}
+              >
+                <div className="text-[10px] font-bold font-mono">{s.label}</div>
+                <div className="text-[8px] text-slate-500 mt-0.5 font-sans leading-tight">{s.sub}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
+

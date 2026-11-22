@@ -29,6 +29,7 @@ export interface TurnEnvironmentResult {
   nextFoodBuff: FoodBuff | undefined;
   activeScars: any[];
   nextWeather: 'clear' | 'rainy' | 'foggy' | 'snowy' | 'sandstorm' | 'blizzard' | 'ashfall' | 'tidal_surge';
+  nextSeason: 'spring' | 'summer' | 'autumn' | 'winter';
   nextTimeVal: number;
   nextRep: number;
   nextGuardsHostile: boolean;

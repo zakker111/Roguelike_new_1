@@ -32,6 +32,12 @@ Turn the existing `Roguelike_new_1` project into a reliable, modular, reusable r
    - *Issue:* Validation scripts checked enemy base stats and item names, but failed to validate spawn table references, enemy ability existence in `AbilityRegistry`, and AI role strings.
    - *Resolution:* Upgraded `scripts/validateContent.cjs` to validate `aiRole` values against known strategies and cross-referenced abilities against `AbilityRegistry`. Caught and resolved 2 real data bugs (`Hiisi` and `Nakki` using obsolete `'flanker'` instead of canonical `'flanking'`).
 
+6, ** special things
+   random event luggage(from terry prachet) it is angry chest it is minor boss and when it hp goes low in event player gets that luggage to rare companion luggage does not attack enemies only attacs if player is low health luggage takes damage but 
+   cannot die luggage flees out from combat when it hase low hp items cannot be eguiped to luggage luggage does not have any tactical information in luggage player can store some items not mutch but some and in luggage player can store infinite ammount of golden 
+   so luggage have capasity of like 10 armor/weapons warieng in weight that needs to be calculated, luggage always follows player but some times luggage can go out from the player away to do its own things but then luggage always comes to a player when some turns are passed
+   luggage is funny companion and it hase many legs and is chest in sprites. there can be only one luggage whit player but events whit luggage can occure untill luggage is beaten and it follows player.
+   
 ---
 
 ## 🗺️ Implementation Progress
@@ -69,10 +75,24 @@ Turn the existing `Roguelike_new_1` project into a reliable, modular, reusable r
 - [x] **6.3**: Build and bundle compilation (`compile_applet`): 100% successful.
 - [x] **6.4**: Verify Arto the Iron Breaker special rare companion (350g, once-per-session spawn, developer memorial tribute).
 
+### Phase 7: Dynamic Radiant Quest & Contract Engine (`src/engine/quests/`) [COMPLETED]
+- [x] **7.1**: Design `RadiantQuestContract` and `QuestObjective` domain schemas in `/src/engine/quests/types.ts` with backwards-compatible legacy adapters (`contractToLegacyQuest`, `legacyQuestToContract`).
+- [x] **7.2**: Implement `QuestRegistry` bootstrapping `quests.json` and dynamic contract registration.
+- [x] **7.3**: Implement procedural `QuestGenerator` scaling 5 contract archetypes (Bounty, Beast Hunt, Supply Requisition, Relic Delve, Faction Skirmish) by player level, difficulty tiers, and chunk geography.
+- [x] **7.4**: Implement `QuestEngine` (`replenishTownBoard`, `updateProgress`, `canTurnIn`, `claimRewards`) and expose via `ContentRegistry.getInstance().quests`.
+- [x] **7.5**: Connect procedural contract dispatchers to `useQuestAndGuildHandlers.ts`, `QuestBoardOverlay.tsx`, `usePlayerAttack.ts` (enemy/boss kills), and `usePlayerMovement.ts` (dungeon depth delves), verified with 16 automated unit tests (`QuestEngine.test.ts`).
+
+### Phase 8: Adaptive 4-Season Environmental Engine (`src/engine/environment/`) [COMPLETED]
+- [x] **8.1**: Implement modular `SeasonEngine` (`src/engine/environment/SeasonEngine.ts`) with mathematical turn-to-season progression, phase transitions, and seasonal modifier contracts.
+- [x] **8.2**: Define comprehensive mechanical season modifiers: Spring (wild harvest abundance, 2.0x yield), Summer (solar heat dehydration, Focus/MP drain, 1.5x fire spread), Autumn (stealth mist, +40% backstab crits, 1.5x harvest), Winter (lake surface freeze into walkable ice, barren bushes, slipping hazards).
+- [x] **8.3**: Integrate with `aiTurnEnvironment.ts`, `usePlayerTurnMovement.ts`, `useTerrainHazards.ts`, and foraging hooks (`useGKeyInteraction.ts`).
+- [x] **8.4**: Add ambient seasonal particle rendering in canvas (cherry blossom petals in Spring, golden heat motes in Summer, fluttering amber leaves in Autumn, glacial frost crystals in Winter).
+- [x] **8.5**: Provide interactive 4-Season Cycle Controller in God Mode (`GodWorldEditor.tsx`) and add comprehensive automated test suite (`SeasonEngine.test.ts`, 9 passing unit tests).
+
 ---
 
 ## 📊 Verification & Test Metrics
-- Test Suites: 98 passing (726 unit/integration tests).
+- Test Suites: 99 passing (744 unit/integration tests).
 - Linting: 0 TypeScript errors (`tsc --noEmit`).
 - Data Catalogs: 31 JSON catalogs validated.
 - Standalone Validation: 0 errors, 0 warnings across all enemies, items, weapons, and drops.

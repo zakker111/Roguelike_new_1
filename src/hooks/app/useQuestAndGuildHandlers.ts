@@ -1,5 +1,8 @@
 import React from 'react';
 import { GameState, EnemyState, EnemyType } from '../../types';
+import { QuestEngine } from '../../engine/quests';
+import { applyPlayerXpAndLevelUps } from '../../utils/levelUp';
+import { playSound } from '../../utils/audio';
 
 interface UseQuestAndGuildHandlersProps {
   gameState: GameState;
@@ -10,8 +13,14 @@ export function useQuestAndGuildHandlers({
   gameState,
   setGameState,
 }: UseQuestAndGuildHandlersProps) {
+  const questEngine = QuestEngine.getInstance();
+
   const handleAcceptQuest = (questId: string) => {
     setGameState((prev) => {
+      const targetQuest = prev.quests.find((q) => q.id === questId);
+      if (!targetQuest || targetQuest.status !== 'available') {
+        return prev;
+      }
       const updatedQuests = prev.quests.map((q) => {
         if (q.id === questId) {
           return { ...q, status: 'active' as const };
@@ -23,7 +32,7 @@ export function useQuestAndGuildHandlers({
         ...prev.logs,
         {
           id: `q_accept_${Date.now()}`,
-          text: `📜 QUEST ACCEPTED: Accepted "${prev.quests.find((q) => q.id === questId)?.title}"! Check goals at the local Quest Board or complete it with the quest giver.`,
+          text: `📜 QUEST ACCEPTED: Accepted "${targetQuest?.title || questId}"! Check goals at the local Quest Board or complete it with the quest giver.`,
           type: 'info' as const,
           timestamp: 'QUEST',
         },
@@ -125,178 +134,105 @@ export function useQuestAndGuildHandlers({
     const quest = gameState.quests.find((q) => q.id === questId);
     if (!quest) return;
 
-    if (quest.id === 'q_outlaw_pardon') {
-      const currentGold = gameState.playerStats.gold;
-      const cost = quest.targetCount || 200;
-      if (currentGold < cost) {
-        setGameState((prev) => ({
-          ...prev,
-          logs: [
-            ...prev.logs,
-            {
-              id: `q_err_${Date.now()}`,
-              text: `❌ ERROR: Insufficient Gold! You need ${cost} Gold to donate to the poorbox.`,
-              type: 'system' as const,
-              timestamp: 'QUEST',
-            },
-          ],
-        }));
-        return;
-      }
+    // Validate turn in with QuestEngine
+    const validation = questEngine.canTurnIn(
+      quest,
+      gameState.inventoryMaterials,
+      gameState.playerStats.gold,
+      gameState.enemies
+    );
 
-      setGameState((prev) => {
-        const updatedQuests = prev.quests.map((q) => {
-          if (q.id === questId) return { ...q, status: 'turned_in' as const };
-          return q;
-        });
-
-        const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const nextRep = Math.min(100, prevRep + 35);
-
-        const nextStats = {
-          ...prev.playerStats,
-          gold: Math.max(0, prev.playerStats.gold - cost),
-        };
-
-        const nextLogs = [
+    if (!validation.canTurnIn) {
+      setGameState((prev) => ({
+        ...prev,
+        logs: [
           ...prev.logs,
           {
-            id: `q_complete_${Date.now()}`,
-            text: `⚖️ PARDON GRANTED: You donated ${cost} Gold to the Church. Your crimes are pardoned! (+35 Town Reputation)`,
-            type: 'loot' as const,
+            id: `q_err_${Date.now()}`,
+            text: `❌ ERROR: ${validation.reason || 'Quest objectives not yet completed.'}`,
+            type: 'system' as const,
             timestamp: 'QUEST',
           },
-        ];
-
-        return {
-          ...prev,
-          quests: updatedQuests,
-          playerStats: nextStats,
-          townReputation: nextRep,
-          logs: nextLogs,
-        };
-      });
+        ],
+      }));
       return;
     }
 
-    if (quest.type === 'gather') {
-      const itemKey = quest.targetItem || 'mat_iron';
-      const userCount = gameState.inventoryMaterials[itemKey] || 0;
-      const needed = quest.targetCount || 5;
+    // Resolve rewards with QuestEngine
+    const rewards = questEngine.claimRewards(quest);
 
-      if (userCount < needed) {
-        setGameState((prev) => ({
-          ...prev,
-          logs: [
-            ...prev.logs,
-            {
-              id: `q_err_${Date.now()}`,
-              text: `❌ ERROR: Insufficient materials! You need ${needed}x items, you only carry ${userCount} in your bag.`,
-              type: 'system' as const,
-              timestamp: 'QUEST',
-            },
-          ],
-        }));
-        return;
+    setGameState((prev) => {
+      // Deduct materials or gold
+      let nextMats = { ...prev.inventoryMaterials };
+      let nextGold = prev.playerStats.gold;
+
+      if (rewards.deductedItemKey === 'gold' && rewards.deductedItemCount) {
+        nextGold = Math.max(0, nextGold - rewards.deductedItemCount);
+      } else if (rewards.deductedItemKey && rewards.deductedItemCount) {
+        nextMats[rewards.deductedItemKey] = Math.max(
+          0,
+          (nextMats[rewards.deductedItemKey] || 0) - rewards.deductedItemCount
+        );
       }
 
-      setGameState((prev) => {
-        const nextMats = { ...prev.inventoryMaterials };
-        nextMats[itemKey] = Math.max(0, nextMats[itemKey] - needed);
+      // Add reward gold
+      nextGold += rewards.goldGained;
 
-        const updatedQuests = prev.quests.map((q) => {
-          if (q.id === questId) return { ...q, status: 'turned_in' as const };
-          return q;
-        });
-
-        const repReward =
-          questId === 'q_iron_gather' ? 15 : questId === 'q_apothecary_supply' ? 12 : questId === 'q_mithril_heist' ? 25 : 10;
-        const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const nextRep = Math.min(100, prevRep + repReward);
-
-        const nextStats = {
-          ...prev.playerStats,
-          gold: prev.playerStats.gold + quest.rewardGold,
-        };
-
-        const nextLogs = [
-          ...prev.logs,
-          {
-            id: `q_complete_${Date.now()}`,
-            text: `🎉 QUEST COMPLETED: Delivered materials! You received +${quest.rewardGold} Gold and +${repReward} Town Reputation!`,
-            type: 'loot' as const,
-            timestamp: 'QUEST',
-          },
-        ];
-
-        return {
-          ...prev,
-          inventoryMaterials: nextMats,
-          quests: updatedQuests,
-          playerStats: nextStats,
-          townReputation: nextRep,
-          logs: nextLogs,
-        };
+      // Update quests status
+      let updatedQuests = prev.quests.map((q) => {
+        if (q.id === questId) return { ...q, status: 'turned_in' as const };
+        return q;
       });
-    } else if (quest.type === 'encounter') {
-      const isPestQuest = quest.id === 'q_pest_control';
-      const searchName = isPestQuest ? 'Quest Sewer Rat' : 'Bandit Raider';
-      const activeTargets = gameState.enemies.filter((e) => e.name.includes(searchName));
 
-      if (activeTargets.length > 0) {
-        setGameState((prev) => ({
-          ...prev,
-          logs: [
-            ...prev.logs,
-            {
-              id: `q_err_${Date.now()}`,
-              text: isPestQuest
-                ? `❌ ERROR: Quest Sewer Rats are still active! You must defeat all 3 rats in the town map.`
-                : `❌ ERROR: Bandit Raiders are still active! You must defeat all 3 raiders in the town map.`,
-              type: 'system' as const,
-              timestamp: 'QUEST',
-            },
-          ],
-        }));
-        return;
+      // Replenish town board if available quests drop low
+      const context = {
+        playerLevel: prev.playerStats.level || 1,
+        currentChunkX: prev.currentChunkX,
+        currentChunkY: prev.currentChunkY,
+        townName: 'Oakhaven Hamlet',
+        townReputation: prev.townReputation ?? 100,
+      };
+      updatedQuests = questEngine.replenishTownBoard(updatedQuests, context, 4);
+
+      const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
+      const nextRep = Math.min(100, prevRep + rewards.repGained);
+
+      const { nextStats: leveledStats, levelsGained, levelUpLogs } = applyPlayerXpAndLevelUps(
+        { ...prev.playerStats, gold: nextGold },
+        rewards.xpGained
+      );
+
+      if (levelsGained > 0) {
+        setTimeout(() => playSound('levelUp'), 120);
+      } else {
+        setTimeout(() => playSound('loot'), 50);
       }
 
-      setGameState((prev) => {
-        const updatedQuests = prev.quests.map((q) => {
-          if (q.id === questId) return { ...q, status: 'turned_in' as const };
-          return q;
-        });
+      const nextLogs = [
+        ...prev.logs,
+        {
+          id: `q_complete_${Date.now()}`,
+          text: rewards.completionLog,
+          type: 'loot' as const,
+          timestamp: 'QUEST',
+        },
+        ...levelUpLogs.map((msg, idx) => ({
+          id: `q_lvl_${Date.now()}_${idx}`,
+          text: msg,
+          type: 'craft' as const,
+          timestamp: 'LEVEL UP',
+        })),
+      ];
 
-        const prevRep = prev.townReputation !== undefined ? prev.townReputation : 100;
-        const repReward = isPestQuest ? 10 : 25;
-        const nextRep = Math.min(100, prevRep + repReward);
-
-        const nextStats = {
-          ...prev.playerStats,
-          gold: prev.playerStats.gold + quest.rewardGold,
-        };
-
-        const nextLogs = [
-          ...prev.logs,
-          {
-            id: `q_complete_${Date.now()}`,
-            text: isPestQuest
-              ? `🎉 QUEST COMPLETED: Outskirts cleaned of pests! Grom rewards you with +${quest.rewardGold} Gold and +${repReward} Town Reputation!`
-              : `🎉 QUEST COMPLETED: Town secured! Grom rewards you with +${quest.rewardGold} Gold and +${repReward} Town Reputation!`,
-            type: 'loot' as const,
-            timestamp: 'QUEST',
-          },
-        ];
-
-        return {
-          ...prev,
-          quests: updatedQuests,
-          playerStats: nextStats,
-          townReputation: nextRep,
-          logs: nextLogs,
-        };
-      });
-    }
+      return {
+        ...prev,
+        inventoryMaterials: nextMats,
+        quests: updatedQuests,
+        playerStats: leveledStats,
+        townReputation: nextRep,
+        logs: nextLogs,
+      };
+    });
   };
 
   return {

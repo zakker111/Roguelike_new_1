@@ -15,3 +15,5 @@ export * from './inventory';
 export * from './map';
 export * from './rules';
 export * from './validation';
+export * from './environment';
+export * from './quests';

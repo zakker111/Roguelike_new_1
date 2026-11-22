@@ -10,6 +10,7 @@ import { hasTownAtChunk, getDeterministicTownName, getOrganicBiome, prng } from 
 import { PoiType } from '../../components/PoiInteractionOverlay';
 import { chunkBackgroundCache } from '../../canvas/chunkBackgroundCache';
 import { invalidateChunkCanvasCache } from '../../components/worldmap/chunkTileRasterizer';
+import { SeasonEngine } from '../../engine/environment/SeasonEngine';
 
 interface UseGKeyInteractionProps {
   gameState: GameState;
@@ -252,6 +253,21 @@ export function useGKeyInteraction({
       if (tx >= 0 && tx < LEVEL_WIDTH && ty >= 0 && ty < LEVEL_HEIGHT) {
         if (gameState.map[ty][tx] === TileType.Bush) {
           const biome = gameState.biome || 'forest';
+          const seasonEngine = SeasonEngine.getInstance();
+          const season = gameState.season || 'spring';
+          const seasonMods = seasonEngine.getModifiers(season);
+
+          // In Winter outside desert/swamp, berry brush is frozen solid in ice
+          if (seasonMods.berryHarvestFrozen && (biome === 'forest' || biome === 'tundra' || biome === 'mountain')) {
+            playSound('bump');
+            addLogMessage('❄️ [WINTER FROST]: The berry brush is frozen solid in ice! Sweet berries cannot be gathered until the spring thaw.', 'info');
+            const ev = new CustomEvent('spawn-game-effect', {
+              detail: { x: tx, y: ty, text: '❄️ FROZEN', type: 'dmg' }
+            });
+            window.dispatchEvent(ev);
+            return;
+          }
+
           let gatheredId = 'mat_berry';
           let gatheredName = 'Wild Berries 🍓';
           let gatheredQty = Math.floor(Math.random() * 3) + 1;
@@ -293,6 +309,12 @@ export function useGKeyInteraction({
             }
           }
 
+          // Apply seasonal harvest multiplier (Spring x2.0, Autumn x1.5)
+          const multiplier = seasonMods.harvestYieldMultiplier;
+          if (multiplier > 1.0) {
+            gatheredQty = Math.max(1, Math.round(gatheredQty * multiplier));
+          }
+
           setGameState((prev) => {
             const nextMap = prev.map.map(row => [...row]);
             nextMap[ty][tx] = prev.isOverworld ? TileType.Grass : TileType.Floor;
@@ -323,7 +345,13 @@ export function useGKeyInteraction({
           chunkBackgroundCache.invalidate();
           invalidateChunkCanvasCache(gameState.currentChunkX, gameState.currentChunkY);
           playSound('loot');
-          addLogMessage(`🌿 Foraging: You gathered +${gatheredQty} ${gatheredName} from the wilderness!`, "loot");
+          if (season === 'spring') {
+            addLogMessage(`🌸 [SPRING BOUNTY]: Vernal blooms flourish! You gathered +${gatheredQty} ${gatheredName} from the lush wilderness!`, "loot");
+          } else if (season === 'autumn') {
+            addLogMessage(`🍂 [AUTUMN HARVEST]: You gathered +${gatheredQty} ${gatheredName} amidst the falling amber leaves!`, "loot");
+          } else {
+            addLogMessage(`🌿 Foraging: You gathered +${gatheredQty} ${gatheredName} from the wilderness!`, "loot");
+          }
           const ev = new CustomEvent('spawn-game-effect', {
             detail: { x: tx, y: ty, text: `+${gatheredQty} ${effectIcon}`, type: 'heal' },
           });

@@ -24,6 +24,7 @@ export interface Quest {
   description: string;
   targetItem?: string; // e.g. 'mat_iron' or 'plank' or 'berry'
   targetCount?: number;
+  currentProgress?: number;
   targetX?: number; // overworld coordinate
   targetY?: number;
   targetChunkX?: number;
@@ -31,6 +32,9 @@ export interface Quest {
   rewardGold: number;
   rewardXp?: number;
   status: 'available' | 'active' | 'completed' | 'turned_in' | 'failed';
+  category?: string;
+  difficulty?: string;
+  isRadiant?: boolean;
 }
 
 export interface FactionTerritory {

@@ -13,6 +13,8 @@ import { DungeonGeneratorRegistry } from '../dungeon/DungeonGeneratorRegistry';
 import { RoomRegistry } from '../dungeon/RoomRegistry';
 import { ItemRegistry } from '../items/ItemRegistry';
 import { WeaponRegistry } from '../items/WeaponRegistry';
+import { SeasonEngine } from '../environment/SeasonEngine';
+import { QuestEngine } from '../quests/QuestEngine';
 import { ContentValidator } from '../validation/ContentValidator';
 import { ContentSummary, ContentValidationResult } from './types';
 
@@ -117,6 +119,20 @@ export class ContentRegistry {
    */
   public get spawnTables(): typeof SpawnTableRegistry {
     return SpawnTableRegistry;
+  }
+
+  /**
+   * Access the central Season and Environmental Engine
+   */
+  public get seasons(): SeasonEngine {
+    return SeasonEngine.getInstance();
+  }
+
+  /**
+   * Access the central Quest and Radiant Contract Engine
+   */
+  public get quests(): QuestEngine {
+    return QuestEngine.getInstance();
   }
 
   /**

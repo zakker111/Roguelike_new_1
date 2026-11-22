@@ -10,6 +10,7 @@ import { resolveCivilianNpcTurns } from './useCivilianAI';
 import { emitAggregatedDamageFloater, checkTacticalCaravanVictory } from './aiCombatAggregator';
 import { appendBoundedLogs } from '../../utils/logBuffer';
 import { ChunkBackgroundCache } from '../../canvas/chunkBackgroundCache';
+import { QuestEngine } from '../../engine/quests';
 
 export function useEnemyAI({
   setGameState,
@@ -31,6 +32,7 @@ export function useEnemyAI({
         nextFoodBuff,
         activeScars,
         nextWeather,
+        nextSeason,
         nextTimeVal,
         nextRep,
         nextGuardsHostile,
@@ -58,6 +60,7 @@ export function useEnemyAI({
 
       let nextCaravanTravel = prev.caravanTravel;
       let nextDefeatedCounts = prev.defeatedEnemiesCount ? { ...prev.defeatedEnemiesCount } : {};
+      let nextQuests = prev.quests;
       let nextArmor = prev.equippedArmor;
       let nextHelmet = prev.equippedHelmet;
       let nextGloves = prev.equippedGloves;
@@ -133,6 +136,18 @@ export function useEnemyAI({
         }
 
         if (target.hp <= 0) {
+          if (!target.isFollower && !target.isTownGuard) {
+            const qProg = QuestEngine.getInstance().updateProgress(nextQuests, {
+              type: target.isBoss ? 'defeat_boss' : 'kill_enemy',
+              targetId: target.name || (target.type as string),
+            });
+            if (qProg.updatedQuests !== nextQuests) {
+              nextQuests = qProg.updatedQuests;
+            }
+            if (qProg.logMessages.length > 0) {
+              staticLogs.push(...qProg.logMessages);
+            }
+          }
           // Autonomous Skirmish & Combat Death: Leave corpse, blood splatter, and battlefield debris!
           const targetNameLower = (target.name || '').toLowerCase();
           const corpseColor = target.char === 'r' ? '#22c55e' :
@@ -369,8 +384,10 @@ export function useEnemyAI({
         equippedBoots: nextBoots,
         equippedShield: nextShield,
         defeatedEnemiesCount: nextDefeatedCounts,
+        quests: nextQuests,
         gameTime: nextTimeVal,
         weather: nextWeather,
+        season: nextSeason,
         townReputation: nextRep,
         areGuardsHostile: nextGuardsHostile,
         lastRestockTime: nextRestockTime,

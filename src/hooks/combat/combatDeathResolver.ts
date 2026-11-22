@@ -1,17 +1,8 @@
 import { CraftedWeapon, EquipmentItem } from '../../types';
 import { getItemDurabilityDecay } from '../../utils/spellsAndEquipment';
+import { incrementDefeatedEnemyCount } from '../../utils/bestiary';
 
-export function incrementDefeatedEnemyCount(
-  currentCounts: { [key: string]: number } | undefined,
-  enemyName: string,
-  enemyType: string,
-  isBoss: boolean
-): { [key: string]: number } {
-  const counts = { ...(currentCounts || {}) };
-  const key = isBoss ? `boss_${enemyName.toLowerCase().replace(/\s+/g, '_')}` : enemyType.toLowerCase();
-  counts[key] = (counts[key] || 0) + 1;
-  return counts;
-}
+export { incrementDefeatedEnemyCount };
 
 const isToolItem = (item: any, toolType: string) => {
   if (!item) return false;
